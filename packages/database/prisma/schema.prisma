@@ -1,0 +1,12 @@
+// Prisma schema for StudyFlow
+// Milestone 1 - Foundation: Provider configuration and client generation.
+// Domain models and initial migrations will be added starting in Milestone 2/3.
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}

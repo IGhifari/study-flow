@@ -1,0 +1,30 @@
+{
+  "name": "studyflow",
+  "version": "0.1.0",
+  "private": true,
+  "description": "StudyFlow — Ruang Belajar Pribadi Mahasiswa",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "concurrently -c \"blue,green,magenta\" -n \"web,api,worker\" \"npm run dev:web\" \"npm run dev:api\" \"npm run dev:worker\"",
+    "dev:web": "npm run dev --workspace=@studyflow/web",
+    "dev:api": "npm run dev --workspace=@studyflow/api",
+    "dev:worker": "npm run dev --workspace=@studyflow/worker",
+    "build:shared": "npm run build --workspace=@studyflow/shared",
+    "db:generate": "npm run generate --workspace=@studyflow/database",
+    "db:build": "npm run generate --workspace=@studyflow/database && npm run build --workspace=@studyflow/database",
+    "db:migrate:dev": "npm run migrate:dev --workspace=@studyflow/database",
+    "build": "npm run build:shared && npm run db:build && npm run build --workspace=@studyflow/api && npm run build --workspace=@studyflow/worker && npm run build --workspace=@studyflow/web",
+    "lint": "npm run lint --workspaces --if-present",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present",
+    "worker:smoke": "npm run smoke --workspace=@studyflow/worker"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2",
+    "typescript": "^5.8.2",
+    "vitest": "^3.0.7"
+  }
+}

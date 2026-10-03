@@ -1,0 +1,19 @@
+# Ignored files for Docker build context
+node_modules
+*/node_modules
+*/*/node_modules
+.next
+*/.next
+dist
+*/dist
+*/*/dist
+.git
+.gitignore
+.env
+.env*.local
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.DS_Store
+Thumbs.db
