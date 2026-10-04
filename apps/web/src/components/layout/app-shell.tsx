@@ -9,6 +9,8 @@ import {
   Settings,
   LogOut,
   CalendarRange,
+  ListTodo,
+  FileText,
 } from 'lucide-react';
 import { UserProfile } from '@studyflow/shared';
 import { apiLogout } from '@/lib/auth-client';
@@ -56,6 +58,18 @@ function SidebarNavContent({ user }: { user: UserProfile }): React.JSX.Element {
       href: '/dashboard',
       icon: LayoutDashboard,
       isActive: pathname === '/dashboard',
+    },
+    {
+      label: 'Tugas',
+      href: '/assignments',
+      icon: ListTodo,
+      isActive: pathname.startsWith('/assignments'),
+    },
+    {
+      label: 'Catatan',
+      href: '/notes',
+      icon: FileText,
+      isActive: pathname.startsWith('/notes'),
     },
     {
       label: 'Mata Kuliah',
@@ -164,6 +178,9 @@ export function AppShell({ user, children }: AppShellProps): React.JSX.Element {
 
   const getBreadcrumbTitle = () => {
     if (pathname === '/dashboard') return 'Dashboard';
+    if (pathname === '/assignments') return 'Tugas Kuliah';
+    if (pathname === '/notes') return 'Catatan Belajar';
+    if (pathname.startsWith('/notes/')) return 'Editor Catatan';
     if (pathname === '/semesters') return 'Kelola Semester';
     if (pathname === '/courses') return 'Mata Kuliah';
     if (pathname.startsWith('/courses/')) return 'Detail Mata Kuliah';

@@ -23,6 +23,8 @@ model User {
   refreshSessions RefreshSession[]
   semesters       Semester[]
   courses         Course[]
+  assignments     Assignment[]
+  notes           Note[]
 
   @@map("users")
 }
@@ -64,9 +66,65 @@ model Course {
   createdAt   DateTime  @default(now()) @map("created_at")
   updatedAt   DateTime  @updatedAt @map("updated_at")
 
+  assignments Assignment[]
+  notes       Note[]
+
+  // Target for composite FK from Assignment & Note
+  @@unique([id, userId])
   @@index([userId, semesterId])
   @@index([userId, name])
   @@map("courses")
+}
+
+// Milestone 4 — Assignments & Notes
+enum AssignmentPriority {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+enum AssignmentStatus {
+  TODO
+  IN_PROGRESS
+  DONE
+}
+
+model Assignment {
+  id          String             @id @default(cuid())
+  userId      String             @map("user_id")
+  user        User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  courseId    String             @map("course_id")
+  course      Course             @relation(fields: [courseId, userId], references: [id, userId], onDelete: Restrict)
+  title       String
+  description String?
+  dueDate     DateTime           @map("due_date")
+  priority    AssignmentPriority @default(MEDIUM)
+  status      AssignmentStatus   @default(TODO)
+  completedAt DateTime?          @map("completed_at")
+  createdAt   DateTime           @default(now()) @map("created_at")
+  updatedAt   DateTime           @updatedAt @map("updated_at")
+
+  @@index([userId, dueDate])
+  @@index([userId, status])
+  @@index([courseId])
+  @@map("assignments")
+}
+
+model Note {
+  id        String   @id @default(cuid())
+  userId    String   @map("user_id")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  courseId  String   @map("course_id")
+  course    Course   @relation(fields: [courseId, userId], references: [id, userId], onDelete: Restrict)
+  title     String
+  content   String   @default("")
+  version   Int      @default(1)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([userId, updatedAt])
+  @@index([courseId])
+  @@map("notes")
 }
 
 model RefreshSession {

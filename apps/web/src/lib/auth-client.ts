@@ -185,3 +185,15 @@ export async function apiChangePassword(input: ChangePasswordInput): Promise<str
 
   return data.message;
 }
+
+export async function apiGetProfile(): Promise<UserProfile> {
+  const res = await authFetch('/api/auth/me');
+  const data = await res.json();
+  if (!res.ok) {
+    throw new Error(data.error?.message || 'Gagal memuat profil');
+  }
+  return data.user;
+}
+
+export const getProfile = apiGetProfile;
+

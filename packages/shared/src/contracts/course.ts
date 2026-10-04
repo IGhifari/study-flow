@@ -45,7 +45,7 @@ export const CreateCourseInputSchema = z.object({
     .nullable()
     .transform((val) => (val && val.length > 0 ? val : null)),
 });
-export type CreateCourseInput = z.infer<typeof CreateCourseInputSchema>;
+export type CreateCourseInput = z.input<typeof CreateCourseInputSchema>;
 
 export const UpdateCourseInputSchema = z.object({
   name: z
@@ -77,7 +77,7 @@ export const UpdateCourseInputSchema = z.object({
     .transform((val) => (val === undefined ? undefined : val && val.length > 0 ? val : null)),
   semesterId: z.string().optional(), // Disallowed in business logic; if provided and changed, backend rejects!
 });
-export type UpdateCourseInput = z.infer<typeof UpdateCourseInputSchema>;
+export type UpdateCourseInput = z.input<typeof UpdateCourseInputSchema>;
 
 export const CourseListQuerySchema = z.object({
   semesterId: z.string().optional(),
@@ -86,7 +86,7 @@ export const CourseListQuerySchema = z.object({
   page: z.coerce.number().int().min(1).default(1),
   limit: z.coerce.number().int().min(1).max(100).default(20),
 });
-export type CourseListQuery = z.infer<typeof CourseListQuerySchema>;
+export type CourseListQuery = z.input<typeof CourseListQuerySchema>;
 
 export const CourseResponseSchema = z.object({
   course: CourseSchema,

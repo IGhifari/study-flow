@@ -11,6 +11,9 @@ import { readyRouter } from './routes/ready.js';
 import { authRouter } from './routes/auth.js';
 import { semesterRouter } from './routes/semesters.js';
 import { courseRouter } from './routes/courses.js';
+import { assignmentRouter } from './routes/assignments.js';
+import { noteRouter } from './routes/notes.js';
+import { dashboardRouter } from './routes/dashboard.js';
 
 export function createApp(): Express {
   const app = express();
@@ -48,10 +51,13 @@ export function createApp(): Express {
   app.use('/health', healthRouter);
   app.use('/ready', readyRouter);
 
-  // Milestone 2 & 3 API endpoints
+  // Milestone 2, 3 & 4 API endpoints
   app.use('/api/auth', authRouter);
   app.use('/api/semesters', semesterRouter);
   app.use('/api/courses', courseRouter);
+  app.use('/api/assignments', assignmentRouter);
+  app.use('/api/notes', noteRouter);
+  app.use('/api/dashboard', dashboardRouter);
 
   // 404 handler
   app.use((req: Request, res: Response) => {

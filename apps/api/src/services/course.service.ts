@@ -87,18 +87,21 @@ export async function listCourses(
         { createdAt: 'desc' },
         { id: 'asc' }, // stable tie-breaker
       ],
-      skip: (query.page - 1) * query.limit,
-      take: query.limit,
+      skip: ((query.page || 1) - 1) * (query.limit || 20),
+      take: query.limit || 20,
     }),
   ]);
+
+  const page = query.page || 1;
+  const limit = query.limit || 20;
 
   return {
     courses: records.map(toCourseResponse),
     pagination: {
-      page: query.page,
-      limit: query.limit,
+      page,
+      limit,
       total,
-      totalPages: Math.ceil(total / query.limit) || 1,
+      totalPages: Math.ceil(total / limit) || 1,
     },
   };
 }
@@ -263,12 +266,38 @@ export async function unarchiveCourse(userId: string, id: string): Promise<Cours
 export async function deleteCourse(userId: string, id: string): Promise<void> {
   const course = await prisma.course.findFirst({
     where: { id, userId },
+    include: {
+      _count: {
+        select: {
+          assignments: true,
+          notes: true,
+        },
+      },
+    },
   });
 
   if (!course) {
     const error: AppError = new Error('Mata kuliah tidak ditemukan');
     error.statusCode = 404;
     error.code = 'NOT_FOUND';
+    throw error;
+  }
+
+  if (course._count.assignments > 0) {
+    const error: AppError = new Error(
+      'Mata kuliah tidak dapat dihapus karena masih memiliki tugas. Silakan arsipkan mata kuliah atau hapus tugas di dalamnya terlebih dahulu.'
+    );
+    error.statusCode = 409;
+    error.code = 'COURSE_HAS_ASSIGNMENTS';
+    throw error;
+  }
+
+  if (course._count.notes > 0) {
+    const error: AppError = new Error(
+      'Mata kuliah tidak dapat dihapus karena masih memiliki catatan. Silakan arsipkan mata kuliah atau hapus catatan di dalamnya terlebih dahulu.'
+    );
+    error.statusCode = 409;
+    error.code = 'COURSE_HAS_NOTES';
     throw error;
   }
 
