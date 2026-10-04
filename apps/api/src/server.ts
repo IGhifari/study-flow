@@ -3,6 +3,7 @@ import { createApp } from './app.js';
 import { env } from './config/env.js';
 import { prisma } from '@studyflow/database';
 import { closeRedisClient } from './routes/ready.js';
+import { startOutboxDispatcherLoop, closeQueueConnections } from './services/outbox.service.js';
 import { Server } from 'node:http';
 
 const app = createApp();
@@ -15,6 +16,11 @@ const server: Server = app.listen(env.PORT, () => {
     port: env.PORT,
     environment: env.NODE_ENV,
   }));
+
+  // Start background outbox sweep in non-test environments
+  if (env.NODE_ENV !== 'test') {
+    startOutboxDispatcherLoop(5000);
+  }
 });
 
 let isShuttingDown = false;
@@ -51,6 +57,7 @@ async function gracefulShutdown(signal: string): Promise<void> {
       await Promise.all([
         prisma.$disconnect(),
         closeRedisClient(),
+        closeQueueConnections(),
       ]);
       console.log(JSON.stringify({
         level: 'info',

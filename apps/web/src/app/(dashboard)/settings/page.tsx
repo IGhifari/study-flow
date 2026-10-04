@@ -13,14 +13,20 @@ import {
   AlertCircle,
   Eye,
   EyeOff,
+  HardDrive,
+  FileUp,
+  Info,
 } from 'lucide-react';
 import {
   UpdateProfileInput,
   UpdateProfileInputSchema,
   ChangePasswordInput,
   ChangePasswordInputSchema,
+  formatFileSize,
+  StorageUsageResponse,
 } from '@studyflow/shared';
 import { apiUpdateProfile, apiChangePassword, getCurrentUser } from '@/lib/auth-client';
+import { getStorageUsage } from '@/lib/material-client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -55,6 +61,10 @@ export default function SettingsPage(): React.JSX.Element {
   const [showCurrentPassword, setShowCurrentPassword] = React.useState(false);
   const [showNewPassword, setShowNewPassword] = React.useState(false);
 
+  // Storage usage state
+  const [storageUsage, setStorageUsage] = React.useState<StorageUsageResponse | null>(null);
+  const [storageLoading, setStorageLoading] = React.useState(true);
+
   const {
     register: registerProfile,
     handleSubmit: handleProfileSubmit,
@@ -81,6 +91,11 @@ export default function SettingsPage(): React.JSX.Element {
         setProfileValue('timezone', user.timezone);
       }
       setInitialLoading(false);
+
+      getStorageUsage()
+        .then((data) => setStorageUsage(data))
+        .catch((err) => console.error('Failed to load storage usage:', err))
+        .finally(() => setStorageLoading(false));
     }
     loadData();
   }, [setProfileValue]);
@@ -356,6 +371,92 @@ export default function SettingsPage(): React.JSX.Element {
             </Button>
           </CardFooter>
         </form>
+      </Card>
+
+      {/* Storage and Upload Quota */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            <HardDrive className="h-5 w-5 text-primary" />
+            <CardTitle>Penyimpanan & Kuota Upload</CardTitle>
+          </div>
+          <CardDescription>
+            Informasi kapasitas ruang penyimpanan materi PDF dan batasan upload harian akun Anda.
+          </CardDescription>
+        </CardHeader>
+
+        <CardContent className="space-y-6">
+          {storageLoading ? (
+            <div className="flex items-center justify-center py-6 text-muted-foreground">
+              <Loader2 className="h-6 w-6 animate-spin text-primary" />
+            </div>
+          ) : storageUsage ? (
+            <>
+              {/* Storage Space Bar */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="font-medium text-foreground">Kapasitas Penyimpanan</span>
+                  <span className="text-muted-foreground text-xs font-mono">
+                    {formatFileSize(storageUsage.usedBytes)} / {formatFileSize(storageUsage.limitBytes)} ({storageUsage.percentage.toFixed(1)}%)
+                  </span>
+                </div>
+                <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
+                  <div
+                    className={`h-full transition-all ${
+                      storageUsage.percentage >= 90
+                        ? 'bg-danger'
+                        : storageUsage.percentage >= 70
+                        ? 'bg-warning'
+                        : 'bg-primary'
+                    }`}
+                    style={{ width: `${Math.min(100, storageUsage.percentage)}%` }}
+                  />
+                </div>
+              </div>
+
+              {/* Upload Limit Grid */}
+              <div className="grid gap-3 sm:grid-cols-2 rounded-lg border border-border bg-muted/20 p-4">
+                <div className="space-y-1">
+                  <p className="text-xs text-muted-foreground flex items-center gap-1.5">
+                    <FileUp className="h-3.5 w-3.5 text-primary" />
+                    Upload Hari Ini
+                  </p>
+                  <p className="text-lg font-bold text-foreground">
+                    {storageUsage.dailyUploadsCount} / {storageUsage.dailyUploadsLimit} file
+                  </p>
+                  <p className="text-[11px] text-muted-foreground">
+                    Sisa kuota: {Math.max(0, storageUsage.dailyUploadsLimit - storageUsage.dailyUploadsCount)} upload hari ini.
+                  </p>
+                </div>
+
+                <div className="space-y-1">
+                  <p className="text-xs text-muted-foreground flex items-center gap-1.5">
+                    <Info className="h-3.5 w-3.5 text-primary" />
+                    Reset Kuota Harian
+                  </p>
+                  <p className="text-sm font-semibold text-foreground">
+                    Pukul 00:00 UTC
+                  </p>
+                  <p className="text-[11px] text-muted-foreground">
+                    Reset otomatis setiap tengah malam UTC.
+                  </p>
+                </div>
+              </div>
+
+              {/* PDF Document Limits */}
+              <div className="rounded-md border border-border/80 bg-muted/10 p-3 text-xs text-muted-foreground space-y-1">
+                <p className="font-semibold text-foreground text-xs">Aturan File PDF:</p>
+                <ul className="list-disc list-inside space-y-0.5 text-[11px]">
+                  <li>Maksimal ukuran 20 MB per file PDF berbasis teks.</li>
+                  <li>Maksimal 100 halaman per dokumen.</li>
+                  <li>PDF hasil pemindaian gambar (scanned/tanpa teks) tidak didukung pada versi ini.</li>
+                </ul>
+              </div>
+            </>
+          ) : (
+            <p className="text-xs text-muted-foreground">Tidak dapat memuat informasi penyimpanan.</p>
+          )}
+        </CardContent>
       </Card>
     </div>
   );

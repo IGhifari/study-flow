@@ -5,10 +5,19 @@ export const NoteSchema = z.object({
   id: z.string(),
   userId: z.string(),
   courseId: z.string(),
+  materialId: z.string().nullable().optional(),
   title: z.string(),
   content: z.string().optional(),
   version: z.number().int().positive(),
   course: CourseSchema.optional(),
+  material: z
+    .object({
+      id: z.string(),
+      title: z.string(),
+      originalFilename: z.string(),
+    })
+    .nullable()
+    .optional(),
   createdAt: z.string().datetime(),
   updatedAt: z.string().datetime(),
 });
@@ -19,6 +28,7 @@ export type NoteListItem = z.infer<typeof NoteListItemSchema>;
 
 export const CreateNoteInputSchema = z.object({
   courseId: z.string().min(1, 'Mata kuliah wajib dipilih'),
+  materialId: z.string().nullable().optional(),
   title: z
     .string()
     .trim()
@@ -43,6 +53,7 @@ export const UpdateNoteInputSchema = z.object({
     .string()
     .max(50000, 'Isi catatan maksimal 50.000 karakter')
     .optional(),
+  materialId: z.string().nullable().optional(),
   version: z
     .number({ required_error: 'Versi catatan wajib disertakan untuk mencegah konflik' })
     .int()

@@ -22,12 +22,15 @@ import {
   CheckCircle2,
   Circle,
   ExternalLink,
+  FileUp,
 } from 'lucide-react';
 import {
   Course,
   UpdateCourseInput,
   Assignment,
   NoteListItem,
+  MaterialListItem,
+  formatFileSize,
   formatUserDateTime,
   toUserDateTimeInputValue,
   UserProfile,
@@ -50,6 +53,9 @@ import {
   createNote,
   deleteNote,
 } from '@/lib/note-client';
+import { listMaterials } from '@/lib/material-client';
+import { MaterialUploadDialog } from '@/components/materials/material-upload-dialog';
+import { MaterialStatusBadge } from '@/components/materials/material-status-badge';
 import { getProfile } from '@/lib/auth-client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -83,8 +89,8 @@ export default function CourseDetailPage(): React.JSX.Element {
   const [isLoading, setIsLoading] = React.useState(true);
   const [errorMsg, setErrorMsg] = React.useState<string | null>(null);
 
-  // Tabs: 'assignments' | 'notes'
-  const [activeTab, setActiveTab] = React.useState<'assignments' | 'notes'>('assignments');
+  // Tabs: 'assignments' | 'notes' | 'materials'
+  const [activeTab, setActiveTab] = React.useState<'assignments' | 'notes' | 'materials'>('assignments');
 
   // Course Assignments state
   const [assignments, setAssignments] = React.useState<Assignment[]>([]);
@@ -93,6 +99,11 @@ export default function CourseDetailPage(): React.JSX.Element {
   // Course Notes state
   const [notes, setNotes] = React.useState<NoteListItem[]>([]);
   const [isNotesLoading, setIsNotesLoading] = React.useState(false);
+
+  // Course Materials state
+  const [materials, setMaterials] = React.useState<MaterialListItem[]>([]);
+  const [isMaterialsLoading, setIsMaterialsLoading] = React.useState(false);
+  const [isUploadOpen, setIsUploadOpen] = React.useState(false);
 
   // Modal Edit Course
   const [isEditOpen, setIsEditOpen] = React.useState(false);
@@ -174,11 +185,25 @@ export default function CourseDetailPage(): React.JSX.Element {
     }
   }, [courseId]);
 
+  const fetchMaterialsData = React.useCallback(async () => {
+    if (!courseId) return;
+    setIsMaterialsLoading(true);
+    try {
+      const res = await listMaterials({ courseId, limit: 100 });
+      setMaterials(res.materials);
+    } catch (err) {
+      console.error('Failed to load materials:', err);
+    } finally {
+      setIsMaterialsLoading(false);
+    }
+  }, [courseId]);
+
   React.useEffect(() => {
     fetchCourseData();
     fetchAssignmentsData();
     fetchNotesData();
-  }, [fetchCourseData, fetchAssignmentsData, fetchNotesData]);
+    fetchMaterialsData();
+  }, [fetchCourseData, fetchAssignmentsData, fetchNotesData, fetchMaterialsData]);
 
   const isArchived = Boolean(course?.archivedAt || course?.semester?.archivedAt);
 
@@ -499,7 +524,7 @@ export default function CourseDetailPage(): React.JSX.Element {
         </CardContent>
       </Card>
 
-      {/* Tabs Navigation: Tugas & Catatan */}
+      {/* Tabs Navigation: Tugas, Catatan, Materi */}
       <div className="space-y-4">
         <div className="flex border-b border-border gap-2">
           <button
@@ -525,6 +550,18 @@ export default function CourseDetailPage(): React.JSX.Element {
           >
             <FileText className="h-4 w-4" />
             <span>Catatan ({notes.length})</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab('materials')}
+            className={`flex items-center gap-2 border-b-2 px-4 py-2.5 text-sm font-semibold transition-colors ${
+              activeTab === 'materials'
+                ? 'border-primary text-primary'
+                : 'border-transparent text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            <FileUp className="h-4 w-4" />
+            <span>Materi ({materials.length})</span>
           </button>
         </div>
 
@@ -710,6 +747,100 @@ export default function CourseDetailPage(): React.JSX.Element {
             )}
           </div>
         )}
+
+        {/* Tab 3: Materi */}
+        {activeTab === 'materials' && (
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-base font-semibold text-foreground">Daftar Materi Kuliah (PDF)</h3>
+              <Button
+                size="sm"
+                onClick={() => setIsUploadOpen(true)}
+                disabled={isArchived}
+              >
+                <FileUp className="mr-1.5 h-4 w-4" />
+                Unggah Materi
+              </Button>
+            </div>
+
+            {isMaterialsLoading ? (
+              <div className="flex py-12 justify-center text-muted-foreground">
+                <Loader2 className="h-6 w-6 animate-spin text-primary" />
+              </div>
+            ) : materials.length === 0 ? (
+              <Card className="border-dashed p-8 text-center bg-card/40">
+                <FileUp className="h-8 w-8 text-muted-foreground mx-auto" />
+                <p className="mt-2 text-sm font-semibold text-foreground">Belum ada materi untuk mata kuliah ini</p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Unggah file PDF materi perkuliahan untuk ekstraksi teks dan referensi catatan.
+                </p>
+                {!isArchived && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setIsUploadOpen(true)}
+                    className="mt-4"
+                  >
+                    <FileUp className="mr-1.5 h-3.5 w-3.5" />
+                    Unggah Materi Sekarang
+                  </Button>
+                )}
+              </Card>
+            ) : (
+              <div className="overflow-hidden rounded-xl border border-border bg-card shadow-xs">
+                <table className="w-full text-left text-sm">
+                  <thead className="border-b border-border bg-muted/40 text-xs font-semibold uppercase text-muted-foreground">
+                    <tr>
+                      <th scope="col" className="px-4 py-3">Judul Materi</th>
+                      <th scope="col" className="px-4 py-3">Ukuran & Halaman</th>
+                      <th scope="col" className="px-4 py-3">Status</th>
+                      <th scope="col" className="px-4 py-3">Tanggal Unggah</th>
+                      <th scope="col" className="px-4 py-3 text-right">Aksi</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-border">
+                    {materials.map((m) => (
+                      <tr key={m.id} className="hover:bg-muted/30 transition-colors">
+                        <td className="px-4 py-3">
+                          <Link
+                            href={`/materials/${m.id}`}
+                            className="font-medium text-foreground hover:text-primary transition-colors flex items-center gap-2"
+                          >
+                            <FileText className="h-4 w-4 text-muted-foreground shrink-0" />
+                            <span>{m.title}</span>
+                          </Link>
+                          <p className="text-xs text-muted-foreground line-clamp-1 mt-0.5 ml-6">
+                            {m.originalFilename}
+                          </p>
+                        </td>
+                        <td className="px-4 py-3 whitespace-nowrap text-xs text-muted-foreground">
+                          <div>{formatFileSize(m.bytes)}</div>
+                          {m.pageCount ? (
+                            <div className="text-[11px] text-muted-foreground/80">{m.pageCount} halaman</div>
+                          ) : null}
+                        </td>
+                        <td className="px-4 py-3 whitespace-nowrap">
+                          <MaterialStatusBadge status={m.status} />
+                        </td>
+                        <td className="px-4 py-3 whitespace-nowrap text-xs text-muted-foreground">
+                          {formatUserDateTime(m.createdAt, timezone)}
+                        </td>
+                        <td className="px-4 py-3 whitespace-nowrap text-right">
+                          <Button asChild variant="ghost" size="sm" className="h-8 px-2 text-xs">
+                            <Link href={`/materials/${m.id}`}>
+                              Lihat
+                              <ExternalLink className="ml-1 h-3 w-3" />
+                            </Link>
+                          </Button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Modal Edit Detail */}
@@ -817,7 +948,7 @@ export default function CourseDetailPage(): React.JSX.Element {
           )}
 
           <p className="text-xs text-muted-foreground mt-2">
-            Mata kuliah yang memiliki tugas atau catatan tidak dapat dihapus. Silakan arsipkan jika mata kuliah sudah selesai.
+            Mata kuliah yang memiliki materi, tugas, atau catatan tidak dapat dihapus. Silakan arsipkan jika mata kuliah sudah selesai.
           </p>
 
           <DialogFooter>
@@ -998,6 +1129,20 @@ export default function CourseDetailPage(): React.JSX.Element {
           </form>
         </DialogContent>
       </Dialog>
+
+      {/* Upload Material Dialog */}
+      {course && (
+        <MaterialUploadDialog
+          open={isUploadOpen}
+          onOpenChange={setIsUploadOpen}
+          courses={[course]}
+          initialCourseId={course.id}
+          onSuccess={() => {
+            fetchMaterialsData();
+            setActiveTab('materials');
+          }}
+        />
+      )}
     </div>
   );
 }

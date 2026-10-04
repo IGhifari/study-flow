@@ -23,14 +23,17 @@ import {
   List,
   Quote,
   Link2,
+  ExternalLink,
 } from 'lucide-react';
-import { Note, formatUserDateTime, UserProfile } from '@studyflow/shared';
+import { Note, formatUserDateTime, UserProfile, MaterialListItem } from '@studyflow/shared';
 import { getNote, updateNote } from '@/lib/note-client';
+import { listMaterials } from '@/lib/material-client';
 import { getProfile } from '@/lib/auth-client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
+import { Select } from '@/components/ui/select';
 import { SafeMarkdownRenderer } from '@/components/notes/markdown-renderer';
 
 type SaveStatus = 'SAVED' | 'DIRTY' | 'SAVING' | 'ERROR';
@@ -48,6 +51,8 @@ export default function NoteDetailPage(): React.JSX.Element {
   // Editor states
   const [title, setTitle] = React.useState('');
   const [content, setContent] = React.useState('');
+  const [materialId, setMaterialId] = React.useState<string | null>(null);
+  const [courseMaterials, setCourseMaterials] = React.useState<MaterialListItem[]>([]);
   const [activeTab, setActiveTab] = React.useState<'write' | 'preview'>('write');
 
   // Track save state & concurrency
@@ -59,8 +64,8 @@ export default function NoteDetailPage(): React.JSX.Element {
   } | null>(null);
 
   // References to track what content was sent in the in-flight save
-  const lastSavedSnapshot = React.useRef({ title: '', content: '' });
-  const inFlightSnapshot = React.useRef<{ title: string; content: string } | null>(null);
+  const lastSavedSnapshot = React.useRef({ title: '', content: '', materialId: null as string | null });
+  const inFlightSnapshot = React.useRef<{ title: string; content: string; materialId: string | null } | null>(null);
   const textareaRef = React.useRef<HTMLTextAreaElement>(null);
 
   const timezone = userProfile?.timezone || 'Asia/Jakarta';
@@ -79,10 +84,22 @@ export default function NoteDetailPage(): React.JSX.Element {
         setNote(fetchedNote);
         setTitle(fetchedNote.title);
         setContent(fetchedNote.content || '');
+        setMaterialId(fetchedNote.materialId || null);
         lastSavedSnapshot.current = {
           title: fetchedNote.title,
           content: fetchedNote.content || '',
+          materialId: fetchedNote.materialId || null,
         };
+
+        if (fetchedNote.courseId) {
+          try {
+            const matRes = await listMaterials({ courseId: fetchedNote.courseId, limit: 100 });
+            setCourseMaterials(matRes.materials);
+          } catch (mErr) {
+            console.error('Failed to load course materials:', mErr);
+          }
+        }
+
         setSaveStatus('SAVED');
       } catch (err: any) {
         setLoadError(err.message || 'Gagal memuat catatan.');
@@ -100,9 +117,10 @@ export default function NoteDetailPage(): React.JSX.Element {
   const hasUnsavedChanges = React.useMemo(() => {
     return (
       title !== lastSavedSnapshot.current.title ||
-      content !== lastSavedSnapshot.current.content
+      content !== lastSavedSnapshot.current.content ||
+      materialId !== lastSavedSnapshot.current.materialId
     );
-  }, [title, content]);
+  }, [title, content, materialId]);
 
   React.useEffect(() => {
     if (saveStatus !== 'SAVING') {
@@ -162,7 +180,7 @@ export default function NoteDetailPage(): React.JSX.Element {
     setVersionConflict(null);
 
     // Snapshot of what is being saved right now
-    const snapshotBeingSaved = { title, content };
+    const snapshotBeingSaved = { title, content, materialId };
     inFlightSnapshot.current = snapshotBeingSaved;
 
     try {
@@ -170,6 +188,7 @@ export default function NoteDetailPage(): React.JSX.Element {
       const updated = await updateNote(note.id, {
         title: snapshotBeingSaved.title.trim(),
         content: snapshotBeingSaved.content,
+        materialId: snapshotBeingSaved.materialId,
         version: targetVersion,
       });
 
@@ -181,7 +200,8 @@ export default function NoteDetailPage(): React.JSX.Element {
       // only mark SAVED if current state matches the snapshot that was successfully saved.
       if (
         title === snapshotBeingSaved.title &&
-        content === snapshotBeingSaved.content
+        content === snapshotBeingSaved.content &&
+        materialId === snapshotBeingSaved.materialId
       ) {
         setSaveStatus('SAVED');
       } else {
@@ -212,9 +232,11 @@ export default function NoteDetailPage(): React.JSX.Element {
       setNote(fresh);
       setTitle(fresh.title);
       setContent(fresh.content || '');
+      setMaterialId(fresh.materialId || null);
       lastSavedSnapshot.current = {
         title: fresh.title,
         content: fresh.content || '',
+        materialId: fresh.materialId || null,
       };
       setVersionConflict(null);
       setSaveStatus('SAVED');
@@ -382,6 +404,64 @@ export default function NoteDetailPage(): React.JSX.Element {
           <span>{saveErrorMessage}</span>
         </div>
       )}
+
+      {/* Course & Material Link Bar */}
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border bg-muted/20 px-3 py-2 text-xs">
+        <div className="flex items-center gap-2 text-muted-foreground">
+          <BookOpen className="h-3.5 w-3.5 text-primary" />
+          <span>Mata Kuliah:</span>
+          {note.course ? (
+            <Link href={`/courses/${note.course.id}`} className="font-semibold text-foreground hover:underline">
+              {note.course.name}
+            </Link>
+          ) : (
+            <span className="font-semibold text-foreground">—</span>
+          )}
+        </div>
+
+        <div className="flex items-center gap-2">
+          <span className="text-muted-foreground">Tautan Materi:</span>
+          {isArchived ? (
+            note.material ? (
+              <Link
+                href={`/materials/${note.material.id}`}
+                className="font-medium text-primary hover:underline flex items-center gap-1"
+              >
+                <FileText className="h-3.5 w-3.5" />
+                <span>{note.material.title}</span>
+              </Link>
+            ) : (
+              <span className="text-muted-foreground italic">Tidak terhubung</span>
+            )
+          ) : (
+            <div className="flex items-center gap-2">
+              <Select
+                value={materialId || 'none'}
+                onChange={(e) => setMaterialId(e.target.value === 'none' ? null : e.target.value)}
+                className="h-8 text-xs py-0 w-auto min-w-[200px]"
+                aria-label="Pilih Materi Terkait"
+              >
+                <option value="none">— Tidak terhubung ke materi —</option>
+                {courseMaterials.map((m) => (
+                  <option key={m.id} value={m.id}>
+                    📄 {m.title}
+                  </option>
+                ))}
+              </Select>
+              {materialId && (
+                <Link
+                  href={`/materials/${materialId}`}
+                  target="_blank"
+                  className="text-muted-foreground hover:text-primary transition-colors"
+                  title="Buka materi di tab baru"
+                >
+                  <ExternalLink className="h-3.5 w-3.5" />
+                </Link>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
 
       {/* Note Title Input */}
       <div>

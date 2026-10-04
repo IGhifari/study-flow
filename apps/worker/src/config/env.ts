@@ -6,7 +6,20 @@ dotenv.config();
 const WorkerEnvSchema = z.object({
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
   REDIS_URL: z.string().min(1, 'REDIS_URL is required').default('redis://localhost:6379'),
-  DATABASE_URL: z.string().optional(),
+  // Storage configuration (M5)
+  STORAGE_DRIVER: z
+    .enum(['supabase', 'local', 'memory', 'none'])
+    .default(
+      process.env.NODE_ENV === 'test'
+        ? 'memory'
+        : process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY
+        ? 'supabase'
+        : 'local'
+    ),
+  SUPABASE_URL: z.string().optional().default(''),
+  SUPABASE_SERVICE_ROLE_KEY: z.string().optional().default(''),
+  SUPABASE_STORAGE_BUCKET: z.string().default('studyflow-materials'),
+  LOCAL_STORAGE_DIR: z.string().optional(),
 });
 
 export type WorkerEnv = z.infer<typeof WorkerEnvSchema>;

@@ -15,6 +15,7 @@
     "@node-rs/argon2": "^2.2.1",
     "@studyflow/database": "*",
     "@studyflow/shared": "*",
+    "@supabase/storage-js": "2.117.2",
     "bcryptjs": "^3.0.3",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",

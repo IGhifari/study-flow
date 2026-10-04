@@ -17,13 +17,17 @@ import {
   Clock,
   ListTodo,
   TrendingUp,
+  FileText,
+  FileUp,
 } from 'lucide-react';
 import {
   DashboardSummary,
   UserProfile,
   formatUserDateTime,
+  formatFileSize,
   Assignment,
 } from '@studyflow/shared';
+import { MaterialStatusBadge } from '@/components/materials/material-status-badge';
 import { getDashboardSummary } from '@/lib/dashboard-client';
 import { updateAssignment } from '@/lib/assignment-client';
 import { Button } from '@/components/ui/button';
@@ -484,6 +488,74 @@ export function DashboardContent({ user }: DashboardContentProps): React.JSX.Ele
                 </Card>
               ))}
             </div>
+          </div>
+
+          {/* Recent Materials Section */}
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-base font-semibold text-foreground">
+                  Materi Kuliah Terkini
+                </h3>
+                <p className="text-xs text-muted-foreground">
+                  File PDF materi kuliah terbaru di semester aktif
+                </p>
+              </div>
+              <Button asChild variant="outline" size="sm">
+                <Link href="/materials" className="gap-1.5">
+                  <span>Semua Materi</span>
+                  <ArrowRight className="h-3.5 w-3.5" />
+                </Link>
+              </Button>
+            </div>
+
+            {(!summary.recentMaterials || summary.recentMaterials.length === 0) ? (
+              <Card className="border-dashed p-6 text-center bg-card/40">
+                <FileUp className="h-7 w-7 text-muted-foreground mx-auto" />
+                <p className="mt-2 text-sm font-semibold text-foreground">Belum ada materi diunggah semester ini</p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Unggah file materi PDF kuliah Anda untuk ekstraksi dan referensi belajar.
+                </p>
+                <Button asChild size="sm" variant="outline" className="mt-3">
+                  <Link href="/materials">Buka Halaman Materi</Link>
+                </Button>
+              </Card>
+            ) : (
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                {summary.recentMaterials.map((m) => (
+                  <Card key={m.id} className="p-4 flex flex-col justify-between hover:border-primary/50 transition-colors shadow-xs">
+                    <div>
+                      <div className="flex items-start justify-between gap-2">
+                        <Link
+                          href={`/materials/${m.id}`}
+                          className="font-semibold text-foreground hover:text-primary transition-colors text-sm line-clamp-1 flex items-center gap-1.5"
+                        >
+                          <FileText className="h-4 w-4 text-primary shrink-0" />
+                          <span className="truncate">{m.title}</span>
+                        </Link>
+                        <MaterialStatusBadge status={m.status} />
+                      </div>
+                      {m.course && (
+                        <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
+                          <BookOpen className="h-3 w-3" />
+                          <span className="truncate">{m.course.name}</span>
+                        </p>
+                      )}
+                    </div>
+
+                    <div className="mt-3 flex items-center justify-between border-t border-border pt-2 text-xs text-muted-foreground">
+                      <span>{formatFileSize(m.bytes)}</span>
+                      <Button asChild variant="ghost" size="sm" className="h-7 px-2 text-xs">
+                        <Link href={`/materials/${m.id}`}>
+                          Buka
+                          <ArrowRight className="ml-1 h-3 w-3" />
+                        </Link>
+                      </Button>
+                    </div>
+                  </Card>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       )}

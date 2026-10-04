@@ -14,12 +14,18 @@ import { courseRouter } from './routes/courses.js';
 import { assignmentRouter } from './routes/assignments.js';
 import { noteRouter } from './routes/notes.js';
 import { dashboardRouter } from './routes/dashboard.js';
+import { materialRouter } from './routes/materials.js';
+import { localStorageRouter } from './routes/localStorage.js';
 
 export function createApp(): Express {
   const app = express();
 
-  // Security headers
-  app.use(helmet());
+  // Security headers with cross-origin resource policy for local file previews
+  app.use(
+    helmet({
+      crossOriginResourcePolicy: { policy: 'cross-origin' },
+    })
+  );
 
   // CORS configuration
   app.use(cors({
@@ -51,13 +57,15 @@ export function createApp(): Express {
   app.use('/health', healthRouter);
   app.use('/ready', readyRouter);
 
-  // Milestone 2, 3 & 4 API endpoints
+  // Milestone 2, 3, 4 & 5 API endpoints
   app.use('/api/auth', authRouter);
   app.use('/api/semesters', semesterRouter);
   app.use('/api/courses', courseRouter);
   app.use('/api/assignments', assignmentRouter);
   app.use('/api/notes', noteRouter);
   app.use('/api/dashboard', dashboardRouter);
+  app.use('/api/materials', materialRouter);
+  app.use('/api/storage/local', localStorageRouter);
 
   // 404 handler
   app.use((req: Request, res: Response) => {

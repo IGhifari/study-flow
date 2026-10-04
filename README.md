@@ -11,8 +11,8 @@ StudyFlow adalah platform belajar pribadi untuk mahasiswa yang mengintegrasikan 
 | **Milestone 1 — Foundation** | Fondasi monorepo, Next.js, Express, PostgreSQL, Redis, Worker BullMQ, CI, Health/Readiness, Theme Switcher | **Selesai** |
 | **Milestone 2 — Authentication & Shell UI** | Registrasi, login, JWT/refresh cookie, profil pengguna, rotasi token atomik, Next.js BFF proxy, sidebar responsif | **Selesai** |
 | **Milestone 3 — Semester & Course Management** | Pengelolaan semester aktif/arsip, multi-tenant composite isolation, daftar & detail mata kuliah, onboarding dashboard | **Selesai** |
-| **Milestone 4 — Assignments, Notes & Dashboard** | Manajemen tugas, deadline, Markdown notes, status ringkasan | Mendatang |
-| **Milestone 5 — Storage & Document Worker** | Upload PDF privat, antrean ekstraksi teks BullMQ | Mendatang |
+| **Milestone 4 — Assignments, Notes & Dashboard** | Manajemen tugas kuliah, deadline timezone-aware, editor catatan Markdown, ringkasan dashboard semester aktif | **Selesai** |
+| **Milestone 5 — Storage & Document Worker** | Upload PDF langsung ke storage privat, antrean BullMQ & transactional outbox, ekstraksi teks per halaman, kuota storage & upload | **Selesai** |
 | **Milestone 6 — AI Summaries** | Integrasi AI dengan kutipan halaman sumber | Mendatang |
 | **Milestone 7 — Flashcards & Quizzes** | Generasi latihan interaktif dan penilaian di backend | Mendatang |
 
@@ -225,3 +225,67 @@ Backend Express menyediakan dua endpoint pemantauan:
   Jalankan `npm run db:generate`.
 - **Paket `@studyflow/shared` tidak ditemukan saat build:**
   Pastikan menjalankan `npm run build:shared` sebelum membangun aplikasi web atau worker.
+
+---
+
+## 13. Konfigurasi Supabase Storage & Dokumen Worker (Milestone 5)
+
+StudyFlow menggunakan **Supabase Storage** dengan bucket privat untuk menyimpan materi perkuliahan dalam format PDF berbasis teks.
+
+### 13.1 Alur Upload & Pemrosesan
+1. **Inisiasi (`POST /api/materials/initiate-upload`)**:
+   - Browser meminta URL upload terotorisasi melalui BFF -> Express API.
+   - Server memverifikasi kepemilikan mata kuliah, kuota storage pengguna (maks 200 MB), kuota upload harian (maks 10 file/hari, reset 00:00 UTC), dan status arsip.
+   - Server mereservasi kuota, membuat entri `Material` berstatus `UPLOADING`, dan menerbitkan signed upload URL dari Supabase Storage.
+2. **Transfer Langsung ke Storage**:
+   - Browser mengunggah payload file PDF langsung ke Supabase Storage via signed URL tanpa membebani throughput memory BFF Next.js.
+3. **Finalisasi (`POST /api/materials/finalize-upload`)**:
+   - Browser memberi tahu server bahwa upload selesai.
+   - Server memverifikasi keberadaan file di storage, mengunci status menjadi `QUEUED`, membuat `ProcessingJob`, dan mencatat `OutboxEvent`.
+   - Dispatcher outbox meneruskan pekerjaan ke antrean BullMQ (`studyflow-document-processing`).
+4. **Ekstraksi Teks oleh Worker (`apps/worker`)**:
+   - Worker mengambil pekerjaan, memverifikasi integritas PDF (magic bytes `%PDF-`), batas maksimal 100 halaman, dan batas maksimal 20 MB.
+   - Teks diekstrak per halaman (1-indexed) menggunakan `pdfjs-dist` dengan mempertahankan provenance nomor halaman untuk fitur AI mendatang.
+   - Dokumen tanpa lapisan teks (scanned image) ditolak dengan kode `SCANNED_PDF_NO_TEXT` (OCR tidak didukung pada versi ini).
+   - Setelah seluruh halaman tersimpan di database, status diubah menjadi `READY` dan kuota storage dikomit secara atomik.
+
+### 13.2 Pemilihan Storage Driver (`STORAGE_DRIVER`)
+StudyFlow mendukung 4 driver storage yang dapat dipilih secara eksplisit melalui environment variable `STORAGE_DRIVER`:
+
+| Driver | Deskripsi | Lingkungan Penggunaan |
+| --- | --- | --- |
+| `local` (Default Dev) | Menyimpan file pada filesystem lokal (`.storage/materials/`). Mendukung transfer berkas lintas proses antara Express API dan Worker background tanpa akun pihak ketiga. | Local Development |
+| `supabase` | Menggunakan Supabase Storage dengan bucket privat melalui `@supabase/storage-js`. Memerlukan `SUPABASE_URL` dan `SUPABASE_SERVICE_ROLE_KEY`. | Production / Staging |
+| `memory` | In-memory Mock Storage untuk pengujian otomatis terisolasi yang cepat. | Unit & Integration Test (`vitest`) |
+| `none` | Menonaktifkan storage dengan aman. Endpoint upload/download mengembalikan `503 STORAGE_UNAVAILABLE` tanpa mengganggu fitur perkuliahan, tugas, dan catatan. | Maintenance / Storage Off |
+
+> **Catatan Keamanan Produksi**: Pada lingkungan `production`, sistem **tidak akan pernah** secara diam-diam beralih ke mock in-memory jika kredensial Supabase hilang. Sistem akan mengembalikan status `STORAGE_UNAVAILABLE` yang aman bagi pengguna.
+
+### 13.3 Panduan Konfigurasi Supabase Storage (Live Deployment)
+Bila ingin menghubungkan ke instance Supabase nyata:
+1. Masuk ke dashboard [Supabase](https://supabase.com) dan buka proyek Anda.
+2. Buka menu **Storage** -> pilih **New Bucket**:
+   - **Bucket Name**: `studyflow-materials` (wajib persis sesuai nilai `SUPABASE_STORAGE_BUCKET`).
+   - **Public bucket**: **Disabled / Off (Wajib Privat)**. Jangan pernah mengaktifkan public bucket untuk dokumen pengguna.
+   - **Allowed MIME types**: `application/pdf`.
+   - **Maximum file size limit**: 20 MB (20,971,520 bytes).
+3. Masuk ke menu **Project Settings** -> **API**:
+   - Salin **Project URL** ke `SUPABASE_URL`.
+   - Salin **service_role secret key** (bukan `anon` public key!) ke `SUPABASE_SERVICE_ROLE_KEY`.
+4. Tambahkan konfigurasi ke file environment:
+   - **Backend API**: `apps/api/.env`
+   - **Worker Background**: `apps/worker/.env`
+   ```env
+   STORAGE_DRIVER="supabase"
+   SUPABASE_URL="https://your-project.supabase.co"
+   SUPABASE_SERVICE_ROLE_KEY="your-service-role-secret-key"
+   SUPABASE_STORAGE_BUCKET="studyflow-materials"
+   ```
+5. **Restart Proses**:
+   Restart kedua proses server agar membaca variabel lingkungan baru:
+   - Restart API: Hentikan dan jalankan kembali `npm run dev:api`.
+   - Restart Worker: Hentikan dan jalankan kembali `npm run dev:worker`.
+
+*Peringatan Keamanan*: Kredensial `service_role` memiliki hak akses administratif penuh. Jangan pernah memberi prefix `NEXT_PUBLIC_`, mengunggahnya ke Git, mencetak nilainya dalam log, atau membagikannya ke browser!
+
+

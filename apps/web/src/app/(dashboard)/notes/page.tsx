@@ -331,6 +331,13 @@ export default function NotesPage(): React.JSX.Element {
                       <span className="truncate">{note.course.name}</span>
                     </CardDescription>
                   )}
+                  {note.material && (
+                    <div className="mt-2 flex items-center gap-1.5 text-xs">
+                      <span className="rounded bg-primary/10 text-primary px-1.5 py-0.5 text-[11px] font-medium truncate max-w-[200px]" title={note.material.title}>
+                        📄 {note.material.title}
+                      </span>
+                    </div>
+                  )}
                 </CardHeader>
 
                 <CardContent className="pt-0">

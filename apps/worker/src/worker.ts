@@ -1,4 +1,7 @@
 import { createRedisConnection, createSmokeWorker } from './queues/smokeQueue.js';
+import { processDocumentJob } from './queues/documentQueue.js';
+import { Worker } from 'bullmq';
+import { QUEUE_NAMES } from '@studyflow/shared';
 import { env } from './config/env.js';
 
 console.log(JSON.stringify({
@@ -10,6 +13,32 @@ console.log(JSON.stringify({
 
 const redisConnection = createRedisConnection();
 const smokeWorker = createSmokeWorker(redisConnection);
+
+const documentWorker = new Worker(
+  QUEUE_NAMES.documentProcessing,
+  processDocumentJob,
+  {
+    connection: redisConnection,
+    concurrency: 2, // Concurrency limit for document processing per PRD
+  }
+);
+
+documentWorker.on('ready', () => {
+  console.log(JSON.stringify({
+    level: 'info',
+    timestamp: new Date().toISOString(),
+    message: `[Worker] Document worker is ready and listening to queue: ${QUEUE_NAMES.documentProcessing}`,
+  }));
+});
+
+documentWorker.on('error', (err) => {
+  console.error(JSON.stringify({
+    level: 'error',
+    timestamp: new Date().toISOString(),
+    message: '[Worker] Document worker error',
+    error: err.message,
+  }));
+});
 
 let isShuttingDown = false;
 
@@ -33,7 +62,10 @@ async function gracefulShutdown(signal: string): Promise<void> {
   }, 10000);
 
   try {
-    await smokeWorker.close();
+    await Promise.all([
+      smokeWorker.close(),
+      documentWorker.close(),
+    ]);
     await redisConnection.quit();
 
     console.log(JSON.stringify({

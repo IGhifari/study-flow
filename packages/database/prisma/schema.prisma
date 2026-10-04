@@ -25,6 +25,10 @@ model User {
   courses         Course[]
   assignments     Assignment[]
   notes           Note[]
+  materials       Material[]
+  processingJobs  ProcessingJob[]
+  storageUsage    StorageUsage?
+  dailyCounters   DailyUploadCounter[]
 
   @@map("users")
 }
@@ -68,8 +72,9 @@ model Course {
 
   assignments Assignment[]
   notes       Note[]
+  materials   Material[]
 
-  // Target for composite FK from Assignment & Note
+  // Target for composite FK from Assignment, Note & Material
   @@unique([id, userId])
   @@index([userId, semesterId])
   @@index([userId, name])
@@ -111,20 +116,162 @@ model Assignment {
 }
 
 model Note {
-  id        String   @id @default(cuid())
-  userId    String   @map("user_id")
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  courseId  String   @map("course_id")
-  course    Course   @relation(fields: [courseId, userId], references: [id, userId], onDelete: Restrict)
-  title     String
-  content   String   @default("")
-  version   Int      @default(1)
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
+  id         String    @id @default(cuid())
+  userId     String    @map("user_id")
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  courseId   String    @map("course_id")
+  course     Course    @relation(fields: [courseId, userId], references: [id, userId], onDelete: Restrict)
+  materialId String?   @map("material_id")
+  material   Material? @relation(fields: [materialId], references: [id], onDelete: SetNull)
+  title      String
+  content    String    @default("")
+  version    Int       @default(1)
+  createdAt  DateTime  @default(now()) @map("created_at")
+  updatedAt  DateTime  @updatedAt @map("updated_at")
 
   @@index([userId, updatedAt])
   @@index([courseId])
+  @@index([materialId])
   @@map("notes")
+}
+
+// Milestone 5 — Material, ProcessingJob, Outbox, and Quota models
+enum MaterialStatus {
+  UPLOADING
+  QUEUED
+  PROCESSING
+  READY
+  FAILED
+}
+
+model Material {
+  id               String         @id @default(cuid())
+  userId           String         @map("user_id")
+  user             User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  courseId         String         @map("course_id")
+  course           Course         @relation(fields: [courseId, userId], references: [id, userId], onDelete: Restrict)
+  title            String
+  originalFilename String         @map("original_filename")
+  storageKey       String         @unique @map("storage_key")
+  mimeType         String         @default("application/pdf") @map("mime_type")
+  bytes            Int
+  pageCount        Int?           @map("page_count")
+  status           MaterialStatus @default(UPLOADING)
+  errorCode        String?        @map("error_code")
+  errorMessage     String?        @map("error_message")
+  deletedAt        DateTime?      @map("deleted_at")
+  createdAt        DateTime       @default(now()) @map("created_at")
+  updatedAt        DateTime       @updatedAt @map("updated_at")
+
+  pages          MaterialPage[]
+  notes          Note[]
+  processingJobs ProcessingJob[]
+
+  // Target for composite FK references if needed
+  @@unique([id, userId])
+  @@index([userId, courseId])
+  @@index([userId, status])
+  @@index([courseId])
+  @@map("materials")
+}
+
+model MaterialPage {
+  id             String   @id @default(cuid())
+  materialId     String   @map("material_id")
+  material       Material @relation(fields: [materialId], references: [id], onDelete: Cascade)
+  pageNumber     Int      @map("page_number")
+  extractedText  String   @map("extracted_text")
+  characterCount Int      @default(0) @map("character_count")
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  @@unique([materialId, pageNumber])
+  @@index([materialId])
+  @@map("material_pages")
+}
+
+enum ProcessingJobType {
+  DOCUMENT_EXTRACTION
+  DOCUMENT_CLEANUP
+}
+
+enum ProcessingJobStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+model ProcessingJob {
+  id             String              @id @default(cuid())
+  userId         String              @map("user_id")
+  user           User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  materialId     String?             @map("material_id")
+  material       Material?           @relation(fields: [materialId], references: [id], onDelete: SetNull)
+  type           ProcessingJobType   @default(DOCUMENT_EXTRACTION)
+  status         ProcessingJobStatus @default(PENDING)
+  attempts       Int                 @default(0)
+  maxAttempts    Int                 @default(3) @map("max_attempts")
+  idempotencyKey String?             @unique @map("idempotency_key")
+  errorMessage   String?             @map("error_message")
+  errorCode      String?             @map("error_code")
+  payload        Json?
+  startedAt      DateTime?           @map("started_at")
+  completedAt    DateTime?           @map("completed_at")
+  failedAt       DateTime?           @map("failed_at")
+  createdAt      DateTime            @default(now()) @map("created_at")
+  updatedAt      DateTime            @updatedAt @map("updated_at")
+
+  @@index([userId, status])
+  @@index([materialId])
+  @@map("processing_jobs")
+}
+
+enum OutboxStatus {
+  PENDING
+  PUBLISHED
+  FAILED
+}
+
+model OutboxEvent {
+  id          String       @id @default(cuid())
+  eventType   String       @map("event_type")
+  aggregateId String       @map("aggregate_id")
+  payload     Json
+  status      OutboxStatus @default(PENDING)
+  attempts    Int          @default(0)
+  lastError   String?      @map("last_error")
+  publishedAt DateTime?    @map("published_at")
+  createdAt   DateTime     @default(now()) @map("created_at")
+  updatedAt   DateTime     @updatedAt @map("updated_at")
+
+  @@index([status, createdAt])
+  @@map("outbox_events")
+}
+
+model StorageUsage {
+  id            String   @id @default(cuid())
+  userId        String   @unique @map("user_id")
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  usedBytes     BigInt   @default(0) @map("used_bytes")
+  reservedBytes BigInt   @default(0) @map("reserved_bytes")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  @@map("storage_usages")
+}
+
+model DailyUploadCounter {
+  id          String   @id @default(cuid())
+  userId      String   @map("user_id")
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  uploadDate  String   @map("upload_date") // YYYY-MM-DD in UTC
+  uploadCount Int      @default(0) @map("upload_count")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@unique([userId, uploadDate])
+  @@index([userId, uploadDate])
+  @@map("daily_upload_counters")
 }
 
 model RefreshSession {

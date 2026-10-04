@@ -6,7 +6,15 @@ const INTERNAL_API_URL =
   process.env.NEXT_PUBLIC_API_URL ||
   'http://localhost:4000';
 
-const PROTECTED_PREFIXES = ['/dashboard', '/settings'];
+const PROTECTED_PREFIXES = [
+  '/dashboard',
+  '/materials',
+  '/courses',
+  '/assignments',
+  '/notes',
+  '/semesters',
+  '/settings',
+];
 const AUTH_PREFIXES = ['/login', '/register'];
 
 function isValidReturnUrl(url: string | null): boolean {
@@ -128,6 +136,11 @@ export async function middleware(req: NextRequest) {
 export const config = {
   matcher: [
     '/dashboard/:path*',
+    '/materials/:path*',
+    '/courses/:path*',
+    '/assignments/:path*',
+    '/notes/:path*',
+    '/semesters/:path*',
     '/settings/:path*',
     '/login',
     '/register',

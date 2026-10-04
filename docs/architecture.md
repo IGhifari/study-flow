@@ -156,4 +156,84 @@ StudyFlow dibangun menggunakan arsitektur modular terpisah untuk memisahkan logi
    - Modul `apps/api/src/config/testDbGuard.ts` memvalidasi koneksi basis data pada environment test (`NODE_ENV === 'test'`).
    - Seluruh eksekusi test runner (Vitest) secara ketat dibatasi hanya dapat terhubung ke basis data dengan akhiran `_test` (`studyflow_test`). Eksekusi terhadap `studyflow_dev` atau basis data non-test ditolak seketika demi mencegah kontaminasi data pengembang.
 
+### 3.6 Arsitektur Penyimpanan & Pemrosesan Dokumen (Milestone 5)
+
+```
+[Browser / Klien]
+   │
+   │ 1. POST /api/materials/initiate-upload (BFF Proxy)
+   ▼
+[Express API: materialRouter]
+   │
+   ├─► Verifikasi kuota: storageUsed < 200MB, dailyUploads < 10 (00:00 UTC reset)
+   ├─► Verifikasi mata kuliah: ownership & status non-arsip
+   ├─► Transaksi DB: Material (status: UPLOADING), StorageUsage (reservasi bytes)
+   ├─► Generate signed upload URL via Supabase Storage
+   ▼
+[Browser / Klien]
+   │
+   │ 2. Direct PUT/POST file PDF ke Supabase Storage (Signed Upload URL)
+   ▼
+[Supabase Storage Private Bucket]
+   │
+   │ 3. POST /api/materials/finalize-upload (BFF Proxy)
+   ▼
+[Express API: materialRouter]
+   │
+   ├─► Verifikasi keberadaan file di Storage via metadata check
+   ├─► Transaksi DB atomik:
+   │     ├─ Update Material (status: QUEUED)
+   │     ├─ Create ProcessingJob (status: PENDING, attempts: 0, maxAttempts: 3)
+   │     └─ Insert OutboxEvent (eventType: DOCUMENT_PROCESSING_REQUESTED)
+   ▼
+[Outbox Dispatcher]
+   │
+   │ 4. Meneruskan event ke BullMQ Queue: studyflow-document-processing
+   ▼
+[Redis BullMQ]
+   │
+   │ 5. Worker polling / consume job
+   ▼
+[Worker: documentWorker (apps/worker)]
+   │
+   ├─► Cek status Material di database (idempotency & soft-delete check)
+   ├─► Unduh buffer file dari private storage via service role adapter
+   ├─► Validasi PDF: magic bytes (%PDF-), batas 20MB, batas 100 halaman
+   ├─► Ekstraksi teks per halaman (1-indexed) menggunakan pdfjs-dist
+   ├─► Deteksi file scan tanpa teks: tolak dengan kode SCANNED_PDF_NO_TEXT
+   ├─► Simpan hasil per halaman (MaterialPage) dalam satu transaksi DB
+   ├─► Update Material status menjadi READY dan commit pemakaian kuota storage
+   └─► Bersihkan file sementara
+```
+
+#### Invarian Integritas Data Milestone 5:
+1. **Pencegahan Upload Melewati BFF (Memory Protection)**:
+   - File biner PDF diunggah langsung oleh browser ke Supabase Storage via signed URL terotorisasi.
+   - Node.js runtime pada BFF Next.js dan Express API tidak menampung buffer file multi-megabyte dalam heap memory, mencegah degradasi latensi server.
+2. **Rekonsiliasi Transaksional (Transactional Outbox Pattern)**:
+   - Data status produk dan pengiriman pesan ke BullMQ diikat melalui tabel `outbox_events` dalam transaksi ACID PostgreSQL.
+   - Dispatcher outbox menjamin pekerjaan tetap terkirim ke Redis meskipun terjadi restart server setelah transaksi database selesai.
+3. **Idempotensi & Penanganan Retry Worker**:
+   - Setiap job memiliki `idempotencyKey` yang stabil (`doc-extract-{materialId}-{activeJobId}`).
+   - Kegagalan sementara (network/timeout) dicoba ulang otomatis maksimal 3 kali dengan exponential backoff.
+   - Kegagalan validasi permanen (file rusak, file scan tanpa teks, password-encrypted) tidak di-retry dan langsung ditandai `FAILED` dengan kode kesalahan aman.
+4. **Perlindungan Invarian Relasi & Penghapusan**:
+   - Mata kuliah yang memiliki materi PDF dilarang dihapus (`COURSE_HAS_MATERIALS`, HTTP 409).
+   - Penghapusan materi PDF (`DELETE /api/materials/:id`) mengosongkan relasi `materialId` pada catatan terkait (`onDelete: SetNull`) tanpa menghapus catatan kuliah pengguna.
+   - Objek di storage dihapus dan kuota penyimpanan pengguna dikembalikan secara atomik. Jika materi dihapus saat sedang diproses (`UPLOADING`, `QUEUED`, `PROCESSING`), reservasi kuota segera dilepas dan worker membatalkan penulisan hasil.
+
+#### 3.7.1 Arsitektur Driver Penyimpanan & Pemulihan Pipeline:
+1. **Pemilihan Driver Eksplisit (`STORAGE_DRIVER`)**:
+   - `local`: Menggunakan direktori filesystem bersama (`.storage/materials/`), memungkinkan API dan worker yang berjalan pada proses terpisah di mesin pengembang saling bertukar file tanpa konfigurasi pihak ketiga.
+   - `supabase`: Menggunakan Supabase Storage dengan bucket privat (`studyflow-materials`). Mengharuskan `SUPABASE_URL` dan `SUPABASE_SERVICE_ROLE_KEY`.
+   - `memory`: Mock storage in-memory khusus pengujian hermetis (`vitest`).
+   - `none`: Mode degradasi aman; upload/download mengembalikan `503 STORAGE_UNAVAILABLE` sementara entitas perkuliahan, tugas, dan catatan tetap beroperasi normal.
+2. **Outbox Dispatcher Loop & Retry Hapus Berkas**:
+   - API menjalankan loop periodik background (`startOutboxDispatcherLoop`) untuk mengirimkan event yang tertunda pasca-restart server.
+   - Event `DOCUMENT_CLEANUP_REQUESTED` dijadwalkan ulang bila penghapusan file di storage gagal pada saat `DELETE /api/materials/:id`.
+3. **Pembersihan Unggahan Terbengkalai (`sweepAbandonedUploads`)**:
+   - Dokumen dalam status `UPLOADING` yang melebihi batas waktu 2 jam secara otomatis ditandai `FAILED` (`UPLOAD_ABANDONED`) dan kuota yang tereservasi dilepas.
+
+
+
 

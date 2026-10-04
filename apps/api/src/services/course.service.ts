@@ -271,6 +271,7 @@ export async function deleteCourse(userId: string, id: string): Promise<void> {
         select: {
           assignments: true,
           notes: true,
+          materials: true,
         },
       },
     },
@@ -280,6 +281,15 @@ export async function deleteCourse(userId: string, id: string): Promise<void> {
     const error: AppError = new Error('Mata kuliah tidak ditemukan');
     error.statusCode = 404;
     error.code = 'NOT_FOUND';
+    throw error;
+  }
+
+  if (course._count.materials > 0) {
+    const error: AppError = new Error(
+      'Mata kuliah tidak dapat dihapus karena masih memiliki materi PDF. Silakan arsipkan mata kuliah atau hapus materi di dalamnya terlebih dahulu.'
+    );
+    error.statusCode = 409;
+    error.code = 'COURSE_HAS_MATERIALS';
     throw error;
   }
 

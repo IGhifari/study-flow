@@ -2,8 +2,8 @@
   "openapi": "3.1.0",
   "info": {
     "title": "StudyFlow API",
-    "version": "0.2.0",
-    "description": "REST API untuk platform StudyFlow — Ruang Belajar Pribadi Mahasiswa. Mencakup endpoint health, readiness, dan autentikasi Milestone 2."
+    "version": "0.5.0",
+    "description": "REST API untuk platform StudyFlow — Ruang Belajar Pribadi Mahasiswa. Mencakup endpoint health, readiness, autentikasi, semester, mata kuliah, tugas, catatan, dan storage/pemrosesan materi PDF."
   },
   "servers": [
     {
@@ -645,6 +645,201 @@
           "404": { "description": "Mata kuliah tidak ditemukan" }
         }
       }
+    },
+    "/api/materials/initiate-upload": {
+      "post": {
+        "summary": "Memulai inisiasi upload PDF materi",
+        "tags": ["Materials"],
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/InitiateUploadInput" }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Upload terinisiasi, mengembalikan signed upload URL",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/InitiateUploadResponse" }
+              }
+            }
+          },
+          "400": { "description": "Validasi gagal atau ukuran melebihi batas" },
+          "403": { "description": "Mata kuliah diarsipkan" },
+          "429": { "description": "Batas kuota harian tercapai" }
+        }
+      }
+    },
+    "/api/materials/finalize-upload": {
+      "post": {
+        "summary": "Memfinalisasi upload dan menjadwalkan ekstraksi dokumen",
+        "tags": ["Materials"],
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/FinalizeUploadInput" }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Upload diverifikasi, ekstraksi dijadwalkan secara asinkron",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/FinalizeUploadResponse" }
+              }
+            }
+          },
+          "400": { "description": "File belum ditemukan di storage" }
+        }
+      }
+    },
+    "/api/materials": {
+      "get": {
+        "summary": "Mendapatkan daftar materi kuliah",
+        "tags": ["Materials"],
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [
+          { "name": "courseId", "in": "query", "schema": { "type": "string" } },
+          { "name": "semesterId", "in": "query", "schema": { "type": "string" } },
+          { "name": "status", "in": "query", "schema": { "type": "string" } },
+          { "name": "search", "in": "query", "schema": { "type": "string" } },
+          { "name": "page", "in": "query", "schema": { "type": "integer", "default": 1 } },
+          { "name": "limit", "in": "query", "schema": { "type": "integer", "default": 20 } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Daftar materi kuliah pengguna"
+          }
+        }
+      }
+    },
+    "/api/materials/usage": {
+      "get": {
+        "summary": "Mendapatkan pemakaian storage dan kuota upload pengguna",
+        "tags": ["Materials"],
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "Informasi kuota penyimpanan dan hitungan upload harian",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/StorageUsageResponse" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/materials/jobs/{jobId}": {
+      "get": {
+        "summary": "Mengecek status pemrosesan pekerjaan asinkron",
+        "tags": ["Materials"],
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [
+          { "name": "jobId", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Status ProcessingJob"
+          }
+        }
+      }
+    },
+    "/api/materials/{id}": {
+      "get": {
+        "summary": "Mendapatkan detail materi beserta halaman teks",
+        "tags": ["Materials"],
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "Detail materi" },
+          "404": { "description": "Materi tidak ditemukan" }
+        }
+      },
+      "patch": {
+        "summary": "Memperbarui judul materi",
+        "tags": ["Materials"],
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/UpdateMaterialInput" }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Judul materi berhasil diperbarui" },
+          "404": { "description": "Materi tidak ditemukan" }
+        }
+      },
+      "delete": {
+        "summary": "Menghapus materi dan membersihkan file storage",
+        "tags": ["Materials"],
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "Materi berhasil dihapus" },
+          "404": { "description": "Materi tidak ditemukan" }
+        }
+      }
+    },
+    "/api/materials/{id}/retry": {
+      "post": {
+        "summary": "Mengulang pemrosesan ekstraksi dokumen yang gagal",
+        "tags": ["Materials"],
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "Pemrosesan ulang dijadwalkan" },
+          "400": { "description": "Materi tidak dalam status FAILED" },
+          "404": { "description": "Materi tidak ditemukan" }
+        }
+      }
+    },
+    "/api/materials/{id}/download": {
+      "get": {
+        "summary": "Menerbitkan signed URL sementara untuk pratinjau / download PDF",
+        "tags": ["Materials"],
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Tautan unduhan berumur pendek",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "downloadUrl": { "type": "string" },
+                    "expiresInSeconds": { "type": "integer" },
+                    "expiresAt": { "type": "string", "format": "date-time" }
+                  }
+                }
+              }
+            }
+          },
+          "404": { "description": "Materi tidak ditemukan" }
+        }
+      }
     }
   },
   "components": {
@@ -724,6 +919,58 @@
           "code": { "type": "string", "maxLength": 30 },
           "lecturer": { "type": "string", "maxLength": 100 },
           "description": { "type": "string", "maxLength": 1000 }
+        }
+      },
+      "InitiateUploadInput": {
+        "type": "object",
+        "required": ["courseId", "title", "filename", "fileSize", "mimeType"],
+        "properties": {
+          "courseId": { "type": "string" },
+          "title": { "type": "string", "minLength": 1, "maxLength": 200 },
+          "filename": { "type": "string" },
+          "fileSize": { "type": "integer", "maximum": 20971520 },
+          "mimeType": { "type": "string", "enum": ["application/pdf"] }
+        }
+      },
+      "InitiateUploadResponse": {
+        "type": "object",
+        "properties": {
+          "materialId": { "type": "string" },
+          "uploadUrl": { "type": "string" },
+          "storageKey": { "type": "string" },
+          "expiresAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "FinalizeUploadInput": {
+        "type": "object",
+        "required": ["materialId"],
+        "properties": {
+          "materialId": { "type": "string" }
+        }
+      },
+      "FinalizeUploadResponse": {
+        "type": "object",
+        "properties": {
+          "material": { "type": "object" },
+          "jobId": { "type": "string" }
+        }
+      },
+      "UpdateMaterialInput": {
+        "type": "object",
+        "properties": {
+          "title": { "type": "string", "minLength": 1, "maxLength": 200 }
+        }
+      },
+      "StorageUsageResponse": {
+        "type": "object",
+        "properties": {
+          "usedBytes": { "type": "integer" },
+          "limitBytes": { "type": "integer" },
+          "percentage": { "type": "number" },
+          "dailyUploadsCount": { "type": "integer" },
+          "dailyUploadsLimit": { "type": "integer" },
+          "dailyResetUtc": { "type": "string" },
+          "dailyResetUserTimezone": { "type": "string" }
         }
       }
     },

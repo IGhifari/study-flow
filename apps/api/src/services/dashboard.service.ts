@@ -30,6 +30,7 @@ export async function getDashboardSummary(userId: string): Promise<DashboardSumm
       activeCourses: [],
       assignmentsToday: [],
       assignmentsUpcoming: [],
+      recentMaterials: [],
       overdueCount: 0,
       completedCount: 0,
       totalAssignments: 0,
@@ -65,6 +66,7 @@ export async function getDashboardSummary(userId: string): Promise<DashboardSumm
       activeCourses: [],
       assignmentsToday: [],
       assignmentsUpcoming: [],
+      recentMaterials: [],
       overdueCount: 0,
       completedCount: 0,
       totalAssignments: 0,
@@ -156,6 +158,53 @@ export async function getDashboardSummary(userId: string): Promise<DashboardSumm
   const completionPercentage =
     totalAssignments > 0 ? Math.round((completedCount / totalAssignments) * 100) : 0;
 
+  // 5. Fetch up to 5 most recent non-deleted materials in active semester courses
+  const recentMaterialsRaw = await prisma.material.findMany({
+    where: {
+      userId,
+      courseId: { in: courseIds },
+      deletedAt: null,
+    },
+    include: {
+      course: {
+        include: { semester: true },
+      },
+    },
+    orderBy: [{ createdAt: 'desc' }, { id: 'asc' }],
+    take: 5,
+  });
+
+  const recentMaterials = recentMaterialsRaw.map((m) => ({
+    id: m.id,
+    userId: m.userId,
+    courseId: m.courseId,
+    title: m.title,
+    originalFilename: m.originalFilename,
+    mimeType: m.mimeType,
+    bytes: m.bytes,
+    pageCount: m.pageCount,
+    status: m.status,
+    errorCode: m.errorCode,
+    errorMessage: m.errorMessage,
+    course: m.course
+      ? {
+          id: m.course.id,
+          userId: m.course.userId,
+          semesterId: m.course.semesterId,
+          name: m.course.name,
+          code: m.course.code,
+          lecturer: m.course.lecturer,
+          description: m.course.description,
+          archivedAt: null,
+          createdAt: m.course.createdAt.toISOString(),
+          updatedAt: m.course.updatedAt.toISOString(),
+        }
+      : undefined,
+    createdAt: m.createdAt.toISOString(),
+    updatedAt: m.updatedAt.toISOString(),
+    deletedAt: m.deletedAt ? m.deletedAt.toISOString() : null,
+  }));
+
   const activeCoursesResponse: Course[] = courses.map((c) => ({
     id: c.id,
     userId: c.userId,
@@ -186,6 +235,7 @@ export async function getDashboardSummary(userId: string): Promise<DashboardSumm
     activeCourses: activeCoursesResponse,
     assignmentsToday,
     assignmentsUpcoming,
+    recentMaterials,
     overdueCount,
     completedCount,
     totalAssignments,

@@ -326,3 +326,13 @@ export function toUserDateTimeInputValue(date: Date | string, timezone = 'Asia/J
 
   return `${year}-${month}-${day}T${hour}:${minute}`;
 }
+
+/**
+ * Returns UTC date string formatted as YYYY-MM-DD
+ */
+export function getUtcDateString(date: Date = new Date()): string {
+  const y = date.getUTCFullYear();
+  const m = String(date.getUTCMonth() + 1).padStart(2, '0');
+  const d = String(date.getUTCDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}

@@ -11,11 +11,17 @@ interface RawNoteWithCourse {
   id: string;
   userId: string;
   courseId: string;
+  materialId?: string | null;
   title: string;
   content?: string;
   version: number;
   createdAt: Date;
   updatedAt: Date;
+  material?: {
+    id: string;
+    title: string;
+    originalFilename: string;
+  } | null;
   course?: {
     id: string;
     userId: string;
@@ -45,9 +51,17 @@ function toNoteResponse(raw: RawNoteWithCourse, includeContent = true): Note {
     id: raw.id,
     userId: raw.userId,
     courseId: raw.courseId,
+    materialId: raw.materialId ?? null,
     title: raw.title,
     ...(includeContent && raw.content !== undefined ? { content: raw.content } : {}),
     version: raw.version,
+    material: raw.material
+      ? {
+          id: raw.material.id,
+          title: raw.material.title,
+          originalFilename: raw.material.originalFilename,
+        }
+      : null,
     course: raw.course
       ? {
           id: raw.course.id,
@@ -123,10 +137,18 @@ export async function listNotes(
         id: true,
         userId: true,
         courseId: true,
+        materialId: true,
         title: true,
         version: true,
         createdAt: true,
         updatedAt: true,
+        material: {
+          select: {
+            id: true,
+            title: true,
+            originalFilename: true,
+          },
+        },
         course: {
           include: {
             semester: true,
@@ -157,6 +179,13 @@ export async function getNoteById(userId: string, id: string): Promise<Note> {
   const note = await prisma.note.findFirst({
     where: { id, userId },
     include: {
+      material: {
+        select: {
+          id: true,
+          title: true,
+          originalFilename: true,
+        },
+      },
       course: {
         include: {
           semester: true,
@@ -206,15 +235,43 @@ export async function createNote(
     throw error;
   }
 
+  // Verify material ownership and matching course if specified
+  if (input.materialId) {
+    const material = await prisma.material.findFirst({
+      where: {
+        id: input.materialId,
+        userId,
+        courseId: input.courseId,
+        deletedAt: null,
+      },
+    });
+    if (!material) {
+      const error: AppError = new Error(
+        'Materi tidak ditemukan atau tidak berada pada mata kuliah yang sama'
+      );
+      error.statusCode = 400;
+      error.code = 'INVALID_MATERIAL';
+      throw error;
+    }
+  }
+
   const created = await prisma.note.create({
     data: {
       userId,
       courseId: input.courseId,
+      materialId: input.materialId || null,
       title: input.title,
       content: input.content || '',
       version: 1,
     },
     include: {
+      material: {
+        select: {
+          id: true,
+          title: true,
+          originalFilename: true,
+        },
+      },
       course: {
         include: {
           semester: true,
@@ -276,6 +333,26 @@ export async function updateNote(
     throw error;
   }
 
+  // Verify material if being updated
+  if (input.materialId !== undefined && input.materialId !== null) {
+    const material = await prisma.material.findFirst({
+      where: {
+        id: input.materialId,
+        userId,
+        courseId: existing.courseId,
+        deletedAt: null,
+      },
+    });
+    if (!material) {
+      const error: AppError = new Error(
+        'Materi tidak ditemukan atau tidak berada pada mata kuliah yang sama'
+      );
+      error.statusCode = 400;
+      error.code = 'INVALID_MATERIAL';
+      throw error;
+    }
+  }
+
   // Optimistic concurrency control check
   if (input.version !== existing.version) {
     const error: AppError = new Error(
@@ -298,10 +375,21 @@ export async function updateNote(
     dataToUpdate.content = input.content;
   }
 
+  if (input.materialId !== undefined) {
+    dataToUpdate.materialId = input.materialId;
+  }
+
   const updated = await prisma.note.update({
     where: { id },
     data: dataToUpdate,
     include: {
+      material: {
+        select: {
+          id: true,
+          title: true,
+          originalFilename: true,
+        },
+      },
       course: {
         include: {
           semester: true,
