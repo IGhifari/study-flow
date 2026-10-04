@@ -2,19 +2,47 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches: [main, develop]
   pull_request:
-    branches: [main]
+    branches: [main, develop]
 
 jobs:
   validate:
     name: Build & Quality Gates
     runs-on: ubuntu-latest
 
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: studyflow_user
+          POSTGRES_PASSWORD: studyflow_dev_password
+          POSTGRES_DB: studyflow_dev
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
     env:
       NODE_ENV: test
       DATABASE_URL: "postgresql://studyflow_user:studyflow_dev_password@localhost:5432/studyflow_dev?schema=public"
+      DATABASE_URL_TEST: "postgresql://studyflow_user:studyflow_dev_password@localhost:5432/studyflow_dev?schema=public"
       REDIS_URL: "redis://localhost:6379"
+      JWT_ACCESS_SECRET: "ci_test_jwt_access_secret_super_secure_32_chars"
+      INTERNAL_API_URL: "http://localhost:4000"
 
     steps:
       - name: Checkout repository
@@ -32,6 +60,9 @@ jobs:
       - name: Generate Prisma client
         run: npm run db:generate
 
+      - name: Run Prisma migrations
+        run: npx prisma migrate deploy --schema=packages/database/prisma/schema.prisma
+
       - name: Run lint
         run: npm run lint
 
@@ -43,3 +74,4 @@ jobs:
 
       - name: Build monorepo packages and applications
         run: npm run build
+

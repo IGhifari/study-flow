@@ -61,5 +61,49 @@ StudyFlow dibangun menggunakan arsitektur modular terpisah untuk memisahkan logi
 - Pada Milestone 1, disediakan **Smoke Job** internal (`studyflow-smoke-queue`) untuk memverifikasi fungsionalitas enqueue dan consume tanpa bergantung pada penyedia AI eksternal.
 
 ### 3.3 Keamanan dan Isolasi Data
-- Setiap query data pada tahap selanjutnya mewajibkan verifikasi pemilik (`userId`).
+- Setiap query data mewajibkan verifikasi identitas dan kepemilikan (`userId`).
 - Kredensial server dan token AI hanya diakses oleh proses backend/worker via environment variables tanpa prefix `NEXT_PUBLIC_`.
+
+### 3.4 Aliran Autentikasi dan Single-Origin BFF (Milestone 2)
+
+```
+[Browser]
+   │
+   │ 1. Request via Same-Origin (e.g. POST http://localhost:3000/api/auth/login)
+   ▼
+[Next.js App Router BFF Proxy] (apps/web/src/app/api/auth/[...path]/route.ts)
+   │
+   │ 2. Forward request, cookies, Origin, Referer, Client Request-ID
+   ▼
+[Express REST API] (apps/api/src/routes/auth.ts)
+   │
+   ├─► 3. Origin / CSRF Verification (originCheck.ts)
+   ├─► 4. Business Logic & Authentication (auth.service.ts)
+   ├─► 5. Database Verification (User, RefreshSession via Prisma)
+   └─► 6. Set HttpOnly Cookie (studyflow_access_token [15m], studyflow_refresh_token [7d])
+   │
+   ▼
+[Next.js BFF Proxy]
+   │
+   │ 7. Forward Set-Cookie headers (getSetCookie()) back to Browser
+   ▼
+[Browser Cookie Store]
+```
+
+#### Komponen Utama Autentikasi:
+1. **Single-Origin BFF Proxy**:
+   - Seluruh pemanggilan auth oleh antarmuka browser melewati route handler `/api/auth/[...path]` di origin Next.js.
+   - Menyederhanakan penanganan cookie first-party `SameSite=Lax` dan menghindari masalah cross-origin cookie pada berbagai browser dan environment deployment.
+2. **Dual-Token & Rotasi Atomik**:
+   - **Access Token**: JWT berumur pendek (default 15 menit), berisi klaim `userId`, `email`, dan `tokenVersion`.
+   - **Refresh Session**: Token acak kriptografis berkekuatan tinggi (32-byte hex), disimpan hanya dalam bentuk hash SHA-256 di basis data dengan masa berlaku 7 hari.
+   - Setiap pemanggilan refresh merotasi token lama menjadi token baru. Jika token lama digunakan kembali setelah rotasi (replay attack), seluruh sesi pada akun/keluarga sesi tersebut segera dicabut.
+3. **Pencegahan CSRF**:
+   - Endpoint mutasi (POST, PATCH, PUT, DELETE) mewajibkan validasi `Origin` dan `Referer` terhadap domain yang diizinkan (`originCheckMiddleware`).
+4. **Invalidasi Sesi Seketika (Token Versioning)**:
+   - Penggantian password meningkatkan kolom `tokenVersion` pada model `User` dan menandai seluruh `RefreshSession` aktif sebagai revoked (`isRevoked: true`).
+   - Setiap middleware autentikasi memvalidasi `tokenVersion` access token terhadap nilai aktual di basis data, sehingga access token lama langsung ditolak seketika tanpa harus menunggu masa berlaku 15 menit berakhir.
+5. **Proteksi Route Privat**:
+   - Next.js Middleware (`apps/web/src/middleware.ts`) melindungi rute `/dashboard` dan `/settings` dengan memeriksa keberadaan sesi cookie, melakukan redirect ke `/login?returnUrl=...`.
+   - Server Component (`getServerSessionUser`) memverifikasi keabsahan sesi secara aman di server sebelum merender data pengguna.
+

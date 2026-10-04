@@ -1,5 +1,7 @@
+import Link from 'next/link';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import {
   BookOpen,
   CheckCircle2,
@@ -9,6 +11,8 @@ import {
   Database,
   Cpu,
   ShieldCheck,
+  ArrowRight,
+  LogIn,
 } from 'lucide-react';
 
 export default function HomePage(): React.JSX.Element {
@@ -30,6 +34,16 @@ export default function HomePage(): React.JSX.Element {
 
           <div className="flex items-center gap-3">
             <ThemeToggle />
+            <Link href="/login">
+              <Button variant="ghost" size="sm">
+                Masuk
+              </Button>
+            </Link>
+            <Link href="/register">
+              <Button size="sm">
+                Daftar
+              </Button>
+            </Link>
           </div>
         </div>
       </header>
@@ -42,7 +56,7 @@ export default function HomePage(): React.JSX.Element {
             <div className="mb-4 inline-flex items-center gap-2">
               <Badge variant="outline" className="gap-1.5 py-1 text-xs font-medium">
                 <span className="inline-block h-2 w-2 rounded-full bg-emerald-500" />
-                Milestone 1 — Foundation
+                Milestone 2 — Authentication & Shell UI
               </Badge>
             </div>
 
@@ -55,10 +69,26 @@ export default function HomePage(): React.JSX.Element {
               pengelolaan mata kuliah, tugas, catatan, dan materi PDF dengan bantuan ringkasan,
               flashcard, dan kuis yang merujuk langsung ke sumber dokumen.
             </p>
+
+            {/* Action CTAs */}
+            <div className="mt-8 flex flex-wrap items-center gap-3">
+              <Link href="/register">
+                <Button size="lg" className="gap-2 font-semibold">
+                  <span>Mulai Belajar Sekarang</span>
+                  <ArrowRight className="h-4 w-4" />
+                </Button>
+              </Link>
+              <Link href="/login">
+                <Button size="lg" variant="outline" className="gap-2">
+                  <LogIn className="h-4 w-4" />
+                  <span>Sudah Punya Akun? Masuk</span>
+                </Button>
+              </Link>
+            </div>
           </div>
 
           {/* Architecture & Capabilities Overview */}
-          <div className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="mt-14 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {/* Core Capability 1 */}
             <div className="rounded-xl border border-border bg-card p-6 shadow-xs transition-colors">
               <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-accent text-accent-foreground">
@@ -93,29 +123,29 @@ export default function HomePage(): React.JSX.Element {
                 <ShieldCheck className="h-5 w-5" aria-hidden="true" />
               </div>
               <h2 className="mt-4 text-base font-semibold text-card-foreground">
-                Privasi & Kontrol Akun
+                Autentikasi & Privasi Penuh
               </h2>
               <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-                Arsitektur terpisah antara antarmuka, API bisnis, dan pemroses latar belakang
-                menjamin keamanan data, isolasi antar-pengguna, dan pengelolaan kuota.
+                Sesi aman berbasis JWT berumur pendek dan cookie HttpOnly yang dirotasi secara atomik,
+                menjamin isolasi data akademik per pengguna.
               </p>
             </div>
           </div>
 
-          {/* Foundation Status Section */}
+          {/* Foundation & Milestone Status Section */}
           <div className="mt-12 rounded-xl border border-border bg-card p-6 sm:p-8">
             <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <h2 className="text-lg font-semibold text-card-foreground">
-                  Status Fondasi Sistem
+                  Status Sistem & Progres Milestone
                 </h2>
                 <p className="text-sm text-muted-foreground">
-                  Layanan lokal dan dependensi monorepo yang disiapkan pada Milestone 1.
+                  Milestone 2 aktif: Sistem akun, autentikasi sesi, profil, dan app shell siap digunakan.
                 </p>
               </div>
               <div className="flex items-center gap-1.5 self-start text-xs font-medium text-emerald-600 dark:text-emerald-400">
                 <CheckCircle2 className="h-4 w-4" />
-                <span>Struktur Siap</span>
+                <span>Autentikasi Aktif</span>
               </div>
             </div>
 
@@ -123,15 +153,15 @@ export default function HomePage(): React.JSX.Element {
               <div className="flex items-start gap-3 rounded-lg border border-border/80 bg-background/50 p-4">
                 <Server className="mt-0.5 h-5 w-5 text-primary" aria-hidden="true" />
                 <div>
-                  <div className="text-sm font-medium text-foreground">Next.js App Router</div>
-                  <div className="text-xs text-muted-foreground">apps/web (Port 3000)</div>
+                  <div className="text-sm font-medium text-foreground">Next.js BFF Adapter</div>
+                  <div className="text-xs text-muted-foreground">/api/auth/* (Port 3000)</div>
                 </div>
               </div>
 
               <div className="flex items-start gap-3 rounded-lg border border-border/80 bg-background/50 p-4">
                 <Server className="mt-0.5 h-5 w-5 text-primary" aria-hidden="true" />
                 <div>
-                  <div className="text-sm font-medium text-foreground">Express REST API</div>
+                  <div className="text-sm font-medium text-foreground">Express Auth REST API</div>
                   <div className="text-xs text-muted-foreground">apps/api (Port 4000)</div>
                 </div>
               </div>
@@ -140,7 +170,7 @@ export default function HomePage(): React.JSX.Element {
                 <Database className="mt-0.5 h-5 w-5 text-primary" aria-hidden="true" />
                 <div>
                   <div className="text-sm font-medium text-foreground">PostgreSQL & Prisma</div>
-                  <div className="text-xs text-muted-foreground">packages/database</div>
+                  <div className="text-xs text-muted-foreground">User & RefreshSession</div>
                 </div>
               </div>
 
@@ -148,13 +178,13 @@ export default function HomePage(): React.JSX.Element {
                 <Cpu className="mt-0.5 h-5 w-5 text-primary" aria-hidden="true" />
                 <div>
                   <div className="text-sm font-medium text-foreground">BullMQ & Redis</div>
-                  <div className="text-xs text-muted-foreground">apps/worker</div>
+                  <div className="text-xs text-muted-foreground">Queue & Background Tasks</div>
                 </div>
               </div>
             </div>
 
             <div className="mt-6 border-t border-border pt-4 text-xs text-muted-foreground">
-              Tahap berikutnya: <strong className="text-foreground font-semibold">Milestone 2 — Authentication & Shell UI</strong> (registrasi, login JWT, refresh cookie, dan navigasi aplikasi).
+              Tahap berikutnya: <strong className="text-foreground font-semibold">Milestone 3 — Semester & Course Management</strong>.
             </div>
           </div>
         </div>

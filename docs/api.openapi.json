@@ -1,0 +1,330 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "StudyFlow API",
+    "version": "0.2.0",
+    "description": "REST API untuk platform StudyFlow — Ruang Belajar Pribadi Mahasiswa. Mencakup endpoint health, readiness, dan autentikasi Milestone 2."
+  },
+  "servers": [
+    {
+      "url": "http://localhost:4000",
+      "description": "Development API Server (Express)"
+    },
+    {
+      "url": "http://localhost:3000",
+      "description": "BFF Single-Origin Proxy (Next.js)"
+    }
+  ],
+  "paths": {
+    "/health": {
+      "get": {
+        "summary": "Pemeriksaan liveness service API",
+        "tags": ["System"],
+        "responses": {
+          "200": {
+            "description": "API aktif dan melayani permintaan",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": { "type": "string", "example": "ok" },
+                    "timestamp": { "type": "string", "format": "date-time" },
+                    "uptime": { "type": "number" },
+                    "service": { "type": "string", "example": "studyflow-api" },
+                    "version": { "type": "string", "example": "0.1.0" },
+                    "environment": { "type": "string", "example": "development" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/ready": {
+      "get": {
+        "summary": "Pemeriksaan readiness dependensi (PostgreSQL & Redis)",
+        "tags": ["System"],
+        "responses": {
+          "200": {
+            "description": "Seluruh dependensi database dan cache siap",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": { "type": "string", "example": "ok" },
+                    "timestamp": { "type": "string", "format": "date-time" },
+                    "service": { "type": "string", "example": "studyflow-api" },
+                    "dependencies": {
+                      "type": "object",
+                      "properties": {
+                        "database": {
+                          "type": "object",
+                          "properties": {
+                            "status": { "type": "string", "enum": ["up", "down"] },
+                            "latencyMs": { "type": "number" }
+                          }
+                        },
+                        "redis": {
+                          "type": "object",
+                          "properties": {
+                            "status": { "type": "string", "enum": ["up", "down"] },
+                            "latencyMs": { "type": "number" }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Satu atau lebih dependensi database/Redis down"
+          }
+        }
+      }
+    },
+    "/api/auth/register": {
+      "post": {
+        "summary": "Pendaftaran akun pengguna baru",
+        "tags": ["Authentication"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["name", "email", "password"],
+                "properties": {
+                  "name": { "type": "string", "minLength": 2, "maxLength": 100 },
+                  "email": { "type": "string", "format": "email" },
+                  "password": { "type": "string", "minLength": 12, "maxLength": 128 },
+                  "timezone": { "type": "string", "default": "Asia/Jakarta" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Pengguna berhasil dibuat",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": { "type": "string" },
+                    "user": { "$ref": "#/components/schemas/UserProfile" }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "description": "Validasi gagal" },
+          "409": { "description": "Email sudah terdaftar" }
+        }
+      }
+    },
+    "/api/auth/login": {
+      "post": {
+        "summary": "Masuk ke akun (membuat sesi baru)",
+        "tags": ["Authentication"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["email", "password"],
+                "properties": {
+                  "email": { "type": "string", "format": "email" },
+                  "password": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Login berhasil, cookie HttpOnly disematkan",
+            "headers": {
+              "Set-Cookie": {
+                "schema": { "type": "string" },
+                "description": "Mengatur cookie studyflow_access_token dan studyflow_refresh_token"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": { "type": "string" },
+                    "user": { "$ref": "#/components/schemas/UserProfile" },
+                    "accessToken": { "type": "string" }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "description": "Email atau password tidak sesuai" }
+        }
+      }
+    },
+    "/api/auth/refresh": {
+      "post": {
+        "summary": "Rotasi atomik refresh token dan penerbitan access token baru",
+        "tags": ["Authentication"],
+        "responses": {
+          "200": {
+            "description": "Token berhasil dirotasi",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": { "type": "string" },
+                    "user": { "$ref": "#/components/schemas/UserProfile" },
+                    "accessToken": { "type": "string" }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "description": "Token tidak valid, kedaluwarsa, atau terdeteksi replay" }
+        }
+      }
+    },
+    "/api/auth/logout": {
+      "post": {
+        "summary": "Mencabut sesi aktif di server dan membersihkan cookie browser",
+        "tags": ["Authentication"],
+        "responses": {
+          "200": {
+            "description": "Berhasil logout",
+            "headers": {
+              "Set-Cookie": {
+                "schema": { "type": "string" },
+                "description": "Menghapus cookie studyflow_access_token dan studyflow_refresh_token"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/me": {
+      "get": {
+        "summary": "Mendapatkan profil pengguna yang sedang login",
+        "tags": ["Authentication"],
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "user": { "$ref": "#/components/schemas/UserProfile" }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "description": "Tidak terautentikasi" }
+        }
+      },
+      "patch": {
+        "summary": "Memperbarui nama dan zona waktu pengguna",
+        "tags": ["Authentication"],
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": { "type": "string", "minLength": 2, "maxLength": 100 },
+                  "timezone": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": { "type": "string" },
+                    "user": { "$ref": "#/components/schemas/UserProfile" }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "description": "Data tidak valid" },
+          "401": { "description": "Tidak terautentikasi" }
+        }
+      }
+    },
+    "/api/auth/change-password": {
+      "post": {
+        "summary": "Mengganti password akun dan mencabut seluruh sesi lama",
+        "tags": ["Authentication"],
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["currentPassword", "newPassword"],
+                "properties": {
+                  "currentPassword": { "type": "string" },
+                  "newPassword": { "type": "string", "minLength": 12, "maxLength": 128 }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Password berhasil diganti, seluruh sesi dicabut" },
+          "400": { "description": "Password saat ini salah atau password baru tidak memenuhi syarat" },
+          "401": { "description": "Tidak terautentikasi" }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "UserProfile": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "name": { "type": "string" },
+          "email": { "type": "string", "format": "email" },
+          "timezone": { "type": "string" },
+          "createdAt": { "type": "string", "format": "date-time" },
+          "updatedAt": { "type": "string", "format": "date-time" }
+        }
+      }
+    },
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      },
+      "cookieAuth": {
+        "type": "apiKey",
+        "in": "cookie",
+        "name": "studyflow_access_token"
+      }
+    }
+  }
+}

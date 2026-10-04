@@ -9,7 +9,7 @@ StudyFlow adalah platform belajar pribadi untuk mahasiswa yang mengintegrasikan 
 | Milestone | Deskripsi | Status |
 | --- | --- | --- |
 | **Milestone 1 — Foundation** | Fondasi monorepo, Next.js, Express, PostgreSQL, Redis, Worker BullMQ, CI, Health/Readiness, Theme Switcher | **Selesai** |
-| **Milestone 2 — Authentication & Shell UI** | Registrasi, login, JWT/refresh cookie, profil pengguna, sidebar aplikasi | Berikutnya |
+| **Milestone 2 — Authentication & Shell UI** | Registrasi, login, JWT/refresh cookie, profil pengguna, rotasi token atomik, Next.js BFF proxy, sidebar responsif | **Selesai** |
 | **Milestone 3 — Semester & Course Management** | Pengelolaan semester aktif/arsip dan mata kuliah | Mendatang |
 | **Milestone 4 — Assignments, Notes & Dashboard** | Manajemen tugas, deadline, Markdown notes, status ringkasan | Mendatang |
 | **Milestone 5 — Storage & Document Worker** | Upload PDF privat, antrean ekstraksi teks BullMQ | Mendatang |
@@ -109,7 +109,13 @@ docker compose down
    npm run db:generate
    ```
 
-3. **Build shared packages:**
+3. **Jalankan Migrasi Database (Development):**
+   ```bash
+   npm run db:migrate:dev
+   ```
+   Perintah ini akan menerapkan skema migrasi `User` dan `RefreshSession` ke basis data PostgreSQL tanpa menghapus atau mereset data yang ada.
+
+4. **Build shared packages:**
    ```bash
    npm run build:shared
    ```
@@ -140,9 +146,9 @@ npm run dev
 
 ---
 
-## 8. Verifikasi dan Pemeriksaan Kualitas
+## 8. Verifikasi dan Pengujian
 
-Jalankan quality gates secara konsisten:
+Jalankan quality gates dan rangkaian test yang tersedia:
 
 - **Typecheck**: Memeriksa tipe TypeScript di semua workspace:
   ```bash
@@ -152,10 +158,20 @@ Jalankan quality gates secara konsisten:
   ```bash
   npm run lint
   ```
-- **Automated Tests**: Menjalankan pengujian endpoint dan logika:
+- **Unit & Integration Tests (API & Worker)**:
   ```bash
   npm run test
   ```
+- **Pengujian Khusus Backend Auth (Vitest)**:
+  ```bash
+  npm run test --workspace=@studyflow/api
+  ```
+  *Catatan*: Pengujian otomatis API menggunakan database terpisah `studyflow_test` secara otomatis untuk menjaga integritas data development.
+- **Pengujian Integrasi End-to-End BFF Auth (Next.js -> Express)**:
+  ```bash
+  npm run test:bff
+  ```
+  Menguji pendaftaran, login, cookie HttpOnly, proteksi rute privat `/dashboard` dan `/settings`, pembaruan profil, perubahan password dengan pencabutan sesi instan, dan logout melalui proxy Next.js.
 - **Build**: Membangun seluruh paket dan aplikasi:
   ```bash
   npm run build
@@ -163,7 +179,18 @@ Jalankan quality gates secara konsisten:
 
 ---
 
-## 9. Menjalankan Smoke Test Worker
+## 9. Arsitektur Autentikasi & Kontrak API (Milestone 2)
+
+Sistem autentikasi StudyFlow menggunakan arsitektur single-origin BFF (Backend-for-Frontend):
+- Browser berinteraksi dengan rute `/api/auth/*` pada origin Next.js (`http://localhost:3000`).
+- Token disimpan aman dalam cookie **HttpOnly** (`studyflow_access_token` [15m], `studyflow_refresh_token` [7d]).
+- Token refresh disimpan dalam basis data hanya sebagai hash SHA-256 dan dirotasi secara atomik pada setiap request refresh (dengan deteksi replay otomatis).
+- Pergantian password menaikkan versi token pengguna (`tokenVersion`) sehingga seluruh access token dan sesi lama langsung tidak berlaku di server.
+- Kontrak lengkap OpenAPI 3.1.0 tersedia di [`docs/api.openapi.json`](file:///docs/api.openapi.json).
+
+---
+
+## 10. Menjalankan Smoke Test Worker
 
 Smoke test internal disediakan untuk memverifikasi antrean dan konsumsi job BullMQ tanpa memerlukan panggilan model AI:
 
@@ -179,7 +206,7 @@ Smoke test internal disediakan untuk memverifikasi antrean dan konsumsi job Bull
 
 ---
 
-## 10. Endpoint Health & Readiness
+## 11. Endpoint Health & Readiness
 
 Backend Express menyediakan dua endpoint pemantauan:
 
@@ -190,7 +217,7 @@ Backend Express menyediakan dua endpoint pemantauan:
 
 ---
 
-## 11. Troubleshooting
+## 12. Troubleshooting
 
 - **Port 5432 atau 6379 sudah terpakai:**
   Jika Anda telah memiliki instance PostgreSQL atau Redis lokal yang sedang berjalan di mesin Anda, Anda dapat menggunakannya langsung dengan menyesuaikan `DATABASE_URL` dan `REDIS_URL` di `.env`, atau ubah port mapping pada `docker-compose.yml`.
