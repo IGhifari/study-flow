@@ -21,8 +21,52 @@ model User {
   updatedAt       DateTime         @updatedAt @map("updated_at")
 
   refreshSessions RefreshSession[]
+  semesters       Semester[]
+  courses         Course[]
 
   @@map("users")
+}
+
+// Milestone 3 — Semester & Course
+// Invariants enforced in migration SQL (not expressible in Prisma schema):
+//   - semesters_one_active_per_user: partial UNIQUE (user_id) WHERE is_active
+//   - semesters_active_not_archived: CHECK (NOT (is_active AND archived_at IS NOT NULL))
+model Semester {
+  id           String    @id @default(cuid())
+  userId       String    @map("user_id")
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name         String
+  academicYear String    @map("academic_year")
+  isActive     Boolean   @default(false) @map("is_active")
+  archivedAt   DateTime? @map("archived_at")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+
+  courses Course[]
+
+  // Target for the composite FK from Course, guaranteeing course.userId == semester.userId
+  @@unique([id, userId])
+  @@index([userId, createdAt])
+  @@map("semesters")
+}
+
+model Course {
+  id          String    @id @default(cuid())
+  userId      String    @map("user_id")
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  semesterId  String    @map("semester_id")
+  semester    Semester  @relation(fields: [semesterId, userId], references: [id, userId], onDelete: NoAction)
+  name        String
+  code        String?
+  lecturer    String?
+  description String?
+  archivedAt  DateTime? @map("archived_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  @@index([userId, semesterId])
+  @@index([userId, name])
+  @@map("courses")
 }
 
 model RefreshSession {

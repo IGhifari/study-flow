@@ -9,6 +9,8 @@ import { errorHandler } from './middleware/errorHandler.js';
 import { healthRouter } from './routes/health.js';
 import { readyRouter } from './routes/ready.js';
 import { authRouter } from './routes/auth.js';
+import { semesterRouter } from './routes/semesters.js';
+import { courseRouter } from './routes/courses.js';
 
 export function createApp(): Express {
   const app = express();
@@ -46,8 +48,10 @@ export function createApp(): Express {
   app.use('/health', healthRouter);
   app.use('/ready', readyRouter);
 
-  // Authentication endpoints
+  // Milestone 2 & 3 API endpoints
   app.use('/api/auth', authRouter);
+  app.use('/api/semesters', semesterRouter);
+  app.use('/api/courses', courseRouter);
 
   // 404 handler
   app.use((req: Request, res: Response) => {

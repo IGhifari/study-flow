@@ -17,11 +17,11 @@ jobs:
         env:
           POSTGRES_USER: studyflow_user
           POSTGRES_PASSWORD: studyflow_dev_password
-          POSTGRES_DB: studyflow_dev
+          POSTGRES_DB: studyflow_test
         ports:
           - 5432:5432
         options: >-
-          --health-cmd "pg_isready -U studyflow_user -d studyflow_dev"
+          --health-cmd "pg_isready -U studyflow_user -d studyflow_test"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
@@ -38,8 +38,8 @@ jobs:
 
     env:
       NODE_ENV: test
-      DATABASE_URL: "postgresql://studyflow_user:studyflow_dev_password@localhost:5432/studyflow_dev?schema=public"
-      DATABASE_URL_TEST: "postgresql://studyflow_user:studyflow_dev_password@localhost:5432/studyflow_dev?schema=public"
+      DATABASE_URL: "postgresql://studyflow_user:studyflow_dev_password@localhost:5432/studyflow_test?schema=public"
+      DATABASE_URL_TEST: "postgresql://studyflow_user:studyflow_dev_password@localhost:5432/studyflow_test?schema=public"
       REDIS_URL: "redis://localhost:6379"
       JWT_ACCESS_SECRET: "ci_test_jwt_access_secret_super_secure_32_chars"
       INTERNAL_API_URL: "http://localhost:4000"

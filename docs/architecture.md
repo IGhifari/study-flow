@@ -104,6 +104,56 @@ StudyFlow dibangun menggunakan arsitektur modular terpisah untuk memisahkan logi
    - Penggantian password meningkatkan kolom `tokenVersion` pada model `User` dan menandai seluruh `RefreshSession` aktif sebagai revoked (`isRevoked: true`).
    - Setiap middleware autentikasi memvalidasi `tokenVersion` access token terhadap nilai aktual di basis data, sehingga access token lama langsung ditolak seketika tanpa harus menunggu masa berlaku 15 menit berakhir.
 5. **Proteksi Route Privat**:
-   - Next.js Middleware (`apps/web/src/middleware.ts`) melindungi rute `/dashboard` dan `/settings` dengan memeriksa keberadaan sesi cookie, melakukan redirect ke `/login?returnUrl=...`.
+   - Next.js Middleware (`apps/web/src/middleware.ts`) melindungi rute `/dashboard`, `/semesters`, `/courses`, dan `/settings` dengan memeriksa keberadaan sesi cookie, melakukan redirect ke `/login?returnUrl=...`.
    - Server Component (`getServerSessionUser`) memverifikasi keabsahan sesi secara aman di server sebelum merender data pengguna.
+
+### 3.5 Pengelolaan Semester dan Mata Kuliah (Milestone 3)
+
+```
+[Browser Client]
+   │
+   ├─► GET/POST/PATCH/DELETE /api/semesters (BFF Next.js Proxy)
+   │      │
+   │      ▼
+   │   [Express API: semesterRouter]
+   │      ├─► Origin/CSRF & Auth Verification
+   │      ├─► Aturan Bisnis & Invarian Sisi Server
+   │      └─► Prisma Client (packages/database)
+   │             ▼
+   │          [PostgreSQL: semesters table]
+   │             ├─► Partial Index: CREATE UNIQUE INDEX semesters_one_active_per_user
+   │             │   ON semesters(user_id) WHERE is_active = true
+   │             └─► Check: NOT (is_active AND archived_at IS NOT NULL)
+   │
+   └─► GET/POST/PATCH/DELETE /api/courses (BFF Next.js Proxy)
+          │
+          ▼
+       [Express API: courseRouter]
+          ├─► Origin/CSRF & Auth Verification
+          ├─► Larangan membuat matkul di semester arsip
+          └─► Prisma Client (packages/database)
+                 ▼
+              [PostgreSQL: courses table]
+                 └─► Composite FK: FOREIGN KEY (semester_id, user_id)
+                     REFERENCES semesters(id, user_id) ON DELETE NO ACTION
+```
+
+#### Invarian Integritas Data Milestone 3:
+1. **Maksimal Satu Semester Aktif per Pengguna**:
+   - Ditegakkan ganda: pada lapisan logika transaksi di `semester.service.ts` dan pada lapisan basis data melalui partial unique index PostgreSQL `semesters_one_active_per_user` (`WHERE is_active = true`).
+   - Pembuatan semester pertama pengguna secara otomatis bernilai aktif (`isActive: true`).
+   - Aktivasi semester baru secara atomik menonaktifkan semester aktif sebelumnya dalam satu transaksi database.
+2. **Kondisi Semester Arsip**:
+   - Pengarsipan semester aktif secara otomatis menghapus status aktif (`isActive = false`).
+   - Semester yang diarsipkan dilarang diaktifkan kembali sebelum melalui proses pemulihan (unarchive).
+   - Mata kuliah baru dilarang ditambahkan ke dalam semester yang sedang diarsipkan (`SEMESTER_ARCHIVED`).
+3. **Integritas Kepemilikan Silang (Cross-Tenant Isolation)**:
+   - Relasi mata kuliah ke semester menggunakan composite key `(semester_id, user_id) REFERENCES semesters(id, user_id)`.
+   - Menjamin secara mutlak di level PostgreSQL bahwa pengguna A tidak dapat mengaitkan mata kuliah miliknya ke semester milik pengguna B, bahkan jika ID semester diketahui.
+4. **Perlindungan Penghapusan Semester**:
+   - Semester yang masih memiliki mata kuliah tidak dapat dihapus (`SEMESTER_HAS_COURSES`, HTTP 409). Pengguna diarahkan untuk mengarsipkan semester atau menghapus mata kuliah di dalamnya terlebih dahulu.
+5. **Isolasi Database Pengujian (Test DB Guard)**:
+   - Modul `apps/api/src/config/testDbGuard.ts` memvalidasi koneksi basis data pada environment test (`NODE_ENV === 'test'`).
+   - Seluruh eksekusi test runner (Vitest) secara ketat dibatasi hanya dapat terhubung ke basis data dengan akhiran `_test` (`studyflow_test`). Eksekusi terhadap `studyflow_dev` atau basis data non-test ditolak seketika demi mencegah kontaminasi data pengembang.
+
 

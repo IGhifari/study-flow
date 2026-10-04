@@ -14,6 +14,7 @@ import { UserProfile } from '@studyflow/shared';
 import { apiLogout } from '@/lib/auth-client';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { Button } from '@/components/ui/button';
+import { SidebarSemesterSelector } from './sidebar-semester-selector';
 import {
   SidebarProvider,
   Sidebar,
@@ -57,6 +58,18 @@ function SidebarNavContent({ user }: { user: UserProfile }): React.JSX.Element {
       isActive: pathname === '/dashboard',
     },
     {
+      label: 'Mata Kuliah',
+      href: '/courses',
+      icon: BookOpen,
+      isActive: pathname.startsWith('/courses'),
+    },
+    {
+      label: 'Kelola Semester',
+      href: '/semesters',
+      icon: CalendarRange,
+      isActive: pathname.startsWith('/semesters'),
+    },
+    {
       label: 'Pengaturan',
       href: '/settings',
       icon: Settings,
@@ -84,6 +97,12 @@ function SidebarNavContent({ user }: { user: UserProfile }): React.JSX.Element {
           )}
         </Link>
       </SidebarHeader>
+
+      {/* Active Semester Selector per DESIGN.md section 7.1 */}
+      <SidebarSemesterSelector
+        isCollapsed={isCollapsed}
+        onNavigate={() => setOpenMobile(false)}
+      />
 
       <SidebarContent className="py-2">
         <SidebarMenu>
@@ -145,6 +164,9 @@ export function AppShell({ user, children }: AppShellProps): React.JSX.Element {
 
   const getBreadcrumbTitle = () => {
     if (pathname === '/dashboard') return 'Dashboard';
+    if (pathname === '/semesters') return 'Kelola Semester';
+    if (pathname === '/courses') return 'Mata Kuliah';
+    if (pathname.startsWith('/courses/')) return 'Detail Mata Kuliah';
     if (pathname.startsWith('/settings')) return 'Pengaturan Akun';
     return 'StudyFlow';
   };

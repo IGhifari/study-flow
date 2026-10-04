@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import dotenv from 'dotenv';
+import { assertTestDatabaseUrl } from './testDbGuard.js';
 
 dotenv.config();
 
@@ -24,6 +25,10 @@ function loadEnv(): Env {
     const missingKeys = result.error.errors.map((err) => err.path.join('.')).join(', ');
     console.error(`[FATAL] Environment validation failed. Invalid or missing variables: ${missingKeys}`);
     process.exit(1);
+  }
+  if (result.data.NODE_ENV === 'test') {
+    // Throws (never prints credentials) if a test-mode process targets a non-test database
+    assertTestDatabaseUrl(result.data.DATABASE_URL, 'DATABASE_URL');
   }
   return result.data;
 }

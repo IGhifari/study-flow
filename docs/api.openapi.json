@@ -298,6 +298,353 @@
           "401": { "description": "Tidak terautentikasi" }
         }
       }
+    },
+    "/api/semesters": {
+      "get": {
+        "summary": "Mendapatkan daftar semester pengguna",
+        "tags": ["Semesters"],
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "string", "enum": ["all", "active", "archived"], "default": "all" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Daftar semester dan semester aktif",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "semesters": {
+                      "type": "array",
+                      "items": { "$ref": "#/components/schemas/Semester" }
+                    },
+                    "activeSemester": {
+                      "anyOf": [
+                        { "$ref": "#/components/schemas/Semester" },
+                        { "type": "null" }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": { "description": "Tidak terautentikasi" }
+        }
+      },
+      "post": {
+        "summary": "Membuat semester baru",
+        "tags": ["Semesters"],
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/CreateSemesterInput" }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Semester berhasil dibuat",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": { "type": "string" },
+                    "semester": { "$ref": "#/components/schemas/Semester" }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "description": "Input tidak valid" },
+          "401": { "description": "Tidak terautentikasi" }
+        }
+      }
+    },
+    "/api/semesters/{id}": {
+      "get": {
+        "summary": "Mendapatkan detail semester",
+        "tags": ["Semesters"],
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Detail semester",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "semester": { "$ref": "#/components/schemas/Semester" }
+                  }
+                }
+              }
+            }
+          },
+          "404": { "description": "Semester tidak ditemukan" }
+        }
+      },
+      "patch": {
+        "summary": "Memperbarui nama dan tahun ajaran semester",
+        "tags": ["Semesters"],
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/UpdateSemesterInput" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Semester berhasil diperbarui",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": { "type": "string" },
+                    "semester": { "$ref": "#/components/schemas/Semester" }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "description": "Input tidak valid" },
+          "404": { "description": "Semester tidak ditemukan" }
+        }
+      },
+      "delete": {
+        "summary": "Menghapus semester",
+        "tags": ["Semesters"],
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "Semester berhasil dihapus" },
+          "409": { "description": "Semester memiliki mata kuliah dan tidak dapat dihapus" },
+          "404": { "description": "Semester tidak ditemukan" }
+        }
+      }
+    },
+    "/api/semesters/{id}/activate": {
+      "post": {
+        "summary": "Mengaktifkan semester",
+        "tags": ["Semesters"],
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "Semester berhasil diaktifkan" },
+          "400": { "description": "Semester terarsip tidak dapat diaktifkan" },
+          "404": { "description": "Semester tidak ditemukan" }
+        }
+      }
+    },
+    "/api/semesters/{id}/archive": {
+      "post": {
+        "summary": "Mengarsipkan semester",
+        "tags": ["Semesters"],
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "Semester berhasil diarsipkan" },
+          "404": { "description": "Semester tidak ditemukan" }
+        }
+      }
+    },
+    "/api/semesters/{id}/unarchive": {
+      "post": {
+        "summary": "Memulihkan semester dari arsip",
+        "tags": ["Semesters"],
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "Semester berhasil dipulihkan" },
+          "404": { "description": "Semester tidak ditemukan" }
+        }
+      }
+    },
+    "/api/courses": {
+      "get": {
+        "summary": "Mendapatkan daftar mata kuliah",
+        "tags": ["Courses"],
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [
+          { "name": "semesterId", "in": "query", "schema": { "type": "string" } },
+          { "name": "isArchived", "in": "query", "schema": { "type": "boolean" } },
+          { "name": "search", "in": "query", "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Daftar mata kuliah",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "courses": {
+                      "type": "array",
+                      "items": { "$ref": "#/components/schemas/Course" }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Membuat mata kuliah baru",
+        "tags": ["Courses"],
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/CreateCourseInput" }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Mata kuliah berhasil ditambahkan",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": { "type": "string" },
+                    "course": { "$ref": "#/components/schemas/Course" }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "description": "Semester diarsipkan atau input tidak valid" },
+          "404": { "description": "Semester tidak ditemukan" }
+        }
+      }
+    },
+    "/api/courses/{id}": {
+      "get": {
+        "summary": "Mendapatkan detail mata kuliah",
+        "tags": ["Courses"],
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Detail mata kuliah",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "course": { "$ref": "#/components/schemas/Course" }
+                  }
+                }
+              }
+            }
+          },
+          "404": { "description": "Mata kuliah tidak ditemukan" }
+        }
+      },
+      "patch": {
+        "summary": "Memperbarui detail mata kuliah",
+        "tags": ["Courses"],
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/UpdateCourseInput" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Mata kuliah berhasil diperbarui",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": { "type": "string" },
+                    "course": { "$ref": "#/components/schemas/Course" }
+                  }
+                }
+              }
+            }
+          },
+          "404": { "description": "Mata kuliah tidak ditemukan" }
+        }
+      },
+      "delete": {
+        "summary": "Menghapus mata kuliah",
+        "tags": ["Courses"],
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "Mata kuliah berhasil dihapus" },
+          "404": { "description": "Mata kuliah tidak ditemukan" }
+        }
+      }
+    },
+    "/api/courses/{id}/archive": {
+      "post": {
+        "summary": "Mengarsipkan mata kuliah",
+        "tags": ["Courses"],
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "Mata kuliah berhasil diarsipkan" },
+          "404": { "description": "Mata kuliah tidak ditemukan" }
+        }
+      }
+    },
+    "/api/courses/{id}/unarchive": {
+      "post": {
+        "summary": "Memulihkan mata kuliah dari arsip",
+        "tags": ["Courses"],
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "Mata kuliah berhasil dipulihkan" },
+          "404": { "description": "Mata kuliah tidak ditemukan" }
+        }
+      }
     }
   },
   "components": {
@@ -311,6 +658,72 @@
           "timezone": { "type": "string" },
           "createdAt": { "type": "string", "format": "date-time" },
           "updatedAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "Semester": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "userId": { "type": "string" },
+          "name": { "type": "string" },
+          "academicYear": { "type": "string" },
+          "isActive": { "type": "boolean" },
+          "archivedAt": { "type": "string", "format": "date-time", "nullable": true },
+          "courseCount": { "type": "integer" },
+          "createdAt": { "type": "string", "format": "date-time" },
+          "updatedAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "CreateSemesterInput": {
+        "type": "object",
+        "required": ["name", "academicYear"],
+        "properties": {
+          "name": { "type": "string", "minLength": 2, "maxLength": 100 },
+          "academicYear": { "type": "string", "minLength": 4, "maxLength": 20 },
+          "makeActive": { "type": "boolean" }
+        }
+      },
+      "UpdateSemesterInput": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string", "minLength": 2, "maxLength": 100 },
+          "academicYear": { "type": "string", "minLength": 4, "maxLength": 20 }
+        }
+      },
+      "Course": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "userId": { "type": "string" },
+          "semesterId": { "type": "string" },
+          "name": { "type": "string" },
+          "code": { "type": "string", "nullable": true },
+          "lecturer": { "type": "string", "nullable": true },
+          "description": { "type": "string", "nullable": true },
+          "archivedAt": { "type": "string", "format": "date-time", "nullable": true },
+          "semester": { "$ref": "#/components/schemas/Semester" },
+          "createdAt": { "type": "string", "format": "date-time" },
+          "updatedAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "CreateCourseInput": {
+        "type": "object",
+        "required": ["semesterId", "name"],
+        "properties": {
+          "semesterId": { "type": "string" },
+          "name": { "type": "string", "minLength": 2, "maxLength": 150 },
+          "code": { "type": "string", "maxLength": 30 },
+          "lecturer": { "type": "string", "maxLength": 100 },
+          "description": { "type": "string", "maxLength": 1000 }
+        }
+      },
+      "UpdateCourseInput": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string", "minLength": 2, "maxLength": 150 },
+          "code": { "type": "string", "maxLength": 30 },
+          "lecturer": { "type": "string", "maxLength": 100 },
+          "description": { "type": "string", "maxLength": 1000 }
         }
       }
     },

@@ -10,7 +10,7 @@ StudyFlow adalah platform belajar pribadi untuk mahasiswa yang mengintegrasikan 
 | --- | --- | --- |
 | **Milestone 1 — Foundation** | Fondasi monorepo, Next.js, Express, PostgreSQL, Redis, Worker BullMQ, CI, Health/Readiness, Theme Switcher | **Selesai** |
 | **Milestone 2 — Authentication & Shell UI** | Registrasi, login, JWT/refresh cookie, profil pengguna, rotasi token atomik, Next.js BFF proxy, sidebar responsif | **Selesai** |
-| **Milestone 3 — Semester & Course Management** | Pengelolaan semester aktif/arsip dan mata kuliah | Mendatang |
+| **Milestone 3 — Semester & Course Management** | Pengelolaan semester aktif/arsip, multi-tenant composite isolation, daftar & detail mata kuliah, onboarding dashboard | **Selesai** |
 | **Milestone 4 — Assignments, Notes & Dashboard** | Manajemen tugas, deadline, Markdown notes, status ringkasan | Mendatang |
 | **Milestone 5 — Storage & Document Worker** | Upload PDF privat, antrean ekstraksi teks BullMQ | Mendatang |
 | **Milestone 6 — AI Summaries** | Integrasi AI dengan kutipan halaman sumber | Mendatang |
