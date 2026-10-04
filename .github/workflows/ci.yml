@@ -21,7 +21,7 @@ jobs:
         ports:
           - 5432:5432
         options: >-
-          --health-cmd pg_isready
+          --health-cmd "pg_isready -U studyflow_user -d studyflow_dev"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
@@ -52,13 +52,19 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: 'npm'
+          cache: npm
 
       - name: Install dependencies
         run: npm ci
 
       - name: Generate Prisma client
         run: npm run db:generate
+
+      - name: Build shared package
+        run: npm run build --workspace=@studyflow/shared
+
+      - name: Build database package
+        run: npm run build --workspace=@studyflow/database
 
       - name: Run Prisma migrations
         run: npx prisma migrate deploy --schema=packages/database/prisma/schema.prisma
@@ -74,4 +80,3 @@ jobs:
 
       - name: Build monorepo packages and applications
         run: npm run build
-
