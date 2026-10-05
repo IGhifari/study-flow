@@ -913,6 +913,242 @@
           "429": { "description": "Batas kuota harian atau concurrent job terlampaui" }
         }
       }
+    },
+    "/api/materials/{id}/flashcard-sets": {
+      "get": {
+        "summary": "Mendapatkan daftar flashcard set untuk materi",
+        "tags": ["Materials", "Flashcards"],
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Daftar set flashcard",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "sets": { "type": "array", "items": { "$ref": "#/components/schemas/FlashcardSet" } }
+                  }
+                }
+              }
+            }
+          },
+          "403": { "description": "Akses materi ditolak" },
+          "404": { "description": "Materi tidak ditemukan" }
+        }
+      },
+      "post": {
+        "summary": "Meminta generasi set flashcard dari materi dengan AI",
+        "tags": ["Materials", "Flashcards"],
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/GenerateFlashcardsInput" }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Permintaan pembuatan flashcard dijadwalkan",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "setId": { "type": "string" },
+                    "jobId": { "type": "string" },
+                    "message": { "type": "string" }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "description": "Validasi gagal atau materi belum READY" },
+          "403": { "description": "Akses ditolak" },
+          "429": { "description": "Kuota AI terlampaui" }
+        }
+      }
+    },
+    "/api/flashcards/{id}": {
+      "patch": {
+        "summary": "Memperbarui status pemahaman kartu flashcard",
+        "tags": ["Flashcards"],
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/UpdateFlashcardMasteryInput" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Status pemahaman kartu berhasil diperbarui",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/Flashcard" }
+              }
+            }
+          },
+          "400": { "description": "Status tidak valid" },
+          "403": { "description": "Akses kartu ditolak" },
+          "404": { "description": "Kartu tidak ditemukan" }
+        }
+      }
+    },
+    "/api/materials/{id}/quizzes": {
+      "get": {
+        "summary": "Mendapatkan daftar kuis untuk materi",
+        "tags": ["Materials", "Quizzes"],
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Daftar kuis materi",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "quizzes": { "type": "array", "items": { "$ref": "#/components/schemas/Quiz" } }
+                  }
+                }
+              }
+            }
+          },
+          "403": { "description": "Akses materi ditolak" },
+          "404": { "description": "Materi tidak ditemukan" }
+        }
+      },
+      "post": {
+        "summary": "Meminta generasi kuis dari materi dengan AI",
+        "tags": ["Materials", "Quizzes"],
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/GenerateQuizInput" }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Permintaan pembuatan kuis dijadwalkan",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "quizId": { "type": "string" },
+                    "jobId": { "type": "string" },
+                    "message": { "type": "string" }
+                  }
+                }
+              }
+            }
+          },
+          "400": { "description": "Validasi gagal atau materi belum READY" },
+          "403": { "description": "Akses ditolak" },
+          "429": { "description": "Kuota AI terlampaui" }
+        }
+      }
+    },
+    "/api/quizzes/{id}/attempts": {
+      "post": {
+        "summary": "Memulai atau melanjutkan sesi pengerjaan kuis",
+        "description": "Mengembalikan soal-soal tanpa jawaban benar (correctIndex) atau pembahasan (explanation).",
+        "tags": ["Quizzes"],
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Sesi attempt aktif",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/StartQuizAttemptResponse" }
+              }
+            }
+          },
+          "400": { "description": "Kuis belum READY" },
+          "403": { "description": "Akses kuis ditolak" },
+          "404": { "description": "Kuis tidak ditemukan" }
+        }
+      }
+    },
+    "/api/attempts/{id}/submit": {
+      "post": {
+        "summary": "Mengirimkan jawaban kuis untuk dinilai oleh server",
+        "description": "Penilaian 0-100 dilakukan di backend. Idempoten.",
+        "tags": ["Quizzes"],
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/SubmitQuizAttemptInput" }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Hasil evaluasi pengerjaan kuis dan pembahasan",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/QuizAttemptResponse" }
+              }
+            }
+          },
+          "400": { "description": "Format jawaban tidak valid" },
+          "403": { "description": "Akses attempt ditolak" },
+          "404": { "description": "Attempt tidak ditemukan" }
+        }
+      }
+    },
+    "/api/attempts/{id}": {
+      "get": {
+        "summary": "Melihat hasil pengerjaan kuis yang telah selesai",
+        "tags": ["Quizzes"],
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Hasil attempt dan review jawaban",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/QuizAttemptResponse" }
+              }
+            }
+          },
+          "400": { "description": "Attempt belum disubmit" },
+          "403": { "description": "Akses attempt ditolak" },
+          "404": { "description": "Attempt tidak ditemukan" }
+        }
+      }
     }
   },
   "components": {
@@ -1131,6 +1367,154 @@
           "message": { "type": "string" },
           "jobId": { "type": "string" },
           "summary": { "$ref": "#/components/schemas/MaterialSummary" }
+        }
+      },
+      "Flashcard": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "setId": { "type": "string" },
+          "front": { "type": "string" },
+          "back": { "type": "string" },
+          "pageReferences": { "type": "array", "items": { "type": "integer" } },
+          "orderIndex": { "type": "integer" },
+          "masteryStatus": { "type": "string", "enum": ["UNRATED", "NEED_REVIEW", "MASTERED"] },
+          "createdAt": { "type": "string", "format": "date-time" },
+          "updatedAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "FlashcardSet": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "userId": { "type": "string" },
+          "materialId": { "type": "string" },
+          "title": { "type": "string" },
+          "cardCount": { "type": "integer" },
+          "status": { "type": "string", "enum": ["QUEUED", "PROCESSING", "READY", "FAILED"] },
+          "targetCount": { "type": "integer" },
+          "activeJobId": { "type": ["string", "null"] },
+          "errorCode": { "type": ["string", "null"] },
+          "errorMessage": { "type": ["string", "null"] },
+          "createdAt": { "type": "string", "format": "date-time" },
+          "updatedAt": { "type": "string", "format": "date-time" },
+          "cards": { "type": "array", "items": { "$ref": "#/components/schemas/Flashcard" } }
+        }
+      },
+      "GenerateFlashcardsInput": {
+        "type": "object",
+        "properties": {
+          "targetCount": { "type": "integer", "enum": [5, 10, 20], "default": 10 }
+        }
+      },
+      "UpdateFlashcardMasteryInput": {
+        "type": "object",
+        "required": ["masteryStatus"],
+        "properties": {
+          "masteryStatus": { "type": "string", "enum": ["UNRATED", "NEED_REVIEW", "MASTERED"] }
+        }
+      },
+      "QuizQuestion": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "quizId": { "type": "string" },
+          "question": { "type": "string" },
+          "options": { "type": "array", "items": { "type": "string" } },
+          "correctIndex": { "type": "integer" },
+          "explanation": { "type": "string" },
+          "pageReferences": { "type": "array", "items": { "type": "integer" } },
+          "orderIndex": { "type": "integer" }
+        }
+      },
+      "ClientQuizQuestion": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "quizId": { "type": "string" },
+          "question": { "type": "string" },
+          "options": { "type": "array", "items": { "type": "string" } },
+          "orderIndex": { "type": "integer" }
+        }
+      },
+      "CompletedQuizQuestion": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "quizId": { "type": "string" },
+          "question": { "type": "string" },
+          "options": { "type": "array", "items": { "type": "string" } },
+          "correctIndex": { "type": "integer" },
+          "explanation": { "type": "string" },
+          "pageReferences": { "type": "array", "items": { "type": "integer" } },
+          "orderIndex": { "type": "integer" },
+          "userSelectedIndex": { "type": ["integer", "null"] },
+          "isCorrect": { "type": "boolean" }
+        }
+      },
+      "Quiz": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "userId": { "type": "string" },
+          "materialId": { "type": "string" },
+          "title": { "type": "string" },
+          "questionCount": { "type": "integer" },
+          "status": { "type": "string", "enum": ["QUEUED", "PROCESSING", "READY", "FAILED"] },
+          "targetCount": { "type": "integer" },
+          "activeJobId": { "type": ["string", "null"] },
+          "errorCode": { "type": ["string", "null"] },
+          "errorMessage": { "type": ["string", "null"] },
+          "createdAt": { "type": "string", "format": "date-time" },
+          "updatedAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "GenerateQuizInput": {
+        "type": "object",
+        "properties": {
+          "targetCount": { "type": "integer", "enum": [5, 10], "default": 5 }
+        }
+      },
+      "StartQuizAttemptResponse": {
+        "type": "object",
+        "properties": {
+          "attemptId": { "type": "string" },
+          "quizId": { "type": "string" },
+          "materialId": { "type": "string" },
+          "title": { "type": "string" },
+          "totalQuestions": { "type": "integer" },
+          "questions": { "type": "array", "items": { "$ref": "#/components/schemas/ClientQuizQuestion" } },
+          "existingAnswers": { "type": "object", "additionalProperties": { "type": "integer" } }
+        }
+      },
+      "SubmitQuizAttemptInput": {
+        "type": "object",
+        "required": ["answers"],
+        "properties": {
+          "answers": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["questionId", "selectedIndex"],
+              "properties": {
+                "questionId": { "type": "string" },
+                "selectedIndex": { "type": ["integer", "null"] }
+              }
+            }
+          }
+        }
+      },
+      "QuizAttemptResponse": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "quizId": { "type": "string" },
+          "userId": { "type": "string" },
+          "score": { "type": "number" },
+          "totalQuestions": { "type": "integer" },
+          "correctAnswersCount": { "type": "integer" },
+          "submittedAt": { "type": "string", "format": "date-time" },
+          "questions": { "type": "array", "items": { "$ref": "#/components/schemas/CompletedQuizQuestion" } }
         }
       }
     },

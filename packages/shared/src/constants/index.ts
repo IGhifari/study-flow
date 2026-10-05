@@ -40,3 +40,16 @@ export const AI_SUMMARY_LIMITS = {
   maxChunks: 3,                // Maximum chunk iterations per document
   minCharacters: 50,           // Minimum extracted text characters to generate summary
 } as const;
+
+export const AI_FLASHCARD_LIMITS = {
+  allowedCounts: [5, 10, 20] as const,
+  defaultCount: 10,
+  minCharacters: 50,
+} as const;
+
+export const AI_QUIZ_LIMITS = {
+  allowedCounts: [5, 10] as const,
+  defaultCount: 5,
+  minCharacters: 50,
+} as const;
+

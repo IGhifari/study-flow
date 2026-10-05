@@ -123,6 +123,38 @@ export async function dispatchOutboxEvents(): Promise<{ dispatched: number; fail
             jobId, // Stable idempotency key in BullMQ
           }
         );
+      } else if (event.eventType === 'AI_FLASHCARD_REQUESTED') {
+        const queue = getAiGenerationQueue();
+        const jobId = payload.jobId || event.aggregateId;
+        await queue.add(
+          'generate-flashcards',
+          {
+            jobId,
+            setId: payload.setId,
+            materialId: payload.materialId,
+            userId: payload.userId,
+            targetCount: payload.targetCount,
+          },
+          {
+            jobId,
+          }
+        );
+      } else if (event.eventType === 'AI_QUIZ_REQUESTED') {
+        const queue = getAiGenerationQueue();
+        const jobId = payload.jobId || event.aggregateId;
+        await queue.add(
+          'generate-quiz',
+          {
+            jobId,
+            quizId: payload.quizId,
+            materialId: payload.materialId,
+            userId: payload.userId,
+            targetCount: payload.targetCount,
+          },
+          {
+            jobId,
+          }
+        );
       } else if (event.eventType === 'DOCUMENT_CLEANUP_REQUESTED') {
         // Execute background storage object cleanup with retry
         const storageAdapter = getStorageAdapter();

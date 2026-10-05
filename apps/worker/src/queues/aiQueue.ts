@@ -14,12 +14,38 @@ export interface AiSummaryJobData {
   isRegeneration?: boolean;
 }
 
+export interface AiFlashcardJobData {
+  jobId: string;
+  setId: string;
+  materialId: string;
+  userId: string;
+  targetCount: number;
+}
+
+export interface AiQuizJobData {
+  jobId: string;
+  quizId: string;
+  materialId: string;
+  userId: string;
+  targetCount: number;
+}
+
 export interface AiSummaryJobResult {
   jobId: string;
   materialId: string;
   status: 'READY' | 'FAILED';
   inputTokens?: number;
   outputTokens?: number;
+  durationMs?: number;
+  error?: string;
+  errorCode?: string;
+}
+
+export interface AiLearningJobResult {
+  jobId: string;
+  materialId: string;
+  status: 'READY' | 'FAILED';
+  itemCount?: number;
   durationMs?: number;
   error?: string;
   errorCode?: string;
@@ -564,6 +590,502 @@ export async function processAiSummaryJob(
             },
           });
         }
+      },
+    });
+
+    return {
+      jobId,
+      materialId,
+      status: 'FAILED',
+      errorCode,
+      error: errorMessage,
+    };
+  }
+}
+
+export async function processAiFlashcardJob(
+  job: Job<AiFlashcardJobData, AiLearningJobResult>
+): Promise<AiLearningJobResult> {
+  const { jobId, setId, materialId, userId, targetCount } = job.data;
+  const startedAt = new Date();
+
+  console.log(
+    JSON.stringify({
+      level: 'info',
+      timestamp: startedAt.toISOString(),
+      message: `[Worker] Processing AI Flashcard generation for job ${jobId}, material ${materialId}, targetCount ${targetCount}`,
+      attempt: (job.attemptsMade ?? 0) + 1,
+    })
+  );
+
+  // 0. Check if job has already reached terminal status
+  const jobRecord = await prisma.processingJob.findUnique({
+    where: { id: jobId },
+    select: { status: true },
+  });
+
+  if (jobRecord && (jobRecord.status === 'COMPLETED' || jobRecord.status === 'FAILED')) {
+    console.warn(
+      JSON.stringify({
+        level: 'warn',
+        timestamp: startedAt.toISOString(),
+        message: `[Worker] Job ${jobId} is already in terminal state ${jobRecord.status}. Aborting duplicate execution.`,
+      })
+    );
+    return {
+      jobId,
+      materialId,
+      status: jobRecord.status === 'COMPLETED' ? 'READY' : 'FAILED',
+    };
+  }
+
+  // 1. Verify Material exists, belongs to user, and is not deleted
+  const material = await prisma.material.findFirst({
+    where: { id: materialId, userId },
+    include: {
+      pages: { orderBy: { pageNumber: 'asc' } },
+    },
+  });
+
+  if (!material || material.deletedAt !== null) {
+    await finishAiJobAtomically({
+      jobId,
+      userId,
+      status: 'FAILED',
+      errorCode: 'MATERIAL_DELETED',
+      errorMessage: 'Materi telah dihapus sebelum proses generasi flashcard selesai.',
+    });
+    return {
+      jobId,
+      materialId,
+      status: 'FAILED',
+      errorCode: 'MATERIAL_DELETED',
+      error: 'Materi telah dihapus',
+    };
+  }
+
+  if (material.status !== 'READY') {
+    await finishAiJobAtomically({
+      jobId,
+      userId,
+      status: 'FAILED',
+      errorCode: 'MATERIAL_NOT_READY',
+      errorMessage: 'Materi belum selesai diekstrak sehingga flashcard tidak dapat dibuat.',
+    });
+    return {
+      jobId,
+      materialId,
+      status: 'FAILED',
+      errorCode: 'MATERIAL_NOT_READY',
+      error: 'Materi belum berstatus READY',
+    };
+  }
+
+  // 2. Validate extracted text availability
+  const pagesWithText = material.pages.filter(
+    (p) => p.extractedText && p.extractedText.trim().length > 0
+  );
+  const totalCharacters = pagesWithText.reduce(
+    (acc, p) => acc + (p.characterCount || p.extractedText.length),
+    0
+  );
+
+  if (pagesWithText.length === 0 || totalCharacters < 50) {
+    const errorMsg = 'Teks dokumen tidak memadai untuk membuat kartu flashcard (kurang dari 50 karakter).';
+    await finishAiJobAtomically({
+      jobId,
+      userId,
+      status: 'FAILED',
+      errorCode: 'INSUFFICIENT_TEXT',
+      errorMessage: errorMsg,
+      onSuccessTx: async (tx) => {
+        await tx.flashcardSet.update({
+          where: { id: setId },
+          data: { status: 'FAILED', errorCode: 'INSUFFICIENT_TEXT', errorMessage: errorMsg, activeJobId: null },
+        });
+      },
+    });
+    return { jobId, materialId, status: 'FAILED', errorCode: 'INSUFFICIENT_TEXT', error: errorMsg };
+  }
+
+  // 3. Transition status to PROCESSING atomically
+  await prisma.$executeRaw`
+    UPDATE processing_jobs
+    SET status = 'PROCESSING'::"ProcessingJobStatus",
+        started_at = COALESCE(started_at, ${startedAt}),
+        attempts = ${(job.attemptsMade ?? 0) + 1},
+        updated_at = ${startedAt}
+    WHERE id = ${jobId} AND status = 'PENDING'
+  `;
+
+  await prisma.flashcardSet.updateMany({
+    where: { id: setId },
+    data: { status: 'PROCESSING', activeJobId: jobId },
+  });
+
+  const inputPages = pagesWithText.map((p) => ({
+    pageNumber: p.pageNumber,
+    text: p.extractedText,
+  }));
+
+  try {
+    const aiAdapter = getAiProviderAdapter();
+    const aiResult = await aiAdapter.generateFlashcards(
+      {
+        materialTitle: material.title,
+        pages: inputPages,
+        totalPages: material.pageCount || material.pages.length,
+        targetCount,
+      },
+      { timeoutMs: 45000, jobId }
+    );
+
+    // Re-check if material deleted while generating
+    const freshCheck = await prisma.material.findFirst({
+      where: { id: materialId, userId },
+      select: { deletedAt: true },
+    });
+    if (!freshCheck || freshCheck.deletedAt !== null) {
+      await finishAiJobAtomically({
+        jobId,
+        userId,
+        status: 'FAILED',
+        errorCode: 'MATERIAL_DELETED',
+        errorMessage: 'Materi telah dihapus selama proses pembuatan flashcard.',
+      });
+      return { jobId, materialId, status: 'FAILED', errorCode: 'MATERIAL_DELETED', error: 'Materi telah dihapus' };
+    }
+
+    // Atomically save flashcards and mark set & job READY
+    await finishAiJobAtomically({
+      jobId,
+      userId,
+      status: 'COMPLETED',
+      payload: {
+        cardCount: aiResult.cards.length,
+        durationMs: aiResult.durationMs,
+      },
+      onSuccessTx: async (tx) => {
+        // Delete previous cards in this set if regenerating
+        await tx.flashcard.deleteMany({ where: { setId } });
+
+        // Insert new cards
+        await tx.flashcard.createMany({
+          data: aiResult.cards.map((c, idx) => ({
+            setId,
+            front: c.front,
+            back: c.back,
+            pageReferences: c.pageReferences,
+            orderIndex: idx,
+            masteryStatus: 'UNRATED',
+          })),
+        });
+
+        await tx.flashcardSet.update({
+          where: { id: setId },
+          data: {
+            title: aiResult.title,
+            cardCount: aiResult.cards.length,
+            status: 'READY',
+            errorCode: null,
+            errorMessage: null,
+            activeJobId: null,
+          },
+        });
+      },
+    });
+
+    return {
+      jobId,
+      materialId,
+      status: 'READY',
+      itemCount: aiResult.cards.length,
+      durationMs: aiResult.durationMs,
+    };
+  } catch (err: any) {
+    const isAiError = err instanceof AiProviderError;
+    const errorCode = isAiError ? err.code : 'AI_GENERATION_FAILED';
+    const errorMessage = err instanceof Error ? err.message : String(err);
+    const isRetryable = isAiError ? err.isRetryable : false;
+
+    console.error(
+      JSON.stringify({
+        level: 'error',
+        timestamp: new Date().toISOString(),
+        message: `[Worker] AI Flashcard generation failed for job ${jobId}: ${errorMessage}`,
+        errorCode,
+        isRetryable,
+      })
+    );
+
+    const willRetry = isRetryable && ((job.attemptsMade ?? 0) + 1 < (job.opts?.attempts || 3));
+    if (willRetry) {
+      throw err;
+    }
+
+    await finishAiJobAtomically({
+      jobId,
+      userId,
+      status: 'FAILED',
+      errorCode,
+      errorMessage,
+      onSuccessTx: async (tx) => {
+        await tx.flashcardSet.update({
+          where: { id: setId },
+          data: {
+            status: 'FAILED',
+            errorCode,
+            errorMessage,
+            activeJobId: null,
+          },
+        });
+      },
+    });
+
+    return {
+      jobId,
+      materialId,
+      status: 'FAILED',
+      errorCode,
+      error: errorMessage,
+    };
+  }
+}
+
+export async function processAiQuizJob(
+  job: Job<AiQuizJobData, AiLearningJobResult>
+): Promise<AiLearningJobResult> {
+  const { jobId, quizId, materialId, userId, targetCount } = job.data;
+  const startedAt = new Date();
+
+  console.log(
+    JSON.stringify({
+      level: 'info',
+      timestamp: startedAt.toISOString(),
+      message: `[Worker] Processing AI Quiz generation for job ${jobId}, material ${materialId}, targetCount ${targetCount}`,
+      attempt: (job.attemptsMade ?? 0) + 1,
+    })
+  );
+
+  // 0. Check if job has already reached terminal status
+  const jobRecord = await prisma.processingJob.findUnique({
+    where: { id: jobId },
+    select: { status: true },
+  });
+
+  if (jobRecord && (jobRecord.status === 'COMPLETED' || jobRecord.status === 'FAILED')) {
+    console.warn(
+      JSON.stringify({
+        level: 'warn',
+        timestamp: startedAt.toISOString(),
+        message: `[Worker] Job ${jobId} is already in terminal state ${jobRecord.status}. Aborting duplicate execution.`,
+      })
+    );
+    return {
+      jobId,
+      materialId,
+      status: jobRecord.status === 'COMPLETED' ? 'READY' : 'FAILED',
+    };
+  }
+
+  // 1. Verify Material exists, belongs to user, and is not deleted
+  const material = await prisma.material.findFirst({
+    where: { id: materialId, userId },
+    include: {
+      pages: { orderBy: { pageNumber: 'asc' } },
+    },
+  });
+
+  if (!material || material.deletedAt !== null) {
+    await finishAiJobAtomically({
+      jobId,
+      userId,
+      status: 'FAILED',
+      errorCode: 'MATERIAL_DELETED',
+      errorMessage: 'Materi telah dihapus sebelum proses generasi kuis selesai.',
+    });
+    return {
+      jobId,
+      materialId,
+      status: 'FAILED',
+      errorCode: 'MATERIAL_DELETED',
+      error: 'Materi telah dihapus',
+    };
+  }
+
+  if (material.status !== 'READY') {
+    await finishAiJobAtomically({
+      jobId,
+      userId,
+      status: 'FAILED',
+      errorCode: 'MATERIAL_NOT_READY',
+      errorMessage: 'Materi belum selesai diekstrak sehingga kuis tidak dapat dibuat.',
+    });
+    return {
+      jobId,
+      materialId,
+      status: 'FAILED',
+      errorCode: 'MATERIAL_NOT_READY',
+      error: 'Materi belum berstatus READY',
+    };
+  }
+
+  // 2. Validate extracted text availability
+  const pagesWithText = material.pages.filter(
+    (p) => p.extractedText && p.extractedText.trim().length > 0
+  );
+  const totalCharacters = pagesWithText.reduce(
+    (acc, p) => acc + (p.characterCount || p.extractedText.length),
+    0
+  );
+
+  if (pagesWithText.length === 0 || totalCharacters < 50) {
+    const errorMsg = 'Teks dokumen tidak memadai untuk membuat kuis (kurang dari 50 karakter).';
+    await finishAiJobAtomically({
+      jobId,
+      userId,
+      status: 'FAILED',
+      errorCode: 'INSUFFICIENT_TEXT',
+      errorMessage: errorMsg,
+      onSuccessTx: async (tx) => {
+        await tx.quiz.update({
+          where: { id: quizId },
+          data: { status: 'FAILED', errorCode: 'INSUFFICIENT_TEXT', errorMessage: errorMsg, activeJobId: null },
+        });
+      },
+    });
+    return { jobId, materialId, status: 'FAILED', errorCode: 'INSUFFICIENT_TEXT', error: errorMsg };
+  }
+
+  // 3. Transition status to PROCESSING atomically
+  await prisma.$executeRaw`
+    UPDATE processing_jobs
+    SET status = 'PROCESSING'::"ProcessingJobStatus",
+        started_at = COALESCE(started_at, ${startedAt}),
+        attempts = ${(job.attemptsMade ?? 0) + 1},
+        updated_at = ${startedAt}
+    WHERE id = ${jobId} AND status = 'PENDING'
+  `;
+
+  await prisma.quiz.updateMany({
+    where: { id: quizId },
+    data: { status: 'PROCESSING', activeJobId: jobId },
+  });
+
+  const inputPages = pagesWithText.map((p) => ({
+    pageNumber: p.pageNumber,
+    text: p.extractedText,
+  }));
+
+  try {
+    const aiAdapter = getAiProviderAdapter();
+    const aiResult = await aiAdapter.generateQuiz(
+      {
+        materialTitle: material.title,
+        pages: inputPages,
+        totalPages: material.pageCount || material.pages.length,
+        targetCount,
+      },
+      { timeoutMs: 45000, jobId }
+    );
+
+    // Re-check if material deleted while generating
+    const freshCheck = await prisma.material.findFirst({
+      where: { id: materialId, userId },
+      select: { deletedAt: true },
+    });
+    if (!freshCheck || freshCheck.deletedAt !== null) {
+      await finishAiJobAtomically({
+        jobId,
+        userId,
+        status: 'FAILED',
+        errorCode: 'MATERIAL_DELETED',
+        errorMessage: 'Materi telah dihapus selama proses pembuatan kuis.',
+      });
+      return { jobId, materialId, status: 'FAILED', errorCode: 'MATERIAL_DELETED', error: 'Materi telah dihapus' };
+    }
+
+    // Atomically save questions and mark quiz READY
+    await finishAiJobAtomically({
+      jobId,
+      userId,
+      status: 'COMPLETED',
+      payload: {
+        questionCount: aiResult.questions.length,
+        durationMs: aiResult.durationMs,
+      },
+      onSuccessTx: async (tx) => {
+        // Create new questions
+        await tx.quizQuestion.createMany({
+          data: aiResult.questions.map((q, idx) => ({
+            quizId,
+            question: q.question,
+            options: q.options,
+            correctIndex: q.correctIndex,
+            explanation: q.explanation,
+            pageReferences: q.pageReferences,
+            orderIndex: idx,
+          })),
+        });
+
+        await tx.quiz.update({
+          where: { id: quizId },
+          data: {
+            title: aiResult.title,
+            questionCount: aiResult.questions.length,
+            status: 'READY',
+            errorCode: null,
+            errorMessage: null,
+            activeJobId: null,
+          },
+        });
+      },
+    });
+
+    return {
+      jobId,
+      materialId,
+      status: 'READY',
+      itemCount: aiResult.questions.length,
+      durationMs: aiResult.durationMs,
+    };
+  } catch (err: any) {
+    const isAiError = err instanceof AiProviderError;
+    const errorCode = isAiError ? err.code : 'AI_GENERATION_FAILED';
+    const errorMessage = err instanceof Error ? err.message : String(err);
+    const isRetryable = isAiError ? err.isRetryable : false;
+
+    console.error(
+      JSON.stringify({
+        level: 'error',
+        timestamp: new Date().toISOString(),
+        message: `[Worker] AI Quiz generation failed for job ${jobId}: ${errorMessage}`,
+        errorCode,
+        isRetryable,
+      })
+    );
+
+    const willRetry = isRetryable && ((job.attemptsMade ?? 0) + 1 < (job.opts?.attempts || 3));
+    if (willRetry) {
+      throw err;
+    }
+
+    await finishAiJobAtomically({
+      jobId,
+      userId,
+      status: 'FAILED',
+      errorCode,
+      errorMessage,
+      onSuccessTx: async (tx) => {
+        await tx.quiz.update({
+          where: { id: quizId },
+          data: {
+            status: 'FAILED',
+            errorCode,
+            errorMessage,
+            activeJobId: null,
+          },
+        });
       },
     });
 

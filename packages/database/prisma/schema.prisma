@@ -31,6 +31,9 @@ model User {
   dailyCounters   DailyUploadCounter[]
   summaries       MaterialSummary[]
   aiUsage         AiUsage?
+  flashcardSets   FlashcardSet[]
+  quizzes         Quiz[]
+  quizAttempts    QuizAttempt[]
 
   @@map("users")
 }
@@ -169,6 +172,8 @@ model Material {
   notes          Note[]
   processingJobs ProcessingJob[]
   summary        MaterialSummary?
+  flashcardSets  FlashcardSet[]
+  quizzes        Quiz[]
 
   // Target for composite FK references if needed
   @@unique([id, userId])
@@ -196,6 +201,8 @@ enum ProcessingJobType {
   DOCUMENT_EXTRACTION
   DOCUMENT_CLEANUP
   AI_SUMMARY_GENERATION
+  AI_FLASHCARD_GENERATION
+  AI_QUIZ_GENERATION
 }
 
 enum ProcessingJobStatus {
@@ -344,5 +351,141 @@ model AiUsage {
   updatedAt            DateTime @updatedAt @map("updated_at")
 
   @@map("ai_usages")
+}
+
+// Milestone 7 — Flashcards and Quizzes
+enum FlashcardSetStatus {
+  QUEUED
+  PROCESSING
+  READY
+  FAILED
+}
+
+enum FlashcardMasteryStatus {
+  UNRATED
+  NEED_REVIEW
+  MASTERED
+}
+
+model FlashcardSet {
+  id          String             @id @default(cuid())
+  userId      String             @map("user_id")
+  user        User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  materialId  String             @map("material_id")
+  material    Material           @relation(fields: [materialId], references: [id], onDelete: Cascade)
+  title       String
+  cardCount   Int                @default(0) @map("card_count")
+  status      FlashcardSetStatus @default(QUEUED)
+  targetCount Int                @default(10) @map("target_count")
+  activeJobId String?            @map("active_job_id")
+  errorCode   String?            @map("error_code")
+  errorMessage String?           @map("error_message")
+  createdAt   DateTime           @default(now()) @map("created_at")
+  updatedAt   DateTime           @updatedAt @map("updated_at")
+
+  cards Flashcard[]
+
+  @@index([userId, materialId])
+  @@index([userId, status])
+  @@map("flashcard_sets")
+}
+
+model Flashcard {
+  id             String                 @id @default(cuid())
+  setId          String                 @map("set_id")
+  set            FlashcardSet           @relation(fields: [setId], references: [id], onDelete: Cascade)
+  front          String                 @db.Text
+  back           String                 @db.Text
+  pageReferences Int[]                  @map("page_references")
+  orderIndex     Int                    @default(0) @map("order_index")
+  masteryStatus  FlashcardMasteryStatus @default(UNRATED) @map("mastery_status")
+  createdAt      DateTime               @default(now()) @map("created_at")
+  updatedAt      DateTime               @updatedAt @map("updated_at")
+
+  @@index([setId, orderIndex])
+  @@map("flashcards")
+}
+
+enum QuizStatus {
+  QUEUED
+  PROCESSING
+  READY
+  FAILED
+}
+
+model Quiz {
+  id            String          @id @default(cuid())
+  userId        String          @map("user_id")
+  user          User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  materialId    String          @map("material_id")
+  material      Material        @relation(fields: [materialId], references: [id], onDelete: Cascade)
+  title         String
+  questionCount Int             @default(0) @map("question_count")
+  status        QuizStatus      @default(QUEUED)
+  targetCount   Int             @default(5) @map("target_count")
+  activeJobId   String?         @map("active_job_id")
+  errorCode     String?         @map("error_code")
+  errorMessage  String?         @map("error_message")
+  createdAt     DateTime        @default(now()) @map("created_at")
+  updatedAt     DateTime        @updatedAt @map("updated_at")
+
+  questions QuizQuestion[]
+  attempts  QuizAttempt[]
+
+  @@index([userId, materialId])
+  @@index([userId, status])
+  @@map("quizzes")
+}
+
+model QuizQuestion {
+  id             String   @id @default(cuid())
+  quizId         String   @map("quiz_id")
+  quiz           Quiz     @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  question       String   @db.Text
+  options        String[] // Exactly 4 options
+  correctIndex   Int      @map("correct_index") // 0 to 3
+  explanation    String   @db.Text
+  pageReferences Int[]    @map("page_references")
+  orderIndex     Int      @default(0) @map("order_index")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  attemptAnswers QuizAttemptAnswer[]
+
+  @@index([quizId, orderIndex])
+  @@map("quiz_questions")
+}
+
+model QuizAttempt {
+  id                  String    @id @default(cuid())
+  quizId              String    @map("quiz_id")
+  quiz                Quiz      @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  userId              String    @map("user_id")
+  user                User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  score               Float     @default(0) // 0 to 100
+  totalQuestions      Int       @default(0) @map("total_questions")
+  correctAnswersCount Int       @default(0) @map("correct_answers_count")
+  submittedAt         DateTime? @map("submitted_at")
+  createdAt           DateTime  @default(now()) @map("created_at")
+  updatedAt           DateTime  @updatedAt @map("updated_at")
+
+  answers QuizAttemptAnswer[]
+
+  @@index([userId, quizId])
+  @@map("quiz_attempts")
+}
+
+model QuizAttemptAnswer {
+  id             String       @id @default(cuid())
+  attemptId      String       @map("attempt_id")
+  attempt        QuizAttempt  @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+  questionId     String       @map("question_id")
+  question       QuizQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  selectedIndex  Int?         @map("selected_index") // 0 to 3, or null if skipped
+  isCorrect      Boolean      @default(false) @map("is_correct")
+  createdAt      DateTime     @default(now()) @map("created_at")
+
+  @@unique([attemptId, questionId])
+  @@map("quiz_attempt_answers")
 }
 

@@ -15,6 +15,7 @@ import { assignmentRouter } from './routes/assignments.js';
 import { noteRouter } from './routes/notes.js';
 import { dashboardRouter } from './routes/dashboard.js';
 import { materialRouter } from './routes/materials.js';
+import { flashcardRouter, quizRouter, attemptRouter } from './routes/learning.js';
 import { localStorageRouter } from './routes/localStorage.js';
 
 export function createApp(): Express {
@@ -57,7 +58,7 @@ export function createApp(): Express {
   app.use('/health', healthRouter);
   app.use('/ready', readyRouter);
 
-  // Milestone 2, 3, 4 & 5 API endpoints
+  // Milestone 2, 3, 4, 5, 6 & 7 API endpoints
   app.use('/api/auth', authRouter);
   app.use('/api/semesters', semesterRouter);
   app.use('/api/courses', courseRouter);
@@ -65,6 +66,9 @@ export function createApp(): Express {
   app.use('/api/notes', noteRouter);
   app.use('/api/dashboard', dashboardRouter);
   app.use('/api/materials', materialRouter);
+  app.use('/api/flashcards', flashcardRouter);
+  app.use('/api/quizzes', quizRouter);
+  app.use('/api/attempts', attemptRouter);
   app.use('/api/storage/local', localStorageRouter);
 
   // 404 handler

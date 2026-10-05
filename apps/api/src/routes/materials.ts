@@ -5,6 +5,8 @@ import {
   UpdateMaterialInputSchema,
   MaterialListQuerySchema,
   GenerateSummaryInputSchema,
+  GenerateFlashcardsInputSchema,
+  GenerateQuizInputSchema,
 } from '@studyflow/shared';
 import {
   initiateUpload,
@@ -23,6 +25,12 @@ import {
   getSummaryByMaterialId,
   getUserQuota,
 } from '../services/summary.service.js';
+import {
+  getFlashcardSets,
+  requestFlashcardGeneration,
+  getQuizzes,
+  requestQuizGeneration,
+} from '../services/learning.service.js';
 import { authenticate } from '../middleware/authenticate.js';
 import { originCheckMiddleware } from '../middleware/originCheck.js';
 import { AppError } from '../middleware/errorHandler.js';
@@ -225,6 +233,86 @@ materialRouter.post(
         jobId: result.jobId,
         summary: result.summary,
       });
+    } catch (err) {
+      next(err);
+    }
+  }
+);
+
+// GET /api/materials/:id/flashcard-sets — List flashcard sets for material
+materialRouter.get(
+  '/:id/flashcard-sets',
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const id = req.params.id as string;
+      const sets = await getFlashcardSets(req.user!.id, id);
+      res.status(200).json({ sets });
+    } catch (err) {
+      next(err);
+    }
+  }
+);
+
+// POST /api/materials/:id/flashcard-sets — Request generation of flashcard set
+materialRouter.post(
+  '/:id/flashcard-sets',
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const id = req.params.id as string;
+      const parsedBody = GenerateFlashcardsInputSchema.safeParse(req.body || {});
+      if (!parsedBody.success) {
+        res.status(400).json({
+          error: {
+            code: 'VALIDATION_ERROR',
+            message: 'Jumlah kartu tidak valid (pilih 5, 10, atau 20 kartu)',
+            details: parsedBody.error.format(),
+          },
+        });
+        return;
+      }
+
+      const result = await requestFlashcardGeneration(req.user!.id, id, parsedBody.data.targetCount);
+      res.status(202).json(result);
+    } catch (err) {
+      next(err);
+    }
+  }
+);
+
+// GET /api/materials/:id/quizzes — List quizzes for material
+materialRouter.get(
+  '/:id/quizzes',
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const id = req.params.id as string;
+      const quizzes = await getQuizzes(req.user!.id, id);
+      res.status(200).json({ quizzes });
+    } catch (err) {
+      next(err);
+    }
+  }
+);
+
+// POST /api/materials/:id/quizzes — Request generation of quiz
+materialRouter.post(
+  '/:id/quizzes',
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const id = req.params.id as string;
+      const parsedBody = GenerateQuizInputSchema.safeParse(req.body || {});
+      if (!parsedBody.success) {
+        res.status(400).json({
+          error: {
+            code: 'VALIDATION_ERROR',
+            message: 'Jumlah soal tidak valid (pilih 5 atau 10 soal)',
+            details: parsedBody.error.format(),
+          },
+        });
+        return;
+      }
+
+      const result = await requestQuizGeneration(req.user!.id, id, parsedBody.data.targetCount);
+      res.status(202).json(result);
     } catch (err) {
       next(err);
     }

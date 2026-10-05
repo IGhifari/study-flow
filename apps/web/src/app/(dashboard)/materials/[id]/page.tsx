@@ -24,7 +24,11 @@ import {
   RefreshCw,
   Sparkles,
   Info,
+  Layers,
+  HelpCircle,
 } from 'lucide-react';
+import { MaterialFlashcardTab } from '@/components/materials/material-flashcard-tab';
+import { MaterialQuizTab } from '@/components/materials/material-quiz-tab';
 import {
   Material,
   MaterialPage,
@@ -73,8 +77,8 @@ export default function MaterialDetailPage(): React.JSX.Element {
   const [isLoading, setIsLoading] = React.useState(true);
   const [errorMessage, setErrorMessage] = React.useState<string | null>(null);
 
-  // Tab View Mode: 'pdf' | 'summary' | 'text'
-  const [activeTab, setActiveTab] = React.useState<'pdf' | 'summary' | 'text'>('pdf');
+  // Tab View Mode: 'pdf' | 'summary' | 'flashcards' | 'quiz' | 'text'
+  const [activeTab, setActiveTab] = React.useState<'pdf' | 'summary' | 'flashcards' | 'quiz' | 'text'>('pdf');
 
   // PDF Preview & Controls State
   const [previewUrl, setPreviewUrl] = React.useState<string | null>(null);
@@ -558,6 +562,26 @@ export default function MaterialDetailPage(): React.JSX.Element {
               {isAiWorking && (
                 <Loader2 className="h-3 w-3 animate-spin text-primary ml-1" />
               )}
+            </Button>
+
+            <Button
+              variant={activeTab === 'flashcards' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => setActiveTab('flashcards')}
+              className="gap-2 text-xs shrink-0"
+            >
+              <Layers className="h-4 w-4 text-primary" />
+              <span>Flashcards</span>
+            </Button>
+
+            <Button
+              variant={activeTab === 'quiz' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => setActiveTab('quiz')}
+              className="gap-2 text-xs shrink-0"
+            >
+              <HelpCircle className="h-4 w-4 text-primary" />
+              <span>Kuis</span>
             </Button>
 
             <Button
@@ -1189,6 +1213,30 @@ export default function MaterialDetailPage(): React.JSX.Element {
                 </Card>
               )}
             </div>
+          )}
+
+          {/* TAB 3: Flashcards */}
+          {activeTab === 'flashcards' && (
+            <MaterialFlashcardTab
+              materialId={material.id}
+              isArchived={isArchived}
+              onNavigateToPage={(pageNum) => {
+                setCurrentPage(pageNum);
+                setActiveTab('pdf');
+              }}
+            />
+          )}
+
+          {/* TAB 4: Kuis */}
+          {activeTab === 'quiz' && (
+            <MaterialQuizTab
+              materialId={material.id}
+              isArchived={isArchived}
+              onNavigateToPage={(pageNum) => {
+                setCurrentPage(pageNum);
+                setActiveTab('pdf');
+              }}
+            />
           )}
         </div>
       ) : null}

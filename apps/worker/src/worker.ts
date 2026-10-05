@@ -1,7 +1,11 @@
 import { createRedisConnection, createSmokeWorker } from './queues/smokeQueue.js';
 import { processDocumentJob } from './queues/documentQueue.js';
-import { processAiSummaryJob } from './queues/aiQueue.js';
-import { Worker } from 'bullmq';
+import {
+  processAiSummaryJob,
+  processAiFlashcardJob,
+  processAiQuizJob,
+} from './queues/aiQueue.js';
+import { Worker, Job } from 'bullmq';
 import { QUEUE_NAMES } from '@studyflow/shared';
 import { env } from './config/env.js';
 
@@ -27,14 +31,24 @@ const documentWorker = new Worker(
   }
 );
 
+async function handleAiJob(job: Job<any, any>): Promise<any> {
+  if (job.name === 'generate-flashcards' || job.data?.setId) {
+    return processAiFlashcardJob(job);
+  }
+  if (job.name === 'generate-quiz' || job.data?.quizId) {
+    return processAiQuizJob(job);
+  }
+  return processAiSummaryJob(job);
+}
+
 const aiWorker = new Worker(
   QUEUE_NAMES.aiGeneration,
-  processAiSummaryJob,
+  handleAiJob,
   {
     connection: redisConnection,
     concurrency: 1, // Safe concurrency limit for free tier AI generation
     limiter: {
-      max: 10, // Global limiter: maximum 10 summary jobs per minute across all users
+      max: 10, // Global limiter: maximum 10 AI generation jobs per minute across all users
       duration: 60000,
     },
   }
