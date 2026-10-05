@@ -2,12 +2,17 @@ import { describe, it, expect, beforeEach, afterAll } from 'vitest';
 import request from 'supertest';
 import { createApp } from '../app.js';
 import { prisma } from '@studyflow/database';
-import { getStorageAdapter, MockStorageAdapter } from '../services/storage.service.js';
+import {
+  getStorageAdapter,
+  MockStorageAdapter,
+  setStorageAdapterForTesting,
+} from '../services/storage.service.js';
 
 describe('Material Endpoints & Invariants', () => {
   const app = createApp();
   const TRUSTED_ORIGIN = 'http://localhost:3000';
-  const mockStorage = getStorageAdapter() as MockStorageAdapter;
+  const mockStorage = new MockStorageAdapter();
+  setStorageAdapterForTesting(mockStorage);
 
   let userAId: string;
   let userBId: string;

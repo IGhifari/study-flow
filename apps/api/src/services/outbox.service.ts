@@ -7,6 +7,7 @@ import { getStorageAdapter } from './storage.service.js';
 import { sweepAbandonedUploads } from './material.service.js';
 
 let documentQueue: Queue | null = null;
+let aiQueue: Queue | null = null;
 let redisConnection: Redis | null = null;
 let outboxLoopTimer: NodeJS.Timeout | null = null;
 let lastSweepTime = 0;
@@ -43,9 +44,31 @@ export function getDocumentProcessingQueue(): Queue {
   return documentQueue;
 }
 
+export function getAiGenerationQueue(): Queue {
+  if (!aiQueue) {
+    aiQueue = new Queue(QUEUE_NAMES.aiGeneration, {
+      connection: getQueueConnection(),
+      defaultJobOptions: {
+        attempts: 3,
+        backoff: {
+          type: 'exponential',
+          delay: 3000,
+        },
+        removeOnComplete: {
+          count: 100,
+        },
+        removeOnFail: {
+          count: 200,
+        },
+      },
+    });
+  }
+  return aiQueue;
+}
+
 /**
  * Dispatches pending outbox events to BullMQ or executes direct cleanup.
- * Handles DOCUMENT_PROCESSING_REQUESTED and DOCUMENT_CLEANUP_REQUESTED.
+ * Handles DOCUMENT_PROCESSING_REQUESTED, AI_SUMMARY_REQUESTED, and DOCUMENT_CLEANUP_REQUESTED.
  */
 export async function dispatchOutboxEvents(): Promise<{ dispatched: number; failed: number }> {
   let dispatched = 0;
@@ -64,13 +87,12 @@ export async function dispatchOutboxEvents(): Promise<{ dispatched: number; fail
     return { dispatched: 0, failed: 0 };
   }
 
-  const queue = getDocumentProcessingQueue();
-
   for (const event of pendingEvents) {
     try {
       const payload = event.payload as any;
 
       if (event.eventType === 'DOCUMENT_PROCESSING_REQUESTED') {
+        const queue = getDocumentProcessingQueue();
         const jobId = payload.jobId || event.aggregateId;
         await queue.add(
           'process-document',
@@ -80,6 +102,22 @@ export async function dispatchOutboxEvents(): Promise<{ dispatched: number; fail
             userId: payload.userId,
             storageKey: payload.storageKey,
             declaredBytes: payload.declaredBytes,
+          },
+          {
+            jobId, // Stable idempotency key in BullMQ
+          }
+        );
+      } else if (event.eventType === 'AI_SUMMARY_REQUESTED') {
+        const queue = getAiGenerationQueue();
+        const jobId = payload.jobId || event.aggregateId;
+        await queue.add(
+          'generate-summary',
+          {
+            jobId,
+            summaryId: payload.summaryId,
+            materialId: payload.materialId,
+            userId: payload.userId,
+            isRegeneration: payload.isRegeneration,
           },
           {
             jobId, // Stable idempotency key in BullMQ
@@ -165,6 +203,10 @@ export async function closeQueueConnections(): Promise<void> {
   if (documentQueue) {
     await documentQueue.close();
     documentQueue = null;
+  }
+  if (aiQueue) {
+    await aiQueue.close();
+    aiQueue = null;
   }
   if (redisConnection) {
     await redisConnection.quit().catch(() => redisConnection?.disconnect());

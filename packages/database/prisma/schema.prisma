@@ -29,6 +29,8 @@ model User {
   processingJobs  ProcessingJob[]
   storageUsage    StorageUsage?
   dailyCounters   DailyUploadCounter[]
+  summaries       MaterialSummary[]
+  aiUsage         AiUsage?
 
   @@map("users")
 }
@@ -166,6 +168,7 @@ model Material {
   pages          MaterialPage[]
   notes          Note[]
   processingJobs ProcessingJob[]
+  summary        MaterialSummary?
 
   // Target for composite FK references if needed
   @@unique([id, userId])
@@ -192,6 +195,7 @@ model MaterialPage {
 enum ProcessingJobType {
   DOCUMENT_EXTRACTION
   DOCUMENT_CLEANUP
+  AI_SUMMARY_GENERATION
 }
 
 enum ProcessingJobStatus {
@@ -289,3 +293,56 @@ model RefreshSession {
   @@index([familyId])
   @@map("refresh_sessions")
 }
+
+// Milestone 6 — AI Summaries
+enum SummaryStatus {
+  QUEUED
+  PROCESSING
+  READY
+  FAILED
+}
+
+model MaterialSummary {
+  id                   String        @id @default(cuid())
+  userId               String        @map("user_id")
+  user                 User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  materialId           String        @unique @map("material_id")
+  material             Material      @relation(fields: [materialId], references: [id], onDelete: Cascade)
+  status               SummaryStatus @default(QUEUED)
+  title                String?
+  overview             String?       @db.Text
+  keyConcepts          Json?         @map("key_concepts")
+  sections             Json?
+  keyTerms             Json?         @map("key_terms")
+  limitations          String?       @db.Text
+  provider             String        @default("gemini")
+  model                String        @default("gemini-2.5-flash")
+  promptVersion        String        @default("v1") @map("prompt_version")
+  sourcePageCount      Int           @default(0) @map("source_page_count")
+  sourceCharacterCount Int           @default(0) @map("source_character_count")
+  inputTokens          Int?          @map("input_tokens")
+  outputTokens         Int?          @map("output_tokens")
+  durationMs           Int?          @map("duration_ms")
+  activeJobId          String?       @map("active_job_id")
+  errorCode            String?       @map("error_code")
+  errorMessage         String?       @map("error_message")
+  createdAt            DateTime      @default(now()) @map("created_at")
+  updatedAt            DateTime      @updatedAt @map("updated_at")
+
+  @@index([userId, status])
+  @@map("material_summaries")
+}
+
+model AiUsage {
+  id                   String   @id @default(cuid())
+  userId               String   @unique @map("user_id")
+  user                 User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  dailyGenerationCount Int      @default(0) @map("daily_generation_count")
+  lastResetUtc         DateTime @default(now()) @map("last_reset_utc")
+  activeJobsCount      Int      @default(0) @map("active_jobs_count")
+  createdAt            DateTime @default(now()) @map("created_at")
+  updatedAt            DateTime @updatedAt @map("updated_at")
+
+  @@map("ai_usages")
+}
+

@@ -22,12 +22,19 @@ import {
   Copy,
   Check,
   RefreshCw,
+  Sparkles,
+  Info,
 } from 'lucide-react';
 import {
   Material,
   MaterialPage,
   formatUserDateTime,
   UserProfile,
+  MaterialSummary,
+  AiQuotaStatus,
+  KeyConcept,
+  SummarySection,
+  KeyTerm,
 } from '@studyflow/shared';
 import {
   getMaterial,
@@ -36,6 +43,11 @@ import {
   retryMaterialProcessing,
   getMaterialDownloadUrl,
 } from '@/lib/material-client';
+import {
+  getMaterialSummary,
+  generateMaterialSummary,
+  SummaryApiError,
+} from '@/lib/summary-client';
 import { getProfile } from '@/lib/auth-client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -61,8 +73,8 @@ export default function MaterialDetailPage(): React.JSX.Element {
   const [isLoading, setIsLoading] = React.useState(true);
   const [errorMessage, setErrorMessage] = React.useState<string | null>(null);
 
-  // Tab View Mode: 'pdf' or 'text'
-  const [activeTab, setActiveTab] = React.useState<'pdf' | 'text'>('pdf');
+  // Tab View Mode: 'pdf' | 'summary' | 'text'
+  const [activeTab, setActiveTab] = React.useState<'pdf' | 'summary' | 'text'>('pdf');
 
   // PDF Preview & Controls State
   const [previewUrl, setPreviewUrl] = React.useState<string | null>(null);
@@ -75,6 +87,15 @@ export default function MaterialDetailPage(): React.JSX.Element {
   // Extracted text page selection
   const [selectedTextPage, setSelectedTextPage] = React.useState(1);
 
+  // AI Summary State
+  const [summary, setSummary] = React.useState<MaterialSummary | null>(null);
+  const [quota, setQuota] = React.useState<AiQuotaStatus | null>(null);
+  const [isSummaryLoading, setIsSummaryLoading] = React.useState(false);
+  const [isGeneratingSummary, setIsGeneratingSummary] = React.useState(false);
+  const [summaryError, setSummaryError] = React.useState<string | null>(null);
+  const [isRegenerateConfirmOpen, setIsRegenerateConfirmOpen] = React.useState(false);
+  const [copiedSummary, setCopiedSummary] = React.useState(false);
+
   // Edit Title dialog
   const [isEditOpen, setIsEditOpen] = React.useState(false);
   const [editTitle, setEditTitle] = React.useState('');
@@ -85,7 +106,7 @@ export default function MaterialDetailPage(): React.JSX.Element {
   const [isSubmittingDelete, setIsSubmittingDelete] = React.useState(false);
   const [deleteError, setDeleteError] = React.useState<string | null>(null);
 
-  // Retry state
+  // Retry document processing state
   const [isRetrying, setIsRetrying] = React.useState(false);
 
   const timezone = userProfile?.timezone || 'Asia/Jakarta';
@@ -108,6 +129,19 @@ export default function MaterialDetailPage(): React.JSX.Element {
     }
   }, []);
 
+  const loadSummaryData = React.useCallback(async (id: string) => {
+    setIsSummaryLoading(true);
+    try {
+      const res = await getMaterialSummary(id);
+      setSummary(res.summary);
+      if (res.quota) setQuota(res.quota);
+    } catch (err: any) {
+      console.error('Failed fetching summary:', err);
+    } finally {
+      setIsSummaryLoading(false);
+    }
+  }, []);
+
   const loadMaterialData = React.useCallback(async () => {
     if (!materialId) return;
     setIsLoading(true);
@@ -122,14 +156,15 @@ export default function MaterialDetailPage(): React.JSX.Element {
       setEditTitle(mat.title);
 
       if (mat.status === 'READY') {
-        await fetchDownloadUrl(mat.id);
+        fetchDownloadUrl(mat.id);
+        loadSummaryData(mat.id);
       }
     } catch (err: any) {
       setErrorMessage(err.message || 'Gagal memuat detail materi');
     } finally {
       setIsLoading(false);
     }
-  }, [materialId, fetchDownloadUrl]);
+  }, [materialId, fetchDownloadUrl, loadSummaryData]);
 
   React.useEffect(() => {
     loadMaterialData();
@@ -146,6 +181,7 @@ export default function MaterialDetailPage(): React.JSX.Element {
         setMaterial(fresh);
         if (fresh.status === 'READY') {
           fetchDownloadUrl(fresh.id);
+          loadSummaryData(fresh.id);
         }
       } catch (err) {
         console.error('Polling error:', err);
@@ -153,7 +189,25 @@ export default function MaterialDetailPage(): React.JSX.Element {
     }, 4000);
 
     return () => clearInterval(timer);
-  }, [material, fetchDownloadUrl]);
+  }, [material, fetchDownloadUrl, loadSummaryData]);
+
+  // Polling if AI summary is in QUEUED or PROCESSING
+  React.useEffect(() => {
+    if (!summary) return;
+    if (summary.status !== 'QUEUED' && summary.status !== 'PROCESSING') return;
+
+    const timer = setInterval(async () => {
+      try {
+        const res = await getMaterialSummary(materialId);
+        setSummary(res.summary);
+        if (res.quota) setQuota(res.quota);
+      } catch (err) {
+        console.error('Summary polling error:', err);
+      }
+    }, 3000);
+
+    return () => clearInterval(timer);
+  }, [summary, materialId]);
 
   const handleUpdateTitle = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -223,6 +277,75 @@ export default function MaterialDetailPage(): React.JSX.Element {
     }, 2000);
   };
 
+  const handleTriggerSummary = async (regenerate = false) => {
+    setIsGeneratingSummary(true);
+    setSummaryError(null);
+    try {
+      const res = await generateMaterialSummary(materialId, regenerate);
+      setSummary(res.summary);
+      setIsRegenerateConfirmOpen(false);
+      // Refresh summary & quota in background
+      loadSummaryData(materialId);
+    } catch (err: any) {
+      if (err instanceof SummaryApiError) {
+        setSummaryError(err.message);
+      } else {
+        setSummaryError(err.message || 'Gagal meminta pembuatan ringkasan AI');
+      }
+    } finally {
+      setIsGeneratingSummary(false);
+    }
+  };
+
+  const handleJumpToPdfPage = (pageNumber: number) => {
+    setCurrentPage(pageNumber);
+    setActiveTab('pdf');
+    window.scrollTo({ top: 250, behavior: 'smooth' });
+  };
+
+  const handleCopySummary = () => {
+    if (!summary) return;
+    let text = `# ${summary.title || material?.title || 'Ringkasan Materi'}\n\n`;
+    if (summary.overview) {
+      text += `## Ringkasan Utama\n${summary.overview}\n\n`;
+    }
+    const concepts = summary.keyConcepts as KeyConcept[] | null;
+    if (concepts && concepts.length > 0) {
+      text += `## Konsep Kunci\n`;
+      for (const c of concepts) {
+        const pages = c.pageReferences?.length > 0 ? ` (Hal: ${c.pageReferences.join(', ')})` : '';
+        text += `- **${c.concept}**${pages}: ${c.explanation}\n`;
+      }
+      text += '\n';
+    }
+    const sections = summary.sections as SummarySection[] | null;
+    if (sections && sections.length > 0) {
+      text += `## Bagian Materi\n`;
+      for (const sec of sections) {
+        const pages = sec.pageReferences?.length > 0 ? ` (Hal: ${sec.pageReferences.join(', ')})` : '';
+        text += `### ${sec.heading}${pages}\n${sec.content}\n\n`;
+      }
+    }
+    const terms = summary.keyTerms as KeyTerm[] | null;
+    if (terms && terms.length > 0) {
+      text += `## Istilah Penting\n`;
+      for (const term of terms) {
+        const pages = term.pageReferences?.length > 0 ? ` (Hal: ${term.pageReferences.join(', ')})` : '';
+        text += `- **${term.term}**${pages}: ${term.definition}\n`;
+      }
+      text += '\n';
+    }
+    if (summary.limitations) {
+      text += `## Catatan\n${summary.limitations}\n`;
+    }
+
+    navigator.clipboard.writeText(text);
+    setCopiedSummary(true);
+    setTimeout(() => {
+      setCopiedSummary(false);
+    }, 2000);
+  };
+
   const isArchived = Boolean(
     material?.course?.archivedAt || material?.course?.semester?.archivedAt
   );
@@ -248,55 +371,64 @@ export default function MaterialDetailPage(): React.JSX.Element {
           </Link>
         </Button>
 
-        <Card className="border-danger/30 bg-danger/5 p-8 text-center">
-          <AlertCircle className="h-10 w-10 text-danger mx-auto" />
-          <h2 className="mt-3 text-base font-semibold text-foreground">
-            {errorMessage || 'Materi tidak ditemukan'}
-          </h2>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Dokumen mungkin telah dihapus atau Anda tidak memiliki akses ke materi ini.
+        <Card className="p-8 text-center bg-card">
+          <AlertCircle className="h-8 w-8 text-danger mx-auto" />
+          <h3 className="mt-2 text-base font-semibold text-foreground">Gagal Memuat Materi</h3>
+          <p className="mt-1 text-xs text-muted-foreground">
+            {errorMessage || 'Materi tidak ditemukan atau telah dihapus.'}
           </p>
-          <Button asChild className="mt-4">
-            <Link href="/materials">Lihat Semua Materi</Link>
+          <Button asChild size="sm" className="mt-4">
+            <Link href="/materials">Kembali ke Daftar Materi</Link>
           </Button>
         </Card>
       </div>
     );
   }
 
-  const sizeMb = (material.bytes / (1024 * 1024)).toFixed(1);
+  const sizeMb = (material.bytes / (1024 * 1024)).toFixed(2);
+  const formattedCreatedAt = formatUserDateTime(material.createdAt, timezone);
+
   const extractedPages: MaterialPage[] = material.pages || [];
-  const currentExtractedPage =
-    extractedPages.find((p) => p.pageNumber === selectedTextPage) || extractedPages[0];
+  const currentExtractedPage = extractedPages.find((p) => p.pageNumber === selectedTextPage);
+
+  const isAiWorking =
+    summary?.status === 'QUEUED' ||
+    summary?.status === 'PROCESSING' ||
+    isGeneratingSummary;
 
   return (
     <div className="space-y-6">
-      {/* Top Header & Navigation */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div className="space-y-1 min-w-0">
-          <Button variant="ghost" asChild className="gap-1.5 text-xs h-7 px-2 -ml-2 text-muted-foreground">
-            <Link href="/materials">
-              <ArrowLeft className="h-3.5 w-3.5" />
-              <span>Semua Materi</span>
-            </Link>
-          </Button>
+      {/* Top Breadcrumb & Back */}
+      <div className="flex items-center justify-between">
+        <Button variant="ghost" asChild className="gap-2 text-sm w-fit">
+          <Link href="/materials">
+            <ArrowLeft className="h-4 w-4" />
+            <span>Kembali ke Daftar Materi</span>
+          </Link>
+        </Button>
 
-          <div className="flex flex-wrap items-center gap-2.5">
-            <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground truncate max-w-xl">
-              {material.title}
-            </h1>
-            <MaterialStatusBadge
-              status={material.status}
-              errorCode={material.errorCode}
-              errorMessage={material.errorMessage}
-            />
-          </div>
+        <div className="flex items-center gap-2">
+          <MaterialStatusBadge status={material.status} />
+          {isArchived && (
+            <span className="rounded-full bg-warning/10 px-2.5 py-0.5 text-xs font-medium text-warning">
+              Arsip
+            </span>
+          )}
+        </div>
+      </div>
 
-          <div className="flex flex-wrap items-center gap-2 sm:gap-3 text-xs text-muted-foreground mt-1">
+      {/* Header Info */}
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between border-b border-border pb-5">
+        <div className="space-y-1.5 min-w-0">
+          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground truncate">
+            {material.title}
+          </h1>
+
+          <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
             {material.course && (
               <Link
                 href={`/courses/${material.course.id}`}
-                className="hover:text-foreground flex items-center gap-1 font-medium"
+                className="hover:text-primary transition-colors flex items-center gap-1 font-medium text-foreground"
               >
                 <BookOpen className="h-3.5 w-3.5" />
                 <span>{material.course.name}</span>
@@ -399,22 +531,40 @@ export default function MaterialDetailPage(): React.JSX.Element {
       ) : material.status === 'READY' ? (
         <div className="space-y-4">
           {/* Navigation View Tabs */}
-          <div className="flex items-center gap-2 border-b border-border pb-2">
+          <div className="flex items-center gap-2 border-b border-border pb-2 overflow-x-auto">
             <Button
               variant={activeTab === 'pdf' ? 'default' : 'ghost'}
               size="sm"
               onClick={() => setActiveTab('pdf')}
-              className="gap-2 text-xs"
+              className="gap-2 text-xs shrink-0"
             >
               <FileText className="h-4 w-4" />
               <span>Dokumen PDF</span>
             </Button>
 
             <Button
+              variant={activeTab === 'summary' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => setActiveTab('summary')}
+              className="gap-2 text-xs shrink-0"
+            >
+              <Sparkles className="h-4 w-4 text-amber-500" />
+              <span>Ringkasan AI</span>
+              {summary?.status === 'READY' && (
+                <span className="ml-1 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 px-1.5 py-0.2 text-[10px] font-semibold">
+                  Siap
+                </span>
+              )}
+              {isAiWorking && (
+                <Loader2 className="h-3 w-3 animate-spin text-primary ml-1" />
+              )}
+            </Button>
+
+            <Button
               variant={activeTab === 'text' ? 'default' : 'ghost'}
               size="sm"
               onClick={() => setActiveTab('text')}
-              className="gap-2 text-xs"
+              className="gap-2 text-xs shrink-0"
             >
               <BookOpen className="h-4 w-4" />
               <span>Teks Hasil Ekstraksi</span>
@@ -576,7 +726,7 @@ export default function MaterialDetailPage(): React.JSX.Element {
                     />
                   </div>
 
-                  {/* Mobile Helper Footnote */}
+                  {/* Footnote */}
                   <div className="border-t border-border bg-muted/20 px-3 py-2 text-[11px] text-muted-foreground flex items-center justify-between">
                     <span>
                       Pratinjau PDF interaktif resmi. Tautan unduhan dibuat secara privat dan aman.
@@ -607,7 +757,337 @@ export default function MaterialDetailPage(): React.JSX.Element {
             </div>
           )}
 
-          {/* TAB 2: Teks Hasil Ekstraksi */}
+          {/* TAB 2: Ringkasan AI */}
+          {activeTab === 'summary' && (
+            <div className="space-y-4">
+              {/* Disclaimer Alert */}
+              <div className="flex items-start gap-3 rounded-lg border border-amber-500/30 bg-amber-500/5 p-3.5 text-xs text-foreground">
+                <Info className="h-4 w-4 shrink-0 text-amber-500 mt-0.5" />
+                <div className="space-y-0.5">
+                  <p className="font-semibold text-amber-600 dark:text-amber-400">
+                    Informasi Kecerdasan Buatan
+                  </p>
+                  <p className="text-muted-foreground leading-relaxed">
+                    Ringkasan dihasilkan oleh AI sebagai asisten belajar pribadi. Selalu verifikasi fakta dan konsep penting dengan membaca dokumen perkuliahan asli melalui referensi halaman di bawah.
+                  </p>
+                </div>
+              </div>
+
+              {/* Error Alert if any */}
+              {summaryError && (
+                <div className="flex items-center gap-2 rounded-lg border border-danger/30 bg-danger/5 p-3 text-xs text-danger">
+                  <AlertCircle className="h-4 w-4 shrink-0" />
+                  <span>{summaryError}</span>
+                </div>
+              )}
+
+              {/* State 1: Active In-Progress / Processing */}
+              {isAiWorking ? (
+                <Card className="p-12 text-center bg-card">
+                  <div className="relative mx-auto w-12 h-12 flex items-center justify-center">
+                    <Loader2 className="h-10 w-10 animate-spin text-primary" />
+                    <Sparkles className="h-4 w-4 text-amber-500 absolute" />
+                  </div>
+                  <h3 className="mt-4 text-base font-semibold text-foreground">
+                    Menyusun Ringkasan AI...
+                  </h3>
+                  <p className="mt-1 text-xs text-muted-foreground max-w-md mx-auto">
+                    Model AI sedang membaca seluruh teks dokumen materi dan mengekstrak konsep kunci, bagian terstruktur, serta istilah penting.
+                  </p>
+                  <div className="mt-4 inline-flex items-center gap-1.5 rounded-full bg-muted px-3 py-1 text-[11px] text-muted-foreground font-medium">
+                    <span className="h-2 w-2 rounded-full bg-primary animate-pulse" />
+                    <span>Memproses di background worker BullMQ</span>
+                  </div>
+                </Card>
+              ) : summary?.status === 'READY' ? (
+                /* State 2: Ready Summary */
+                <div className="space-y-5">
+                  {/* Summary Header & Actions */}
+                  <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border bg-card p-3 sm:p-4">
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <Sparkles className="h-4 w-4 text-amber-500" />
+                        <h2 className="text-base font-bold text-foreground">
+                          {summary.title || 'Ringkasan Materi'}
+                        </h2>
+                      </div>
+                      <div className="flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
+                        <span>Model: {summary.model}</span>
+                        <span>•</span>
+                        <span>{summary.sourcePageCount} halaman dianalisis</span>
+                        {quota && (
+                          <>
+                            <span>•</span>
+                            <span className="text-primary font-medium">
+                              Sisa kuota harian: {quota.dailyRemaining}/{quota.dailyLimit}
+                            </span>
+                          </>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleCopySummary}
+                        className="gap-1.5 text-xs h-8"
+                      >
+                        {copiedSummary ? (
+                          <>
+                            <Check className="h-3.5 w-3.5 text-success" />
+                            <span>Tersalin</span>
+                          </>
+                        ) : (
+                          <>
+                            <Copy className="h-3.5 w-3.5" />
+                            <span>Salin Ringkasan</span>
+                          </>
+                        )}
+                      </Button>
+
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setIsRegenerateConfirmOpen(true)}
+                        disabled={isArchived || Boolean(quota && quota.dailyRemaining <= 0)}
+                        className="gap-1.5 text-xs h-8 text-primary hover:text-primary"
+                      >
+                        <RefreshCw className="h-3.5 w-3.5" />
+                        <span>Regenerasi</span>
+                      </Button>
+                    </div>
+                  </div>
+
+                  {/* Overview Card */}
+                  {summary.overview && (
+                    <Card className="p-5 sm:p-6 bg-card space-y-2 border border-border">
+                      <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+                        Ringkasan Utama
+                      </h3>
+                      <p className="text-sm leading-relaxed text-foreground whitespace-pre-line">
+                        {summary.overview}
+                      </p>
+                    </Card>
+                  )}
+
+                  {/* Konsep Kunci */}
+                  {summary.keyConcepts && (summary.keyConcepts as KeyConcept[]).length > 0 && (
+                    <div className="space-y-3">
+                      <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+                        Konsep Kunci
+                      </h3>
+                      <div className="grid gap-3 sm:grid-cols-2">
+                        {(summary.keyConcepts as KeyConcept[]).map((concept, idx) => (
+                          <Card
+                            key={idx}
+                            className="p-4 bg-card border border-border flex flex-col justify-between gap-3 hover:border-primary/40 transition-colors"
+                          >
+                            <div className="space-y-1.5">
+                              <h4 className="font-semibold text-sm text-foreground">
+                                {concept.concept}
+                              </h4>
+                              <p className="text-xs leading-relaxed text-muted-foreground">
+                                {concept.explanation}
+                              </p>
+                            </div>
+
+                            {concept.pageReferences && concept.pageReferences.length > 0 && (
+                              <div className="flex flex-wrap items-center gap-1.5 pt-2 border-t border-border/50 text-[11px]">
+                                <span className="text-muted-foreground">Sumber:</span>
+                                {concept.pageReferences.map((pg) => (
+                                  <button
+                                    key={pg}
+                                    onClick={() => handleJumpToPdfPage(pg)}
+                                    className="inline-flex items-center gap-0.5 rounded bg-primary/10 hover:bg-primary/20 text-primary font-medium px-1.5 py-0.5 transition-colors cursor-pointer"
+                                    title={`Buka halaman ${pg} di PDF`}
+                                  >
+                                    <span>Hal {pg}</span>
+                                    <ChevronRight className="h-3 w-3" />
+                                  </button>
+                                ))}
+                              </div>
+                            )}
+                          </Card>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Bagian Materi */}
+                  {summary.sections && (summary.sections as SummarySection[]).length > 0 && (
+                    <div className="space-y-3">
+                      <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+                        Struktur & Bagian Materi
+                      </h3>
+                      <div className="space-y-3">
+                        {(summary.sections as SummarySection[]).map((sec, idx) => (
+                          <Card key={idx} className="p-4 sm:p-5 bg-card border border-border space-y-2">
+                            <div className="flex flex-wrap items-center justify-between gap-2">
+                              <h4 className="font-semibold text-sm text-foreground">
+                                {sec.heading}
+                              </h4>
+                              {sec.pageReferences && sec.pageReferences.length > 0 && (
+                                <div className="flex flex-wrap items-center gap-1">
+                                  {sec.pageReferences.map((pg) => (
+                                    <button
+                                      key={pg}
+                                      onClick={() => handleJumpToPdfPage(pg)}
+                                      className="inline-flex items-center gap-0.5 rounded bg-muted hover:bg-muted/80 text-muted-foreground hover:text-foreground font-medium text-[11px] px-1.5 py-0.5 transition-colors cursor-pointer"
+                                      title={`Lihat Halaman ${pg}`}
+                                    >
+                                      <span>Hal {pg}</span>
+                                    </button>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                            <p className="text-xs sm:text-sm leading-relaxed text-muted-foreground whitespace-pre-line">
+                              {sec.content}
+                            </p>
+                          </Card>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Istilah Penting */}
+                  {summary.keyTerms && (summary.keyTerms as KeyTerm[]).length > 0 && (
+                    <div className="space-y-3">
+                      <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+                        Istilah & Glosarium Penting
+                      </h3>
+                      <div className="grid gap-2.5 sm:grid-cols-2">
+                        {(summary.keyTerms as KeyTerm[]).map((term, idx) => (
+                          <div
+                            key={idx}
+                            className="rounded-lg border border-border bg-card p-3 space-y-1 hover:border-primary/40 transition-colors"
+                          >
+                            <div className="flex items-center justify-between gap-2">
+                              <span className="font-semibold text-xs text-foreground font-mono">
+                                {term.term}
+                              </span>
+                              {term.pageReferences && term.pageReferences.length > 0 && (
+                                <div className="flex items-center gap-1">
+                                  {term.pageReferences.map((pg) => (
+                                    <button
+                                      key={pg}
+                                      onClick={() => handleJumpToPdfPage(pg)}
+                                      className="text-[10px] text-primary hover:underline font-medium"
+                                    >
+                                      Hal {pg}
+                                    </button>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                            <p className="text-xs text-muted-foreground leading-relaxed">
+                              {term.definition}
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Limitations if any */}
+                  {summary.limitations && (
+                    <div className="rounded-lg border border-border bg-muted/30 p-3.5 text-xs text-muted-foreground space-y-1">
+                      <span className="font-semibold text-foreground">Catatan / Batasan:</span>
+                      <p>{summary.limitations}</p>
+                    </div>
+                  )}
+                </div>
+              ) : summary?.status === 'FAILED' ? (
+                /* State 3: Failed Generation */
+                <Card className="border-danger/30 bg-danger/5 p-8 text-center space-y-3">
+                  <AlertCircle className="h-10 w-10 text-danger mx-auto" />
+                  <h3 className="text-base font-semibold text-danger">Gagal Membuat Ringkasan AI</h3>
+                  <p className="text-xs text-muted-foreground max-w-md mx-auto">
+                    {summary.errorMessage ||
+                      'Terjadi kesalahan saat memproses ringkasan dengan AI. Kuota harian Anda aman dan tidak terpotong untuk kegagalan sistem.'}
+                  </p>
+                  <div className="pt-2 flex justify-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleTriggerSummary(false)}
+                      disabled={isGeneratingSummary || Boolean(quota && quota.dailyRemaining <= 0)}
+                      className="gap-1.5"
+                    >
+                      <RotateCcw className="h-3.5 w-3.5" />
+                      <span>Coba Lagi</span>
+                    </Button>
+                  </div>
+                </Card>
+              ) : (
+                /* State 4: Uncreated / Initial state */
+                <Card className="p-8 sm:p-12 text-center bg-card border border-dashed border-border space-y-4">
+                  <div className="mx-auto w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+                    <Sparkles className="h-6 w-6 text-amber-500" />
+                  </div>
+
+                  <div className="space-y-1 max-w-md mx-auto">
+                    <h3 className="text-base font-semibold text-foreground">
+                      Ringkas Dokumen Ini dengan AI
+                    </h3>
+                    <p className="text-xs text-muted-foreground leading-relaxed">
+                      Dapatkan ringkasan terstruktur otomatis: konsep kunci, intisari bab perkuliahan, dan daftar istilah penting yang dapat diklik langsung menuju nomor halaman PDF aslinya.
+                    </p>
+                  </div>
+
+                  {quota && (
+                    <div className="inline-flex items-center gap-1.5 rounded-full bg-muted/60 px-3 py-1 text-xs text-muted-foreground font-medium">
+                      <span>Kuota Tersedia:</span>
+                      <span className="text-foreground font-bold">
+                        {quota.dailyRemaining} / {quota.dailyLimit}
+                      </span>
+                      <span>ringkasan hari ini</span>
+                    </div>
+                  )}
+
+                  <div className="pt-2">
+                    <Button
+                      size="default"
+                      onClick={() => handleTriggerSummary(false)}
+                      disabled={
+                        isGeneratingSummary ||
+                        isArchived ||
+                        Boolean(quota && quota.dailyRemaining <= 0)
+                      }
+                      className="gap-2 shadow-sm font-semibold"
+                    >
+                      {isGeneratingSummary ? (
+                        <>
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                          <span>Memulai Antrean...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Sparkles className="h-4 w-4 text-amber-300" />
+                          <span>Buat Ringkasan AI Sekarang</span>
+                        </>
+                      )}
+                    </Button>
+                  </div>
+
+                  {isArchived && (
+                    <p className="text-[11px] text-warning">
+                      Mata kuliah atau semester ini telah diarsipkan. Ringkasan baru tidak dapat dibuat.
+                    </p>
+                  )}
+
+                  {quota && quota.dailyRemaining <= 0 && (
+                    <p className="text-[11px] text-danger">
+                      Batas kuota harian Anda telah habis (20 ringkasan/hari). Kuota akan direset pada 00:00 UTC.
+                    </p>
+                  )}
+                </Card>
+              )}
+            </div>
+          )}
+
+          {/* TAB 3: Teks Hasil Ekstraksi */}
           {activeTab === 'text' && (
             <div className="space-y-4">
               {extractedPages.length === 0 ? (
@@ -712,6 +1192,47 @@ export default function MaterialDetailPage(): React.JSX.Element {
           )}
         </div>
       ) : null}
+
+      {/* Regenerate Confirmation Dialog */}
+      <Dialog open={isRegenerateConfirmOpen} onOpenChange={setIsRegenerateConfirmOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Regenerasi Ringkasan AI</DialogTitle>
+            <DialogDescription>
+              Apakah Anda yakin ingin membuat ulang ringkasan ini? Proses ini akan menggunakan 1 kuota harian Anda ({quota?.dailyRemaining ?? 0} tersisa). Ringkasan saat ini akan tetap dipertahankan sampai generasi baru selesai.
+            </DialogDescription>
+          </DialogHeader>
+
+          <DialogFooter className="mt-4">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setIsRegenerateConfirmOpen(false)}
+              disabled={isGeneratingSummary}
+            >
+              Batal
+            </Button>
+            <Button
+              type="button"
+              onClick={() => handleTriggerSummary(true)}
+              disabled={isGeneratingSummary}
+              className="gap-2"
+            >
+              {isGeneratingSummary ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <span>Memproses...</span>
+                </>
+              ) : (
+                <>
+                  <Sparkles className="h-4 w-4 text-amber-300" />
+                  <span>Ya, Regenerasi</span>
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Edit Title Dialog */}
       <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>

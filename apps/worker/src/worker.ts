@@ -1,8 +1,11 @@
 import { createRedisConnection, createSmokeWorker } from './queues/smokeQueue.js';
 import { processDocumentJob } from './queues/documentQueue.js';
+import { processAiSummaryJob } from './queues/aiQueue.js';
 import { Worker } from 'bullmq';
 import { QUEUE_NAMES } from '@studyflow/shared';
 import { env } from './config/env.js';
+
+import { globalAiRateLimiter } from './services/aiRateLimiter.js';
 
 console.log(JSON.stringify({
   level: 'info',
@@ -12,6 +15,7 @@ console.log(JSON.stringify({
 }));
 
 const redisConnection = createRedisConnection();
+globalAiRateLimiter.setRedisClient(redisConnection);
 const smokeWorker = createSmokeWorker(redisConnection);
 
 const documentWorker = new Worker(
@@ -20,6 +24,19 @@ const documentWorker = new Worker(
   {
     connection: redisConnection,
     concurrency: 2, // Concurrency limit for document processing per PRD
+  }
+);
+
+const aiWorker = new Worker(
+  QUEUE_NAMES.aiGeneration,
+  processAiSummaryJob,
+  {
+    connection: redisConnection,
+    concurrency: 1, // Safe concurrency limit for free tier AI generation
+    limiter: {
+      max: 10, // Global limiter: maximum 10 summary jobs per minute across all users
+      duration: 60000,
+    },
   }
 );
 
@@ -36,6 +53,23 @@ documentWorker.on('error', (err) => {
     level: 'error',
     timestamp: new Date().toISOString(),
     message: '[Worker] Document worker error',
+    error: err.message,
+  }));
+});
+
+aiWorker.on('ready', () => {
+  console.log(JSON.stringify({
+    level: 'info',
+    timestamp: new Date().toISOString(),
+    message: `[Worker] AI generation worker is ready and listening to queue: ${QUEUE_NAMES.aiGeneration}`,
+  }));
+});
+
+aiWorker.on('error', (err) => {
+  console.error(JSON.stringify({
+    level: 'error',
+    timestamp: new Date().toISOString(),
+    message: '[Worker] AI generation worker error',
     error: err.message,
   }));
 });
@@ -65,6 +99,7 @@ async function gracefulShutdown(signal: string): Promise<void> {
     await Promise.all([
       smokeWorker.close(),
       documentWorker.close(),
+      aiWorker.close(),
     ]);
     await redisConnection.quit();
 

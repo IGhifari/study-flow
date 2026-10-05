@@ -737,6 +737,28 @@
         }
       }
     },
+    "/api/materials/usage/ai": {
+      "get": {
+        "summary": "Mendapatkan status kuota harian dan batas concurrent ringkasan AI",
+        "tags": ["Materials", "AI Summaries"],
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "Informasi kuota pembuatan ringkasan AI",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "quota": { "$ref": "#/components/schemas/AiQuotaStatus" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/materials/jobs/{jobId}": {
       "get": {
         "summary": "Mengecek status pemrosesan pekerjaan asinkron",
@@ -838,6 +860,57 @@
             }
           },
           "404": { "description": "Materi tidak ditemukan" }
+        }
+      }
+    },
+    "/api/materials/{id}/summary": {
+      "get": {
+        "summary": "Mendapatkan ringkasan AI dan status kuota untuk materi",
+        "tags": ["Materials", "AI Summaries"],
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Ringkasan AI dan status kuota",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/SummaryResponse" }
+              }
+            }
+          },
+          "404": { "description": "Materi tidak ditemukan" }
+        }
+      },
+      "post": {
+        "summary": "Meminta generasi atau regenerasi ringkasan materi dengan AI",
+        "tags": ["Materials", "AI Summaries"],
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/GenerateSummaryInput" }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Permintaan diterima dan dijadwalkan di antrean worker",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/GenerateSummaryResponse" }
+              }
+            }
+          },
+          "400": { "description": "Materi belum READY atau teks tidak memadai" },
+          "403": { "description": "Akses materi ditolak" },
+          "404": { "description": "Materi tidak ditemukan" },
+          "429": { "description": "Batas kuota harian atau concurrent job terlampaui" }
         }
       }
     }
@@ -971,6 +1044,93 @@
           "dailyUploadsLimit": { "type": "integer" },
           "dailyResetUtc": { "type": "string" },
           "dailyResetUserTimezone": { "type": "string" }
+        }
+      },
+      "GenerateSummaryInput": {
+        "type": "object",
+        "properties": {
+          "regenerate": { "type": "boolean", "default": false }
+        }
+      },
+      "KeyConcept": {
+        "type": "object",
+        "properties": {
+          "concept": { "type": "string" },
+          "explanation": { "type": "string" },
+          "pageReferences": { "type": "array", "items": { "type": "integer" } }
+        },
+        "required": ["concept", "explanation", "pageReferences"]
+      },
+      "SummarySection": {
+        "type": "object",
+        "properties": {
+          "heading": { "type": "string" },
+          "content": { "type": "string" },
+          "pageReferences": { "type": "array", "items": { "type": "integer" } }
+        },
+        "required": ["heading", "content", "pageReferences"]
+      },
+      "KeyTerm": {
+        "type": "object",
+        "properties": {
+          "term": { "type": "string" },
+          "definition": { "type": "string" },
+          "pageReferences": { "type": "array", "items": { "type": "integer" } }
+        },
+        "required": ["term", "definition", "pageReferences"]
+      },
+      "MaterialSummary": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "userId": { "type": "string" },
+          "materialId": { "type": "string" },
+          "status": { "type": "string", "enum": ["QUEUED", "PROCESSING", "READY", "FAILED"] },
+          "title": { "type": ["string", "null"] },
+          "overview": { "type": ["string", "null"] },
+          "keyConcepts": { "type": ["array", "null"], "items": { "$ref": "#/components/schemas/KeyConcept" } },
+          "sections": { "type": ["array", "null"], "items": { "$ref": "#/components/schemas/SummarySection" } },
+          "keyTerms": { "type": ["array", "null"], "items": { "$ref": "#/components/schemas/KeyTerm" } },
+          "limitations": { "type": ["string", "null"] },
+          "provider": { "type": "string" },
+          "model": { "type": "string" },
+          "promptVersion": { "type": "string" },
+          "sourcePageCount": { "type": "integer" },
+          "sourceCharacterCount": { "type": "integer" },
+          "inputTokens": { "type": ["integer", "null"] },
+          "outputTokens": { "type": ["integer", "null"] },
+          "durationMs": { "type": ["integer", "null"] },
+          "activeJobId": { "type": ["string", "null"] },
+          "errorCode": { "type": ["string", "null"] },
+          "errorMessage": { "type": ["string", "null"] },
+          "createdAt": { "type": "string", "format": "date-time" },
+          "updatedAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "AiQuotaStatus": {
+        "type": "object",
+        "properties": {
+          "dailyLimit": { "type": "integer" },
+          "dailyUsed": { "type": "integer" },
+          "dailyRemaining": { "type": "integer" },
+          "activeJobsLimit": { "type": "integer" },
+          "activeJobsCount": { "type": "integer" },
+          "resetUtc": { "type": "string", "format": "date-time" }
+        }
+      },
+      "SummaryResponse": {
+        "type": "object",
+        "properties": {
+          "summary": { "anyOf": [{ "$ref": "#/components/schemas/MaterialSummary" }, { "type": "null" }] },
+          "quota": { "$ref": "#/components/schemas/AiQuotaStatus" }
+        }
+      },
+      "GenerateSummaryResponse": {
+        "type": "object",
+        "properties": {
+          "message": { "type": "string" },
+          "jobId": { "type": "string" },
+          "summary": { "$ref": "#/components/schemas/MaterialSummary" }
         }
       }
     },

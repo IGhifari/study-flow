@@ -4,6 +4,7 @@ import {
   FinalizeUploadInputSchema,
   UpdateMaterialInputSchema,
   MaterialListQuerySchema,
+  GenerateSummaryInputSchema,
 } from '@studyflow/shared';
 import {
   initiateUpload,
@@ -17,6 +18,11 @@ import {
   getProcessingJobStatus,
 } from '../services/material.service.js';
 import { getUserStorageUsage } from '../services/quota.service.js';
+import {
+  requestSummaryGeneration,
+  getSummaryByMaterialId,
+  getUserQuota,
+} from '../services/summary.service.js';
 import { authenticate } from '../middleware/authenticate.js';
 import { originCheckMiddleware } from '../middleware/originCheck.js';
 import { AppError } from '../middleware/errorHandler.js';
@@ -31,6 +37,16 @@ materialRouter.get('/usage', async (req: Request, res: Response, next: NextFunct
   try {
     const usage = await getUserStorageUsage(req.user!.id);
     res.status(200).json(usage);
+  } catch (err) {
+    next(err);
+  }
+});
+
+// GET /api/materials/usage/ai — AI generation daily quota & concurrent status
+materialRouter.get('/usage/ai', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const quota = await getUserQuota(req.user!.id);
+    res.status(200).json({ quota });
   } catch (err) {
     next(err);
   }
@@ -174,6 +190,41 @@ materialRouter.get(
       const id = req.params.id as string;
       const result = await getMaterialDownloadUrl(req.user!.id, id);
       res.status(200).json(result);
+    } catch (err) {
+      next(err);
+    }
+  }
+);
+
+// GET /api/materials/:id/summary — Get summary & AI quota
+materialRouter.get(
+  '/:id/summary',
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const id = req.params.id as string;
+      const result = await getSummaryByMaterialId(req.user!.id, id);
+      res.status(200).json(result);
+    } catch (err) {
+      next(err);
+    }
+  }
+);
+
+// POST /api/materials/:id/summary — Request generation or regeneration of AI summary
+materialRouter.post(
+  '/:id/summary',
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const id = req.params.id as string;
+      const parsedBody = GenerateSummaryInputSchema.safeParse(req.body || {});
+      const regenerate = parsedBody.success ? parsedBody.data.regenerate : false;
+
+      const result = await requestSummaryGeneration(req.user!.id, id, regenerate);
+      res.status(202).json({
+        message: 'Pembuatan ringkasan AI sedang diproses',
+        jobId: result.jobId,
+        summary: result.summary,
+      });
     } catch (err) {
       next(err);
     }

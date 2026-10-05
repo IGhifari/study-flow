@@ -32,3 +32,11 @@ export const QUEUE_NAMES = {
   documentProcessing: 'studyflow-document-processing',
   aiGeneration: 'studyflow-ai-generation',
 } as const;
+
+export const AI_SUMMARY_LIMITS = {
+  maxPages: 100,
+  maxTotalCharacters: 120_000, // Maximum total processable characters across max 3 chunks of 40,000 characters
+  maxChunkCharacters: 40_000,  // Maximum characters per chunk / single page
+  maxChunks: 3,                // Maximum chunk iterations per document
+  minCharacters: 50,           // Minimum extracted text characters to generate summary
+} as const;

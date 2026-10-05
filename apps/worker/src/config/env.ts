@@ -1,7 +1,42 @@
 import { z } from 'zod';
 import dotenv from 'dotenv';
+import { fileURLToPath } from 'node:url';
+import path from 'node:path';
+import fs from 'node:fs';
 
+// Resolve directory paths relative to this module
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const workerDir = path.resolve(__dirname, '../..'); // apps/worker
+const rootDir = path.resolve(workerDir, '../..'); // repository root
+
+// Preserve runtime environment variables set by test runners (e.g. vitest env config)
+const isTestMode = process.env.NODE_ENV === 'test';
+const testDatabaseUrl = isTestMode ? process.env.DATABASE_URL : undefined;
+const originalNodeEnv = process.env.NODE_ENV;
+
+// 1. Load root .env first (base settings across workspaces)
+const rootEnvPath = path.join(rootDir, '.env');
+if (fs.existsSync(rootEnvPath)) {
+  dotenv.config({ path: rootEnvPath });
+}
+
+// 2. Load apps/worker/.env second with override: true (workspace-specific secrets and overrides)
+const workerEnvPath = path.join(workerDir, '.env');
+if (fs.existsSync(workerEnvPath)) {
+  dotenv.config({ path: workerEnvPath, override: true });
+}
+
+// Fallback: also load default process.cwd() .env if different
 dotenv.config();
+
+// Restore test environment variables if running in test mode
+if (originalNodeEnv) {
+  process.env.NODE_ENV = originalNodeEnv;
+}
+if (testDatabaseUrl) {
+  process.env.DATABASE_URL = testDatabaseUrl;
+}
 
 const WorkerEnvSchema = z.object({
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
@@ -20,6 +55,25 @@ const WorkerEnvSchema = z.object({
   SUPABASE_SERVICE_ROLE_KEY: z.string().optional().default(''),
   SUPABASE_STORAGE_BUCKET: z.string().default('studyflow-materials'),
   LOCAL_STORAGE_DIR: z.string().optional(),
+  // AI Configuration (M6)
+  AI_PROVIDER: z
+    .enum(['gemini', 'mock', 'none'])
+    .default(
+      process.env.NODE_ENV === 'test'
+        ? 'mock'
+        : process.env.AI_PROVIDER === 'gemini'
+        ? 'gemini'
+        : process.env.AI_PROVIDER === 'mock'
+        ? 'mock'
+        : process.env.GEMINI_API_KEY
+        ? 'gemini'
+        : 'none'
+    ),
+  GEMINI_API_KEY: z.string().optional().default(''),
+  GEMINI_MODEL: z.string().default('gemini-2.5-flash'),
+  // Provider call rate limiting (M6)
+  AI_CALLS_PER_MINUTE: z.coerce.number().int().positive().default(15),
+  AI_MAX_CALLS_PER_JOB: z.coerce.number().int().positive().default(8),
 });
 
 export type WorkerEnv = z.infer<typeof WorkerEnvSchema>;

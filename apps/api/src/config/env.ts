@@ -1,8 +1,43 @@
 import { z } from 'zod';
 import dotenv from 'dotenv';
+import { fileURLToPath } from 'node:url';
+import path from 'node:path';
+import fs from 'node:fs';
 import { assertTestDatabaseUrl } from './testDbGuard.js';
 
+// Resolve directory paths relative to this module
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const appDir = path.resolve(__dirname, '../..'); // apps/api
+const rootDir = path.resolve(appDir, '../..'); // repository root
+
+// Preserve runtime environment variables set by test runners (e.g. vitest env config)
+const isTestMode = process.env.NODE_ENV === 'test';
+const testDatabaseUrl = isTestMode ? process.env.DATABASE_URL : undefined;
+const originalNodeEnv = process.env.NODE_ENV;
+
+// 1. Load root .env first (base settings across workspaces)
+const rootEnvPath = path.join(rootDir, '.env');
+if (fs.existsSync(rootEnvPath)) {
+  dotenv.config({ path: rootEnvPath });
+}
+
+// 2. Load apps/api/.env second with override: true (workspace-specific secrets and overrides)
+const appEnvPath = path.join(appDir, '.env');
+if (fs.existsSync(appEnvPath)) {
+  dotenv.config({ path: appEnvPath, override: true });
+}
+
+// Fallback: also load default process.cwd() .env if different
 dotenv.config();
+
+// Restore test environment variables if running in test mode
+if (originalNodeEnv) {
+  process.env.NODE_ENV = originalNodeEnv;
+}
+if (testDatabaseUrl) {
+  process.env.DATABASE_URL = testDatabaseUrl;
+}
 
 const EnvSchema = z.object({
   PORT: z.coerce.number().default(4000),
@@ -31,6 +66,22 @@ const EnvSchema = z.object({
   STORAGE_SIGNED_URL_EXPIRES_IN: z.coerce.number().default(300), // 5 minutes default
   LOCAL_STORAGE_DIR: z.string().optional(),
   API_BASE_URL: z.string().default('http://localhost:4000'),
+  // AI Configuration (M6)
+  AI_PROVIDER: z
+    .enum(['gemini', 'mock', 'none'])
+    .default(
+      process.env.NODE_ENV === 'test'
+        ? 'mock'
+        : process.env.AI_PROVIDER === 'gemini'
+        ? 'gemini'
+        : process.env.AI_PROVIDER === 'mock'
+        ? 'mock'
+        : process.env.GEMINI_API_KEY
+        ? 'gemini'
+        : 'none'
+    ),
+  GEMINI_API_KEY: z.string().optional().default(''),
+  GEMINI_MODEL: z.string().default('gemini-2.5-flash'),
 });
 
 export type Env = z.infer<typeof EnvSchema>;

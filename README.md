@@ -13,7 +13,7 @@ StudyFlow adalah platform belajar pribadi untuk mahasiswa yang mengintegrasikan 
 | **Milestone 3 — Semester & Course Management** | Pengelolaan semester aktif/arsip, multi-tenant composite isolation, daftar & detail mata kuliah, onboarding dashboard | **Selesai** |
 | **Milestone 4 — Assignments, Notes & Dashboard** | Manajemen tugas kuliah, deadline timezone-aware, editor catatan Markdown, ringkasan dashboard semester aktif | **Selesai** |
 | **Milestone 5 — Storage & Document Worker** | Upload PDF langsung ke storage privat, antrean BullMQ & transactional outbox, ekstraksi teks per halaman, kuota storage & upload | **Selesai** |
-| **Milestone 6 — AI Summaries** | Integrasi AI dengan kutipan halaman sumber | Mendatang |
+| **Milestone 6 — AI Summaries** | Ringkasan materi AI dengan Gemini API free tier, kutipan nomor halaman interaktif, mitigasi prompt injection, kuota harian atomik | **Selesai** |
 | **Milestone 7 — Flashcards & Quizzes** | Generasi latihan interaktif dan penilaian di backend | Mendatang |
 
 ---
@@ -287,5 +287,51 @@ Bila ingin menghubungkan ke instance Supabase nyata:
    - Restart Worker: Hentikan dan jalankan kembali `npm run dev:worker`.
 
 *Peringatan Keamanan*: Kredensial `service_role` memiliki hak akses administratif penuh. Jangan pernah memberi prefix `NEXT_PUBLIC_`, mengunggahnya ke Git, mencetak nilainya dalam log, atau membagikannya ke browser!
+
+---
+
+## 14. Ringkasan Materi dengan AI (Milestone 6)
+
+StudyFlow mengintegrasikan model Large Language Model (LLM) untuk menghasilkan ringkasan akademis terstruktur secara otomatis dari materi PDF yang telah diekstrak. Fitur ini dirancang khusus menggunakan **free tier tanpa billing**.
+
+### 14.1 Pemilihan Provider & Ketentuan Free Tier
+- **Provider**: Google AI Studio Gemini API (`gemini-2.5-flash`).
+- **Free Tier**: Pengguna **wajib memastikan bahwa project Google AI Studio miliknya berada pada Free Tier** tanpa mengaktifkan billing / pay-as-you-go. Jangan menambahkan kartu kredit atau mengaktifkan penagihan pada Google Cloud Console. Batas kuota gratis (seperti rate limit per menit dan kuota harian) sepenuhnya diatur oleh kebijakan resmi Google AI Studio untuk wilayah dan akun terkait.
+- **Tanpa Fallback Berbayar**: Sistem StudyFlow dirancang tanpa mekanisme fallback otomatis ke model atau provider berbayar. Jika kuota provider habis (`429`), sistem menampilkan pesan error informatif yang aman dan tidak melakukan retry tanpa henti.
+- **Kebijakan Penggunaan Data**: Pada Google AI Studio free tier, prompt dan konten teks dapat ditinjau oleh Google sesuai kebijakan privasi AI Studio. Oleh karena itu, pengujian disarankan menggunakan sampel materi edukasi non-sensitif.
+- **Model Adapter**:
+  - `gemini` : Provider riil menggunakan Google AI Studio API. Wajib menyertakan `GEMINI_API_KEY`. Jika API key belum dikonfigurasi, sistem mengembalikan status `503 AI_PROVIDER_UNCONFIGURED` secara aman dan tidak beralih ke mock.
+  - `mock` : Mock adapter deterministik berbahasa Indonesia yang **hanya aktif jika dipilih secara eksplisit** (`AI_PROVIDER="mock"`) untuk pengujian otomatis hermetis.
+  - `none` : Mode penonaktifan eksplisit yang mengembalikan status `503 AI_PROVIDER_UNAVAILABLE` tanpa mengganggu fitur perkuliahan lainnya.
+- **Dukungan Dokumen Panjang & Chunking**: Dokumen dibagi ke dalam chunk terstruktur (maksimal 40.000 karakter per bagian, batas maksimal 3 chunk + 1 sintesis penggabungan). Dokumen yang melebihi 100 halaman atau 300.000 karakter ditolak di awal (`DOCUMENT_TOO_LARGE`) sebelum memanggil provider AI untuk mencegah ringkasan parsial yang menyesatkan.
+
+### 14.2 Batas Kuota & Konkurensi Aplikasi
+- **Batas Harian Pengguna**: Maksimal **20 ringkasan per pengguna per hari**, direset otomatis pada pukul **00:00 UTC**.
+- **Batas Konkurensi**: Maksimal **2 proses generasi AI aktif bersamaan per pengguna**.
+- **Reservasi Atomik**: Kuota harian dan slot konkurensi direservasi secara atomik di PostgreSQL dalam transaksi sebelum pekerjaan didispatch.
+- **Idempotensi**: Klik ganda atau pengiriman ulang saat pekerjaan berstatus `QUEUED` atau `PROCESSING` tidak akan menduplikasi pekerjaan maupun menghabiskan kuota ganda.
+
+### 14.3 Keandalan & Semantika Regenerasi
+- **Pertahanan Prompt Injection**: Seluruh teks halaman PDF diperlakukan sebagai masukan tidak tepercaya (*untrusted input*). Sistem prompt memerintahkan model untuk mengabaikan instruksi apa pun yang tertanam di dalam isi dokumen.
+- **Validasi Terstruktur Zod**: Keluaran model divalidasi ketat menggunakan schema JSON (`title`, `overview`, `keyConcepts`, `sections`, `keyTerms`). Seluruh kutipan nomor halaman dibatasi pada rentang valid `1..totalPages`.
+- **Preservasi Regenerasi**: Jika pengguna meminta regenerasi dan pemanggilan AI gagal (misal timeout atau rate limit), ringkasan sukses sebelumnya **tetap dipertahankan utuh** sehingga pengguna tidak kehilangan materi belajar.
+- **Asinkron Melalui BullMQ**: Pemrosesan LLM berjalan di antrean background worker `studyflow-ai-generation` dengan timeout 45 detik via `AbortSignal.timeout` dan retry terbatas hanya untuk transient error.
+
+### 14.4 Panduan Menjalankan dengan Google AI Studio (Live Testing)
+1. Dapatkan API Key gratis di [Google AI Studio](https://aistudio.google.com/app/apikey) (pastikan akun gratis tanpa billing diaktifkan).
+2. Tambahkan konfigurasi ke file `apps/api/.env` dan `apps/worker/.env`:
+   ```env
+   AI_PROVIDER="gemini"
+   GEMINI_API_KEY="AIzaSy..."
+   GEMINI_MODEL="gemini-2.5-flash"
+   ```
+3. Restart proses backend API dan Worker background:
+   - `npm run dev:api`
+   - `npm run dev:worker`
+4. Buka halaman detail materi `/materials/[id]` pada browser:
+   - Pilih tab **"Ringkasan AI"**.
+   - Klik **"Buat Ringkasan AI Sekarang"**.
+   - Klik nomor halaman referensi (misal `[Hal 2]`) pada konsep atau bagian untuk langsung berpindah ke tampilan PDF pada halaman tersebut!
+
 
 

@@ -7,6 +7,7 @@ export * from './contracts/assignment.js';
 export * from './contracts/note.js';
 export * from './contracts/dashboard.js';
 export * from './contracts/material.js';
+export * from './contracts/summary.js';
 export * from './utils/timezone.js';
 export * from './utils/format.js';
 export * from './constants/index.js';
