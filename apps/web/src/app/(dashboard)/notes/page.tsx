@@ -11,180 +11,135 @@ import {
   Calendar,
   Pencil,
   Trash2,
-  Loader2,
   AlertCircle,
+  RefreshCw,
   ExternalLink,
 } from 'lucide-react';
 import {
   NoteListItem,
   Course,
-  Semester,
   UserProfile,
   formatUserDateTime,
+  Note,
 } from '@studyflow/shared';
-import {
-  listNotes,
-  createNote,
-  deleteNote,
-} from '@/lib/note-client';
+import { listNotes } from '@/lib/note-client';
 import { listCourses } from '@/lib/course-client';
-import { listSemesters } from '@/lib/semester-client';
 import { getProfile } from '@/lib/auth-client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
+import { Card, CardContent } from '@/components/ui/card';
+import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
+import { Skeleton } from '@/components/ui/skeleton';
 import {
-  RadixSelect,
+  RadixSelect as Select,
   SelectTrigger,
   SelectValue,
   SelectContent,
   SelectItem,
-  NativeSelect,
 } from '@/components/ui/select';
-import { Textarea } from '@/components/ui/textarea';
-import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-  CardContent,
-} from '@/components/ui/card';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-} from '@/components/ui/dialog';
+import { CreateNoteDialog } from '@/components/notes/create-note-dialog';
+import { DeleteNoteDialog } from '@/components/notes/delete-note-dialog';
 
 export default function NotesPage(): React.JSX.Element {
   const router = useRouter();
   const [notes, setNotes] = React.useState<NoteListItem[]>([]);
   const [courses, setCourses] = React.useState<Course[]>([]);
-  const [semesters, setSemesters] = React.useState<Semester[]>([]);
   const [userProfile, setUserProfile] = React.useState<UserProfile | null>(null);
 
   // Filters
-  const [selectedSemesterId, setSelectedSemesterId] = React.useState<string>('all');
-  const [selectedCourseId, setSelectedCourseId] = React.useState<string>('all');
   const [searchQuery, setSearchQuery] = React.useState<string>('');
+  const [selectedCourseId, setSelectedCourseId] = React.useState<string>('ALL');
 
+  // Page States
   const [isLoading, setIsLoading] = React.useState(true);
   const [errorMsg, setErrorMsg] = React.useState<string | null>(null);
 
-  // Modal Create
+  // Dialog States
   const [isCreateOpen, setIsCreateOpen] = React.useState(false);
-  const [createCourseId, setCreateCourseId] = React.useState('');
-  const [createTitle, setCreateTitle] = React.useState('');
-  const [createContent, setCreateContent] = React.useState('');
-  const [createError, setCreateError] = React.useState<string | null>(null);
-  const [isSubmittingCreate, setIsSubmittingCreate] = React.useState(false);
-
-  // Modal Delete
   const [deletingNote, setDeletingNote] = React.useState<NoteListItem | null>(null);
-  const [deleteError, setDeleteError] = React.useState<string | null>(null);
-  const [isSubmittingDelete, setIsSubmittingDelete] = React.useState(false);
 
   const timezone = userProfile?.timezone || 'Asia/Jakarta';
 
+  // Race condition protection
+  const fetchRequestIdRef = React.useRef(0);
+
   React.useEffect(() => {
+    let isMounted = true;
     async function loadMeta() {
       try {
-        const [profile, semData, crsData] = await Promise.all([
+        const [profile, courseRes] = await Promise.all([
           getProfile().catch(() => null),
-          listSemesters('all').catch(() => ({ semesters: [] })),
           listCourses().catch(() => ({ courses: [] })),
         ]);
+        if (!isMounted) return;
         if (profile) setUserProfile(profile);
-        setSemesters(semData.semesters);
-        setCourses(crsData.courses);
+        setCourses(courseRes.courses);
       } catch (err) {
         console.error('Failed to load metadata:', err);
       }
     }
     loadMeta();
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
-  const fetchNotes = React.useCallback(async () => {
-    setIsLoading(true);
-    setErrorMsg(null);
-    try {
-      const data = await listNotes({
-        semesterId: selectedSemesterId === 'all' ? undefined : selectedSemesterId,
-        courseId: selectedCourseId === 'all' ? undefined : selectedCourseId,
-        search: searchQuery.trim() || undefined,
-        limit: 100,
-      });
-      setNotes(data.notes);
-    } catch (err: any) {
-      setErrorMsg(err.message || 'Gagal memuat catatan belajar.');
-    } finally {
-      setIsLoading(false);
-    }
-  }, [selectedSemesterId, selectedCourseId, searchQuery]);
+  const fetchNotesList = React.useCallback(
+    async (silent = false) => {
+      const currentRequestId = ++fetchRequestIdRef.current;
+      if (!silent) {
+        setIsLoading(true);
+      }
+      setErrorMsg(null);
+
+      try {
+        const data = await listNotes({
+          courseId: selectedCourseId === 'ALL' ? undefined : selectedCourseId,
+          search: searchQuery.trim() || undefined,
+          limit: 100,
+        });
+
+        if (currentRequestId === fetchRequestIdRef.current) {
+          setNotes(data.notes);
+        }
+      } catch (err: any) {
+        if (currentRequestId === fetchRequestIdRef.current) {
+          setErrorMsg(err.message || 'Gagal memuat catatan belajar.');
+        }
+      } finally {
+        if (currentRequestId === fetchRequestIdRef.current && !silent) {
+          setIsLoading(false);
+        }
+      }
+    },
+    [selectedCourseId, searchQuery]
+  );
 
   React.useEffect(() => {
-    fetchNotes();
-  }, [fetchNotes]);
+    fetchNotesList();
+  }, [fetchNotesList]);
 
-  const activeCourses = courses.filter((c) => !c.archivedAt);
+  const activeCourses = React.useMemo(
+    () => courses.filter((c) => !c.archivedAt),
+    [courses]
+  );
 
-  const handleOpenCreate = () => {
-    setCreateTitle('');
-    setCreateContent('');
-    setCreateError(null);
-    setCreateCourseId(activeCourses.length > 0 ? activeCourses[0]!.id : '');
-    setIsCreateOpen(true);
+  const hasFilter = Boolean(searchQuery || selectedCourseId !== 'ALL');
+
+  const handleResetFilter = () => {
+    setSearchQuery('');
+    setSelectedCourseId('ALL');
   };
 
-  const handleCreateSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!createTitle.trim()) {
-      setCreateError('Judul catatan wajib diisi');
-      return;
-    }
-    if (!createCourseId) {
-      setCreateError('Mata kuliah wajib dipilih');
-      return;
-    }
-
-    setIsSubmittingCreate(true);
-    setCreateError(null);
-    try {
-      const created = await createNote({
-        courseId: createCourseId,
-        title: createTitle.trim(),
-        content: createContent.trim() || '',
-      });
-      setIsCreateOpen(false);
-      router.push(`/notes/${created.id}`);
-    } catch (err: any) {
-      setCreateError(err.message || 'Gagal membuat catatan baru.');
-      setIsSubmittingCreate(false);
-    }
-  };
-
-  const handleDeleteSubmit = async () => {
-    if (!deletingNote) return;
-    setIsSubmittingDelete(true);
-    setDeleteError(null);
-    try {
-      await deleteNote(deletingNote.id);
-      setDeletingNote(null);
-      fetchNotes();
-    } catch (err: any) {
-      setDeleteError(err.message || 'Gagal menghapus catatan.');
-    } finally {
-      setIsSubmittingDelete(false);
-    }
+  const handleNoteCreated = (created: Note) => {
+    router.push(`/notes/${created.id}`);
   };
 
   return (
     <div className="space-y-6">
-      {/* Page Header */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      {/* 1. Header Halaman */}
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-border pb-5">
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl flex items-center gap-2.5">
             <FileText className="h-7 w-7 text-primary" aria-hidden="true" />
@@ -196,319 +151,394 @@ export default function NotesPage(): React.JSX.Element {
         </div>
 
         <Button
-          onClick={handleOpenCreate}
+          onClick={() => setIsCreateOpen(true)}
           disabled={activeCourses.length === 0}
-          className="w-full sm:w-auto"
+          className="gap-2 shrink-0 self-start sm:self-auto"
         >
-          <Plus className="mr-2 h-4 w-4" />
-          Buat Catatan
+          <Plus className="h-4 w-4" />
+          <span>Buat catatan</span>
         </Button>
       </div>
 
-      {activeCourses.length === 0 && (
-        <div className="rounded-lg border border-warning/30 bg-warning/10 p-4 text-sm text-warning-foreground flex items-start gap-3">
-          <AlertCircle className="h-5 w-5 text-warning shrink-0 mt-0.5" />
-          <div>
-            <p className="font-semibold">Belum ada mata kuliah aktif</p>
-            <p className="mt-0.5 text-xs text-muted-foreground">
+      {/* Warning banner jika belum ada mata kuliah aktif */}
+      {activeCourses.length === 0 && !isLoading && (
+        <Alert variant="warning">
+          <AlertCircle className="h-5 w-5" />
+          <AlertTitle>Belum ada mata kuliah aktif</AlertTitle>
+          <AlertDescription className="mt-1 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <span>
               Anda perlu menambahkan mata kuliah aktif terlebih dahulu sebelum dapat membuat catatan belajar.
-            </p>
-            <Link href="/courses" className="mt-2 inline-block text-xs font-semibold text-primary underline">
-              Kelola Mata Kuliah &rarr;
-            </Link>
-          </div>
-        </div>
+            </span>
+            <Button asChild variant="outline" size="sm" className="w-fit">
+              <Link href="/courses">Kelola Mata Kuliah &rarr;</Link>
+            </Button>
+          </AlertDescription>
+        </Alert>
       )}
 
-      {/* Filters Toolbar */}
-      <Card className="p-4 bg-card/60 backdrop-blur-xs">
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {/* Search */}
-          <div className="relative">
-            <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input
-              type="text"
-              placeholder="Cari judul catatan..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-9"
-            />
-          </div>
+      {/* 2. Pencarian dan Filter Toolbar */}
+      <Card className="border border-border shadow-xs">
+        <CardContent className="p-4">
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+            {/* Input Pencarian */}
+            <div className="relative flex-1">
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                type="text"
+                placeholder="Cari judul catatan..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-9 h-11"
+              />
+            </div>
 
-          {/* Filter Semester */}
-          <div className="w-full sm:w-[200px]">
-            <RadixSelect
-              value={selectedSemesterId}
-              onValueChange={(val) => setSelectedSemesterId(val)}
-            >
-              <SelectTrigger className="h-11">
-                <SelectValue placeholder="Semua Semester" />
-              </SelectTrigger>
-              <SelectContent className="max-w-[calc(100vw-2rem)] sm:max-w-[280px]">
-                <SelectItem value="all">Semua Semester</SelectItem>
-                {semesters.map((s) => (
-                  <SelectItem key={s.id} value={s.id}>
-                    {s.name} {s.isActive ? '(Aktif)' : ''}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </RadixSelect>
-          </div>
+            {/* Filter Mata Kuliah */}
+            <div className="flex flex-col sm:flex-row sm:items-center gap-2.5">
+              <div className="w-full sm:w-[240px]">
+                <Select
+                  value={selectedCourseId}
+                  onValueChange={(val) => setSelectedCourseId(val)}
+                >
+                  <SelectTrigger className="h-11">
+                    <SelectValue placeholder="Semua Mata Kuliah" />
+                  </SelectTrigger>
+                  <SelectContent className="max-w-[calc(100vw-2rem)] sm:max-w-[320px]">
+                    <SelectItem value="ALL">Semua Mata Kuliah</SelectItem>
+                    {courses.map((c) => (
+                      <SelectItem key={c.id} value={c.id}>
+                        {c.name} {c.code ? `(${c.code})` : ''} {c.archivedAt ? '[Arsip]' : ''}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
 
-          {/* Filter Course */}
-          <div className="w-full sm:w-[220px]">
-            <RadixSelect
-              value={selectedCourseId}
-              onValueChange={(val) => setSelectedCourseId(val)}
-            >
-              <SelectTrigger className="h-11">
-                <SelectValue placeholder="Semua Mata Kuliah" />
-              </SelectTrigger>
-              <SelectContent className="max-w-[calc(100vw-2rem)] sm:max-w-[320px]">
-                <SelectItem value="all">Semua Mata Kuliah</SelectItem>
-                {courses.map((c) => (
-                  <SelectItem key={c.id} value={c.id}>
-                    {c.name} {c.code ? `(${c.code})` : ''} {c.archivedAt ? '[Arsip]' : ''}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </RadixSelect>
+              {hasFilter && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleResetFilter}
+                  className="h-11 px-3 text-xs text-muted-foreground hover:text-foreground shrink-0 self-start sm:self-auto"
+                >
+                  Hapus filter
+                </Button>
+              )}
+            </div>
           </div>
-        </div>
+        </CardContent>
       </Card>
 
-      {/* Content */}
+      {/* 3. Daftar Catatan & State Views */}
       {isLoading ? (
-        <div className="flex h-64 items-center justify-center rounded-xl border border-dashed border-border bg-card/40">
-          <div className="flex flex-col items-center gap-2 text-muted-foreground">
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            <p className="text-sm">Memuat catatan belajar...</p>
+        /* Loading Skeleton State */
+        <div className="space-y-3" data-testid="notes-skeleton">
+          {/* Skeleton Desktop Table */}
+          <div className="hidden md:block rounded-xl border border-border bg-card p-4 space-y-3">
+            <Skeleton className="h-10 w-full rounded-lg" />
+            <Skeleton className="h-14 w-full rounded-lg" />
+            <Skeleton className="h-14 w-full rounded-lg" />
+            <Skeleton className="h-14 w-full rounded-lg" />
+          </div>
+          {/* Skeleton Mobile Cards */}
+          <div className="grid grid-cols-1 gap-3 md:hidden">
+            <Skeleton className="h-28 w-full rounded-xl" />
+            <Skeleton className="h-28 w-full rounded-xl" />
+            <Skeleton className="h-28 w-full rounded-xl" />
           </div>
         </div>
       ) : errorMsg ? (
-        <div className="flex flex-col items-center justify-center rounded-xl border border-danger/30 bg-danger/5 p-8 text-center">
-          <AlertCircle className="h-10 w-10 text-danger" />
-          <h3 className="mt-3 text-base font-semibold text-danger">Gagal Memuat Catatan</h3>
-          <p className="mt-1 text-sm text-muted-foreground max-w-md">{errorMsg}</p>
-          <Button variant="outline" onClick={() => fetchNotes()} className="mt-4">
-            Coba Lagi
-          </Button>
-        </div>
+        /* Error State with Retry Button */
+        <Alert variant="destructive">
+          <AlertCircle className="h-5 w-5" />
+          <AlertTitle>Terjadi kesalahan saat memuat catatan</AlertTitle>
+          <AlertDescription className="mt-1 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <span>{errorMsg}</span>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => fetchNotesList()}
+              className="gap-1.5 w-fit"
+            >
+              <RefreshCw className="h-4 w-4" />
+              <span>Coba Lagi</span>
+            </Button>
+          </AlertDescription>
+        </Alert>
       ) : notes.length === 0 ? (
-        <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-border bg-card/30 p-12 text-center">
-          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary">
+        /* Empty State */
+        <div className="rounded-xl border border-dashed border-border bg-card/40 p-10 sm:p-14 text-center">
+          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary mb-3">
             <FileText className="h-6 w-6" />
           </div>
-          <h3 className="mt-4 text-base font-semibold text-foreground">
-            {searchQuery || selectedCourseId !== 'all' || selectedSemesterId !== 'all'
-              ? 'Tidak ada catatan yang cocok'
-              : 'Belum ada catatan belajar'}
+          <h3 className="text-base font-semibold text-foreground">
+            {hasFilter ? 'Tidak ada catatan yang cocok' : 'Belum ada catatan belajar'}
           </h3>
-          <p className="mt-1 max-w-sm text-sm text-muted-foreground">
-            {searchQuery || selectedCourseId !== 'all' || selectedSemesterId !== 'all'
-              ? 'Coba sesuaikan kata kunci pencarian atau filter yang dipilih.'
-              : 'Mulai buat catatan materi kuliah untuk membantu persiapan ujian dan belajar.'}
+          <p className="mt-1 text-sm text-muted-foreground max-w-sm mx-auto leading-relaxed">
+            {hasFilter
+              ? 'Coba sesuaikan kata kunci pencarian atau filter mata kuliah yang dipilih.'
+              : 'Mulai buat catatan materi kuliah untuk membantu persiapan ujian, rangkuman bab, dan pengulangan belajar.'}
           </p>
-          {!(searchQuery || selectedCourseId !== 'all' || selectedSemesterId !== 'all') && (
-            <Button onClick={handleOpenCreate} disabled={activeCourses.length === 0} className="mt-5">
-              <Plus className="mr-2 h-4 w-4" />
-              Buat Catatan Pertama
+          {hasFilter ? (
+            <Button
+              variant="outline"
+              onClick={handleResetFilter}
+              className="mt-5"
+            >
+              Hapus filter
+            </Button>
+          ) : (
+            <Button
+              onClick={() => setIsCreateOpen(true)}
+              disabled={activeCourses.length === 0}
+              className="mt-5 gap-2"
+            >
+              <Plus className="h-4 w-4" />
+              <span>Buat catatan pertama</span>
             </Button>
           )}
         </div>
       ) : (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {notes.map((note) => {
-            const isArchived = Boolean(note.course?.archivedAt || note.course?.semester?.archivedAt);
+        /* Data Loaded View: Desktop Table + Mobile Cards */
+        <div className="space-y-4">
+          {/* Desktop Table View (>= 768px) */}
+          <div className="hidden md:block overflow-hidden rounded-xl border border-border bg-card shadow-xs">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-sm">
+                <thead className="border-b border-border bg-muted/40 text-xs font-semibold uppercase text-muted-foreground">
+                  <tr>
+                    <th scope="col" className="px-4 py-3.5">
+                      Judul Catatan
+                    </th>
+                    <th scope="col" className="px-4 py-3.5">
+                      Mata Kuliah
+                    </th>
+                    <th scope="col" className="px-4 py-3.5">
+                      Tautan Materi
+                    </th>
+                    <th scope="col" className="px-4 py-3.5">
+                      Terakhir Diperbarui
+                    </th>
+                    <th scope="col" className="px-4 py-3.5 text-right">
+                      Aksi
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border">
+                  {notes.map((note) => {
+                    const isArchived = Boolean(
+                      note.course?.archivedAt || note.course?.semester?.archivedAt
+                    );
 
-            return (
-              <Card
-                key={note.id}
-                className="group flex flex-col justify-between hover:border-primary/50 transition-all shadow-xs"
-              >
-                <CardHeader className="pb-3">
-                  <div className="flex items-start justify-between gap-2">
-                    <Link
-                      href={`/notes/${note.id}`}
-                      className="font-semibold text-foreground hover:text-primary transition-colors line-clamp-2 text-base"
-                    >
-                      {note.title}
-                    </Link>
-                    {isArchived && (
-                      <Badge variant="outline" className="text-[10px] shrink-0 border-muted">
-                        Arsip
-                      </Badge>
-                    )}
-                  </div>
-                  {note.course && (
-                    <CardDescription className="flex items-center gap-1.5 mt-1 text-xs">
-                      <BookOpen className="h-3.5 w-3.5 text-muted-foreground" />
-                      <span className="truncate">{note.course.name}</span>
-                    </CardDescription>
-                  )}
-                  {note.material && (
-                    <div className="mt-2 flex items-center gap-1.5 text-xs">
-                      <span className="rounded bg-primary/10 text-primary px-1.5 py-0.5 text-[11px] font-medium truncate max-w-[200px]" title={note.material.title}>
-                        📄 {note.material.title}
-                      </span>
-                    </div>
-                  )}
-                </CardHeader>
-
-                <CardContent className="pt-0">
-                  <div className="flex items-center justify-between border-t border-border pt-3 text-xs text-muted-foreground">
-                    <span className="flex items-center gap-1">
-                      <Calendar className="h-3 w-3" />
-                      {formatUserDateTime(note.updatedAt, timezone)}
-                    </span>
-
-                    <div className="flex items-center gap-1">
-                      <Link href={`/notes/${note.id}`}>
-                        <Button variant="ghost" size="sm" className="h-7 px-2 text-xs">
-                          <Pencil className="h-3.5 w-3.5 mr-1" />
-                          Buka
-                        </Button>
-                      </Link>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setDeletingNote(note)}
-                        disabled={isArchived}
-                        className="h-7 w-7 p-0 text-danger hover:bg-danger/10"
-                        title={isArchived ? 'Arsip (hanya-baca)' : 'Hapus catatan'}
+                    return (
+                      <tr
+                        key={note.id}
+                        className="hover:bg-muted/30 transition-colors"
                       >
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </Button>
+                        {/* Judul Catatan */}
+                        <td className="px-4 py-3.5">
+                          <div className="flex flex-col">
+                            <Link
+                              href={`/notes/${note.id}`}
+                              className="font-medium text-foreground hover:text-primary transition-colors flex items-center gap-2"
+                            >
+                              <FileText className="h-4 w-4 text-primary shrink-0" />
+                              <span className="truncate max-w-[280px]">{note.title}</span>
+                            </Link>
+                          </div>
+                        </td>
+
+                        {/* Mata Kuliah */}
+                        <td className="px-4 py-3.5 whitespace-nowrap">
+                          {note.course ? (
+                            <div className="flex items-center gap-1.5">
+                              <Link
+                                href={`/courses/${note.course.id}`}
+                                className="text-xs font-medium text-muted-foreground hover:text-foreground hover:underline flex items-center gap-1.5"
+                                title={note.course.name}
+                              >
+                                <BookOpen className="h-3.5 w-3.5 shrink-0" />
+                                <span className="truncate max-w-[200px]">
+                                  {note.course.name}
+                                </span>
+                              </Link>
+                              {isArchived && (
+                                <Badge
+                                  variant="outline"
+                                  className="text-[10px] py-0 px-1 border-muted"
+                                >
+                                  Arsip
+                                </Badge>
+                              )}
+                            </div>
+                          ) : (
+                            <span className="text-xs text-muted-foreground">Mata Kuliah</span>
+                          )}
+                        </td>
+
+                        {/* Tautan Materi */}
+                        <td className="px-4 py-3.5 whitespace-nowrap">
+                          {note.material ? (
+                            <Link
+                              href={`/materials/${note.material.id}`}
+                              className="inline-flex items-center gap-1 text-xs text-primary hover:underline max-w-[200px] truncate"
+                              title={note.material.title}
+                            >
+                              <span>📄</span>
+                              <span className="truncate">{note.material.title}</span>
+                            </Link>
+                          ) : (
+                            <span className="text-xs text-muted-foreground italic">
+                              — Tidak terhubung —
+                            </span>
+                          )}
+                        </td>
+
+                        {/* Waktu Update */}
+                        <td className="px-4 py-3.5 whitespace-nowrap">
+                          <span className="text-xs text-foreground font-medium">
+                            {formatUserDateTime(note.updatedAt, timezone)}
+                          </span>
+                        </td>
+
+                        {/* Aksi */}
+                        <td className="px-4 py-3.5 text-right whitespace-nowrap">
+                          <div className="flex items-center justify-end gap-1">
+                            <Button
+                              asChild
+                              variant="ghost"
+                              size="sm"
+                              className="h-8 w-8 p-0"
+                              title="Buka dan edit catatan"
+                              aria-label={`Buka catatan "${note.title}"`}
+                            >
+                              <Link href={`/notes/${note.id}`}>
+                                <Pencil className="h-4 w-4" />
+                              </Link>
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => setDeletingNote(note)}
+                              disabled={isArchived}
+                              title={
+                                isArchived
+                                  ? 'Mata kuliah diarsipkan (hanya-baca)'
+                                  : 'Hapus catatan'
+                              }
+                              aria-label={`Hapus catatan "${note.title}"`}
+                              className="h-8 w-8 p-0 text-muted-foreground hover:text-danger hover:bg-danger/10"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* Mobile Card List (< 768px) */}
+          <div className="grid grid-cols-1 gap-3 md:hidden">
+            {notes.map((note) => {
+              const isArchived = Boolean(
+                note.course?.archivedAt || note.course?.semester?.archivedAt
+              );
+
+              return (
+                <Card key={note.id} className="p-4 shadow-xs">
+                  <div className="flex flex-col gap-2">
+                    <div className="flex items-start justify-between gap-2">
+                      <Link
+                        href={`/notes/${note.id}`}
+                        className="text-sm font-semibold text-foreground hover:text-primary transition-colors line-clamp-2"
+                      >
+                        {note.title}
+                      </Link>
+                      {isArchived && (
+                        <Badge
+                          variant="outline"
+                          className="text-[10px] shrink-0 border-muted"
+                        >
+                          Arsip
+                        </Badge>
+                      )}
+                    </div>
+
+                    {note.course && (
+                      <p className="text-xs text-muted-foreground flex items-center gap-1.5">
+                        <BookOpen className="h-3 w-3 shrink-0" />
+                        <span className="truncate">{note.course.name}</span>
+                      </p>
+                    )}
+
+                    {note.material && (
+                      <div className="text-xs">
+                        <span className="rounded bg-primary/10 text-primary px-1.5 py-0.5 text-[11px] font-medium truncate inline-block max-w-[240px]">
+                          📄 {note.material.title}
+                        </span>
+                      </div>
+                    )}
+
+                    <div className="mt-2 flex items-center justify-between border-t border-border pt-2.5 text-xs text-muted-foreground">
+                      <span className="flex items-center gap-1">
+                        <Calendar className="h-3.5 w-3.5 shrink-0" />
+                        <span>{formatUserDateTime(note.updatedAt, timezone)}</span>
+                      </span>
+
+                      <div className="flex items-center gap-1">
+                        <Button
+                          asChild
+                          variant="ghost"
+                          size="sm"
+                          className="h-8 px-2 text-xs"
+                          aria-label={`Buka catatan "${note.title}"`}
+                        >
+                          <Link href={`/notes/${note.id}`}>
+                            <Pencil className="h-3.5 w-3.5 mr-1" />
+                            Buka
+                          </Link>
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setDeletingNote(note)}
+                          disabled={isArchived}
+                          aria-label={`Hapus catatan "${note.title}"`}
+                          className="h-8 w-8 p-0 text-muted-foreground hover:text-danger hover:bg-danger/10"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
                     </div>
                   </div>
-                </CardContent>
-              </Card>
-            );
-          })}
+                </Card>
+              );
+            })}
+          </div>
         </div>
       )}
 
       {/* Dialog Create Note */}
-      <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-        <DialogContent className="sm:max-w-[500px]">
-          <DialogHeader>
-            <DialogTitle>Buat Catatan Baru</DialogTitle>
-            <DialogDescription>
-              Tulis judul dan pilih mata kuliah. Anda dapat langsung mengedit isinya di halaman editor.
-            </DialogDescription>
-          </DialogHeader>
+      <CreateNoteDialog
+        open={isCreateOpen}
+        onOpenChange={setIsCreateOpen}
+        courses={courses}
+        onSuccess={handleNoteCreated}
+      />
 
-          <form onSubmit={handleCreateSubmit} className="space-y-4 py-2">
-            {createError && (
-              <div className="rounded-md bg-danger/10 p-3 text-xs font-medium text-danger border border-danger/20">
-                {createError}
-              </div>
-            )}
-
-            <div className="space-y-1.5">
-              <Label htmlFor="create-note-title">Judul Catatan *</Label>
-              <Input
-                id="create-note-title"
-                value={createTitle}
-                onChange={(e) => setCreateTitle(e.target.value)}
-                placeholder="Contoh: Rangkuman Bab 3 - Thread dan Concurrency"
-                required
-              />
-            </div>
-
-            <div className="space-y-1.5">
-              <Label htmlFor="create-note-course">Mata Kuliah *</Label>
-              <NativeSelect
-                id="create-note-course"
-                value={createCourseId}
-                onChange={(e) => setCreateCourseId(e.target.value)}
-                required
-              >
-                <option value="" disabled>Pilih mata kuliah aktif</option>
-                {activeCourses.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.name} {c.code ? `(${c.code})` : ''}
-                  </option>
-                ))}
-              </NativeSelect>
-            </div>
-
-            <div className="space-y-1.5">
-              <Label htmlFor="create-note-content">Isi Awal (Opsional - Format Markdown)</Label>
-              <Textarea
-                id="create-note-content"
-                value={createContent}
-                onChange={(e) => setCreateContent(e.target.value)}
-                placeholder="# Bab 3..."
-                rows={4}
-              />
-            </div>
-
-            <DialogFooter className="pt-2">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setIsCreateOpen(false)}
-                disabled={isSubmittingCreate}
-              >
-                Batal
-              </Button>
-              <Button type="submit" disabled={isSubmittingCreate}>
-                {isSubmittingCreate ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Membuat...
-                  </>
-                ) : (
-                  'Buat & Buka Editor'
-                )}
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
-
-      {/* Dialog Confirm Delete */}
-      <Dialog open={Boolean(deletingNote)} onOpenChange={(open) => !open && setDeletingNote(null)}>
-        <DialogContent className="sm:max-w-[420px]">
-          <DialogHeader>
-            <DialogTitle>Hapus Catatan</DialogTitle>
-            <DialogDescription>
-              Apakah Anda yakin ingin menghapus catatan <strong className="text-foreground">{deletingNote?.title}</strong>? Tindakan ini tidak dapat dibatalkan.
-            </DialogDescription>
-          </DialogHeader>
-
-          {deleteError && (
-            <div className="rounded-md bg-danger/10 p-3 text-xs font-medium text-danger border border-danger/20">
-              {deleteError}
-            </div>
-          )}
-
-          <DialogFooter className="pt-2">
-            <Button
-              variant="outline"
-              onClick={() => setDeletingNote(null)}
-              disabled={isSubmittingDelete}
-            >
-              Batal
-            </Button>
-            <Button
-              variant="destructive"
-              onClick={handleDeleteSubmit}
-              disabled={isSubmittingDelete}
-            >
-              {isSubmittingDelete ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Menghapus...
-                </>
-              ) : (
-                'Hapus Catatan'
-              )}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {/* Dialog Delete Note */}
+      <DeleteNoteDialog
+        open={Boolean(deletingNote)}
+        onOpenChange={(open) => !open && setDeletingNote(null)}
+        note={deletingNote}
+        onSuccess={() => {
+          setDeletingNote(null);
+          fetchNotesList(true);
+        }}
+      />
     </div>
   );
 }

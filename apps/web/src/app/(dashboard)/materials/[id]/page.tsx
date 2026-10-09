@@ -58,6 +58,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card } from '@/components/ui/card';
 import { MaterialStatusBadge } from '@/components/materials/material-status-badge';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import {
   Dialog,
   DialogContent,
@@ -104,6 +105,7 @@ export default function MaterialDetailPage(): React.JSX.Element {
   const [isEditOpen, setIsEditOpen] = React.useState(false);
   const [editTitle, setEditTitle] = React.useState('');
   const [isSubmittingEdit, setIsSubmittingEdit] = React.useState(false);
+  const [editError, setEditError] = React.useState<string | null>(null);
 
   // Delete Confirm dialog
   const [isDeleteOpen, setIsDeleteOpen] = React.useState(false);
@@ -112,6 +114,7 @@ export default function MaterialDetailPage(): React.JSX.Element {
 
   // Retry document processing state
   const [isRetrying, setIsRetrying] = React.useState(false);
+  const [actionError, setActionError] = React.useState<string | null>(null);
 
   const timezone = userProfile?.timezone || 'Asia/Jakarta';
 
@@ -217,23 +220,25 @@ export default function MaterialDetailPage(): React.JSX.Element {
     e.preventDefault();
     if (!editTitle.trim()) return;
     setIsSubmittingEdit(true);
+    setEditError(null);
     try {
       await updateMaterial(materialId, { title: editTitle.trim() });
       await loadMaterialData();
       setIsEditOpen(false);
     } catch (err: any) {
-      alert(err.message || 'Gagal memperbarui judul materi');
+      setEditError(err.message || 'Gagal memperbarui judul materi');
     } finally {
       setIsSubmittingEdit(false);
     }
   };
 
   const handleDownload = async () => {
+    setActionError(null);
     try {
       const res = await getMaterialDownloadUrl(materialId);
       window.open(res.downloadUrl, '_blank');
     } catch (err: any) {
-      alert(err.message || 'Gagal membuat tautan unduhan');
+      setActionError(err.message || 'Gagal membuat tautan unduhan');
     }
   };
 
@@ -251,11 +256,12 @@ export default function MaterialDetailPage(): React.JSX.Element {
 
   const handleRetry = async () => {
     setIsRetrying(true);
+    setActionError(null);
     try {
       await retryMaterialProcessing(materialId);
       await loadMaterialData();
     } catch (err: any) {
-      alert(err.message || 'Gagal mengulang pemrosesan');
+      setActionError(err.message || 'Gagal mengulang pemrosesan');
     } finally {
       setIsRetrying(false);
     }
@@ -403,15 +409,40 @@ export default function MaterialDetailPage(): React.JSX.Element {
   return (
     <div className="space-y-6">
       {/* Top Breadcrumb & Back */}
-      <div className="flex items-center justify-between">
-        <Button variant="ghost" asChild className="gap-2 text-sm w-fit">
-          <Link href="/materials">
-            <ArrowLeft className="h-4 w-4" />
-            <span>Kembali ke Daftar Materi</span>
-          </Link>
-        </Button>
-
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2">
+          <Button variant="ghost" size="sm" asChild className="h-8 px-2 gap-1.5 text-xs text-muted-foreground hover:text-foreground">
+            <Link href="/materials">
+              <ArrowLeft className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Kembali ke Daftar Materi</span>
+              <span className="sm:hidden">Kembali</span>
+            </Link>
+          </Button>
+          <span className="text-muted-foreground/40">•</span>
+          <nav aria-label="Breadcrumb" className="flex items-center gap-1.5 text-xs text-muted-foreground flex-wrap">
+            <Link href="/materials" className="hover:text-foreground transition-colors">
+              Materi
+            </Link>
+            <ChevronRight className="h-3 w-3 text-muted-foreground/50 shrink-0" />
+            {material.course && (
+              <>
+                <Link
+                  href={`/courses/${material.course.id}`}
+                  className="hover:text-foreground transition-colors max-w-[140px] truncate"
+                  title={material.course.name}
+                >
+                  {material.course.name}
+                </Link>
+                <ChevronRight className="h-3 w-3 text-muted-foreground/50 shrink-0" />
+              </>
+            )}
+            <span className="text-foreground font-medium max-w-[180px] sm:max-w-[240px] truncate" title={material.title}>
+              {material.title}
+            </span>
+          </nav>
+        </div>
+
+        <div className="flex items-center gap-2 shrink-0">
           <MaterialStatusBadge status={material.status} />
           {isArchived && (
             <span className="rounded-full bg-warning/10 px-2.5 py-0.5 text-xs font-medium text-warning">
@@ -421,10 +452,28 @@ export default function MaterialDetailPage(): React.JSX.Element {
         </div>
       </div>
 
+      {/* Action Error Banner if any */}
+      {actionError && (
+        <div className="flex items-center justify-between rounded-lg border border-danger/30 bg-danger/5 p-3 text-xs text-danger">
+          <div className="flex items-center gap-2">
+            <AlertCircle className="h-4 w-4 shrink-0" />
+            <span>{actionError}</span>
+          </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setActionError(null)}
+            className="h-6 px-1.5 text-[11px] text-danger hover:bg-danger/10"
+          >
+            Tutup
+          </Button>
+        </div>
+      )}
+
       {/* Header Info */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between border-b border-border pb-5">
-        <div className="space-y-1.5 min-w-0">
-          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground truncate">
+        <div className="space-y-1.5 min-w-0 max-w-2xl">
+          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground break-words">
             {material.title}
           </h1>
 
@@ -533,24 +582,24 @@ export default function MaterialDetailPage(): React.JSX.Element {
           </div>
         </Card>
       ) : material.status === 'READY' ? (
-        <div className="space-y-4">
+        <Tabs
+          value={activeTab}
+          onValueChange={(val) => setActiveTab(val as 'pdf' | 'summary' | 'flashcards' | 'quiz' | 'text')}
+          className="space-y-4"
+        >
           {/* Navigation View Tabs */}
-          <div className="flex items-center gap-2 border-b border-border pb-2 overflow-x-auto">
-            <Button
-              variant={activeTab === 'pdf' ? 'default' : 'ghost'}
-              size="sm"
-              onClick={() => setActiveTab('pdf')}
-              className="gap-2 text-xs shrink-0"
+          <TabsList className="w-full justify-start h-auto p-1 bg-muted/40 border border-border rounded-xl overflow-x-auto flex-nowrap gap-1">
+            <TabsTrigger
+              value="pdf"
+              className="gap-2 text-xs shrink-0 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-xs"
             >
               <FileText className="h-4 w-4" />
               <span>Dokumen PDF</span>
-            </Button>
+            </TabsTrigger>
 
-            <Button
-              variant={activeTab === 'summary' ? 'default' : 'ghost'}
-              size="sm"
-              onClick={() => setActiveTab('summary')}
-              className="gap-2 text-xs shrink-0"
+            <TabsTrigger
+              value="summary"
+              className="gap-2 text-xs shrink-0 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-xs"
             >
               <Sparkles className="h-4 w-4 text-amber-500" />
               <span>Ringkasan AI</span>
@@ -562,33 +611,27 @@ export default function MaterialDetailPage(): React.JSX.Element {
               {isAiWorking && (
                 <Loader2 className="h-3 w-3 animate-spin text-primary ml-1" />
               )}
-            </Button>
+            </TabsTrigger>
 
-            <Button
-              variant={activeTab === 'flashcards' ? 'default' : 'ghost'}
-              size="sm"
-              onClick={() => setActiveTab('flashcards')}
-              className="gap-2 text-xs shrink-0"
+            <TabsTrigger
+              value="flashcards"
+              className="gap-2 text-xs shrink-0 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-xs"
             >
               <Layers className="h-4 w-4 text-primary" />
               <span>Flashcards</span>
-            </Button>
+            </TabsTrigger>
 
-            <Button
-              variant={activeTab === 'quiz' ? 'default' : 'ghost'}
-              size="sm"
-              onClick={() => setActiveTab('quiz')}
-              className="gap-2 text-xs shrink-0"
+            <TabsTrigger
+              value="quiz"
+              className="gap-2 text-xs shrink-0 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-xs"
             >
               <HelpCircle className="h-4 w-4 text-primary" />
               <span>Kuis</span>
-            </Button>
+            </TabsTrigger>
 
-            <Button
-              variant={activeTab === 'text' ? 'default' : 'ghost'}
-              size="sm"
-              onClick={() => setActiveTab('text')}
-              className="gap-2 text-xs shrink-0"
+            <TabsTrigger
+              value="text"
+              className="gap-2 text-xs shrink-0 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-xs"
             >
               <BookOpen className="h-4 w-4" />
               <span>Teks Hasil Ekstraksi</span>
@@ -597,12 +640,11 @@ export default function MaterialDetailPage(): React.JSX.Element {
                   {extractedPages.length} hal
                 </span>
               )}
-            </Button>
-          </div>
+            </TabsTrigger>
+          </TabsList>
 
           {/* TAB 1: Dokumen PDF */}
-          {activeTab === 'pdf' && (
-            <div className="space-y-3">
+          <TabsContent value="pdf" className="mt-0 space-y-3">
               {previewError ? (
                 <Card className="border-warning/30 bg-warning/5 p-6 text-center">
                   <AlertCircle className="h-8 w-8 text-warning mx-auto" />
@@ -636,6 +678,7 @@ export default function MaterialDetailPage(): React.JSX.Element {
                         onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
                         className="h-7 w-7 p-0"
                         title="Halaman Sebelumnya"
+                        aria-label="Halaman Sebelumnya"
                       >
                         <ChevronLeft className="h-4 w-4" />
                       </Button>
@@ -654,6 +697,7 @@ export default function MaterialDetailPage(): React.JSX.Element {
                             }
                           }}
                           className="w-12 h-6 text-center border border-border rounded bg-background text-foreground text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-primary"
+                          aria-label="Nomor Halaman PDF"
                         />
                         <span>/ {totalPages}</span>
                       </div>
@@ -665,6 +709,7 @@ export default function MaterialDetailPage(): React.JSX.Element {
                         onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
                         className="h-7 w-7 p-0"
                         title="Halaman Selanjutnya"
+                        aria-label="Halaman Selanjutnya"
                       >
                         <ChevronRight className="h-4 w-4" />
                       </Button>
@@ -678,13 +723,16 @@ export default function MaterialDetailPage(): React.JSX.Element {
                         onClick={() => setZoom((z) => Math.max(50, z - 10))}
                         className="h-7 w-7 p-0"
                         title="Perkecil (Zoom Out)"
+                        aria-label="Perkecil Zoom"
                       >
                         <ZoomOut className="h-3.5 w-3.5" />
                       </Button>
                       <button
+                        type="button"
                         onClick={() => setZoom(100)}
-                        className="text-muted-foreground hover:text-foreground text-xs w-12 text-center font-medium"
+                        className="text-muted-foreground hover:text-foreground text-xs w-12 text-center font-medium focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-primary rounded"
                         title="Reset ke 100%"
+                        aria-label="Reset zoom ke 100%"
                       >
                         {zoom}%
                       </button>
@@ -694,6 +742,7 @@ export default function MaterialDetailPage(): React.JSX.Element {
                         onClick={() => setZoom((z) => Math.min(200, z + 10))}
                         className="h-7 w-7 p-0"
                         title="Perbesar (Zoom In)"
+                        aria-label="Perbesar Zoom"
                       >
                         <ZoomIn className="h-3.5 w-3.5" />
                       </Button>
@@ -707,6 +756,7 @@ export default function MaterialDetailPage(): React.JSX.Element {
                         onClick={handleRefreshSignedUrl}
                         className="h-7 px-2 text-xs gap-1 text-muted-foreground hover:text-foreground"
                         title="Perbarui Tautan yang Kedaluwarsa"
+                        aria-label="Perbarui tautan dokumen"
                       >
                         <RefreshCw className="h-3 w-3" />
                         <span className="hidden sm:inline">Perbarui Tautan</span>
@@ -718,6 +768,7 @@ export default function MaterialDetailPage(): React.JSX.Element {
                         onClick={handleOpenInNewTab}
                         className="h-7 px-2 text-xs gap-1"
                         title="Buka di Tab Baru"
+                        aria-label="Buka dokumen di tab baru"
                       >
                         <ExternalLink className="h-3 w-3" />
                         <span className="hidden sm:inline">Tab Baru</span>
@@ -778,12 +829,10 @@ export default function MaterialDetailPage(): React.JSX.Element {
                   </Button>
                 </Card>
               )}
-            </div>
-          )}
+          </TabsContent>
 
           {/* TAB 2: Ringkasan AI */}
-          {activeTab === 'summary' && (
-            <div className="space-y-4">
+          <TabsContent value="summary" className="mt-0 space-y-4">
               {/* Disclaimer Alert */}
               <div className="flex items-start gap-3 rounded-lg border border-amber-500/30 bg-amber-500/5 p-3.5 text-xs text-foreground">
                 <Info className="h-4 w-4 shrink-0 text-amber-500 mt-0.5" />
@@ -1108,12 +1157,10 @@ export default function MaterialDetailPage(): React.JSX.Element {
                   )}
                 </Card>
               )}
-            </div>
-          )}
+          </TabsContent>
 
           {/* TAB 3: Teks Hasil Ekstraksi */}
-          {activeTab === 'text' && (
-            <div className="space-y-4">
+          <TabsContent value="text" className="mt-0 space-y-4">
               {extractedPages.length === 0 ? (
                 <Card className="p-8 text-center bg-card">
                   <BookOpen className="h-8 w-8 text-muted-foreground mx-auto" />
@@ -1136,6 +1183,7 @@ export default function MaterialDetailPage(): React.JSX.Element {
                         onClick={() => setSelectedTextPage((p) => Math.max(1, p - 1))}
                         className="h-8 w-8 p-0"
                         title="Halaman Sebelumnya"
+                        aria-label="Halaman Sebelumnya"
                       >
                         <ChevronLeft className="h-4 w-4" />
                       </Button>
@@ -1144,6 +1192,7 @@ export default function MaterialDetailPage(): React.JSX.Element {
                         value={selectedTextPage}
                         onChange={(e) => setSelectedTextPage(parseInt(e.target.value, 10))}
                         className="h-8 rounded border border-border bg-background px-2 text-xs font-semibold text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+                        aria-label="Pilih nomor halaman teks"
                       >
                         {extractedPages.map((p) => (
                           <option key={p.pageNumber} value={p.pageNumber}>
@@ -1159,6 +1208,7 @@ export default function MaterialDetailPage(): React.JSX.Element {
                         onClick={() => setSelectedTextPage((p) => Math.min(extractedPages.length, p + 1))}
                         className="h-8 w-8 p-0"
                         title="Halaman Selanjutnya"
+                        aria-label="Halaman Selanjutnya"
                       >
                         <ChevronRight className="h-4 w-4" />
                       </Button>
@@ -1212,11 +1262,10 @@ export default function MaterialDetailPage(): React.JSX.Element {
                   </div>
                 </Card>
               )}
-            </div>
-          )}
+          </TabsContent>
 
-          {/* TAB 3: Flashcards */}
-          {activeTab === 'flashcards' && (
+          {/* TAB 4: Flashcards */}
+          <TabsContent value="flashcards" className="mt-0">
             <MaterialFlashcardTab
               materialId={material.id}
               isArchived={isArchived}
@@ -1225,10 +1274,10 @@ export default function MaterialDetailPage(): React.JSX.Element {
                 setActiveTab('pdf');
               }}
             />
-          )}
+          </TabsContent>
 
-          {/* TAB 4: Kuis */}
-          {activeTab === 'quiz' && (
+          {/* TAB 5: Kuis */}
+          <TabsContent value="quiz" className="mt-0">
             <MaterialQuizTab
               materialId={material.id}
               isArchived={isArchived}
@@ -1237,8 +1286,8 @@ export default function MaterialDetailPage(): React.JSX.Element {
                 setActiveTab('pdf');
               }}
             />
-          )}
-        </div>
+          </TabsContent>
+        </Tabs>
       ) : null}
 
       {/* Regenerate Confirmation Dialog */}
@@ -1283,13 +1332,26 @@ export default function MaterialDetailPage(): React.JSX.Element {
       </Dialog>
 
       {/* Edit Title Dialog */}
-      <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
+      <Dialog
+        open={isEditOpen}
+        onOpenChange={(open) => {
+          setIsEditOpen(open);
+          if (open) setEditError(null);
+        }}
+      >
         <DialogContent>
           <form onSubmit={handleUpdateTitle}>
             <DialogHeader>
               <DialogTitle>Edit Judul Materi</DialogTitle>
               <DialogDescription>Perbarui judul dokumen materi perkuliahan ini.</DialogDescription>
             </DialogHeader>
+
+            {editError && (
+              <div className="mt-3 flex items-center gap-2 rounded-lg border border-danger/30 bg-danger/5 p-3 text-xs text-danger">
+                <AlertCircle className="h-4 w-4 shrink-0" />
+                <span>{editError}</span>
+              </div>
+            )}
 
             <div className="mt-4 space-y-2">
               <Label htmlFor="edit-title">Judul Dokumen</Label>

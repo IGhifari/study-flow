@@ -6,294 +6,229 @@ import {
   ListTodo,
   Plus,
   Search,
-  Filter,
-  CheckCircle2,
-  Circle,
+  BookOpen,
+  ArrowUpDown,
   Clock,
+  AlertCircle,
   AlertTriangle,
   Pencil,
   Trash2,
   Calendar,
-  BookOpen,
-  ArrowUpDown,
+  RefreshCw,
   Loader2,
-  AlertCircle,
-  ExternalLink,
 } from 'lucide-react';
 import {
   Assignment,
   Course,
-  Semester,
   UserProfile,
   formatUserDateTime,
-  toUserDateTimeInputValue,
 } from '@studyflow/shared';
 import {
   listAssignments,
-  createAssignment,
   updateAssignment,
-  deleteAssignment,
 } from '@/lib/assignment-client';
 import { listCourses } from '@/lib/course-client';
-import { listSemesters } from '@/lib/semester-client';
 import { getProfile } from '@/lib/auth-client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
+import { Card, CardContent } from '@/components/ui/card';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
+import { Skeleton } from '@/components/ui/skeleton';
 import {
-  RadixSelect,
+  RadixSelect as Select,
   SelectTrigger,
   SelectValue,
   SelectContent,
   SelectItem,
-  NativeSelect,
 } from '@/components/ui/select';
-import { Textarea } from '@/components/ui/textarea';
-import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-  CardContent,
-} from '@/components/ui/card';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-} from '@/components/ui/dialog';
+import { CreateTaskDialog } from '@/components/assignments/create-task-dialog';
+import { EditTaskDialog } from '@/components/assignments/edit-task-dialog';
+import { DeleteTaskDialog } from '@/components/assignments/delete-task-dialog';
 
 export default function AssignmentsPage(): React.JSX.Element {
   const [assignments, setAssignments] = React.useState<Assignment[]>([]);
   const [courses, setCourses] = React.useState<Course[]>([]);
-  const [semesters, setSemesters] = React.useState<Semester[]>([]);
   const [userProfile, setUserProfile] = React.useState<UserProfile | null>(null);
 
   // Filters
-  const [selectedSemesterId, setSelectedSemesterId] = React.useState<string>('all');
-  const [selectedCourseId, setSelectedCourseId] = React.useState<string>('all');
+  const [searchQuery, setSearchQuery] = React.useState<string>('');
+  const [selectedCourseId, setSelectedCourseId] = React.useState<string>('ALL');
   const [selectedStatus, setSelectedStatus] = React.useState<string>('ALL');
   const [selectedPriority, setSelectedPriority] = React.useState<string>('ALL');
-  const [isOverdueOnly, setIsOverdueOnly] = React.useState<boolean>(false);
-  const [searchQuery, setSearchQuery] = React.useState<string>('');
   const [sortOrder, setSortOrder] = React.useState<'asc' | 'desc'>('asc');
+  const [isOverdueOnly, setIsOverdueOnly] = React.useState<boolean>(false);
 
+  // Page States
   const [isLoading, setIsLoading] = React.useState(true);
   const [errorMsg, setErrorMsg] = React.useState<string | null>(null);
+  const [actionError, setActionError] = React.useState<string | null>(null);
+  const [pendingTaskIds, setPendingTaskIds] = React.useState<Set<string>>(new Set());
 
-  // Modal Create
+  // Dialog States
   const [isCreateOpen, setIsCreateOpen] = React.useState(false);
-  const [createCourseId, setCreateCourseId] = React.useState('');
-  const [createTitle, setCreateTitle] = React.useState('');
-  const [createDescription, setCreateDescription] = React.useState('');
-  const [createDueDate, setCreateDueDate] = React.useState('');
-  const [createPriority, setCreatePriority] = React.useState<'LOW' | 'MEDIUM' | 'HIGH'>('MEDIUM');
-  const [createStatus, setCreateStatus] = React.useState<'TODO' | 'IN_PROGRESS' | 'DONE'>('TODO');
-  const [createError, setCreateError] = React.useState<string | null>(null);
-  const [isSubmittingCreate, setIsSubmittingCreate] = React.useState(false);
-
-  // Modal Edit
   const [editingAssignment, setEditingAssignment] = React.useState<Assignment | null>(null);
-  const [editTitle, setEditTitle] = React.useState('');
-  const [editDescription, setEditDescription] = React.useState('');
-  const [editDueDate, setEditDueDate] = React.useState('');
-  const [editPriority, setEditPriority] = React.useState<'LOW' | 'MEDIUM' | 'HIGH'>('MEDIUM');
-  const [editStatus, setEditStatus] = React.useState<'TODO' | 'IN_PROGRESS' | 'DONE'>('TODO');
-  const [editError, setEditError] = React.useState<string | null>(null);
-  const [isSubmittingEdit, setIsSubmittingEdit] = React.useState(false);
-
-  // Modal Delete
   const [deletingAssignment, setDeletingAssignment] = React.useState<Assignment | null>(null);
-  const [deleteError, setDeleteError] = React.useState<string | null>(null);
-  const [isSubmittingDelete, setIsSubmittingDelete] = React.useState(false);
 
   const timezone = userProfile?.timezone || 'Asia/Jakarta';
 
-  // Load initial metadata: Profile, Semesters, Courses
+  // Request race condition prevention
+  const fetchRequestIdRef = React.useRef(0);
+
+  // Load initial metadata: Profile & Courses
   React.useEffect(() => {
+    let isMounted = true;
     async function loadMeta() {
       try {
-        const [profile, semData, crsData] = await Promise.all([
+        const [profile, courseRes] = await Promise.all([
           getProfile().catch(() => null),
-          listSemesters('all').catch(() => ({ semesters: [] })),
           listCourses().catch(() => ({ courses: [] })),
         ]);
+        if (!isMounted) return;
         if (profile) setUserProfile(profile);
-        setSemesters(semData.semesters);
-        setCourses(crsData.courses);
+        setCourses(courseRes.courses);
       } catch (err) {
-        console.error('Failed to load initial metadata:', err);
+        console.error('Failed to load metadata:', err);
       }
     }
     loadMeta();
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
-  // Fetch Assignments
-  const fetchAssignments = React.useCallback(async () => {
-    setIsLoading(true);
-    setErrorMsg(null);
-    try {
-      const data = await listAssignments({
-        semesterId: selectedSemesterId === 'all' ? undefined : selectedSemesterId,
-        courseId: selectedCourseId === 'all' ? undefined : selectedCourseId,
-        status: selectedStatus === 'ALL' ? undefined : (selectedStatus as any),
-        priority: selectedPriority === 'ALL' ? undefined : (selectedPriority as any),
-        isOverdue: isOverdueOnly ? true : undefined,
-        search: searchQuery.trim() || undefined,
-        sortBy: 'dueDate',
-        sortOrder,
-        limit: 100,
-      });
-      setAssignments(data.assignments);
-    } catch (err: any) {
-      setErrorMsg(err.message || 'Gagal memuat tugas kuliah.');
-    } finally {
-      setIsLoading(false);
-    }
-  }, [
-    selectedSemesterId,
-    selectedCourseId,
-    selectedStatus,
-    selectedPriority,
-    isOverdueOnly,
-    searchQuery,
-    sortOrder,
-  ]);
+  // Fetch Assignments function
+  const fetchAssignmentsList = React.useCallback(
+    async (silent = false) => {
+      const currentRequestId = ++fetchRequestIdRef.current;
+      if (!silent) {
+        setIsLoading(true);
+      }
+      setErrorMsg(null);
+
+      try {
+        const data = await listAssignments({
+          courseId: selectedCourseId === 'ALL' ? undefined : selectedCourseId,
+          status: selectedStatus === 'ALL' ? undefined : (selectedStatus as any),
+          priority: selectedPriority === 'ALL' ? undefined : (selectedPriority as any),
+          isOverdue: isOverdueOnly ? true : undefined,
+          search: searchQuery.trim() || undefined,
+          sortBy: 'dueDate',
+          sortOrder,
+          limit: 100,
+        });
+
+        // Ensure we only process the latest request to avoid race condition
+        if (currentRequestId === fetchRequestIdRef.current) {
+          setAssignments(data.assignments);
+        }
+      } catch (err: any) {
+        if (currentRequestId === fetchRequestIdRef.current) {
+          setErrorMsg(err.message || 'Gagal memuat tugas kuliah.');
+        }
+      } finally {
+        if (currentRequestId === fetchRequestIdRef.current && !silent) {
+          setIsLoading(false);
+        }
+      }
+    },
+    [
+      selectedCourseId,
+      selectedStatus,
+      selectedPriority,
+      isOverdueOnly,
+      searchQuery,
+      sortOrder,
+    ]
+  );
 
   React.useEffect(() => {
-    fetchAssignments();
-  }, [fetchAssignments]);
+    fetchAssignmentsList();
+  }, [fetchAssignmentsList]);
 
-  // Open Create Dialog
-  const handleOpenCreate = () => {
-    setCreateTitle('');
-    setCreateDescription('');
-    setCreateDueDate('');
-    setCreatePriority('MEDIUM');
-    setCreateStatus('TODO');
-    setCreateError(null);
+  // Semester change listener
+  React.useEffect(() => {
+    const handleSemesterChange = () => {
+      listCourses().then((res) => setCourses(res.courses)).catch(() => {});
+      fetchAssignmentsList(true);
+    };
+    window.addEventListener('studyflow:semester-changed', handleSemesterChange);
 
-    // Pick first non-archived course if available
-    const activeCourses = courses.filter((c) => !c.archivedAt);
-    setCreateCourseId(activeCourses.length > 0 ? activeCourses[0]!.id : '');
-    setIsCreateOpen(true);
-  };
+    return () => {
+      window.removeEventListener('studyflow:semester-changed', handleSemesterChange);
+    };
+  }, [fetchAssignmentsList]);
 
-  // Submit Create
-  const handleCreateSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!createTitle.trim()) {
-      setCreateError('Judul tugas wajib diisi');
-      return;
-    }
-    if (!createCourseId) {
-      setCreateError('Mata kuliah wajib dipilih');
-      return;
-    }
-    if (!createDueDate) {
-      setCreateError('Tanggal tenggat waktu wajib diisi');
-      return;
-    }
-
-    setIsSubmittingCreate(true);
-    setCreateError(null);
-    try {
-      await createAssignment({
-        courseId: createCourseId,
-        title: createTitle.trim(),
-        description: createDescription.trim() || undefined,
-        dueDate: createDueDate,
-        priority: createPriority,
-        status: createStatus,
-      });
-      setIsCreateOpen(false);
-      fetchAssignments();
-    } catch (err: any) {
-      setCreateError(err.message || 'Gagal menambahkan tugas baru.');
-    } finally {
-      setIsSubmittingCreate(false);
-    }
-  };
-
-  // Open Edit Dialog
-  const handleOpenEdit = (asg: Assignment) => {
-    setEditingAssignment(asg);
-    setEditTitle(asg.title);
-    setEditDescription(asg.description || '');
-    setEditDueDate(toUserDateTimeInputValue(asg.dueDate, timezone));
-    setEditPriority(asg.priority);
-    setEditStatus(asg.status);
-    setEditError(null);
-  };
-
-  // Submit Edit
-  const handleEditSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!editingAssignment) return;
-    if (!editTitle.trim()) {
-      setEditError('Judul tugas wajib diisi');
-      return;
-    }
-    if (!editDueDate) {
-      setEditError('Tenggat waktu wajib diisi');
-      return;
-    }
-
-    setIsSubmittingEdit(true);
-    setEditError(null);
-    try {
-      await updateAssignment(editingAssignment.id, {
-        title: editTitle.trim(),
-        description: editDescription.trim() || undefined,
-        dueDate: editDueDate,
-        priority: editPriority,
-        status: editStatus,
-      });
-      setEditingAssignment(null);
-      fetchAssignments();
-    } catch (err: any) {
-      setEditError(err.message || 'Gagal memperbarui tugas.');
-    } finally {
-      setIsSubmittingEdit(false);
-    }
-  };
-
-  // Quick Toggle Status TODO/IN_PROGRESS <-> DONE
+  // Checkbox Toggle Status
   const handleToggleStatus = async (asg: Assignment) => {
-    const nextStatus = asg.status === 'DONE' ? 'TODO' : 'DONE';
+    const isDone = asg.status === 'DONE';
+    const nextStatus = isDone ? 'TODO' : 'DONE';
+    setActionError(null);
+
+    // Mark task as pending
+    setPendingTaskIds((prev) => new Set(prev).add(asg.id));
+
+    // Optimistically update UI
+    setAssignments((prev) =>
+      prev.map((item) =>
+        item.id === asg.id
+          ? {
+              ...item,
+              status: nextStatus,
+              completedAt: nextStatus === 'DONE' ? new Date().toISOString() : null,
+            }
+          : item
+      )
+    );
+
     try {
       await updateAssignment(asg.id, { status: nextStatus });
-      fetchAssignments();
+      // Silent refetch to sync server state without full page spinner
+      await fetchAssignmentsList(true);
     } catch (err: any) {
-      alert(err.message || 'Gagal memperbarui status tugas');
-    }
-  };
-
-  // Submit Delete
-  const handleDeleteSubmit = async () => {
-    if (!deletingAssignment) return;
-    setIsSubmittingDelete(true);
-    setDeleteError(null);
-    try {
-      await deleteAssignment(deletingAssignment.id);
-      setDeletingAssignment(null);
-      fetchAssignments();
-    } catch (err: any) {
-      setDeleteError(err.message || 'Gagal menghapus tugas.');
+      // Revert optimistic update on error
+      setAssignments((prev) =>
+        prev.map((item) => (item.id === asg.id ? asg : item))
+      );
+      setActionError(err.message || 'Gagal memperbarui status tugas.');
     } finally {
-      setIsSubmittingDelete(false);
+      setPendingTaskIds((prev) => {
+        const updated = new Set(prev);
+        updated.delete(asg.id);
+        return updated;
+      });
     }
   };
 
-  const activeCourses = courses.filter((c) => !c.archivedAt);
+  const activeCourses = React.useMemo(
+    () => courses.filter((c) => !c.archivedAt),
+    [courses]
+  );
+
+  const hasFilter = Boolean(
+    searchQuery ||
+      selectedCourseId !== 'ALL' ||
+      selectedStatus !== 'ALL' ||
+      selectedPriority !== 'ALL' ||
+      isOverdueOnly ||
+      sortOrder !== 'asc'
+  );
+
+  const handleResetFilter = () => {
+    setSearchQuery('');
+    setSelectedCourseId('ALL');
+    setSelectedStatus('ALL');
+    setSelectedPriority('ALL');
+    setIsOverdueOnly(false);
+    setSortOrder('asc');
+  };
 
   return (
     <div className="space-y-6">
-      {/* Page Header */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      {/* 1. Header Halaman */}
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-border pb-5">
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl flex items-center gap-2.5">
             <ListTodo className="h-7 w-7 text-primary" aria-hidden="true" />
@@ -305,365 +240,474 @@ export default function AssignmentsPage(): React.JSX.Element {
         </div>
 
         <Button
-          onClick={handleOpenCreate}
+          onClick={() => setIsCreateOpen(true)}
           disabled={activeCourses.length === 0}
-          className="w-full sm:w-auto"
+          className="gap-2 shrink-0 self-start sm:self-auto"
         >
-          <Plus className="mr-2 h-4 w-4" />
-          Tambah Tugas
+          <Plus className="h-4 w-4" />
+          <span>Tambah tugas</span>
         </Button>
       </div>
 
-      {activeCourses.length === 0 && (
-        <div className="rounded-lg border border-warning/30 bg-warning/10 p-4 text-sm text-warning-foreground flex items-start gap-3">
-          <AlertCircle className="h-5 w-5 text-warning shrink-0 mt-0.5" />
-          <div>
-            <p className="font-semibold">Belum ada mata kuliah aktif</p>
-            <p className="mt-0.5 text-xs text-muted-foreground">
+      {/* Warning banner jika belum ada mata kuliah aktif */}
+      {activeCourses.length === 0 && !isLoading && (
+        <Alert variant="warning">
+          <AlertCircle className="h-5 w-5" />
+          <AlertTitle>Belum ada mata kuliah aktif</AlertTitle>
+          <AlertDescription className="mt-1 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <span>
               Anda perlu menambahkan mata kuliah aktif terlebih dahulu sebelum dapat mencatat tugas.
-            </p>
-            <Link href="/courses" className="mt-2 inline-block text-xs font-semibold text-primary underline">
-              Kelola Mata Kuliah &rarr;
-            </Link>
-          </div>
-        </div>
+            </span>
+            <Button asChild variant="outline" size="sm" className="w-fit">
+              <Link href="/courses">Kelola Mata Kuliah &rarr;</Link>
+            </Button>
+          </AlertDescription>
+        </Alert>
       )}
 
-      {/* Filters Toolbar */}
-      <Card className="p-4 bg-card/60 backdrop-blur-xs">
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-6">
-          {/* Search */}
-          <div className="relative lg:col-span-2">
-            <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input
-              type="text"
-              placeholder="Cari judul tugas..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-9"
-            />
-          </div>
-
-          {/* Filter Semester */}
-          <div className="w-full sm:w-[190px]">
-            <RadixSelect
-              value={selectedSemesterId}
-              onValueChange={(val) => setSelectedSemesterId(val)}
+      {/* Local Action Error Feedback */}
+      {actionError && (
+        <Alert variant="destructive">
+          <AlertCircle className="h-5 w-5" />
+          <AlertTitle>Aksi tugas gagal</AlertTitle>
+          <AlertDescription className="mt-1 flex items-center justify-between gap-3">
+            <span>{actionError}</span>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setActionError(null)}
+              className="h-8 px-2 text-xs"
             >
-              <SelectTrigger className="h-11">
-                <SelectValue placeholder="Semua Semester" />
-              </SelectTrigger>
-              <SelectContent className="max-w-[calc(100vw-2rem)] sm:max-w-[280px]">
-                <SelectItem value="all">Semua Semester</SelectItem>
-                {semesters.map((s) => (
-                  <SelectItem key={s.id} value={s.id}>
-                    {s.name} {s.isActive ? '(Aktif)' : ''}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </RadixSelect>
-          </div>
+              Tutup
+            </Button>
+          </AlertDescription>
+        </Alert>
+      )}
 
-          {/* Filter Course */}
-          <div className="w-full sm:w-[210px]">
-            <RadixSelect
-              value={selectedCourseId}
-              onValueChange={(val) => setSelectedCourseId(val)}
-            >
-              <SelectTrigger className="h-11">
-                <SelectValue placeholder="Semua Mata Kuliah" />
-              </SelectTrigger>
-              <SelectContent className="max-w-[calc(100vw-2rem)] sm:max-w-[320px]">
-                <SelectItem value="all">Semua Mata Kuliah</SelectItem>
-                {courses.map((c) => (
-                  <SelectItem key={c.id} value={c.id}>
-                    {c.name} {c.code ? `(${c.code})` : ''} {c.archivedAt ? '[Arsip]' : ''}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </RadixSelect>
-          </div>
-
-          {/* Filter Status */}
-          <div className="w-full sm:w-[170px]">
-            <RadixSelect
-              value={selectedStatus}
-              onValueChange={(val) => setSelectedStatus(val)}
-            >
-              <SelectTrigger className="h-11">
-                <SelectValue placeholder="Semua Status" />
-              </SelectTrigger>
-              <SelectContent className="max-w-[calc(100vw-2rem)] sm:max-w-[240px]">
-                <SelectItem value="ALL">Semua Status</SelectItem>
-                <SelectItem value="TODO">Belum Dikerjakan</SelectItem>
-                <SelectItem value="IN_PROGRESS">Sedang Dikerjakan</SelectItem>
-                <SelectItem value="DONE">Selesai</SelectItem>
-              </SelectContent>
-            </RadixSelect>
-          </div>
-
-          {/* Filter Priority & Overdue */}
-          <div className="flex items-center gap-2 w-full sm:w-auto">
-            <div className="w-full sm:w-[180px]">
-              <RadixSelect
-                value={selectedPriority}
-                onValueChange={(val) => setSelectedPriority(val)}
-              >
-                <SelectTrigger className="h-11">
-                  <SelectValue placeholder="Semua Prioritas" />
-                </SelectTrigger>
-                <SelectContent className="max-w-[calc(100vw-2rem)] sm:max-w-[220px]">
-                  <SelectItem value="ALL">Semua Prioritas</SelectItem>
-                  <SelectItem value="HIGH">Tinggi (High)</SelectItem>
-                  <SelectItem value="MEDIUM">Sedang (Medium)</SelectItem>
-                  <SelectItem value="LOW">Rendah (Low)</SelectItem>
-                </SelectContent>
-              </RadixSelect>
+      {/* 2. Pencarian dan Filter Toolbar */}
+      <Card className="border border-border shadow-xs">
+        <CardContent className="p-4">
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+            {/* Input Pencarian */}
+            <div className="relative flex-1">
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                type="text"
+                placeholder="Cari judul tugas..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-9 h-11"
+              />
             </div>
 
-            <Button
-              variant={isOverdueOnly ? 'destructive' : 'outline'}
-              size="sm"
-              onClick={() => setIsOverdueOnly(!isOverdueOnly)}
-              title="Hanya tampilkan tugas terlambat"
-              className="h-11 w-11 p-0 shrink-0"
-            >
-              <Clock className="h-4 w-4" />
-            </Button>
+            {/* Kontrol Filter & Urutan */}
+            <div className="flex flex-col sm:flex-row sm:items-center gap-2.5 flex-wrap">
+              {/* Filter Mata Kuliah */}
+              <div className="w-full sm:w-[200px]">
+                <Select
+                  value={selectedCourseId}
+                  onValueChange={(val) => setSelectedCourseId(val)}
+                >
+                  <SelectTrigger className="h-11">
+                    <SelectValue placeholder="Semua Mata Kuliah" />
+                  </SelectTrigger>
+                  <SelectContent className="max-w-[calc(100vw-2rem)] sm:max-w-[320px]">
+                    <SelectItem value="ALL">Semua Mata Kuliah</SelectItem>
+                    {courses.map((c) => (
+                      <SelectItem key={c.id} value={c.id}>
+                        {c.name} {c.code ? `(${c.code})` : ''} {c.archivedAt ? '[Arsip]' : ''}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
 
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
-              title={`Urutkan deadline: ${sortOrder === 'asc' ? 'Terdekat' : 'Terjauh'}`}
-              className="h-11 w-11 p-0 shrink-0"
-            >
-              <ArrowUpDown className="h-4 w-4" />
-            </Button>
+              {/* Filter Status */}
+              <div className="w-full sm:w-[170px]">
+                <Select
+                  value={selectedStatus}
+                  onValueChange={(val) => setSelectedStatus(val)}
+                >
+                  <SelectTrigger className="h-11">
+                    <SelectValue placeholder="Semua Status" />
+                  </SelectTrigger>
+                  <SelectContent className="max-w-[calc(100vw-2rem)] sm:max-w-[240px]">
+                    <SelectItem value="ALL">Semua Status</SelectItem>
+                    <SelectItem value="TODO">Belum Dikerjakan</SelectItem>
+                    <SelectItem value="IN_PROGRESS">Sedang Dikerjakan</SelectItem>
+                    <SelectItem value="DONE">Selesai</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Filter Prioritas */}
+              <div className="w-full sm:w-[170px]">
+                <Select
+                  value={selectedPriority}
+                  onValueChange={(val) => setSelectedPriority(val)}
+                >
+                  <SelectTrigger className="h-11">
+                    <SelectValue placeholder="Semua Prioritas" />
+                  </SelectTrigger>
+                  <SelectContent className="max-w-[calc(100vw-2rem)] sm:max-w-[220px]">
+                    <SelectItem value="ALL">Semua Prioritas</SelectItem>
+                    <SelectItem value="HIGH">Tinggi</SelectItem>
+                    <SelectItem value="MEDIUM">Sedang</SelectItem>
+                    <SelectItem value="LOW">Rendah</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Toggle Overdue & Sort */}
+              <div className="flex items-center gap-2">
+                <Button
+                  variant={isOverdueOnly ? 'destructive' : 'outline'}
+                  size="sm"
+                  onClick={() => setIsOverdueOnly(!isOverdueOnly)}
+                  title={isOverdueOnly ? 'Tampilkan semua tenggat waktu' : 'Hanya tampilkan tugas terlambat'}
+                  aria-label="Filter tugas terlambat"
+                  className="h-11 w-11 p-0 shrink-0"
+                >
+                  <Clock className="h-4 w-4" />
+                </Button>
+
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
+                  title={`Urutkan deadline: ${sortOrder === 'asc' ? 'Terdekat dahulu' : 'Terjauh dahulu'}`}
+                  aria-label={`Urutan deadline: ${sortOrder === 'asc' ? 'Terdekat' : 'Terjauh'}`}
+                  className="h-11 w-11 p-0 shrink-0"
+                >
+                  <ArrowUpDown className="h-4 w-4" />
+                </Button>
+              </div>
+
+              {/* Reset Filter Button */}
+              {hasFilter && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleResetFilter}
+                  className="h-11 px-3 text-xs text-muted-foreground hover:text-foreground shrink-0 self-start sm:self-auto"
+                >
+                  Hapus filter
+                </Button>
+              )}
+            </div>
           </div>
-        </div>
+        </CardContent>
       </Card>
 
-      {/* Main Content Area */}
+      {/* 3. Daftar Tugas & State Views */}
       {isLoading ? (
-        <div className="flex h-64 items-center justify-center rounded-xl border border-dashed border-border bg-card/40">
-          <div className="flex flex-col items-center gap-2 text-muted-foreground">
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            <p className="text-sm">Memuat daftar tugas...</p>
+        /* Loading Skeleton State */
+        <div className="space-y-3" data-testid="assignments-skeleton">
+          {/* Skeleton Desktop Table */}
+          <div className="hidden md:block rounded-xl border border-border bg-card p-4 space-y-3">
+            <Skeleton className="h-10 w-full rounded-lg" />
+            <Skeleton className="h-14 w-full rounded-lg" />
+            <Skeleton className="h-14 w-full rounded-lg" />
+            <Skeleton className="h-14 w-full rounded-lg" />
+          </div>
+          {/* Skeleton Mobile Cards */}
+          <div className="grid grid-cols-1 gap-3 md:hidden">
+            <Skeleton className="h-28 w-full rounded-xl" />
+            <Skeleton className="h-28 w-full rounded-xl" />
+            <Skeleton className="h-28 w-full rounded-xl" />
           </div>
         </div>
       ) : errorMsg ? (
-        <div className="flex flex-col items-center justify-center rounded-xl border border-danger/30 bg-danger/5 p-8 text-center">
-          <AlertCircle className="h-10 w-10 text-danger" />
-          <h3 className="mt-3 text-base font-semibold text-danger">Gagal Memuat Tugas</h3>
-          <p className="mt-1 text-sm text-muted-foreground max-w-md">{errorMsg}</p>
-          <Button variant="outline" onClick={() => fetchAssignments()} className="mt-4">
-            Coba Lagi
-          </Button>
-        </div>
+        /* Error State with Retry Button */
+        <Alert variant="destructive">
+          <AlertCircle className="h-5 w-5" />
+          <AlertTitle>Terjadi kesalahan saat memuat tugas</AlertTitle>
+          <AlertDescription className="mt-1 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <span>{errorMsg}</span>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => fetchAssignmentsList()}
+              className="gap-1.5 w-fit"
+            >
+              <RefreshCw className="h-4 w-4" />
+              <span>Coba Lagi</span>
+            </Button>
+          </AlertDescription>
+        </Alert>
       ) : assignments.length === 0 ? (
-        <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-border bg-card/30 p-12 text-center">
-          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary">
+        /* Empty State */
+        <div className="rounded-xl border border-dashed border-border bg-card/40 p-10 sm:p-14 text-center">
+          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary mb-3">
             <ListTodo className="h-6 w-6" />
           </div>
-          <h3 className="mt-4 text-base font-semibold text-foreground">
-            {searchQuery || selectedStatus !== 'ALL' || selectedPriority !== 'ALL' || isOverdueOnly
-              ? 'Tidak ada tugas yang cocok'
-              : 'Belum ada tugas kuliah'}
+          <h3 className="text-base font-semibold text-foreground">
+            {hasFilter ? 'Tidak ada tugas yang cocok' : 'Belum ada tugas kuliah'}
           </h3>
-          <p className="mt-1 max-w-sm text-sm text-muted-foreground">
-            {searchQuery || selectedStatus !== 'ALL' || selectedPriority !== 'ALL' || isOverdueOnly
-              ? 'Coba sesuaikan kata kunci pencarian atau filter yang dipilih.'
-              : 'Mulai dengan menambahkan tugas baru agar Anda dapat memantau deadline belajar.'}
+          <p className="mt-1 text-sm text-muted-foreground max-w-sm mx-auto leading-relaxed">
+            {hasFilter
+              ? 'Coba atur ulang kata kunci pencarian atau sesuaikan filter mata kuliah, status, dan prioritas.'
+              : 'Mulai dengan menambahkan tugas baru agar Anda dapat memantau tenggat waktu dan progres belajar.'}
           </p>
-          {!(searchQuery || selectedStatus !== 'ALL' || selectedPriority !== 'ALL' || isOverdueOnly) && (
-            <Button onClick={handleOpenCreate} disabled={activeCourses.length === 0} className="mt-5">
-              <Plus className="mr-2 h-4 w-4" />
-              Tambah Tugas Pertama
+          {hasFilter ? (
+            <Button
+              variant="outline"
+              onClick={handleResetFilter}
+              className="mt-5"
+            >
+              Hapus filter
+            </Button>
+          ) : (
+            <Button
+              onClick={() => setIsCreateOpen(true)}
+              disabled={activeCourses.length === 0}
+              className="mt-5 gap-2"
+            >
+              <Plus className="h-4 w-4" />
+              <span>Tambah tugas pertama</span>
             </Button>
           )}
         </div>
       ) : (
+        /* Data Loaded View: Desktop Table + Mobile Cards */
         <div className="space-y-4">
           {/* Desktop Table View (>= 768px) */}
           <div className="hidden md:block overflow-hidden rounded-xl border border-border bg-card shadow-xs">
-            <table className="w-full text-left text-sm">
-              <thead className="border-b border-border bg-muted/40 text-xs font-semibold uppercase text-muted-foreground">
-                <tr>
-                  <th scope="col" className="px-4 py-3.5 w-12 text-center">Status</th>
-                  <th scope="col" className="px-4 py-3.5">Judul & Mata Kuliah</th>
-                  <th scope="col" className="px-4 py-3.5">Tenggat Waktu</th>
-                  <th scope="col" className="px-4 py-3.5">Prioritas</th>
-                  <th scope="col" className="px-4 py-3.5 text-right">Aksi</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border">
-                {assignments.map((asg) => {
-                  const isDone = asg.status === 'DONE';
-                  const isArchived = Boolean(asg.course?.archivedAt || asg.course?.semester?.archivedAt);
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-sm">
+                <thead className="border-b border-border bg-muted/40 text-xs font-semibold uppercase text-muted-foreground">
+                  <tr>
+                    <th scope="col" className="px-4 py-3.5 w-12 text-center">
+                      Status
+                    </th>
+                    <th scope="col" className="px-4 py-3.5">
+                      Judul Tugas
+                    </th>
+                    <th scope="col" className="px-4 py-3.5">
+                      Mata Kuliah
+                    </th>
+                    <th scope="col" className="px-4 py-3.5">
+                      Tenggat Waktu
+                    </th>
+                    <th scope="col" className="px-4 py-3.5">
+                      Prioritas
+                    </th>
+                    <th scope="col" className="px-4 py-3.5 text-right">
+                      Aksi
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border">
+                  {assignments.map((asg) => {
+                    const isDone = asg.status === 'DONE';
+                    const isArchived = Boolean(
+                      asg.course?.archivedAt || asg.course?.semester?.archivedAt
+                    );
+                    const isPending = pendingTaskIds.has(asg.id);
 
-                  return (
-                    <tr
-                      key={asg.id}
-                      className={`hover:bg-muted/30 transition-colors ${
-                        isDone ? 'bg-muted/10 opacity-75' : ''
-                      }`}
-                    >
-                      {/* Status Toggle Button */}
-                      <td className="px-4 py-3.5 text-center">
-                        <button
-                          type="button"
-                          onClick={() => handleToggleStatus(asg)}
-                          disabled={isArchived}
-                          className="text-muted-foreground hover:text-primary transition-colors disabled:opacity-40"
-                          title={isDone ? 'Tandai belum selesai' : 'Tandai selesai'}
-                        >
-                          {isDone ? (
-                            <CheckCircle2 className="h-5 w-5 text-emerald-500" />
-                          ) : (
-                            <Circle className="h-5 w-5 hover:text-primary" />
-                          )}
-                        </button>
-                      </td>
-
-                      {/* Title & Course */}
-                      <td className="px-4 py-3.5">
-                        <div className="flex flex-col">
-                          <span
-                            className={`font-medium ${
-                              isDone ? 'line-through text-muted-foreground' : 'text-foreground'
-                            }`}
-                          >
-                            {asg.title}
-                          </span>
-                          <div className="flex items-center gap-2 mt-0.5 text-xs text-muted-foreground">
-                            {asg.course ? (
-                              <Link
-                                href={`/courses/${asg.course.id}`}
-                                className="hover:underline flex items-center gap-1"
-                              >
-                                <BookOpen className="h-3 w-3" />
-                                {asg.course.name}
-                              </Link>
+                    return (
+                      <tr
+                        key={asg.id}
+                        className={`hover:bg-muted/30 transition-colors ${
+                          isDone ? 'bg-muted/10 opacity-75' : ''
+                        }`}
+                      >
+                        {/* Status Checkbox */}
+                        <td className="px-4 py-3.5 text-center">
+                          <div className="flex items-center justify-center">
+                            {isPending ? (
+                              <Loader2 className="h-4 w-4 animate-spin text-primary" />
                             ) : (
-                              <span>Mata Kuliah</span>
-                            )}
-                            {isArchived && (
-                              <Badge variant="outline" className="text-[10px] py-0 px-1 border-muted">
-                                Arsip (Read-only)
-                              </Badge>
+                              <Checkbox
+                                id={`task-check-${asg.id}`}
+                                checked={isDone}
+                                disabled={isArchived || isPending}
+                                onCheckedChange={() => handleToggleStatus(asg)}
+                                aria-label={
+                                  isDone
+                                    ? `Tandai tugas "${asg.title}" belum selesai`
+                                    : `Tandai tugas "${asg.title}" selesai`
+                                }
+                              />
                             )}
                           </div>
-                          {asg.description && (
-                            <p className="mt-1 text-xs text-muted-foreground line-clamp-1">
-                              {asg.description}
-                            </p>
-                          )}
-                        </div>
-                      </td>
+                        </td>
 
-                      {/* Due Date & Overdue Tag */}
-                      <td className="px-4 py-3.5 whitespace-nowrap">
-                        <div className="flex flex-col">
-                          <span className="text-xs text-foreground font-medium">
-                            {formatUserDateTime(asg.dueDate, timezone)}
-                          </span>
-                          {asg.isOverdue && !isDone && (
-                            <div className="flex items-center gap-1 text-xs font-semibold text-danger mt-0.5">
-                              <AlertTriangle className="h-3.5 w-3.5" />
-                              <span>Terlambat</span>
-                            </div>
-                          )}
-                          {isDone && asg.completedAt && (
-                            <span className="text-[11px] text-muted-foreground mt-0.5">
-                              Selesai: {formatUserDateTime(asg.completedAt, timezone)}
+                        {/* Judul Tugas & Deskripsi */}
+                        <td className="px-4 py-3.5">
+                          <div className="flex flex-col">
+                            <span
+                              className={`font-medium text-sm ${
+                                isDone
+                                  ? 'line-through text-muted-foreground'
+                                  : 'text-foreground'
+                              }`}
+                            >
+                              {asg.title}
                             </span>
+                            {asg.description && (
+                              <p className="mt-0.5 text-xs text-muted-foreground line-clamp-1">
+                                {asg.description}
+                              </p>
+                            )}
+                          </div>
+                        </td>
+
+                        {/* Mata Kuliah */}
+                        <td className="px-4 py-3.5 whitespace-nowrap">
+                          {asg.course ? (
+                            <div className="flex items-center gap-1.5">
+                              <Link
+                                href={`/courses/${asg.course.id}`}
+                                className="text-xs font-medium text-muted-foreground hover:text-foreground hover:underline flex items-center gap-1.5"
+                                title={asg.course.name}
+                              >
+                                <BookOpen className="h-3.5 w-3.5 shrink-0" />
+                                <span className="truncate max-w-[200px]">
+                                  {asg.course.name}
+                                </span>
+                              </Link>
+                              {isArchived && (
+                                <Badge
+                                  variant="outline"
+                                  className="text-[10px] py-0 px-1 border-muted"
+                                >
+                                  Arsip
+                                </Badge>
+                              )}
+                            </div>
+                          ) : (
+                            <span className="text-xs text-muted-foreground">Mata Kuliah</span>
                           )}
-                        </div>
-                      </td>
+                        </td>
 
-                      {/* Priority */}
-                      <td className="px-4 py-3.5 whitespace-nowrap">
-                        <Badge
-                          variant={
-                            asg.priority === 'HIGH'
-                              ? 'danger'
+                        {/* Tenggat Waktu & Overdue Label */}
+                        <td className="px-4 py-3.5 whitespace-nowrap">
+                          <div className="flex flex-col">
+                            <span className="text-xs text-foreground font-medium">
+                              {formatUserDateTime(asg.dueDate, timezone)}
+                            </span>
+                            {asg.isOverdue && !isDone && (
+                              <div className="flex items-center gap-1 text-xs font-semibold text-danger mt-0.5">
+                                <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
+                                <span>Terlambat</span>
+                              </div>
+                            )}
+                            {isDone && asg.completedAt && (
+                              <span className="text-[11px] text-muted-foreground mt-0.5">
+                                Selesai: {formatUserDateTime(asg.completedAt, timezone)}
+                              </span>
+                            )}
+                          </div>
+                        </td>
+
+                        {/* Prioritas */}
+                        <td className="px-4 py-3.5 whitespace-nowrap">
+                          <Badge
+                            variant={
+                              asg.priority === 'HIGH'
+                                ? 'danger'
+                                : asg.priority === 'MEDIUM'
+                                ? 'default'
+                                : 'secondary'
+                            }
+                            className="text-xs"
+                          >
+                            {asg.priority === 'HIGH'
+                              ? 'Tinggi'
                               : asg.priority === 'MEDIUM'
-                              ? 'default'
-                              : 'secondary'
-                          }
-                          className="text-xs"
-                        >
-                          {asg.priority === 'HIGH'
-                            ? 'Tinggi'
-                            : asg.priority === 'MEDIUM'
-                            ? 'Sedang'
-                            : 'Rendah'}
-                        </Badge>
-                      </td>
+                              ? 'Sedang'
+                              : 'Rendah'}
+                          </Badge>
+                        </td>
 
-                      {/* Actions */}
-                      <td className="px-4 py-3.5 text-right whitespace-nowrap">
-                        <div className="flex items-center justify-end gap-1.5">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleOpenEdit(asg)}
-                            disabled={isArchived}
-                            title={isArchived ? 'Mata kuliah diarsipkan (hanya-baca)' : 'Edit tugas'}
-                          >
-                            <Pencil className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => setDeletingAssignment(asg)}
-                            disabled={isArchived}
-                            title={isArchived ? 'Mata kuliah diarsipkan (hanya-baca)' : 'Hapus tugas'}
-                            className="text-danger-foreground hover:bg-danger/10 hover:text-danger"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+                        {/* Aksi Edit & Hapus */}
+                        <td className="px-4 py-3.5 text-right whitespace-nowrap">
+                          <div className="flex items-center justify-end gap-1">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => setEditingAssignment(asg)}
+                              disabled={isArchived}
+                              title={
+                                isArchived
+                                  ? 'Mata kuliah diarsipkan (hanya-baca)'
+                                  : 'Edit tugas'
+                              }
+                              aria-label={`Edit tugas "${asg.title}"`}
+                              className="h-8 w-8 p-0"
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => setDeletingAssignment(asg)}
+                              disabled={isArchived}
+                              title={
+                                isArchived
+                                  ? 'Mata kuliah diarsipkan (hanya-baca)'
+                                  : 'Hapus tugas'
+                              }
+                              aria-label={`Hapus tugas "${asg.title}"`}
+                              className="h-8 w-8 p-0 text-muted-foreground hover:text-danger hover:bg-danger/10"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
           </div>
 
           {/* Mobile Card List (< 768px) */}
           <div className="grid grid-cols-1 gap-3 md:hidden">
             {assignments.map((asg) => {
               const isDone = asg.status === 'DONE';
-              const isArchived = Boolean(asg.course?.archivedAt || asg.course?.semester?.archivedAt);
+              const isArchived = Boolean(
+                asg.course?.archivedAt || asg.course?.semester?.archivedAt
+              );
+              const isPending = pendingTaskIds.has(asg.id);
 
               return (
                 <Card
                   key={asg.id}
-                  className={`p-4 transition-colors ${isDone ? 'bg-muted/20 opacity-80' : ''}`}
+                  className={`p-4 transition-colors ${
+                    isDone ? 'bg-muted/20 opacity-80' : ''
+                  }`}
                 >
                   <div className="flex items-start gap-3">
-                    <button
-                      type="button"
-                      onClick={() => handleToggleStatus(asg)}
-                      disabled={isArchived}
-                      className="mt-0.5 shrink-0 text-muted-foreground hover:text-primary transition-colors"
-                      title={isDone ? 'Tandai belum selesai' : 'Tandai selesai'}
-                    >
-                      {isDone ? (
-                        <CheckCircle2 className="h-6 w-6 text-emerald-500" />
+                    {/* Checkbox Status */}
+                    <div className="pt-0.5 shrink-0">
+                      {isPending ? (
+                        <Loader2 className="h-4 w-4 animate-spin text-primary" />
                       ) : (
-                        <Circle className="h-6 w-6" />
+                        <Checkbox
+                          id={`mob-task-check-${asg.id}`}
+                          checked={isDone}
+                          disabled={isArchived || isPending}
+                          onCheckedChange={() => handleToggleStatus(asg)}
+                          aria-label={
+                            isDone
+                              ? `Tandai tugas "${asg.title}" belum selesai`
+                              : `Tandai tugas "${asg.title}" selesai`
+                          }
+                        />
                       )}
-                    </button>
+                    </div>
 
                     <div className="flex-1 min-w-0">
+                      {/* Title & Priority Badge */}
                       <div className="flex items-start justify-between gap-2">
                         <h4
-                          className={`text-sm font-semibold ${
-                            isDone ? 'line-through text-muted-foreground' : 'text-foreground'
+                          className={`text-sm font-semibold leading-snug ${
+                            isDone
+                              ? 'line-through text-muted-foreground'
+                              : 'text-foreground'
                           }`}
                         >
                           {asg.title}
@@ -686,26 +730,29 @@ export default function AssignmentsPage(): React.JSX.Element {
                         </Badge>
                       </div>
 
+                      {/* Course */}
                       {asg.course && (
-                        <p className="mt-1 text-xs text-muted-foreground flex items-center gap-1">
-                          <BookOpen className="h-3 w-3" />
-                          {asg.course.name}
+                        <p className="mt-1 text-xs text-muted-foreground flex items-center gap-1.5">
+                          <BookOpen className="h-3 w-3 shrink-0" />
+                          <span className="truncate">{asg.course.name}</span>
                         </p>
                       )}
 
+                      {/* Description */}
                       {asg.description && (
                         <p className="mt-1 text-xs text-muted-foreground line-clamp-2">
                           {asg.description}
                         </p>
                       )}
 
+                      {/* Card Footer: Due Date & Actions */}
                       <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-border pt-2.5">
                         <div className="flex items-center gap-1.5 text-xs text-foreground font-medium">
-                          <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
+                          <Calendar className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
                           <span>{formatUserDateTime(asg.dueDate, timezone)}</span>
                           {asg.isOverdue && !isDone && (
                             <span className="flex items-center gap-0.5 text-xs font-bold text-danger ml-1">
-                              <AlertTriangle className="h-3 w-3" />
+                              <AlertTriangle className="h-3 w-3 shrink-0" />
                               Terlambat
                             </span>
                           )}
@@ -715,8 +762,10 @@ export default function AssignmentsPage(): React.JSX.Element {
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => handleOpenEdit(asg)}
+                            onClick={() => setEditingAssignment(asg)}
                             disabled={isArchived}
+                            aria-label={`Edit tugas "${asg.title}"`}
+                            className="h-8 w-8 p-0"
                           >
                             <Pencil className="h-3.5 w-3.5" />
                           </Button>
@@ -725,7 +774,8 @@ export default function AssignmentsPage(): React.JSX.Element {
                             size="sm"
                             onClick={() => setDeletingAssignment(asg)}
                             disabled={isArchived}
-                            className="text-danger"
+                            aria-label={`Hapus tugas "${asg.title}"`}
+                            className="h-8 w-8 p-0 text-muted-foreground hover:text-danger hover:bg-danger/10"
                           >
                             <Trash2 className="h-3.5 w-3.5" />
                           </Button>
@@ -741,283 +791,38 @@ export default function AssignmentsPage(): React.JSX.Element {
       )}
 
       {/* Dialog Create Assignment */}
-      <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-        <DialogContent className="sm:max-w-[500px]">
-          <DialogHeader>
-            <DialogTitle>Tambah Tugas Baru</DialogTitle>
-            <DialogDescription>
-              Catat tugas kuliah baru beserta tenggat waktu dan tingkat prioritasnya.
-            </DialogDescription>
-          </DialogHeader>
-
-          <form onSubmit={handleCreateSubmit} className="space-y-4 py-2">
-            {createError && (
-              <div className="rounded-md bg-danger/10 p-3 text-xs font-medium text-danger border border-danger/20">
-                {createError}
-              </div>
-            )}
-
-            <div className="space-y-1.5">
-              <Label htmlFor="create-title">Judul Tugas *</Label>
-              <Input
-                id="create-title"
-                value={createTitle}
-                onChange={(e) => setCreateTitle(e.target.value)}
-                placeholder="Contoh: Makalah Sistem Terdistribusi"
-                required
-              />
-            </div>
-
-            <div className="space-y-1.5">
-              <Label htmlFor="create-course">Mata Kuliah *</Label>
-              <NativeSelect
-                id="create-course"
-                value={createCourseId}
-                onChange={(e) => setCreateCourseId(e.target.value)}
-                required
-              >
-                <option value="" disabled>Pilih mata kuliah aktif</option>
-                {activeCourses.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.name} {c.code ? `(${c.code})` : ''}
-                  </option>
-                ))}
-              </NativeSelect>
-            </div>
-
-            <div className="space-y-1.5">
-              <Label htmlFor="create-due">Tenggat Waktu *</Label>
-              <Input
-                id="create-due"
-                type="datetime-local"
-                value={createDueDate}
-                onChange={(e) => setCreateDueDate(e.target.value)}
-                required
-              />
-              <p className="text-[11px] text-muted-foreground">
-                Zona waktu profil: <strong className="text-foreground">{timezone}</strong>. Jika waktu tidak diisi, deadline otomatis diatur ke 23.59.
-              </p>
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label htmlFor="create-priority">Prioritas</Label>
-                <NativeSelect
-                  id="create-priority"
-                  value={createPriority}
-                  onChange={(e) => setCreatePriority(e.target.value as any)}
-                >
-                  <option value="LOW">Rendah (Low)</option>
-                  <option value="MEDIUM">Sedang (Medium)</option>
-                  <option value="HIGH">Tinggi (High)</option>
-                </NativeSelect>
-              </div>
-
-              <div className="space-y-1.5">
-                <Label htmlFor="create-status">Status</Label>
-                <NativeSelect
-                  id="create-status"
-                  value={createStatus}
-                  onChange={(e) => setCreateStatus(e.target.value as any)}
-                >
-                  <option value="TODO">Belum Dikerjakan</option>
-                  <option value="IN_PROGRESS">Sedang Dikerjakan</option>
-                  <option value="DONE">Selesai</option>
-                </NativeSelect>
-              </div>
-            </div>
-
-            <div className="space-y-1.5">
-              <Label htmlFor="create-desc">Deskripsi (Opsional)</Label>
-              <Textarea
-                id="create-desc"
-                value={createDescription}
-                onChange={(e) => setCreateDescription(e.target.value)}
-                placeholder="Rincian instruksi tugas, format pengumpulan, dll."
-                rows={3}
-              />
-            </div>
-
-            <DialogFooter className="pt-2">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setIsCreateOpen(false)}
-                disabled={isSubmittingCreate}
-              >
-                Batal
-              </Button>
-              <Button type="submit" disabled={isSubmittingCreate}>
-                {isSubmittingCreate ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Menyimpan...
-                  </>
-                ) : (
-                  'Simpan Tugas'
-                )}
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
+      <CreateTaskDialog
+        open={isCreateOpen}
+        onOpenChange={setIsCreateOpen}
+        courses={courses}
+        timezone={timezone}
+        onSuccess={() => {
+          fetchAssignmentsList(true);
+        }}
+      />
 
       {/* Dialog Edit Assignment */}
-      <Dialog open={Boolean(editingAssignment)} onOpenChange={(open) => !open && setEditingAssignment(null)}>
-        <DialogContent className="sm:max-w-[500px]">
-          <DialogHeader>
-            <DialogTitle>Edit Tugas</DialogTitle>
-            <DialogDescription>
-              Perbarui judul, tenggat waktu, prioritas, atau status tugas ini.
-            </DialogDescription>
-          </DialogHeader>
+      <EditTaskDialog
+        open={Boolean(editingAssignment)}
+        onOpenChange={(open) => !open && setEditingAssignment(null)}
+        assignment={editingAssignment}
+        timezone={timezone}
+        onSuccess={() => {
+          setEditingAssignment(null);
+          fetchAssignmentsList(true);
+        }}
+      />
 
-          <form onSubmit={handleEditSubmit} className="space-y-4 py-2">
-            {editError && (
-              <div className="rounded-md bg-danger/10 p-3 text-xs font-medium text-danger border border-danger/20">
-                {editError}
-              </div>
-            )}
-
-            <div className="space-y-1.5">
-              <Label>Mata Kuliah</Label>
-              <Input
-                value={editingAssignment?.course?.name || ''}
-                disabled
-                className="bg-muted text-muted-foreground"
-              />
-              <p className="text-[11px] text-muted-foreground">
-                Mata kuliah tidak dapat dipindahkan setelah tugas dibuat.
-              </p>
-            </div>
-
-            <div className="space-y-1.5">
-              <Label htmlFor="edit-title">Judul Tugas *</Label>
-              <Input
-                id="edit-title"
-                value={editTitle}
-                onChange={(e) => setEditTitle(e.target.value)}
-                required
-              />
-            </div>
-
-            <div className="space-y-1.5">
-              <Label htmlFor="edit-due">Tenggat Waktu *</Label>
-              <Input
-                id="edit-due"
-                type="datetime-local"
-                value={editDueDate}
-                onChange={(e) => setEditDueDate(e.target.value)}
-                required
-              />
-              <p className="text-[11px] text-muted-foreground">
-                Zona waktu: <strong className="text-foreground">{timezone}</strong>.
-              </p>
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label htmlFor="edit-priority">Prioritas</Label>
-                <NativeSelect
-                  id="edit-priority"
-                  value={editPriority}
-                  onChange={(e) => setEditPriority(e.target.value as any)}
-                >
-                  <option value="LOW">Rendah (Low)</option>
-                  <option value="MEDIUM">Sedang (Medium)</option>
-                  <option value="HIGH">Tinggi (High)</option>
-                </NativeSelect>
-              </div>
-
-              <div className="space-y-1.5">
-                <Label htmlFor="edit-status">Status</Label>
-                <NativeSelect
-                  id="edit-status"
-                  value={editStatus}
-                  onChange={(e) => setEditStatus(e.target.value as any)}
-                >
-                  <option value="TODO">Belum Dikerjakan</option>
-                  <option value="IN_PROGRESS">Sedang Dikerjakan</option>
-                  <option value="DONE">Selesai</option>
-                </NativeSelect>
-              </div>
-            </div>
-
-            <div className="space-y-1.5">
-              <Label htmlFor="edit-desc">Deskripsi (Opsional)</Label>
-              <Textarea
-                id="edit-desc"
-                value={editDescription}
-                onChange={(e) => setEditDescription(e.target.value)}
-                rows={3}
-              />
-            </div>
-
-            <DialogFooter className="pt-2">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setEditingAssignment(null)}
-                disabled={isSubmittingEdit}
-              >
-                Batal
-              </Button>
-              <Button type="submit" disabled={isSubmittingEdit}>
-                {isSubmittingEdit ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Memperbarui...
-                  </>
-                ) : (
-                  'Simpan Perubahan'
-                )}
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
-
-      {/* Dialog Confirm Delete */}
-      <Dialog open={Boolean(deletingAssignment)} onOpenChange={(open) => !open && setDeletingAssignment(null)}>
-        <DialogContent className="sm:max-w-[420px]">
-          <DialogHeader>
-            <DialogTitle>Hapus Tugas</DialogTitle>
-            <DialogDescription>
-              Apakah Anda yakin ingin menghapus tugas <strong className="text-foreground">{deletingAssignment?.title}</strong>? Tindakan ini tidak dapat dibatalkan.
-            </DialogDescription>
-          </DialogHeader>
-
-          {deleteError && (
-            <div className="rounded-md bg-danger/10 p-3 text-xs font-medium text-danger border border-danger/20">
-              {deleteError}
-            </div>
-          )}
-
-          <DialogFooter className="pt-2">
-            <Button
-              variant="outline"
-              onClick={() => setDeletingAssignment(null)}
-              disabled={isSubmittingDelete}
-            >
-              Batal
-            </Button>
-            <Button
-              variant="destructive"
-              onClick={handleDeleteSubmit}
-              disabled={isSubmittingDelete}
-            >
-              {isSubmittingDelete ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Menghapus...
-                </>
-              ) : (
-                'Hapus Tugas'
-              )}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {/* Dialog Delete Assignment */}
+      <DeleteTaskDialog
+        open={Boolean(deletingAssignment)}
+        onOpenChange={(open) => !open && setDeletingAssignment(null)}
+        assignment={deletingAssignment}
+        onSuccess={() => {
+          setDeletingAssignment(null);
+          fetchAssignmentsList(true);
+        }}
+      />
     </div>
   );
 }

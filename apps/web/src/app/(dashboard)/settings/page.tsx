@@ -2,9 +2,8 @@
 
 import * as React from 'react';
 import { useRouter } from 'next/navigation';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
 import {
+  Settings,
   User,
   KeyRound,
   Palette,
@@ -16,6 +15,9 @@ import {
   HardDrive,
   FileUp,
   Info,
+  Clock,
+  ShieldCheck,
+  AlertTriangle,
 } from 'lucide-react';
 import {
   UpdateProfileInput,
@@ -24,12 +26,17 @@ import {
   ChangePasswordInputSchema,
   formatFileSize,
   StorageUsageResponse,
+  UserProfile,
 } from '@studyflow/shared';
 import { apiUpdateProfile, apiChangePassword, getCurrentUser } from '@/lib/auth-client';
 import { getStorageUsage } from '@/lib/material-client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Separator } from '@/components/ui/separator';
+import { Skeleton } from '@/components/ui/skeleton';
 import {
   Card,
   CardHeader,
@@ -38,187 +45,335 @@ import {
   CardContent,
   CardFooter,
 } from '@/components/ui/card';
+import {
+  RadixSelect,
+  SelectTrigger,
+  SelectContent,
+  SelectItem,
+  SelectValue,
+} from '@/components/ui/select';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '@/components/ui/dialog';
 import { ThemeToggle } from '@/components/theme-toggle';
 
-const COMMON_TIMEZONES = [
-  { value: 'Asia/Jakarta', label: 'WIB — Asia/Jakarta (UTC+7)' },
-  { value: 'Asia/Makassar', label: 'WITA — Asia/Makassar (UTC+8)' },
-  { value: 'Asia/Jayapura', label: 'WIT — Asia/Jayapura (UTC+9)' },
-  { value: 'UTC', label: 'UTC — Universal Time' },
+const TIMEZONE_OPTIONS = [
+  { value: 'Asia/Jakarta', label: 'WIB — Asia/Jakarta (UTC+7, Indonesia Barat)' },
+  { value: 'Asia/Makassar', label: 'WITA — Asia/Makassar (UTC+8, Indonesia Tengah)' },
+  { value: 'Asia/Jayapura', label: 'WIT — Asia/Jayapura (UTC+9, Indonesia Timur)' },
+  { value: 'Asia/Pontianak', label: 'WIB — Asia/Pontianak (UTC+7, Kalimantan Barat)' },
+  { value: 'Asia/Singapore', label: 'SGT — Asia/Singapore (UTC+8)' },
+  { value: 'Asia/Tokyo', label: 'JST — Asia/Tokyo (UTC+9)' },
+  { value: 'UTC', label: 'UTC — Universal Time Coordinated' },
 ];
 
 export default function SettingsPage(): React.JSX.Element {
   const router = useRouter();
 
-  // Profile Form State
+  // User & Profile State
+  const [currentUser, setCurrentUser] = React.useState<UserProfile | null>(null);
+  const [name, setName] = React.useState('');
+  const [timezone, setTimezone] = React.useState('Asia/Jakarta');
+  const [initialLoading, setInitialLoading] = React.useState(true);
+  const [isProfileSubmitting, setIsProfileSubmitting] = React.useState(false);
   const [profileSuccess, setProfileSuccess] = React.useState<string | null>(null);
   const [profileError, setProfileError] = React.useState<string | null>(null);
-  const [initialLoading, setInitialLoading] = React.useState(true);
 
-  // Password Form State
-  const [passwordSuccess, setPasswordSuccess] = React.useState<string | null>(null);
-  const [passwordError, setPasswordError] = React.useState<string | null>(null);
+  // Password State
+  const [currentPassword, setCurrentPassword] = React.useState('');
+  const [newPassword, setNewPassword] = React.useState('');
   const [showCurrentPassword, setShowCurrentPassword] = React.useState(false);
   const [showNewPassword, setShowNewPassword] = React.useState(false);
+  const [isPasswordConfirmOpen, setIsPasswordConfirmOpen] = React.useState(false);
+  const [isPasswordSubmitting, setIsPasswordSubmitting] = React.useState(false);
+  const [passwordSuccess, setPasswordSuccess] = React.useState<string | null>(null);
+  const [passwordError, setPasswordError] = React.useState<string | null>(null);
 
-  // Storage usage state
+  // Storage Usage State
   const [storageUsage, setStorageUsage] = React.useState<StorageUsageResponse | null>(null);
   const [storageLoading, setStorageLoading] = React.useState(true);
 
-  const {
-    register: registerProfile,
-    handleSubmit: handleProfileSubmit,
-    setValue: setProfileValue,
-    formState: { errors: profileErrors, isSubmitting: isProfileSubmitting },
-  } = useForm<UpdateProfileInput>({
-    resolver: zodResolver(UpdateProfileInputSchema),
-  });
-
-  const {
-    register: registerPassword,
-    handleSubmit: handlePasswordSubmit,
-    reset: resetPasswordForm,
-    formState: { errors: passwordErrors, isSubmitting: isPasswordSubmitting },
-  } = useForm<ChangePasswordInput>({
-    resolver: zodResolver(ChangePasswordInputSchema),
-  });
-
+  // Load User Data & Storage on Mount
   React.useEffect(() => {
+    let isMounted = true;
+
     async function loadData() {
-      const user = await getCurrentUser();
-      if (user) {
-        setProfileValue('name', user.name);
-        setProfileValue('timezone', user.timezone);
+      try {
+        const user = await getCurrentUser();
+        if (isMounted && user) {
+          setCurrentUser(user);
+          setName(user.name);
+          setTimezone(user.timezone || 'Asia/Jakarta');
+        }
+      } catch (err) {
+        console.error('Failed to load current user:', err);
+      } finally {
+        if (isMounted) setInitialLoading(false);
       }
-      setInitialLoading(false);
 
-      getStorageUsage()
-        .then((data) => setStorageUsage(data))
-        .catch((err) => console.error('Failed to load storage usage:', err))
-        .finally(() => setStorageLoading(false));
+      try {
+        const usage = await getStorageUsage();
+        if (isMounted) setStorageUsage(usage);
+      } catch (err) {
+        console.error('Failed to load storage usage:', err);
+      } finally {
+        if (isMounted) setStorageLoading(false);
+      }
     }
-    loadData();
-  }, [setProfileValue]);
 
-  const onUpdateProfile = async (data: UpdateProfileInput) => {
+    loadData();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  // Dirty State Detection
+  const isProfileDirty = React.useMemo(() => {
+    if (!currentUser) return false;
+    return name.trim() !== currentUser.name || timezone !== currentUser.timezone;
+  }, [currentUser, name, timezone]);
+
+  // Profile Submit Handler
+  const handleProfileSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
     setProfileSuccess(null);
     setProfileError(null);
+
+    const trimmedName = name.trim();
+    const parseResult = UpdateProfileInputSchema.safeParse({
+      name: trimmedName,
+      timezone,
+    });
+
+    if (!parseResult.success) {
+      const firstError = parseResult.error.issues[0]?.message || 'Input profil tidak valid';
+      setProfileError(firstError);
+      return;
+    }
+
+    setIsProfileSubmitting(true);
     try {
-      const updated = await apiUpdateProfile(data);
-      setProfileSuccess(`Profil berhasil diperbarui: ${updated.name}`);
+      const payload: UpdateProfileInput = {
+        name: trimmedName,
+        timezone,
+      };
+
+      const updated = await apiUpdateProfile(payload);
+      setCurrentUser(updated);
+      setName(updated.name);
+      setTimezone(updated.timezone);
+      setProfileSuccess('Profil dan zona waktu berhasil diperbarui.');
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(
+          new CustomEvent('studyflow:profile-updated', { detail: updated })
+        );
+      }
       router.refresh();
-    } catch (err) {
-      setProfileError(err instanceof Error ? err.message : 'Gagal memperbarui profil');
+    } catch (err: any) {
+      setProfileError(err.message || 'Gagal memperbarui profil.');
+    } finally {
+      setIsProfileSubmitting(false);
     }
   };
 
-  const onChangePassword = async (data: ChangePasswordInput) => {
-    setPasswordSuccess(null);
+  // Pre-validate password before opening confirmation dialog
+  const handleOpenPasswordConfirm = (e: React.FormEvent) => {
+    e.preventDefault();
     setPasswordError(null);
+    setPasswordSuccess(null);
+
+    const parseResult = ChangePasswordInputSchema.safeParse({
+      currentPassword,
+      newPassword,
+    });
+
+    if (!parseResult.success) {
+      const firstError = parseResult.error.issues[0]?.message || 'Input password tidak valid';
+      setPasswordError(firstError);
+      return;
+    }
+
+    setIsPasswordConfirmOpen(true);
+  };
+
+  // Password Submit Handler
+  const executeChangePassword = async () => {
+    setIsPasswordSubmitting(true);
+    setPasswordError(null);
+    setPasswordSuccess(null);
+
     try {
-      const msg = await apiChangePassword(data);
-      setPasswordSuccess(msg);
-      resetPasswordForm();
-      // Redirect to login after 1.5 seconds since change-password revokes all sessions
+      const payload: ChangePasswordInput = {
+        currentPassword,
+        newPassword,
+      };
+
+      const msg = await apiChangePassword(payload);
+      setIsPasswordConfirmOpen(false);
+      setCurrentPassword('');
+      setNewPassword('');
+      setPasswordSuccess(msg || 'Password berhasil diubah.');
+
+      // Sesi login lama dicabut oleh backend, redirect ke halaman login
       setTimeout(() => {
         router.push('/login');
       }, 1500);
-    } catch (err) {
-      setPasswordError(err instanceof Error ? err.message : 'Gagal mengganti password');
+    } catch (err: any) {
+      setIsPasswordConfirmOpen(false);
+      setPasswordError(err.message || 'Gagal mengganti password. Periksa password saat ini.');
+    } finally {
+      setIsPasswordSubmitting(false);
     }
   };
 
   if (initialLoading) {
     return (
-      <div className="flex h-64 items-center justify-center">
-        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+      <div className="space-y-6">
+        <div>
+          <Skeleton className="h-8 w-48" />
+          <Skeleton className="mt-2 h-4 w-96" />
+        </div>
+        <div className="space-y-6">
+          <Skeleton className="h-64 w-full rounded-xl" />
+          <Skeleton className="h-40 w-full rounded-xl" />
+          <Skeleton className="h-64 w-full rounded-xl" />
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-8">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
-          Pengaturan Akun
+    <div className="space-y-6 max-w-4xl">
+      {/* 1. Header Halaman */}
+      <div className="border-b border-border pb-5">
+        <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl flex items-center gap-2.5">
+          <Settings className="h-7 w-7 text-primary" aria-hidden="true" />
+          Pengaturan
         </h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Kelola profil pribadi, preferensi tampilan, dan keamanan akunmu.
+          Kelola preferensi akun, zona waktu akademik, tampilan antarmuka, dan keamanan akun Anda.
         </p>
       </div>
 
-      {/* 1. Profile Information */}
+      {/* 2. Section: Profil & Zona Waktu */}
       <Card>
         <CardHeader>
-          <div className="flex items-center gap-2 text-primary font-semibold text-sm">
-            <User className="h-4 w-4" />
-            <span>Informasi Profil</span>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2 text-primary font-semibold text-sm">
+              <User className="h-4 w-4" />
+              <span>Profil Pengguna</span>
+            </div>
+            {isProfileDirty && (
+              <Badge variant="outline" className="border-amber-500/50 text-amber-600 dark:text-amber-400 text-xs">
+                Perubahan belum disimpan
+              </Badge>
+            )}
           </div>
-          <CardTitle>Profil Pengguna</CardTitle>
+          <CardTitle className="text-lg">Informasi Akun & Zona Waktu</CardTitle>
           <CardDescription>
-            Ubah nama tampilan dan zona waktu yang digunakan untuk penjadwalan akademik.
+            Nama tampilan dan zona waktu yang digunakan untuk menyelaraskan jadwal, deadline tugas, dan kalender belajar.
           </CardDescription>
         </CardHeader>
 
-        <form onSubmit={handleProfileSubmit(onUpdateProfile)} noValidate>
+        <form onSubmit={handleProfileSubmit} noValidate>
           <CardContent className="space-y-4">
             {profileSuccess && (
-              <div
-                role="status"
-                className="flex items-center gap-2.5 rounded-lg border border-emerald-200 bg-emerald-50/80 p-3 text-sm text-emerald-800 dark:border-emerald-900/50 dark:bg-emerald-950/40 dark:text-emerald-300"
-              >
-                <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-400" />
-                <span>{profileSuccess}</span>
-              </div>
+              <Alert variant="default" className="border-emerald-500/40 bg-emerald-50/50 dark:bg-emerald-950/20 text-emerald-900 dark:text-emerald-300">
+                <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                <AlertDescription>{profileSuccess}</AlertDescription>
+              </Alert>
             )}
 
             {profileError && (
-              <div
-                role="alert"
-                className="flex items-center gap-2.5 rounded-lg border border-red-200 bg-red-50/80 p-3 text-sm text-red-800 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-300"
-              >
-                <AlertCircle className="h-4 w-4 shrink-0 text-red-600 dark:text-red-400" />
-                <span>{profileError}</span>
-              </div>
+              <Alert variant="destructive">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>{profileError}</AlertDescription>
+              </Alert>
             )}
 
-            <div className="space-y-2">
-              <Label htmlFor="profile-name">Nama Lengkap</Label>
+            {/* Email (Read-Only) */}
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="profile-email">Alamat Email</Label>
+                <span className="text-[11px] text-muted-foreground flex items-center gap-1">
+                  <ShieldCheck className="h-3 w-3 text-primary" /> Akun Terverifikasi
+                </span>
+              </div>
               <Input
-                id="profile-name"
-                disabled={isProfileSubmitting}
-                aria-invalid={!!profileErrors.name}
-                {...registerProfile('name')}
+                id="profile-email"
+                value={currentUser?.email || ''}
+                disabled
+                className="bg-muted/40 cursor-not-allowed opacity-80"
               />
-              {profileErrors.name && (
-                <p className="text-xs text-danger-foreground">{profileErrors.name.message}</p>
-              )}
+              <p className="text-xs text-muted-foreground">
+                Email terikat permanen dengan akun StudyFlow Anda dan tidak dapat diubah.
+              </p>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="profile-timezone">Zona Waktu</Label>
-              <select
-                id="profile-timezone"
+            <Separator />
+
+            {/* Nama Lengkap */}
+            <div className="space-y-1.5">
+              <Label htmlFor="profile-name">
+                Nama Lengkap <span className="text-danger">*</span>
+              </Label>
+              <Input
+                id="profile-name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
                 disabled={isProfileSubmitting}
-                className="flex h-11 w-full rounded-lg border border-input bg-card px-3.5 py-2 text-base sm:text-sm text-foreground transition-colors focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring focus-visible:border-primary disabled:cursor-not-allowed disabled:opacity-50"
-                {...registerProfile('timezone')}
+                placeholder="Nama lengkap Anda"
+              />
+              <p className="text-xs text-muted-foreground">
+                Nama ini ditampilkan pada salam dashboard, materi, dan interaksi sistem.
+              </p>
+            </div>
+
+            {/* Zona Waktu */}
+            <div className="space-y-1.5">
+              <div className="flex items-center gap-1.5">
+                <Label htmlFor="profile-timezone">Zona Waktu Akademik</Label>
+                <Clock className="h-3.5 w-3.5 text-muted-foreground" />
+              </div>
+
+              <RadixSelect
+                value={timezone}
+                onValueChange={(val) => setTimezone(val)}
+                disabled={isProfileSubmitting}
               >
-                {COMMON_TIMEZONES.map((tz) => (
-                  <option key={tz.value} value={tz.value}>
-                    {tz.label}
-                  </option>
-                ))}
-              </select>
-              {profileErrors.timezone && (
-                <p className="text-xs text-danger-foreground">
-                  {profileErrors.timezone.message}
-                </p>
-              )}
+                <SelectTrigger id="profile-timezone" className="h-10" aria-label="Pilih zona waktu akademik">
+                  <SelectValue placeholder="Pilih zona waktu" />
+                </SelectTrigger>
+                <SelectContent className="max-w-[calc(100vw-2rem)] sm:max-w-[420px]">
+                  {TIMEZONE_OPTIONS.map((tz) => (
+                    <SelectItem key={tz.value} value={tz.value}>
+                      {tz.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </RadixSelect>
+
+              <p className="text-xs text-muted-foreground">
+                Seluruh tanggal tugas, deadline, dan waktu pembaruan catatan dikonversi otomatis sesuai zona waktu ini.
+              </p>
             </div>
           </CardContent>
 
-          <CardFooter>
-            <Button type="submit" disabled={isProfileSubmitting} className="font-semibold">
+          <CardFooter className="flex items-center justify-between border-t border-border pt-4">
+            <span className="text-xs text-muted-foreground">
+              {isProfileDirty ? 'Klik tombol untuk menyimpan perubahan' : 'Data profil tersinkronisasi'}
+            </span>
+            <Button
+              type="submit"
+              disabled={isProfileSubmitting || !isProfileDirty}
+              className="gap-2 shrink-0"
+            >
               {isProfileSubmitting ? (
                 <>
                   <Loader2 className="h-4 w-4 animate-spin" />
@@ -232,23 +387,23 @@ export default function SettingsPage(): React.JSX.Element {
         </form>
       </Card>
 
-      {/* 2. Theme & Appearance */}
+      {/* 3. Section: Preferensi Tampilan */}
       <Card>
         <CardHeader>
           <div className="flex items-center gap-2 text-primary font-semibold text-sm">
             <Palette className="h-4 w-4" />
-            <span>Tampilan</span>
+            <span>Tampilan & Tema</span>
           </div>
-          <CardTitle>Tema Aplikasi</CardTitle>
+          <CardTitle className="text-lg">Preferensi Antarmuka</CardTitle>
           <CardDescription>
-            Pilih tema tampilan yang nyaman untuk membaca materi dalam waktu lama. Pilihanmu akan disimpan secara otomatis.
+            Pilih mode tema yang nyaman untuk membaca materi kuliah dalam jangka waktu lama.
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="flex items-center justify-between rounded-lg border border-border p-4">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 rounded-xl border border-border p-4 bg-muted/20">
             <div>
-              <p className="text-sm font-medium text-foreground">Mode Tampilan</p>
-              <p className="text-xs text-muted-foreground">
+              <p className="text-sm font-medium text-foreground">Mode Tema</p>
+              <p className="text-xs text-muted-foreground mt-0.5">
                 Mendukung tema Sistem otomatis, Terang (kertas bersih), dan Gelap (tinta lembut).
               </p>
             </div>
@@ -257,54 +412,61 @@ export default function SettingsPage(): React.JSX.Element {
         </CardContent>
       </Card>
 
-      {/* 3. Security & Password Change */}
+      {/* 4. Section: Keamanan Akun */}
       <Card>
         <CardHeader>
           <div className="flex items-center gap-2 text-primary font-semibold text-sm">
             <KeyRound className="h-4 w-4" />
-            <span>Keamanan</span>
+            <span>Keamanan Akun</span>
           </div>
-          <CardTitle>Ganti Password</CardTitle>
+          <CardTitle className="text-lg">Ganti Password</CardTitle>
           <CardDescription>
-            Perbarui password akun secara berkala. Mengganti password akan mencabut seluruh sesi login lama di semua perangkat.
+            Perbarui password akun Anda secara berkala untuk menjaga kerahasiaan data belajar.
           </CardDescription>
         </CardHeader>
 
-        <form onSubmit={handlePasswordSubmit(onChangePassword)} noValidate>
+        <form onSubmit={handleOpenPasswordConfirm} noValidate>
           <CardContent className="space-y-4">
             {passwordSuccess && (
-              <div
-                role="status"
-                className="flex items-center gap-2.5 rounded-lg border border-emerald-200 bg-emerald-50/80 p-3 text-sm text-emerald-800 dark:border-emerald-900/50 dark:bg-emerald-950/40 dark:text-emerald-300"
-              >
-                <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-400" />
-                <span>{passwordSuccess} Mengarahkan ke halaman login...</span>
-              </div>
+              <Alert variant="default" className="border-emerald-500/40 bg-emerald-50/50 dark:bg-emerald-950/20 text-emerald-900 dark:text-emerald-300">
+                <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                <AlertDescription>
+                  {passwordSuccess} Mengarahkan ke halaman login...
+                </AlertDescription>
+              </Alert>
             )}
 
             {passwordError && (
-              <div
-                role="alert"
-                className="flex items-center gap-2.5 rounded-lg border border-red-200 bg-red-50/80 p-3 text-sm text-red-800 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-300"
-              >
-                <AlertCircle className="h-4 w-4 shrink-0 text-red-600 dark:text-red-400" />
-                <span>{passwordError}</span>
-              </div>
+              <Alert variant="destructive">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>{passwordError}</AlertDescription>
+              </Alert>
             )}
 
+            <div className="rounded-lg border border-amber-500/30 bg-amber-500/5 p-3 text-xs text-muted-foreground space-y-1">
+              <p className="font-medium text-foreground flex items-center gap-1.5 text-amber-700 dark:text-amber-400">
+                <Info className="h-3.5 w-3.5" /> Konsekuensi Penggantian Password:
+              </p>
+              <p>
+                Mengganti password akan mencabut seluruh sesi login aktif di semua perangkat lain. Anda akan dialihkan ke halaman login setelah berhasil.
+              </p>
+            </div>
+
             {/* Current Password */}
-            <div className="space-y-2">
-              <Label htmlFor="currentPassword">Password Saat Ini</Label>
+            <div className="space-y-1.5">
+              <Label htmlFor="currentPassword">
+                Password Saat Ini <span className="text-danger">*</span>
+              </Label>
               <div className="relative">
                 <Input
                   id="currentPassword"
                   type={showCurrentPassword ? 'text' : 'password'}
                   autoComplete="current-password"
                   placeholder="Masukkan password saat ini"
+                  value={currentPassword}
+                  onChange={(e) => setCurrentPassword(e.target.value)}
                   disabled={isPasswordSubmitting}
                   className="pr-12"
-                  aria-invalid={!!passwordErrors.currentPassword}
-                  {...registerPassword('currentPassword')}
                 />
                 <button
                   type="button"
@@ -315,26 +477,23 @@ export default function SettingsPage(): React.JSX.Element {
                   {showCurrentPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>
               </div>
-              {passwordErrors.currentPassword && (
-                <p className="text-xs text-danger-foreground">
-                  {passwordErrors.currentPassword.message}
-                </p>
-              )}
             </div>
 
             {/* New Password */}
-            <div className="space-y-2">
-              <Label htmlFor="newPassword">Password Baru</Label>
+            <div className="space-y-1.5">
+              <Label htmlFor="newPassword">
+                Password Baru <span className="text-danger">*</span>
+              </Label>
               <div className="relative">
                 <Input
                   id="newPassword"
                   type={showNewPassword ? 'text' : 'password'}
                   autoComplete="new-password"
                   placeholder="Minimal 12 karakter baru"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
                   disabled={isPasswordSubmitting}
                   className="pr-12"
-                  aria-invalid={!!passwordErrors.newPassword}
-                  {...registerPassword('newPassword')}
                 />
                 <button
                   type="button"
@@ -345,47 +504,40 @@ export default function SettingsPage(): React.JSX.Element {
                   {showNewPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>
               </div>
-              {passwordErrors.newPassword && (
-                <p className="text-xs text-danger-foreground">
-                  {passwordErrors.newPassword.message}
-                </p>
-              )}
+              <p className="text-xs text-muted-foreground">
+                Gunakan minimal 12 karakter (kombinasi huruf, angka, atau simbol).
+              </p>
             </div>
           </CardContent>
 
-          <CardFooter>
+          <CardFooter className="border-t border-border pt-4">
             <Button
               type="submit"
-              disabled={isPasswordSubmitting}
+              disabled={isPasswordSubmitting || !currentPassword || !newPassword}
               variant="default"
-              className="font-semibold"
+              className="gap-2"
             >
-              {isPasswordSubmitting ? (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  <span>Mengubah...</span>
-                </>
-              ) : (
-                'Ganti Password'
-              )}
+              <KeyRound className="h-4 w-4" />
+              <span>Ganti Password</span>
             </Button>
           </CardFooter>
         </form>
       </Card>
 
-      {/* Storage and Upload Quota */}
+      {/* 5. Section: Penyimpanan & Kuota Upload */}
       <Card>
         <CardHeader>
-          <div className="flex items-center gap-2">
-            <HardDrive className="h-5 w-5 text-primary" />
-            <CardTitle>Penyimpanan & Kuota Upload</CardTitle>
+          <div className="flex items-center gap-2 text-primary font-semibold text-sm">
+            <HardDrive className="h-4 w-4" />
+            <span>Penyimpanan & Kuota</span>
           </div>
+          <CardTitle className="text-lg">Kapasitas Ruang & Upload Harian</CardTitle>
           <CardDescription>
             Informasi kapasitas ruang penyimpanan materi PDF dan batasan upload harian akun Anda.
           </CardDescription>
         </CardHeader>
 
-        <CardContent className="space-y-6">
+        <CardContent className="space-y-5">
           {storageLoading ? (
             <div className="flex items-center justify-center py-6 text-muted-foreground">
               <Loader2 className="h-6 w-6 animate-spin text-primary" />
@@ -400,7 +552,7 @@ export default function SettingsPage(): React.JSX.Element {
                     {formatFileSize(storageUsage.usedBytes)} / {formatFileSize(storageUsage.limitBytes)} ({storageUsage.percentage.toFixed(1)}%)
                   </span>
                 </div>
-                <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
+                <div className="h-2.5 w-full overflow-hidden rounded-full bg-muted">
                   <div
                     className={`h-full transition-all ${
                       storageUsage.percentage >= 90
@@ -415,7 +567,7 @@ export default function SettingsPage(): React.JSX.Element {
               </div>
 
               {/* Upload Limit Grid */}
-              <div className="grid gap-3 sm:grid-cols-2 rounded-lg border border-border bg-muted/20 p-4">
+              <div className="grid gap-3 sm:grid-cols-2 rounded-xl border border-border bg-muted/20 p-4">
                 <div className="space-y-1">
                   <p className="text-xs text-muted-foreground flex items-center gap-1.5">
                     <FileUp className="h-3.5 w-3.5 text-primary" />
@@ -444,12 +596,12 @@ export default function SettingsPage(): React.JSX.Element {
               </div>
 
               {/* PDF Document Limits */}
-              <div className="rounded-md border border-border/80 bg-muted/10 p-3 text-xs text-muted-foreground space-y-1">
-                <p className="font-semibold text-foreground text-xs">Aturan File PDF:</p>
+              <div className="rounded-lg border border-border/70 bg-muted/10 p-3 text-xs text-muted-foreground space-y-1">
+                <p className="font-semibold text-foreground">Ketentuan File PDF:</p>
                 <ul className="list-disc list-inside space-y-0.5 text-[11px]">
                   <li>Maksimal ukuran 20 MB per file PDF berbasis teks.</li>
                   <li>Maksimal 100 halaman per dokumen.</li>
-                  <li>PDF hasil pemindaian gambar (scanned/tanpa teks) tidak didukung pada versi ini.</li>
+                  <li>PDF hasil pemindaian gambar murni (scanned) belum didukung pada versi ini.</li>
                 </ul>
               </div>
             </>
@@ -458,6 +610,60 @@ export default function SettingsPage(): React.JSX.Element {
           )}
         </CardContent>
       </Card>
+
+      {/* Dialog Konfirmasi Penggantian Password */}
+      <Dialog open={isPasswordConfirmOpen} onOpenChange={setIsPasswordConfirmOpen}>
+        <DialogContent className="sm:max-w-[420px]">
+          <DialogHeader>
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400">
+                <AlertTriangle className="h-5 w-5" />
+              </div>
+              <div>
+                <DialogTitle>Konfirmasi Ganti Password</DialogTitle>
+                <DialogDescription className="mt-0.5">
+                  Tindakan ini memerlukan login ulang.
+                </DialogDescription>
+              </div>
+            </div>
+          </DialogHeader>
+
+          <div className="space-y-2 text-sm text-muted-foreground">
+            <p>
+              Apakah Anda yakin ingin memperbarui password akun?
+            </p>
+            <p className="text-xs bg-muted/60 p-2.5 rounded-lg border border-border">
+              Setelah password diperbarui, seluruh sesi login di perangkat lain akan dicabut secara otomatis. Anda akan diminta untuk masuk kembali dengan password baru.
+            </p>
+          </div>
+
+          <DialogFooter className="pt-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setIsPasswordConfirmOpen(false)}
+              disabled={isPasswordSubmitting}
+            >
+              Batal
+            </Button>
+            <Button
+              type="button"
+              variant="default"
+              onClick={executeChangePassword}
+              disabled={isPasswordSubmitting}
+            >
+              {isPasswordSubmitting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Mengubah...
+                </>
+              ) : (
+                'Ya, Ganti Password'
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

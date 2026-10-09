@@ -13,7 +13,8 @@ import { initiateUpload, finalizeUpload } from '@/lib/material-client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select } from '@/components/ui/select';
+import { NativeSelect } from '@/components/ui/select';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import {
   Dialog,
   DialogContent,
@@ -232,21 +233,22 @@ export function MaterialUploadDialog({
           </DialogHeader>
 
           {errorMessage && (
-            <div className="mt-3 flex items-start gap-2.5 rounded-lg border border-danger/30 bg-danger/10 p-3 text-xs text-danger-foreground">
-              <AlertCircle className="h-4 w-4 shrink-0 text-danger mt-0.5" />
-              <span>{errorMessage}</span>
-            </div>
+            <Alert variant="destructive" className="mt-3">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription className="text-xs">{errorMessage}</AlertDescription>
+            </Alert>
           )}
 
           <div className="mt-4 space-y-4">
             {/* Pilihan Mata Kuliah */}
             <div className="space-y-1.5">
-              <Label htmlFor="upload-course">Mata Kuliah</Label>
-              <Select
+              <Label htmlFor="upload-course">Mata Kuliah *</Label>
+              <NativeSelect
                 id="upload-course"
                 value={courseId}
                 onChange={(e) => setCourseId(e.target.value)}
                 disabled={isUploading || Boolean(initialCourseId)}
+                required
               >
                 <option value="" disabled>
                   Pilih mata kuliah...
@@ -256,7 +258,7 @@ export function MaterialUploadDialog({
                     {c.name} {c.code ? `(${c.code})` : ''}
                   </option>
                 ))}
-              </Select>
+              </NativeSelect>
             </div>
 
             {/* Judul Materi */}

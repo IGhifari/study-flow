@@ -724,6 +724,8 @@ export function DashboardContent({ user }: DashboardContentProps): React.JSX.Ele
         open={isCreateTaskOpen}
         onOpenChange={setIsCreateTaskOpen}
         courses={summary.activeCourses}
+        timezone={timezone}
+        idPrefix="task"
         onSuccess={() => {
           loadSummary(true);
         }}

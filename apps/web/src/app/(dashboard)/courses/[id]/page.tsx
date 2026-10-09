@@ -26,32 +26,26 @@ import {
 } from 'lucide-react';
 import {
   Course,
-  UpdateCourseInput,
   Assignment,
   NoteListItem,
   MaterialListItem,
   formatFileSize,
   formatUserDateTime,
-  toUserDateTimeInputValue,
   UserProfile,
 } from '@studyflow/shared';
 import {
   getCourse,
-  updateCourse,
   archiveCourse,
   unarchiveCourse,
-  deleteCourse,
 } from '@/lib/course-client';
 import {
   listAssignments,
   createAssignment,
   updateAssignment,
-  deleteAssignment,
 } from '@/lib/assignment-client';
 import {
   listNotes,
   createNote,
-  deleteNote,
 } from '@/lib/note-client';
 import { listMaterials } from '@/lib/material-client';
 import { MaterialUploadDialog } from '@/components/materials/material-upload-dialog';
@@ -61,15 +55,13 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { Select } from '@/components/ui/select';
+import { NativeSelect } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-  CardContent,
-} from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { EditCourseDialog } from '@/components/courses/edit-course-dialog';
+import { DeleteCourseDialog } from '@/components/courses/delete-course-dialog';
 import {
   Dialog,
   DialogContent,
@@ -88,13 +80,15 @@ export default function CourseDetailPage(): React.JSX.Element {
   const [userProfile, setUserProfile] = React.useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = React.useState(true);
   const [errorMsg, setErrorMsg] = React.useState<string | null>(null);
+  const [actionError, setActionError] = React.useState<string | null>(null);
 
-  // Tabs: 'assignments' | 'notes' | 'materials'
-  const [activeTab, setActiveTab] = React.useState<'assignments' | 'notes' | 'materials'>('assignments');
+  // Tabs state
+  const [activeTab, setActiveTab] = React.useState('assignments');
 
   // Course Assignments state
   const [assignments, setAssignments] = React.useState<Assignment[]>([]);
   const [isAssignmentsLoading, setIsAssignmentsLoading] = React.useState(false);
+  const [pendingAssignmentIds, setPendingAssignmentIds] = React.useState<Set<string>>(new Set());
 
   // Course Notes state
   const [notes, setNotes] = React.useState<NoteListItem[]>([]);
@@ -105,19 +99,9 @@ export default function CourseDetailPage(): React.JSX.Element {
   const [isMaterialsLoading, setIsMaterialsLoading] = React.useState(false);
   const [isUploadOpen, setIsUploadOpen] = React.useState(false);
 
-  // Modal Edit Course
+  // Dialogs
   const [isEditOpen, setIsEditOpen] = React.useState(false);
-  const [editName, setEditName] = React.useState('');
-  const [editCode, setEditCode] = React.useState('');
-  const [editLecturer, setEditLecturer] = React.useState('');
-  const [editDescription, setEditDescription] = React.useState('');
-  const [editError, setEditError] = React.useState<string | null>(null);
-  const [isSubmittingEdit, setIsSubmittingEdit] = React.useState(false);
-
-  // Modal Delete Course
   const [isDeleteOpen, setIsDeleteOpen] = React.useState(false);
-  const [deleteError, setDeleteError] = React.useState<string | null>(null);
-  const [isSubmittingDelete, setIsSubmittingDelete] = React.useState(false);
 
   // Modal Create Assignment for this Course
   const [isCreateAsgOpen, setIsCreateAsgOpen] = React.useState(false);
@@ -148,10 +132,6 @@ export default function CourseDetailPage(): React.JSX.Element {
       ]);
       if (profile) setUserProfile(profile);
       setCourse(courseData);
-      setEditName(courseData.name);
-      setEditCode(courseData.code || '');
-      setEditLecturer(courseData.lecturer || '');
-      setEditDescription(courseData.description || '');
     } catch (err: any) {
       setErrorMsg(err.message || 'Gagal memuat mata kuliah');
     } finally {
@@ -207,64 +187,53 @@ export default function CourseDetailPage(): React.JSX.Element {
 
   const isArchived = Boolean(course?.archivedAt || course?.semester?.archivedAt);
 
-  const handleUpdate = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setEditError(null);
-    if (!editName.trim()) {
-      setEditError('Nama mata kuliah wajib diisi');
-      return;
-    }
-
-    setIsSubmittingEdit(true);
-    try {
-      const input: UpdateCourseInput = {
-        name: editName.trim(),
-        code: editCode.trim() || null,
-        lecturer: editLecturer.trim() || null,
-        description: editDescription.trim() || null,
-      };
-      const updated = await updateCourse(courseId, input);
-      setCourse(updated);
-      setIsEditOpen(false);
-      router.refresh();
-    } catch (err: any) {
-      setEditError(err.message || 'Gagal memperbarui mata kuliah');
-    } finally {
-      setIsSubmittingEdit(false);
-    }
-  };
-
   const handleArchive = async () => {
+    setActionError(null);
     try {
       const updated = await archiveCourse(courseId);
       setCourse(updated);
       router.refresh();
     } catch (err: any) {
-      setErrorMsg(err.message || 'Gagal mengarsipkan mata kuliah');
+      setActionError(err.message || 'Gagal mengarsipkan mata kuliah.');
     }
   };
 
   const handleUnarchive = async () => {
+    setActionError(null);
     try {
       const updated = await unarchiveCourse(courseId);
       setCourse(updated);
       router.refresh();
     } catch (err: any) {
-      setErrorMsg(err.message || 'Gagal memulihkan mata kuliah');
+      setActionError(err.message || 'Gagal memulihkan mata kuliah.');
     }
   };
 
-  const handleDelete = async () => {
-    setDeleteError(null);
-    setIsSubmittingDelete(true);
+  // Toggle Assignment Status with optimistic update
+  const handleToggleAssignmentStatus = async (asg: Assignment) => {
+    if (pendingAssignmentIds.has(asg.id) || isArchived) return;
+
+    const nextStatus = asg.status === 'DONE' ? 'TODO' : 'DONE';
+    setPendingAssignmentIds((prev) => new Set(prev).add(asg.id));
+    setAssignments((prev) =>
+      prev.map((item) => (item.id === asg.id ? { ...item, status: nextStatus } : item))
+    );
+
     try {
-      await deleteCourse(courseId);
-      router.push('/courses');
-      router.refresh();
+      await updateAssignment(asg.id, { status: nextStatus });
+      await fetchAssignmentsData();
     } catch (err: any) {
-      setDeleteError(err.message || 'Gagal menghapus mata kuliah');
+      // Revert optimistic update
+      setAssignments((prev) =>
+        prev.map((item) => (item.id === asg.id ? asg : item))
+      );
+      setActionError(err.message || 'Gagal memperbarui status tugas.');
     } finally {
-      setIsSubmittingDelete(false);
+      setPendingAssignmentIds((prev) => {
+        const next = new Set(prev);
+        next.delete(asg.id);
+        return next;
+      });
     }
   };
 
@@ -303,17 +272,6 @@ export default function CourseDetailPage(): React.JSX.Element {
     }
   };
 
-  // Toggle Assignment Status
-  const handleToggleAssignmentStatus = async (asg: Assignment) => {
-    const nextStatus = asg.status === 'DONE' ? 'TODO' : 'DONE';
-    try {
-      await updateAssignment(asg.id, { status: nextStatus });
-      fetchAssignmentsData();
-    } catch (err: any) {
-      alert(err.message || 'Gagal memperbarui status tugas');
-    }
-  };
-
   // Create Note directly for this course
   const handleCreateNote = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -340,45 +298,43 @@ export default function CourseDetailPage(): React.JSX.Element {
 
   if (isLoading) {
     return (
-      <div className="flex flex-col items-center justify-center py-20 text-muted-foreground">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        <p className="mt-3 text-sm">Memuat detail mata kuliah...</p>
+      <div className="space-y-6">
+        <Skeleton className="h-9 w-48 rounded-lg" />
+        <Skeleton className="h-44 w-full rounded-xl" />
+        <Skeleton className="h-10 w-80 rounded-lg" />
+        <Skeleton className="h-64 w-full rounded-xl" />
       </div>
     );
   }
 
   if (errorMsg || !course) {
     return (
-      <div className="space-y-4">
-        <Button variant="ghost" asChild className="gap-2 text-sm">
+      <div className="space-y-6">
+        <Button variant="ghost" asChild className="gap-2 text-sm w-fit">
           <Link href="/courses">
             <ArrowLeft className="h-4 w-4" />
             <span>Kembali ke Mata Kuliah</span>
           </Link>
         </Button>
-        <Card className="border-danger/30 bg-danger/5">
-          <CardContent className="flex flex-col items-center justify-center py-12 text-center">
-            <AlertCircle className="h-10 w-10 text-danger" />
-            <h2 className="mt-4 text-base font-semibold text-foreground">
-              {errorMsg || 'Mata kuliah tidak ditemukan'}
-            </h2>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Mata kuliah mungkin telah dihapus atau Anda tidak memiliki akses ke halaman ini.
-            </p>
-            <Button asChild className="mt-4">
+        <Alert variant="destructive">
+          <AlertCircle className="h-5 w-5" />
+          <AlertTitle>Mata Kuliah Tidak Ditemukan</AlertTitle>
+          <AlertDescription className="mt-2 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <span>{errorMsg || 'Mata kuliah tidak ditemukan atau Anda tidak memiliki akses ke halaman ini.'}</span>
+            <Button asChild variant="outline" size="sm" className="w-fit">
               <Link href="/courses">Lihat Semua Mata Kuliah</Link>
             </Button>
-          </CardContent>
-        </Card>
+          </AlertDescription>
+        </Alert>
       </div>
     );
   }
 
   return (
     <div className="space-y-6">
-      {/* Top Back Nav & Actions */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <Button variant="ghost" asChild className="gap-2 text-sm w-fit">
+      {/* 1. Top Navigasi & Aksi Utama */}
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-border pb-4">
+        <Button variant="ghost" asChild className="gap-2 text-sm w-fit -ml-2">
           <Link href="/courses">
             <ArrowLeft className="h-4 w-4" />
             <span>Kembali ke Daftar Mata Kuliah</span>
@@ -431,187 +387,176 @@ export default function CourseDetailPage(): React.JSX.Element {
         </div>
       </div>
 
-      {/* Archived Banner */}
-      {isArchived && (
-        <div className="rounded-lg border border-warning/40 bg-warning/10 p-4 text-xs text-warning-foreground flex items-center gap-3">
-          <AlertTriangle className="h-5 w-5 text-warning shrink-0" />
-          <div>
-            <p className="font-semibold text-sm">Mata Kuliah / Semester Diarsipkan (Hanya-Baca)</p>
-            <p className="mt-0.5 text-muted-foreground">
-              Konten tugas dan catatan pada mata kuliah ini bersifat hanya-baca. Pulihkan mata kuliah dan semester untuk menambahkan atau mengedit konten.
-            </p>
-          </div>
-        </div>
+      {/* Global Action Error Banner */}
+      {actionError && (
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>{actionError}</AlertDescription>
+        </Alert>
       )}
 
-      {/* Main Course Info Card */}
-      <Card>
-        <CardHeader>
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <div>
-              <div className="flex flex-wrap items-center gap-2.5">
-                <CardTitle className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
-                  {course.name}
-                </CardTitle>
-                {course.code && (
-                  <Badge variant="outline" className="font-mono text-xs">
-                    {course.code}
-                  </Badge>
-                )}
-                {isArchived && (
-                  <Badge variant="secondary" className="text-xs text-muted-foreground">
-                    Arsip
-                  </Badge>
-                )}
-              </div>
-              <CardDescription className="mt-1 text-sm">
-                Informasi dan detail mata kuliah
-              </CardDescription>
-            </div>
+      {/* Archived Banner */}
+      {isArchived && (
+        <Alert variant="warning">
+          <AlertTriangle className="h-5 w-5" />
+          <AlertTitle>Mata Kuliah / Semester Diarsipkan (Hanya-Baca)</AlertTitle>
+          <AlertDescription className="mt-1">
+            Konten tugas dan catatan pada mata kuliah ini bersifat hanya-baca. Pulihkan mata kuliah dan semester untuk menambahkan atau mengedit konten kembali.
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {/* 2. Informasi Utama Mata Kuliah */}
+      <div className="rounded-xl border border-border bg-card p-5 sm:p-6 shadow-xs space-y-6">
+        <div>
+          <div className="flex flex-wrap items-center gap-2.5">
+            <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
+              {course.name}
+            </h1>
+            {course.code && (
+              <Badge variant="outline" className="font-mono text-xs">
+                {course.code}
+              </Badge>
+            )}
+            {isArchived ? (
+              <Badge variant="secondary" className="text-xs text-muted-foreground">
+                Arsip
+              </Badge>
+            ) : (
+              <Badge variant="default" className="text-xs">
+                Aktif
+              </Badge>
+            )}
           </div>
-        </CardHeader>
-
-        <CardContent className="space-y-6">
-          {/* Metadata Grid */}
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 rounded-lg border border-border bg-muted/20 p-4">
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                <CalendarRange className="h-5 w-5" />
-              </div>
-              <div className="min-w-0">
-                <p className="text-xs text-muted-foreground">Semester</p>
-                <p className="font-medium text-sm text-foreground truncate">
-                  {course.semester ? course.semester.name : 'Tidak terhubung'}
-                  {course.semester?.isActive && ' (Aktif)'}
-                </p>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                <User className="h-5 w-5" />
-              </div>
-              <div className="min-w-0">
-                <p className="text-xs text-muted-foreground">Dosen Pengampu</p>
-                <p className="font-medium text-sm text-foreground truncate">
-                  {course.lecturer || 'Belum ditentukan'}
-                </p>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                <Clock className="h-5 w-5" />
-              </div>
-              <div className="min-w-0">
-                <p className="text-xs text-muted-foreground">Tahun Ajaran</p>
-                <p className="font-medium text-sm text-foreground truncate">
-                  {course.semester ? course.semester.academicYear : '—'}
-                </p>
-              </div>
-            </div>
-          </div>
-
-          {/* Description Section */}
-          {course.description && (
-            <div>
-              <h3 className="text-sm font-semibold text-foreground">Deskripsi / Silabus</h3>
-              <p className="mt-1.5 whitespace-pre-wrap text-sm leading-relaxed text-muted-foreground">
-                {course.description}
-              </p>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Tabs Navigation: Tugas, Catatan, Materi */}
-      <div className="space-y-4">
-        <div className="flex border-b border-border gap-2">
-          <button
-            type="button"
-            onClick={() => setActiveTab('assignments')}
-            className={`flex items-center gap-2 border-b-2 px-4 py-2.5 text-sm font-semibold transition-colors ${
-              activeTab === 'assignments'
-                ? 'border-primary text-primary'
-                : 'border-transparent text-muted-foreground hover:text-foreground'
-            }`}
-          >
-            <ListTodo className="h-4 w-4" />
-            <span>Tugas ({assignments.length})</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => setActiveTab('notes')}
-            className={`flex items-center gap-2 border-b-2 px-4 py-2.5 text-sm font-semibold transition-colors ${
-              activeTab === 'notes'
-                ? 'border-primary text-primary'
-                : 'border-transparent text-muted-foreground hover:text-foreground'
-            }`}
-          >
-            <FileText className="h-4 w-4" />
-            <span>Catatan ({notes.length})</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => setActiveTab('materials')}
-            className={`flex items-center gap-2 border-b-2 px-4 py-2.5 text-sm font-semibold transition-colors ${
-              activeTab === 'materials'
-                ? 'border-primary text-primary'
-                : 'border-transparent text-muted-foreground hover:text-foreground'
-            }`}
-          >
-            <FileUp className="h-4 w-4" />
-            <span>Materi ({materials.length})</span>
-          </button>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Informasi dan keterhubungan materi, tugas, serta catatan kuliah.
+          </p>
         </div>
 
-        {/* Tab 1: Tugas */}
-        {activeTab === 'assignments' && (
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h3 className="text-base font-semibold text-foreground">Daftar Tugas Mata Kuliah</h3>
-              <Button
-                size="sm"
-                onClick={() => {
-                  setCreateAsgTitle('');
-                  setCreateAsgDesc('');
-                  setCreateAsgDueDate('');
-                  setCreateAsgPriority('MEDIUM');
-                  setCreateAsgError(null);
-                  setIsCreateAsgOpen(true);
-                }}
-                disabled={isArchived}
-              >
-                <Plus className="mr-1.5 h-4 w-4" />
-                Tambah Tugas
-              </Button>
+        {/* Metadata Grid */}
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 rounded-lg border border-border bg-muted/20 p-4">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+              <CalendarRange className="h-5 w-5" />
             </div>
+            <div className="min-w-0">
+              <p className="text-xs text-muted-foreground">Semester</p>
+              <p className="font-medium text-sm text-foreground truncate">
+                {course.semester ? course.semester.name : 'Tidak terhubung'}
+                {course.semester?.isActive && ' (Aktif)'}
+              </p>
+            </div>
+          </div>
 
-            {isAssignmentsLoading ? (
-              <div className="flex py-12 justify-center text-muted-foreground">
-                <Loader2 className="h-6 w-6 animate-spin text-primary" />
-              </div>
-            ) : assignments.length === 0 ? (
-              <Card className="border-dashed p-8 text-center bg-card/40">
-                <ListTodo className="h-8 w-8 text-muted-foreground mx-auto" />
-                <p className="mt-2 text-sm font-semibold text-foreground">Belum ada tugas pada mata kuliah ini</p>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  Tambahkan tugas untuk mencatat deadline praktikum, proyek, atau ujian.
-                </p>
-                {!isArchived && (
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => setIsCreateAsgOpen(true)}
-                    className="mt-4"
-                  >
-                    <Plus className="mr-1.5 h-3.5 w-3.5" />
-                    Tambah Tugas
-                  </Button>
-                )}
-              </Card>
-            ) : (
-              <div className="overflow-hidden rounded-xl border border-border bg-card shadow-xs">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+              <User className="h-5 w-5" />
+            </div>
+            <div className="min-w-0">
+              <p className="text-xs text-muted-foreground">Dosen Pengampu</p>
+              <p className="font-medium text-sm text-foreground truncate">
+                {course.lecturer || 'Belum ditentukan'}
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+              <Clock className="h-5 w-5" />
+            </div>
+            <div className="min-w-0">
+              <p className="text-xs text-muted-foreground">Tahun Ajaran</p>
+              <p className="font-medium text-sm text-foreground truncate">
+                {course.semester ? course.semester.academicYear : '—'}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Description Section */}
+        {course.description && (
+          <div className="border-t border-border pt-4">
+            <h2 className="text-sm font-semibold text-foreground">Deskripsi / Silabus</h2>
+            <p className="mt-1.5 whitespace-pre-wrap text-sm leading-relaxed text-muted-foreground">
+              {course.description}
+            </p>
+          </div>
+        )}
+      </div>
+
+      {/* 3. Tabs Navigation Berbasis WAI-ARIA & Keyboard Navigation */}
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
+        <TabsList className="w-full justify-start overflow-x-auto">
+          <TabsTrigger value="assignments" className="gap-2">
+            <ListTodo className="h-4 w-4" />
+            <span>Tugas ({assignments.length})</span>
+          </TabsTrigger>
+          <TabsTrigger value="notes" className="gap-2">
+            <FileText className="h-4 w-4" />
+            <span>Catatan ({notes.length})</span>
+          </TabsTrigger>
+          <TabsTrigger value="materials" className="gap-2">
+            <FileUp className="h-4 w-4" />
+            <span>Materi ({materials.length})</span>
+          </TabsTrigger>
+        </TabsList>
+
+        {/* Tab 1: Tugas */}
+        <TabsContent value="assignments" className="space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div>
+              <h2 className="text-base font-semibold text-foreground">Daftar Tugas Kuliah</h2>
+              <p className="text-xs text-muted-foreground">
+                Tenggat waktu dan status tugas yang terhubung dengan mata kuliah ini.
+              </p>
+            </div>
+            <Button
+              size="sm"
+              onClick={() => {
+                setCreateAsgTitle('');
+                setCreateAsgDesc('');
+                setCreateAsgDueDate('');
+                setCreateAsgPriority('MEDIUM');
+                setCreateAsgError(null);
+                setIsCreateAsgOpen(true);
+              }}
+              disabled={isArchived}
+              className="gap-1.5 shrink-0"
+            >
+              <Plus className="h-4 w-4" />
+              <span>Tambah tugas</span>
+            </Button>
+          </div>
+
+          {isAssignmentsLoading ? (
+            <div className="space-y-3">
+              <Skeleton className="h-10 w-full rounded-lg" />
+              <Skeleton className="h-12 w-full rounded-lg" />
+              <Skeleton className="h-12 w-full rounded-lg" />
+            </div>
+          ) : assignments.length === 0 ? (
+            <div className="rounded-xl border border-dashed border-border bg-card/40 p-8 text-center">
+              <ListTodo className="h-8 w-8 text-muted-foreground mx-auto" aria-hidden="true" />
+              <h3 className="mt-2 text-sm font-semibold text-foreground">Belum ada tugas pada mata kuliah ini</h3>
+              <p className="mt-1 text-xs text-muted-foreground max-w-sm mx-auto">
+                Tambahkan tugas untuk mencatat deadline praktikum, proyek akhir, atau kuis.
+              </p>
+              {!isArchived && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setIsCreateAsgOpen(true)}
+                  className="mt-4 gap-1.5"
+                >
+                  <Plus className="h-3.5 w-3.5" />
+                  <span>Tambah tugas pertama</span>
+                </Button>
+              )}
+            </div>
+          ) : (
+            <>
+              {/* Desktop Assignments Table */}
+              <div className="hidden md:block overflow-hidden rounded-xl border border-border bg-card shadow-xs">
                 <table className="w-full text-left text-sm">
                   <thead className="border-b border-border bg-muted/40 text-xs font-semibold uppercase text-muted-foreground">
                     <tr>
@@ -624,17 +569,22 @@ export default function CourseDetailPage(): React.JSX.Element {
                   <tbody className="divide-y divide-border">
                     {assignments.map((asg) => {
                       const isDone = asg.status === 'DONE';
+                      const isPending = pendingAssignmentIds.has(asg.id);
+
                       return (
                         <tr key={asg.id} className="hover:bg-muted/30 transition-colors">
                           <td className="px-4 py-3 text-center">
                             <button
                               type="button"
                               onClick={() => handleToggleAssignmentStatus(asg)}
-                              disabled={isArchived}
+                              disabled={isArchived || isPending}
                               className="text-muted-foreground hover:text-primary transition-colors disabled:opacity-40"
                               title={isDone ? 'Tandai belum selesai' : 'Tandai selesai'}
+                              aria-label={`Tandai tugas ${asg.title} ${isDone ? 'belum selesai' : 'selesai'}`}
                             >
-                              {isDone ? (
+                              {isPending ? (
+                                <Loader2 className="h-5 w-5 animate-spin text-primary" />
+                              ) : isDone ? (
                                 <CheckCircle2 className="h-5 w-5 text-emerald-500" />
                               ) : (
                                 <Circle className="h-5 w-5 hover:text-primary" />
@@ -660,7 +610,7 @@ export default function CourseDetailPage(): React.JSX.Element {
                               variant={asg.priority === 'HIGH' ? 'danger' : asg.priority === 'MEDIUM' ? 'default' : 'secondary'}
                               className="text-[11px]"
                             >
-                              {asg.priority}
+                              {asg.priority === 'HIGH' ? 'Tinggi' : asg.priority === 'MEDIUM' ? 'Sedang' : 'Rendah'}
                             </Badge>
                           </td>
                         </tr>
@@ -669,125 +619,199 @@ export default function CourseDetailPage(): React.JSX.Element {
                   </tbody>
                 </table>
               </div>
-            )}
-          </div>
-        )}
+
+              {/* Mobile Assignments Cards */}
+              <div className="grid gap-2.5 md:hidden">
+                {assignments.map((asg) => {
+                  const isDone = asg.status === 'DONE';
+                  const isPending = pendingAssignmentIds.has(asg.id);
+
+                  return (
+                    <div
+                      key={asg.id}
+                      className="rounded-xl border border-border bg-card p-3.5 shadow-xs flex items-start gap-3"
+                    >
+                      <button
+                        type="button"
+                        onClick={() => handleToggleAssignmentStatus(asg)}
+                        disabled={isArchived || isPending}
+                        className="text-muted-foreground hover:text-primary transition-colors disabled:opacity-40 mt-0.5 shrink-0"
+                        aria-label={`Tandai tugas ${asg.title} ${isDone ? 'belum selesai' : 'selesai'}`}
+                      >
+                        {isPending ? (
+                          <Loader2 className="h-5 w-5 animate-spin text-primary" />
+                        ) : isDone ? (
+                          <CheckCircle2 className="h-5 w-5 text-emerald-500" />
+                        ) : (
+                          <Circle className="h-5 w-5 hover:text-primary" />
+                        )}
+                      </button>
+
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-start justify-between gap-2">
+                          <p className={`text-sm font-medium ${isDone ? 'line-through text-muted-foreground' : 'text-foreground'}`}>
+                            {asg.title}
+                          </p>
+                          <Badge
+                            variant={asg.priority === 'HIGH' ? 'danger' : asg.priority === 'MEDIUM' ? 'default' : 'secondary'}
+                            className="text-[10px] shrink-0"
+                          >
+                            {asg.priority === 'HIGH' ? 'Tinggi' : asg.priority === 'MEDIUM' ? 'Sedang' : 'Rendah'}
+                          </Badge>
+                        </div>
+
+                        {asg.description && (
+                          <p className="text-xs text-muted-foreground line-clamp-1 mt-0.5">
+                            {asg.description}
+                          </p>
+                        )}
+
+                        <p className="mt-1.5 text-xs text-muted-foreground">
+                          {formatUserDateTime(asg.dueDate, timezone)}
+                          {asg.isOverdue && !isDone && (
+                            <span className="text-danger font-semibold ml-1.5">Terlambat</span>
+                          )}
+                        </p>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </>
+          )}
+        </TabsContent>
 
         {/* Tab 2: Catatan */}
-        {activeTab === 'notes' && (
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h3 className="text-base font-semibold text-foreground">Daftar Catatan Mata Kuliah</h3>
-              <Button
-                size="sm"
-                onClick={() => {
-                  setCreateNoteTitle('');
-                  setCreateNoteContent('');
-                  setCreateNoteError(null);
-                  setIsCreateNoteOpen(true);
-                }}
-                disabled={isArchived}
-              >
-                <Plus className="mr-1.5 h-4 w-4" />
-                Buat Catatan
-              </Button>
+        <TabsContent value="notes" className="space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div>
+              <h2 className="text-base font-semibold text-foreground">Daftar Catatan Mata Kuliah</h2>
+              <p className="text-xs text-muted-foreground">
+                Rangkuman materi dan catatan belajar yang terorganisasi.
+              </p>
             </div>
-
-            {isNotesLoading ? (
-              <div className="flex py-12 justify-center text-muted-foreground">
-                <Loader2 className="h-6 w-6 animate-spin text-primary" />
-              </div>
-            ) : notes.length === 0 ? (
-              <Card className="border-dashed p-8 text-center bg-card/40">
-                <FileText className="h-8 w-8 text-muted-foreground mx-auto" />
-                <p className="mt-2 text-sm font-semibold text-foreground">Belum ada catatan untuk mata kuliah ini</p>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  Tulis rangkuman materi perkuliahan untuk mempermudah belajar.
-                </p>
-                {!isArchived && (
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => setIsCreateNoteOpen(true)}
-                    className="mt-4"
-                  >
-                    <Plus className="mr-1.5 h-3.5 w-3.5" />
-                    Buat Catatan
-                  </Button>
-                )}
-              </Card>
-            ) : (
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                {notes.map((n) => (
-                  <Card key={n.id} className="p-4 flex flex-col justify-between hover:border-primary/50 transition-colors shadow-xs">
-                    <div>
-                      <Link
-                        href={`/notes/${n.id}`}
-                        className="font-semibold text-foreground hover:text-primary transition-colors line-clamp-2 text-sm"
-                      >
-                        {n.title}
-                      </Link>
-                      <p className="mt-2 text-xs text-muted-foreground flex items-center gap-1">
-                        <Clock className="h-3 w-3" />
-                        Diperbarui: {formatUserDateTime(n.updatedAt, timezone)}
-                      </p>
-                    </div>
-
-                    <div className="mt-4 flex items-center justify-end border-t border-border pt-2">
-                      <Link href={`/notes/${n.id}`}>
-                        <Button variant="ghost" size="sm" className="h-7 px-2 text-xs">
-                          Buka Editor
-                          <ExternalLink className="ml-1 h-3 w-3" />
-                        </Button>
-                      </Link>
-                    </div>
-                  </Card>
-                ))}
-              </div>
-            )}
+            <Button
+              size="sm"
+              onClick={() => {
+                setCreateNoteTitle('');
+                setCreateNoteContent('');
+                setCreateNoteError(null);
+                setIsCreateNoteOpen(true);
+              }}
+              disabled={isArchived}
+              className="gap-1.5 shrink-0"
+            >
+              <Plus className="h-4 w-4" />
+              <span>Buat catatan</span>
+            </Button>
           </div>
-        )}
+
+          {isNotesLoading ? (
+            <div className="space-y-3">
+              <Skeleton className="h-10 w-full rounded-lg" />
+              <Skeleton className="h-12 w-full rounded-lg" />
+            </div>
+          ) : notes.length === 0 ? (
+            <div className="rounded-xl border border-dashed border-border bg-card/40 p-8 text-center">
+              <FileText className="h-8 w-8 text-muted-foreground mx-auto" aria-hidden="true" />
+              <h3 className="mt-2 text-sm font-semibold text-foreground">Belum ada catatan untuk mata kuliah ini</h3>
+              <p className="mt-1 text-xs text-muted-foreground max-w-sm mx-auto">
+                Tulis rangkuman materi perkuliahan dengan format Markdown yang rapi.
+              </p>
+              {!isArchived && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setIsCreateNoteOpen(true)}
+                  className="mt-4 gap-1.5"
+                >
+                  <Plus className="h-3.5 w-3.5" />
+                  <span>Buat catatan pertama</span>
+                </Button>
+              )}
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {notes.map((n) => (
+                <div
+                  key={n.id}
+                  className="rounded-xl border border-border bg-card p-4 shadow-xs flex flex-col justify-between hover:border-primary/50 transition-colors"
+                >
+                  <div>
+                    <Link
+                      href={`/notes/${n.id}`}
+                      className="font-medium text-foreground hover:text-primary transition-colors line-clamp-2 text-sm"
+                    >
+                      {n.title}
+                    </Link>
+                    <p className="mt-2 text-xs text-muted-foreground flex items-center gap-1">
+                      <Clock className="h-3 w-3 shrink-0" />
+                      <span>Diperbarui: {formatUserDateTime(n.updatedAt, timezone)}</span>
+                    </p>
+                  </div>
+
+                  <div className="mt-4 flex items-center justify-end border-t border-border pt-2.5">
+                    <Button asChild variant="ghost" size="sm" className="h-7 px-2 text-xs">
+                      <Link href={`/notes/${n.id}`}>
+                        Buka Editor
+                        <ExternalLink className="ml-1 h-3 w-3" />
+                      </Link>
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </TabsContent>
 
         {/* Tab 3: Materi */}
-        {activeTab === 'materials' && (
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h3 className="text-base font-semibold text-foreground">Daftar Materi Kuliah (PDF)</h3>
-              <Button
-                size="sm"
-                onClick={() => setIsUploadOpen(true)}
-                disabled={isArchived}
-              >
-                <FileUp className="mr-1.5 h-4 w-4" />
-                Unggah Materi
-              </Button>
+        <TabsContent value="materials" className="space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div>
+              <h2 className="text-base font-semibold text-foreground">Daftar Materi PDF</h2>
+              <p className="text-xs text-muted-foreground">
+                File PDF perkuliahan untuk ekstraksi otomatis dan ringkasan AI.
+              </p>
             </div>
+            <Button
+              size="sm"
+              onClick={() => setIsUploadOpen(true)}
+              disabled={isArchived}
+              className="gap-1.5 shrink-0"
+            >
+              <FileUp className="h-4 w-4" />
+              <span>Unggah materi</span>
+            </Button>
+          </div>
 
-            {isMaterialsLoading ? (
-              <div className="flex py-12 justify-center text-muted-foreground">
-                <Loader2 className="h-6 w-6 animate-spin text-primary" />
-              </div>
-            ) : materials.length === 0 ? (
-              <Card className="border-dashed p-8 text-center bg-card/40">
-                <FileUp className="h-8 w-8 text-muted-foreground mx-auto" />
-                <p className="mt-2 text-sm font-semibold text-foreground">Belum ada materi untuk mata kuliah ini</p>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  Unggah file PDF materi perkuliahan untuk ekstraksi teks dan referensi catatan.
-                </p>
-                {!isArchived && (
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => setIsUploadOpen(true)}
-                    className="mt-4"
-                  >
-                    <FileUp className="mr-1.5 h-3.5 w-3.5" />
-                    Unggah Materi Sekarang
-                  </Button>
-                )}
-              </Card>
-            ) : (
-              <div className="overflow-hidden rounded-xl border border-border bg-card shadow-xs">
+          {isMaterialsLoading ? (
+            <div className="space-y-3">
+              <Skeleton className="h-10 w-full rounded-lg" />
+              <Skeleton className="h-12 w-full rounded-lg" />
+            </div>
+          ) : materials.length === 0 ? (
+            <div className="rounded-xl border border-dashed border-border bg-card/40 p-8 text-center">
+              <FileUp className="h-8 w-8 text-muted-foreground mx-auto" aria-hidden="true" />
+              <h3 className="mt-2 text-sm font-semibold text-foreground">Belum ada materi untuk mata kuliah ini</h3>
+              <p className="mt-1 text-xs text-muted-foreground max-w-sm mx-auto">
+                Unggah dokumen PDF kuliah untuk ekstraksi teks, ringkasan, flashcard, dan kuis.
+              </p>
+              {!isArchived && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setIsUploadOpen(true)}
+                  className="mt-4 gap-1.5"
+                >
+                  <FileUp className="h-3.5 w-3.5" />
+                  <span>Unggah materi sekarang</span>
+                </Button>
+              )}
+            </div>
+          ) : (
+            <>
+              {/* Desktop Materials Table */}
+              <div className="hidden md:block overflow-hidden rounded-xl border border-border bg-card shadow-xs">
                 <table className="w-full text-left text-sm">
                   <thead className="border-b border-border bg-muted/40 text-xs font-semibold uppercase text-muted-foreground">
                     <tr>
@@ -838,213 +862,149 @@ export default function CourseDetailPage(): React.JSX.Element {
                   </tbody>
                 </table>
               </div>
-            )}
-          </div>
-        )}
-      </div>
 
-      {/* Modal Edit Detail */}
-      <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
-        <DialogContent>
-          <form onSubmit={handleUpdate}>
-            <DialogHeader>
-              <DialogTitle>Edit Mata Kuliah</DialogTitle>
-              <DialogDescription>
-                Perbarui detail informasi mata kuliah ini.
-              </DialogDescription>
-            </DialogHeader>
+              {/* Mobile Materials Cards */}
+              <div className="grid gap-2.5 md:hidden">
+                {materials.map((m) => (
+                  <div
+                    key={m.id}
+                    className="rounded-xl border border-border bg-card p-3.5 shadow-xs space-y-2.5"
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <Link
+                        href={`/materials/${m.id}`}
+                        className="font-medium text-foreground hover:text-primary transition-colors text-sm line-clamp-1 flex items-center gap-1.5"
+                      >
+                        <FileText className="h-4 w-4 text-muted-foreground shrink-0" />
+                        <span>{m.title}</span>
+                      </Link>
+                      <MaterialStatusBadge status={m.status} />
+                    </div>
 
-            {editError && (
-              <div className="mt-3 flex items-center gap-2 rounded-lg border border-danger/30 bg-danger/10 p-2.5 text-xs text-danger-foreground">
-                <AlertCircle className="h-4 w-4 shrink-0 text-danger" />
-                <span>{editError}</span>
+                    <div className="flex items-center justify-between text-xs text-muted-foreground">
+                      <span>{formatFileSize(m.bytes)} {m.pageCount ? `• ${m.pageCount} hal` : ''}</span>
+                      <span>{formatUserDateTime(m.createdAt, timezone)}</span>
+                    </div>
+
+                    <div className="border-t border-border pt-2 flex justify-end">
+                      <Button asChild variant="ghost" size="sm" className="h-7 px-2 text-xs">
+                        <Link href={`/materials/${m.id}`}>
+                          Lihat Materi
+                          <ExternalLink className="ml-1 h-3 w-3" />
+                        </Link>
+                      </Button>
+                    </div>
+                  </div>
+                ))}
               </div>
-            )}
-
-            <div className="mt-4 space-y-4">
-              <div className="space-y-1.5">
-                <Label htmlFor="detail-edit-name">Nama Mata Kuliah</Label>
-                <Input
-                  id="detail-edit-name"
-                  value={editName}
-                  onChange={(e) => setEditName(e.target.value)}
-                  disabled={isSubmittingEdit}
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1.5">
-                  <Label htmlFor="detail-edit-code">Kode Mata Kuliah</Label>
-                  <Input
-                    id="detail-edit-code"
-                    value={editCode}
-                    onChange={(e) => setEditCode(e.target.value)}
-                    disabled={isSubmittingEdit}
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="detail-edit-lecturer">Dosen Pengampu</Label>
-                  <Input
-                    id="detail-edit-lecturer"
-                    value={editLecturer}
-                    onChange={(e) => setEditLecturer(e.target.value)}
-                    disabled={isSubmittingEdit}
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-1.5">
-                <Label htmlFor="detail-edit-desc">Deskripsi</Label>
-                <Textarea
-                  id="detail-edit-desc"
-                  value={editDescription}
-                  onChange={(e) => setEditDescription(e.target.value)}
-                  disabled={isSubmittingEdit}
-                  rows={4}
-                />
-              </div>
-            </div>
-
-            <DialogFooter>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setIsEditOpen(false)}
-                disabled={isSubmittingEdit}
-              >
-                Batal
-              </Button>
-              <Button type="submit" disabled={isSubmittingEdit}>
-                {isSubmittingEdit ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Memperbarui...
-                  </>
-                ) : (
-                  'Simpan Perubahan'
-                )}
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
-
-      {/* Modal Hapus */}
-      <Dialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Hapus Mata Kuliah</DialogTitle>
-            <DialogDescription>
-              Apakah Anda yakin ingin menghapus mata kuliah{' '}
-              <strong className="text-foreground">{course.name}</strong>?
-            </DialogDescription>
-          </DialogHeader>
-
-          {deleteError && (
-            <div className="mt-2 flex items-center gap-2 rounded-lg border border-danger/30 bg-danger/10 p-2.5 text-xs text-danger-foreground">
-              <AlertCircle className="h-4 w-4 shrink-0 text-danger" />
-              <span>{deleteError}</span>
-            </div>
+            </>
           )}
+        </TabsContent>
+      </Tabs>
 
-          <p className="text-xs text-muted-foreground mt-2">
-            Mata kuliah yang memiliki materi, tugas, atau catatan tidak dapat dihapus. Silakan arsipkan jika mata kuliah sudah selesai.
-          </p>
+      {/* Edit Course Dialog */}
+      <EditCourseDialog
+        open={isEditOpen}
+        onOpenChange={setIsEditOpen}
+        course={course}
+        onSuccess={(updated) => {
+          setCourse(updated);
+          router.refresh();
+        }}
+      />
 
-          <DialogFooter>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setIsDeleteOpen(false)}
-              disabled={isSubmittingDelete}
-            >
-              Batal
-            </Button>
-            <Button
-              type="button"
-              variant="destructive"
-              onClick={handleDelete}
-              disabled={isSubmittingDelete}
-            >
-              {isSubmittingDelete ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Menghapus...
-                </>
-              ) : (
-                'Hapus Mata Kuliah'
-              )}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {/* Delete Course Dialog */}
+      <DeleteCourseDialog
+        open={isDeleteOpen}
+        onOpenChange={setIsDeleteOpen}
+        course={course}
+        onSuccess={() => {
+          router.push('/courses');
+          router.refresh();
+        }}
+      />
 
-      {/* Modal Create Assignment on Course */}
+      {/* Upload Material Dialog */}
+      <MaterialUploadDialog
+        open={isUploadOpen}
+        onOpenChange={setIsUploadOpen}
+        courses={course ? [course] : []}
+        initialCourseId={courseId}
+        onSuccess={() => {
+          fetchMaterialsData();
+          router.refresh();
+        }}
+      />
+
+      {/* Modal Tambah Tugas untuk Mata Kuliah ini */}
       <Dialog open={isCreateAsgOpen} onOpenChange={setIsCreateAsgOpen}>
         <DialogContent className="sm:max-w-[480px]">
           <DialogHeader>
             <DialogTitle>Tambah Tugas untuk {course.name}</DialogTitle>
             <DialogDescription>
-              Catat tugas baru untuk mata kuliah ini.
+              Catat tugas perkuliahan baru dengan tenggat waktu dan tingkat prioritas.
             </DialogDescription>
           </DialogHeader>
 
-          <form onSubmit={handleCreateAssignment} className="space-y-4 py-2">
-            {createAsgError && (
-              <div className="rounded-md bg-danger/10 p-3 text-xs font-medium text-danger border border-danger/20">
-                {createAsgError}
-              </div>
-            )}
+          {createAsgError && (
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>{createAsgError}</AlertDescription>
+            </Alert>
+          )}
 
+          <form onSubmit={handleCreateAssignment} className="space-y-4">
             <div className="space-y-1.5">
               <Label htmlFor="course-asg-title">Judul Tugas *</Label>
               <Input
                 id="course-asg-title"
+                placeholder="Contoh: Makalah Pertemuan 4"
                 value={createAsgTitle}
                 onChange={(e) => setCreateAsgTitle(e.target.value)}
-                placeholder="Contoh: Laporan Akhir"
-                required
+                disabled={isSubmittingAsg}
               />
             </div>
 
-            <div className="space-y-1.5">
-              <Label htmlFor="course-asg-due">Tenggat Waktu *</Label>
-              <Input
-                id="course-asg-due"
-                type="datetime-local"
-                value={createAsgDueDate}
-                onChange={(e) => setCreateAsgDueDate(e.target.value)}
-                required
-              />
-              <p className="text-[11px] text-muted-foreground">
-                Zona waktu: {timezone}.
-              </p>
-            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label htmlFor="course-asg-due">Tenggat Waktu *</Label>
+                <Input
+                  id="course-asg-due"
+                  type="datetime-local"
+                  value={createAsgDueDate}
+                  onChange={(e) => setCreateAsgDueDate(e.target.value)}
+                  disabled={isSubmittingAsg}
+                />
+              </div>
 
-            <div className="space-y-1.5">
-              <Label htmlFor="course-asg-priority">Prioritas</Label>
-              <Select
-                id="course-asg-priority"
-                value={createAsgPriority}
-                onChange={(e) => setCreateAsgPriority(e.target.value as any)}
-              >
-                <option value="LOW">Rendah (Low)</option>
-                <option value="MEDIUM">Sedang (Medium)</option>
-                <option value="HIGH">Tinggi (High)</option>
-              </Select>
+              <div className="space-y-1.5">
+                <Label htmlFor="course-asg-priority">Prioritas *</Label>
+                <NativeSelect
+                  id="course-asg-priority"
+                  value={createAsgPriority}
+                  onChange={(e) => setCreateAsgPriority(e.target.value as any)}
+                  disabled={isSubmittingAsg}
+                >
+                  <option value="LOW">Rendah</option>
+                  <option value="MEDIUM">Sedang</option>
+                  <option value="HIGH">Tinggi</option>
+                </NativeSelect>
+              </div>
             </div>
 
             <div className="space-y-1.5">
               <Label htmlFor="course-asg-desc">Deskripsi (Opsional)</Label>
               <Textarea
                 id="course-asg-desc"
+                placeholder="Petunjuk tugas, tautan pengumpulan, atau catatan tambahan..."
                 value={createAsgDesc}
                 onChange={(e) => setCreateAsgDesc(e.target.value)}
-                rows={2}
+                disabled={isSubmittingAsg}
+                rows={3}
               />
             </div>
 
-            <DialogFooter>
+            <DialogFooter className="pt-2">
               <Button
                 type="button"
                 variant="outline"
@@ -1068,45 +1028,48 @@ export default function CourseDetailPage(): React.JSX.Element {
         </DialogContent>
       </Dialog>
 
-      {/* Modal Create Note on Course */}
+      {/* Modal Tambah Catatan untuk Mata Kuliah ini */}
       <Dialog open={isCreateNoteOpen} onOpenChange={setIsCreateNoteOpen}>
         <DialogContent className="sm:max-w-[480px]">
           <DialogHeader>
             <DialogTitle>Buat Catatan untuk {course.name}</DialogTitle>
             <DialogDescription>
-              Tulis catatan baru untuk mata kuliah ini.
+              Tulis catatan belajar baru yang terhubung ke mata kuliah ini.
             </DialogDescription>
           </DialogHeader>
 
-          <form onSubmit={handleCreateNote} className="space-y-4 py-2">
-            {createNoteError && (
-              <div className="rounded-md bg-danger/10 p-3 text-xs font-medium text-danger border border-danger/20">
-                {createNoteError}
-              </div>
-            )}
+          {createNoteError && (
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>{createNoteError}</AlertDescription>
+            </Alert>
+          )}
 
+          <form onSubmit={handleCreateNote} className="space-y-4">
             <div className="space-y-1.5">
               <Label htmlFor="course-note-title">Judul Catatan *</Label>
               <Input
                 id="course-note-title"
+                placeholder="Contoh: Rangkuman Bab 1 Dasar Teori"
                 value={createNoteTitle}
                 onChange={(e) => setCreateNoteTitle(e.target.value)}
-                placeholder="Contoh: Ringkasan Kuliah Minggu Ke-4"
-                required
+                disabled={isSubmittingNote}
               />
             </div>
 
             <div className="space-y-1.5">
-              <Label htmlFor="course-note-desc">Isi Awal (Opsional - Markdown)</Label>
+              <Label htmlFor="course-note-content">Konten Awal Markdown (Opsional)</Label>
               <Textarea
-                id="course-note-desc"
+                id="course-note-content"
+                placeholder="# Topik Perkuliahan&#10;&#10;Tulis poin penting perkuliahan di sini..."
                 value={createNoteContent}
                 onChange={(e) => setCreateNoteContent(e.target.value)}
-                rows={3}
+                disabled={isSubmittingNote}
+                rows={4}
               />
             </div>
 
-            <DialogFooter>
+            <DialogFooter className="pt-2">
               <Button
                 type="button"
                 variant="outline"
@@ -1129,20 +1092,6 @@ export default function CourseDetailPage(): React.JSX.Element {
           </form>
         </DialogContent>
       </Dialog>
-
-      {/* Upload Material Dialog */}
-      {course && (
-        <MaterialUploadDialog
-          open={isUploadOpen}
-          onOpenChange={setIsUploadOpen}
-          courses={[course]}
-          initialCourseId={course.id}
-          onSuccess={() => {
-            fetchMaterialsData();
-            setActiveTab('materials');
-          }}
-        />
-      )}
     </div>
   );
 }

@@ -57,6 +57,7 @@ export function MaterialFlashcardTab({
   const [currentIndex, setCurrentIndex] = React.useState(0);
   const [isFlipped, setIsFlipped] = React.useState(false);
   const [isUpdatingMastery, setIsUpdatingMastery] = React.useState(false);
+  const [masteryError, setMasteryError] = React.useState<string | null>(null);
 
   const loadSets = React.useCallback(async () => {
     setIsLoading(true);
@@ -124,6 +125,7 @@ export function MaterialFlashcardTab({
   const handleUpdateMastery = async (cardId: string, status: 'NEED_REVIEW' | 'MASTERED') => {
     if (!selectedSet || !selectedSet.cards) return;
     setIsUpdatingMastery(true);
+    setMasteryError(null);
     try {
       const updatedCard = await updateFlashcardMastery(cardId, status);
       setSelectedSet((prev) => {
@@ -139,7 +141,7 @@ export function MaterialFlashcardTab({
         setIsFlipped(false);
       }
     } catch (err: any) {
-      alert(err.message || 'Gagal memperbarui status pemahaman');
+      setMasteryError(err.message || 'Gagal memperbarui status pemahaman');
     } finally {
       setIsUpdatingMastery(false);
     }
@@ -343,6 +345,13 @@ export function MaterialFlashcardTab({
               <span>Gunakan Spasi / Klik untuk membalik</span>
             </div>
           </div>
+
+          {masteryError && (
+            <div className="flex items-center gap-2 rounded-lg border border-danger/30 bg-danger/5 p-2.5 text-xs text-danger">
+              <AlertCircle className="h-4 w-4 shrink-0" />
+              <span>{masteryError}</span>
+            </div>
+          )}
 
           {/* Mastery Action Buttons */}
           <div className="flex items-center justify-between gap-3 pt-2">

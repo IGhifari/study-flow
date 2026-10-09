@@ -19,6 +19,8 @@ import {
   CardContent,
   CardFooter,
 } from '@/components/ui/card';
+import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
+import { Separator } from '@/components/ui/separator';
 
 function LoginForm(): React.JSX.Element {
   const router = useRouter();
@@ -56,41 +58,45 @@ function LoginForm(): React.JSX.Element {
   };
 
   return (
-    <Card className="w-full">
-      <CardHeader className="space-y-1">
-        <CardTitle className="text-2xl">Masuk ke StudyFlow</CardTitle>
-        <CardDescription>
+    <Card className="w-full border-border bg-card shadow-xs">
+      <CardHeader className="space-y-1.5 pb-4">
+        <CardTitle className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">
+          Masuk ke StudyFlow
+        </CardTitle>
+        <CardDescription className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
           Masukkan email dan password untuk melanjutkan kegiatan belajarmu.
         </CardDescription>
       </CardHeader>
 
       <form onSubmit={handleSubmit(onSubmit)} noValidate>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-4 pt-0">
           {/* Registration Success Banner */}
           {isRegisteredSuccess && (
-            <div
-              role="status"
-              className="flex items-start gap-2.5 rounded-lg border border-emerald-200 bg-emerald-50/80 p-3 text-sm text-emerald-800 dark:border-emerald-900/50 dark:bg-emerald-950/40 dark:text-emerald-300"
-            >
-              <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-400" />
-              <span>Akun berhasil dibuat. Silakan masuk menggunakan akun barumu.</span>
-            </div>
+            <Alert className="border-emerald-500/30 bg-emerald-500/10 text-emerald-800 dark:text-emerald-300 [&>svg]:text-emerald-600 dark:[&>svg]:text-emerald-400">
+              <CheckCircle2 className="h-4 w-4" />
+              <AlertTitle className="text-sm font-semibold text-emerald-900 dark:text-emerald-200">
+                Pendaftaran Berhasil
+              </AlertTitle>
+              <AlertDescription className="text-xs text-emerald-700 dark:text-emerald-300">
+                Akun berhasil dibuat. Silakan masuk menggunakan akun barumu.
+              </AlertDescription>
+            </Alert>
           )}
 
           {/* Server Error Alert */}
           {serverError && (
-            <div
-              role="alert"
-              className="flex items-start gap-2.5 rounded-lg border border-red-200 bg-red-50/80 p-3 text-sm text-red-800 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-300"
-            >
-              <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-red-600 dark:text-red-400" />
-              <span>{serverError}</span>
-            </div>
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle className="text-sm font-semibold">Gagal Masuk</AlertTitle>
+              <AlertDescription className="text-xs">{serverError}</AlertDescription>
+            </Alert>
           )}
 
           {/* Email Field */}
           <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
+            <Label htmlFor="email" className="text-xs font-semibold text-foreground">
+              Email
+            </Label>
             <Input
               id="email"
               type="email"
@@ -99,10 +105,11 @@ function LoginForm(): React.JSX.Element {
               disabled={isSubmitting}
               aria-invalid={!!errors.email}
               aria-describedby={errors.email ? 'email-error' : undefined}
+              className="h-10 text-sm"
               {...register('email')}
             />
             {errors.email && (
-              <p id="email-error" className="text-xs text-danger-foreground">
+              <p id="email-error" className="text-xs font-medium text-danger-foreground">
                 {errors.email.message}
               </p>
             )}
@@ -110,7 +117,9 @@ function LoginForm(): React.JSX.Element {
 
           {/* Password Field with Toggle */}
           <div className="space-y-2">
-            <Label htmlFor="password">Password</Label>
+            <Label htmlFor="password" className="text-xs font-semibold text-foreground">
+              Password
+            </Label>
             <div className="relative">
               <Input
                 id="password"
@@ -118,7 +127,7 @@ function LoginForm(): React.JSX.Element {
                 autoComplete="current-password"
                 placeholder="Password akun"
                 disabled={isSubmitting}
-                className="pr-12"
+                className="h-10 pr-10 text-sm"
                 aria-invalid={!!errors.password}
                 aria-describedby={errors.password ? 'password-error' : undefined}
                 {...register('password')}
@@ -126,8 +135,9 @@ function LoginForm(): React.JSX.Element {
               <button
                 type="button"
                 onClick={() => setShowPassword((prev) => !prev)}
-                className="absolute right-1 top-1 flex h-9 w-9 items-center justify-center rounded-md text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring"
+                className="absolute right-1 top-1/2 -translate-y-1/2 flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring"
                 aria-label={showPassword ? 'Sembunyikan password' : 'Tampilkan password'}
+                title={showPassword ? 'Sembunyikan password' : 'Tampilkan password'}
                 tabIndex={0}
               >
                 {showPassword ? (
@@ -138,14 +148,14 @@ function LoginForm(): React.JSX.Element {
               </button>
             </div>
             {errors.password && (
-              <p id="password-error" className="text-xs text-danger-foreground">
+              <p id="password-error" className="text-xs font-medium text-danger-foreground">
                 {errors.password.message}
               </p>
             )}
           </div>
         </CardContent>
 
-        <CardFooter className="flex flex-col space-y-4">
+        <CardFooter className="flex flex-col space-y-4 pt-2">
           <Button
             type="submit"
             className="w-full font-semibold"
@@ -153,19 +163,21 @@ function LoginForm(): React.JSX.Element {
           >
             {isSubmitting ? (
               <>
-                <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
-                <span>Memeriksa...</span>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />
+                <span>Memproses...</span>
               </>
             ) : (
               'Masuk'
             )}
           </Button>
 
-          <p className="text-center text-sm text-muted-foreground">
+          <Separator className="my-1" />
+
+          <p className="text-center text-xs sm:text-sm text-muted-foreground">
             Belum punya akun?{' '}
             <Link
               href={returnUrl ? `/register?returnUrl=${encodeURIComponent(returnUrl)}` : '/register'}
-              className="font-medium text-primary underline underline-offset-4 hover:opacity-80"
+              className="font-medium text-primary underline underline-offset-4 hover:opacity-80 transition-opacity"
             >
               Daftar sekarang
             </Link>
