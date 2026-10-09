@@ -21,10 +21,15 @@
     "typecheck": "npm run typecheck --workspaces --if-present",
     "test": "npm run test --workspaces --if-present",
     "test:bff": "node scripts/test-bff-auth.mjs",
+    "test:e2e": "npx playwright test --config=apps/web/playwright.config.ts",
+    "seed:demo": "node scripts/seed-demo.mjs",
+    "eval:ai": "node scripts/run-evaluation.mjs",
     "worker:smoke": "npm run smoke --workspace=@studyflow/worker"
   },
   "devDependencies": {
+    "@playwright/test": "^1.64.0",
     "concurrently": "^9.1.2",
+    "pdf-lib": "^1.17.1",
     "typescript": "^5.8.2",
     "vitest": "^3.0.7"
   }

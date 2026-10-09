@@ -14,7 +14,8 @@ StudyFlow adalah platform belajar pribadi untuk mahasiswa yang mengintegrasikan 
 | **Milestone 4 — Assignments, Notes & Dashboard** | Manajemen tugas kuliah, deadline timezone-aware, editor catatan Markdown, ringkasan dashboard semester aktif | **Selesai** |
 | **Milestone 5 — Storage & Document Worker** | Upload PDF langsung ke storage privat, antrean BullMQ & transactional outbox, ekstraksi teks per halaman, kuota storage & upload | **Selesai** |
 | **Milestone 6 — AI Summaries** | Ringkasan materi AI dengan Gemini API free tier, kutipan nomor halaman interaktif, mitigasi prompt injection, kuota harian atomik | **Selesai** |
-| **Milestone 7 — Flashcards & Quizzes** | Generasi latihan interaktif dan penilaian di backend | Mendatang |
+| **Milestone 7 — Flashcards & Quizzes** | Generasi latihan interaktif, penyimpanan jawaban sebelum submit, penilaian & skor di backend, soft-delete turunan saat materi dihapus | **Selesai** |
+| **Milestone 8 — MVP Release Prep** | Tahap 1: Verifikasi MVP lokal, E2E suite, evaluasi AI, demo seed, deployment guide, dan checklist rilis | **Selesai (Tahap 1)** |
 
 ---
 
@@ -172,6 +173,21 @@ Jalankan quality gates dan rangkaian test yang tersedia:
   npm run test:bff
   ```
   Menguji pendaftaran, login, cookie HttpOnly, proteksi rute privat `/dashboard` dan `/settings`, pembaruan profil, perubahan password dengan pencabutan sesi instan, dan logout melalui proxy Next.js.
+- **Pengujian Browser Playwright End-to-End (E2E)**:
+  ```bash
+  npm run test:e2e
+  ```
+  Menjalankan 4 flow kritis MVP (Lifecycle Akademik & Sesi, AI Pipeline & Latihan Flashcard/Quiz, Isolasi Multi-tenant, serta Responsivitas 375px/768px/1440px & Aksesibilitas) secara terisolasi pada database `studyflow_test`, Redis DB 15, dan server produksi Next.js `.next-e2e`.
+- **Evaluasi Performa Ekstraksi & Kualitas AI**:
+  ```bash
+  npm run eval:ai
+  ```
+  Menjalankan evaluasi dataset representatif (20 PDF akademik nyata + 5 skenario edge/failure) terhadap akurasi ekstraksi, penolakan PDF non-teks/terkorupsi, sitasi halaman, struktur ringkasan, dan validitas kuis/flashcard.
+- **Demo Data Seeding**:
+  ```bash
+  npm run seed:demo
+  ```
+  Menyiapkan akun demo (`demo.student@studyflow.test`) dengan data perkuliahan realistis secara aman dan idempotent tanpa menghapus atau mengganggu data pengguna lain.
 - **Build**: Membangun seluruh paket dan aplikasi:
   ```bash
   npm run build
@@ -295,7 +311,7 @@ Bila ingin menghubungkan ke instance Supabase nyata:
 StudyFlow mengintegrasikan model Large Language Model (LLM) untuk menghasilkan ringkasan akademis terstruktur secara otomatis dari materi PDF yang telah diekstrak. Fitur ini dirancang khusus menggunakan **free tier tanpa billing**.
 
 ### 14.1 Pemilihan Provider & Ketentuan Free Tier
-- **Provider**: Google AI Studio Gemini API (`gemini-2.5-flash`).
+- **Provider**: Google AI Studio Gemini API (`gemini-3.5-flash-lite` — model aktif proyek ini; pertahankan konfigurasi & secret yang bekerja).
 - **Free Tier**: Pengguna **wajib memastikan bahwa project Google AI Studio miliknya berada pada Free Tier** tanpa mengaktifkan billing / pay-as-you-go. Jangan menambahkan kartu kredit atau mengaktifkan penagihan pada Google Cloud Console. Batas kuota gratis (seperti rate limit per menit dan kuota harian) sepenuhnya diatur oleh kebijakan resmi Google AI Studio untuk wilayah dan akun terkait.
 - **Tanpa Fallback Berbayar**: Sistem StudyFlow dirancang tanpa mekanisme fallback otomatis ke model atau provider berbayar. Jika kuota provider habis (`429`), sistem menampilkan pesan error informatif yang aman dan tidak melakukan retry tanpa henti.
 - **Kebijakan Penggunaan Data**: Pada Google AI Studio free tier, prompt dan konten teks dapat ditinjau oleh Google sesuai kebijakan privasi AI Studio. Oleh karena itu, pengujian disarankan menggunakan sampel materi edukasi non-sensitif.
@@ -323,7 +339,7 @@ StudyFlow mengintegrasikan model Large Language Model (LLM) untuk menghasilkan r
    ```env
    AI_PROVIDER="gemini"
    GEMINI_API_KEY="AIzaSy..."
-   GEMINI_MODEL="gemini-2.5-flash"
+   GEMINI_MODEL="gemini-3.5-flash-lite"
    ```
 3. Restart proses backend API dan Worker background:
    - `npm run dev:api`

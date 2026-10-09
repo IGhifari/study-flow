@@ -1095,6 +1095,40 @@
         }
       }
     },
+    "/api/attempts/{id}/answers": {
+      "patch": {
+        "summary": "Menyimpan jawaban sementara sebelum submit",
+        "description": "Menyimpan pilihan jawaban pengguna pada sesi aktif tanpa penilaian.",
+        "tags": ["Quizzes"],
+        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["answers"],
+                "properties": {
+                  "answers": {
+                    "type": "array",
+                    "items": { "$ref": "#/components/schemas/SubmitQuizAnswerItem" }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Jawaban draft berhasil disimpan" },
+          "400": { "description": "Validasi gagal atau attempt sudah disubmit" },
+          "403": { "description": "Akses attempt ditolak" },
+          "404": { "description": "Attempt tidak ditemukan" }
+        }
+      }
+    },
     "/api/attempts/{id}/submit": {
       "post": {
         "summary": "Mengirimkan jawaban kuis untuk dinilai oleh server",

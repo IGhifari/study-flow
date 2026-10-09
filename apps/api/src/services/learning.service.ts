@@ -247,11 +247,15 @@ export async function updateFlashcardMastery(
   const card = await prisma.flashcard.findUnique({
     where: { id: flashcardId },
     include: {
-      set: true,
+      set: {
+        include: {
+          material: { select: { deletedAt: true } },
+        },
+      },
     },
   });
 
-  if (!card) {
+  if (!card || (card.set.material && card.set.material.deletedAt !== null)) {
     throw createError(404, 'NOT_FOUND', 'Kartu flashcard tidak ditemukan');
   }
 
@@ -403,11 +407,12 @@ export async function startOrResumeQuizAttempt(
   const quiz = await prisma.quiz.findUnique({
     where: { id: quizId },
     include: {
+      material: { select: { deletedAt: true } },
       questions: { orderBy: { orderIndex: 'asc' } },
     },
   });
 
-  if (!quiz) {
+  if (!quiz || (quiz.material && quiz.material.deletedAt !== null)) {
     throw createError(404, 'NOT_FOUND', 'Kuis tidak ditemukan');
   }
   if (quiz.userId !== userId) {
@@ -471,6 +476,68 @@ export async function startOrResumeQuizAttempt(
   };
 }
 
+export async function saveQuizDraftAnswers(
+  userId: string,
+  attemptId: string,
+  answers: { questionId: string; selectedIndex: number | null }[]
+): Promise<{ success: boolean; savedCount: number }> {
+  const attempt = await prisma.quizAttempt.findUnique({
+    where: { id: attemptId },
+    include: {
+      quiz: {
+        include: {
+          material: { select: { deletedAt: true } },
+          questions: { select: { id: true } },
+        },
+      },
+    },
+  });
+
+  if (!attempt || (attempt.quiz.material && attempt.quiz.material.deletedAt !== null)) {
+    throw createError(404, 'NOT_FOUND', 'Sesi pengerjaan kuis tidak ditemukan');
+  }
+  if (attempt.userId !== userId) {
+    throw createError(403, 'FORBIDDEN', 'Anda tidak memiliki akses ke sesi pengerjaan kuis ini');
+  }
+  if (attempt.submittedAt !== null) {
+    throw createError(400, 'ATTEMPT_ALREADY_SUBMITTED', 'Kuis sudah disubmit dan tidak dapat diubah.');
+  }
+
+  const validQuestionIds = new Set(attempt.quiz.questions.map((q) => q.id));
+
+  await prisma.$transaction(async (tx) => {
+    for (const ans of answers) {
+      if (!validQuestionIds.has(ans.questionId)) continue;
+
+      if (ans.selectedIndex === null) {
+        await tx.quizAttemptAnswer.deleteMany({
+          where: { attemptId, questionId: ans.questionId },
+        });
+      } else {
+        await tx.quizAttemptAnswer.upsert({
+          where: {
+            attemptId_questionId: {
+              attemptId,
+              questionId: ans.questionId,
+            },
+          },
+          update: {
+            selectedIndex: ans.selectedIndex,
+          },
+          create: {
+            attemptId,
+            questionId: ans.questionId,
+            selectedIndex: ans.selectedIndex,
+            isCorrect: false,
+          },
+        });
+      }
+    }
+  });
+
+  return { success: true, savedCount: answers.length };
+}
+
 export async function submitQuizAttempt(
   userId: string,
   attemptId: string,
@@ -481,6 +548,7 @@ export async function submitQuizAttempt(
     include: {
       quiz: {
         include: {
+          material: { select: { deletedAt: true } },
           questions: { orderBy: { orderIndex: 'asc' } },
         },
       },
@@ -488,7 +556,7 @@ export async function submitQuizAttempt(
     },
   });
 
-  if (!attempt) {
+  if (!attempt || (attempt.quiz.material && attempt.quiz.material.deletedAt !== null)) {
     throw createError(404, 'NOT_FOUND', 'Sesi pengerjaan kuis tidak ditemukan');
   }
   if (attempt.userId !== userId) {
@@ -565,6 +633,7 @@ export async function getQuizAttemptResult(
     include: {
       quiz: {
         include: {
+          material: { select: { deletedAt: true } },
           questions: { orderBy: { orderIndex: 'asc' } },
         },
       },
@@ -572,7 +641,7 @@ export async function getQuizAttemptResult(
     },
   });
 
-  if (!attempt) {
+  if (!attempt || (attempt.quiz.material && attempt.quiz.material.deletedAt !== null)) {
     throw createError(404, 'NOT_FOUND', 'Hasil pengerjaan kuis tidak ditemukan');
   }
   if (attempt.userId !== userId) {

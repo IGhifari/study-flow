@@ -603,6 +603,24 @@ export async function deleteMaterial(userId: string, id: string): Promise<void> 
       data: { materialId: null },
     });
 
+    // Explicitly clean up downstream AI and attempt records per PRD retention policy
+    // (SQL ON DELETE CASCADE does not trigger on soft delete)
+    await tx.quizAttempt.deleteMany({
+      where: { quiz: { materialId: material.id } },
+    });
+    await tx.quiz.deleteMany({
+      where: { materialId: material.id },
+    });
+    await tx.flashcardSet.deleteMany({
+      where: { materialId: material.id },
+    });
+    await tx.materialSummary.deleteMany({
+      where: { materialId: material.id },
+    });
+    await tx.materialPage.deleteMany({
+      where: { materialId: material.id },
+    });
+
     // Cancel pending processing jobs
     await tx.processingJob.updateMany({
       where: { materialId: material.id, status: 'PENDING' },

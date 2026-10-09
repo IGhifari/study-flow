@@ -1,0 +1,63 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [3 0 R 4 0 R] /Count 2 >>
+endobj
+3 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 << /Type /Font /Subtype /Type1 /BaseFont /Helvetica >> >> >> /Contents 5 0 R >>
+endobj
+4 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 << /Type /Font /Subtype /Type1 /BaseFont /Helvetica >> >> >> /Contents 6 0 R >>
+endobj
+5 0 obj
+<< /Length 770 >>
+stream
+BT
+/F1 11 Tf
+50 720 Td
+14 TL
+(Cloud Computing Essentials: Service Models and Shared Responsibility) '
+(Cloud computing delivers on-demand computing services over the internet with pay-as-you-go pricing.) '
+(Primary Service Models:) '
+(1. Infrastructure as a Service \(IaaS\): Provides raw compute, storage, and networking \(e.g., AWS EC2, DigitalOcean\).) '
+(2. Platform as a Service \(PaaS\): Provides runtime environments, managed databases, and deployment pipelines \(e.g., Heroku, Railway\).) '
+(3. Software as a Service \(SaaS\): Complete software applications accessible via browser \(e.g., Google Workspace, Figma\).) '
+(4. Function as a Service \(FaaS/Serverless\): Event-driven execution of ephemeral code snippets \(e.g., AWS Lambda, Vercel Functions\).) '
+ET
+endstream
+endobj
+6 0 obj
+<< /Length 717 >>
+stream
+BT
+/F1 11 Tf
+50 720 Td
+14 TL
+(Shared Responsibility Model and Deployment Scenarios:) '
+(Security responsibility shifts depending on the chosen cloud tier:) '
+(- In IaaS, customers manage OS patching, network configuration, database backups, and applications.) '
+(- In PaaS, cloud providers manage runtime and OS; customers manage data and application logic.) '
+(- In SaaS, the provider manages everything except customer data and identity access.) '
+() '
+(Worker Processes in Modern Cloud Hosting:) '
+(Background workers consuming persistent queues \(e.g. BullMQ\) require long-running, continuous Node processes.) '
+(Pure serverless platforms with request timeouts are unsuitable for continuous queue polling.) '
+ET
+endstream
+endobj
+xref
+0 7
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000121 00000 n 
+0000000296 00000 n 
+0000000471 00000 n 
+0000001291 00000 n 
+trailer
+<< /Size 7 /Root 1 0 R >>
+startxref
+2058
+%%EOF

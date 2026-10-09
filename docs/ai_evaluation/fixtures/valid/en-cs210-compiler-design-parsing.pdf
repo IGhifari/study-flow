@@ -1,0 +1,127 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [3 0 R 4 0 R 5 0 R 6 0 R 7 0 R] /Count 5 >>
+endobj
+3 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 << /Type /Font /Subtype /Type1 /BaseFont /Helvetica >> >> >> /Contents 8 0 R >>
+endobj
+4 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 << /Type /Font /Subtype /Type1 /BaseFont /Helvetica >> >> >> /Contents 9 0 R >>
+endobj
+5 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 << /Type /Font /Subtype /Type1 /BaseFont /Helvetica >> >> >> /Contents 10 0 R >>
+endobj
+6 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 << /Type /Font /Subtype /Type1 /BaseFont /Helvetica >> >> >> /Contents 11 0 R >>
+endobj
+7 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 << /Type /Font /Subtype /Type1 /BaseFont /Helvetica >> >> >> /Contents 12 0 R >>
+endobj
+8 0 obj
+<< /Length 546 >>
+stream
+BT
+/F1 11 Tf
+50 720 Td
+14 TL
+(Compiler Construction: Overview of Phases - Page 1) '
+(A compiler translates source code written in a high-level language into executable target machine code.) '
+(Front-end phases \(Machine-independent\):) '
+(1. Lexical Analysis \(Scanning\): Converts character streams into structured tokens.) '
+(2. Syntax Analysis \(Parsing\): Builds a Parse Tree or Abstract Syntax Tree \(AST\) according to grammar rules.) '
+(3. Semantic Analysis: Checks type consistency, scope declarations, and language semantic rules.) '
+ET
+endstream
+endobj
+9 0 obj
+<< /Length 664 >>
+stream
+BT
+/F1 11 Tf
+50 720 Td
+14 TL
+(Compiler Construction: Lexical Analysis - Page 2) '
+(The Lexer groups source characters into meaningful lexemes and assigns token categories.) '
+(Regular Expressions \(Regex\) define the patterns for valid tokens \(e.g. identifiers, keywords, operators\).) '
+(Finite Automata execute the matching logic:) '
+(- Deterministic Finite Automata \(DFA\): Exactly one state transition for each input symbol; O\(n\) scan time.) '
+(- Non-deterministic Finite Automata \(NFA\): May have multiple transitions or epsilon transitions for an input symbol.) '
+(Thomson's construction and powerset algorithms convert NFAs into equivalent DFAs.) '
+ET
+endstream
+endobj
+10 0 obj
+<< /Length 553 >>
+stream
+BT
+/F1 11 Tf
+50 720 Td
+14 TL
+(Compiler Construction: Syntax Analysis - Page 3: Grammars) '
+(Context-Free Grammars \(CFG\) define the hierarchical syntax of programming languages.) '
+(A CFG G is formalised as a 4-tuple G = \(V, Sigma, R, S\):) '
+(- V: Finite set of non-terminal characters.) '
+(- Sigma: Finite set of terminal tokens.) '
+(- R: Finite set of production rules mapping V -> \(V union Sigma\)*.) '
+(- S: Start symbol in V.) '
+(Ambiguity: A grammar is ambiguous if a string has more than one distinct leftmost derivation or parse tree.) '
+ET
+endstream
+endobj
+11 0 obj
+<< /Length 515 >>
+stream
+BT
+/F1 11 Tf
+50 720 Td
+14 TL
+(Compiler Construction: Parsing Techniques - Page 4) '
+(Parsing Strategies:) '
+(1. Top-Down Parsers: Start from start symbol S and derive the target token stream.) '
+(   Examples: LL\(1\), Recursive Descent with backtracking.) '
+(2. Bottom-Up Parsers: Start from input tokens and reduce them back to the start symbol S.) '
+(   Examples: LR\(0\), SLR\(1\), LALR\(1\), LR\(1\).) '
+(LR parsers are more powerful than LL parsers and can handle left-recursive grammar rules naturally.) '
+ET
+endstream
+endobj
+12 0 obj
+<< /Length 630 >>
+stream
+BT
+/F1 11 Tf
+50 720 Td
+14 TL
+(Compiler Construction: Intermediate Representation - Page 5) '
+(The AST is transformed into Intermediate Representation \(IR\) such as Three-Address Code \(TAC\).) '
+(TAC represents operations as instructions with at most three addresses: x = y op z.) '
+(Benefits of IR:) '
+(- Decouples frontend language parsers from backend target hardware architectures.) '
+(- Facilitates target-independent compiler optimizations \(dead code elimination, loop unrolling, constant folding\).) '
+(Modern frameworks like LLVM utilize SSA \(Static Single Assignment\) form for efficient compiler optimizations.) '
+ET
+endstream
+endobj
+xref
+0 13
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000139 00000 n 
+0000000314 00000 n 
+0000000489 00000 n 
+0000000665 00000 n 
+0000000841 00000 n 
+0000001017 00000 n 
+0000001613 00000 n 
+0000002327 00000 n 
+0000002931 00000 n 
+0000003497 00000 n 
+trailer
+<< /Size 13 /Root 1 0 R >>
+startxref
+4178
+%%EOF

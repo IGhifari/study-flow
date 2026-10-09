@@ -1,0 +1,82 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [3 0 R 4 0 R 5 0 R] /Count 3 >>
+endobj
+3 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 << /Type /Font /Subtype /Type1 /BaseFont /Helvetica >> >> >> /Contents 6 0 R >>
+endobj
+4 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 << /Type /Font /Subtype /Type1 /BaseFont /Helvetica >> >> >> /Contents 7 0 R >>
+endobj
+5 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 << /Type /Font /Subtype /Type1 /BaseFont /Helvetica >> >> >> /Contents 8 0 R >>
+endobj
+6 0 obj
+<< /Length 676 >>
+stream
+BT
+/F1 11 Tf
+50 720 Td
+14 TL
+(Kecerdasan Buatan Dasar: Konsep Agen Cerdas [Kolom Kiri | Kolom Kanan]) '
+(Kolom 1: Definisi Agen AI                | Kolom 2: Arsitektur PAGE) '
+(Agen AI adalah entitas yang mengamati         | Karakteristik lingkungan agen dianalisis melalui PAGE:) '
+(lingkungannya melalui sensor dan bertindak   | - Percept: Masukan yang diterima sensor.) '
+(pada lingkungan tersebut melalui aktuator.   | - Action: Tindakan yang dapat dilakukan aktuator.) '
+(Agen rasional selalu memilih tindakan yang   | - Goal: Tujuan performa yang ingin dicapai.) '
+(memaksimalkan ukuran performa yang diharapkan.| - Environment: Kondisi lingkungan eksternal agen.) '
+ET
+endstream
+endobj
+7 0 obj
+<< /Length 735 >>
+stream
+BT
+/F1 11 Tf
+50 720 Td
+14 TL
+(Kecerdasan Buatan Dasar: Strategi Pencarian [Kolom Kiri | Kolom Kanan]) '
+(Kolom 1: Uninformed Search                   | Kolom 2: Informed Search \(Heuristik\)) '
+(1. Breadth-First Search \(BFS\):               | 1. Greedy Best-First Search:) '
+(Menelusuri graf lapis demi lapis antartingkat.| Memilih simpul dengan estimasi jarak heuristik h\(n\) terkecil.) '
+(Lengkap dan optimal untuk bobot langkah sama. | 2. A* \(A-Star\) Search:) '
+(2. Depth-First Search \(DFS\):                 | Menggabungkan biaya aktual g\(n\) dan estimasi h\(n\): f\(n\) = g\(n\) + h\(n\).) '
+(Menelusuri cabang hingga ujung terdalam.      | Optimal dan lengkap bila fungsi heuristik admisiabel \(tidak overestimasi\).) '
+ET
+endstream
+endobj
+8 0 obj
+<< /Length 495 >>
+stream
+BT
+/F1 11 Tf
+50 720 Td
+14 TL
+(Kecerdasan Buatan Dasar: Sistem Berbasis Aturan) '
+(Expert System \(Sistem Pakar\) menggunakan basis pengetahuan \(knowledge base\) dan mesin inferensi \(inference engine\).) '
+(Representasi Pengetahuan: Aturan IF-THEN.) '
+(Metode penalaran:) '
+(- Forward Chaining: Penalaran maju dari fakta yang diketahui menuju kesimpulan akhir \(data-driven\).) '
+(- Backward Chaining: Penalaran mundur dari hipotesis tujuan untuk mencari fakta pendukung \(goal-driven\).) '
+ET
+endstream
+endobj
+xref
+0 9
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000127 00000 n 
+0000000302 00000 n 
+0000000477 00000 n 
+0000000652 00000 n 
+0000001378 00000 n 
+0000002163 00000 n 
+trailer
+<< /Size 9 /Root 1 0 R >>
+startxref
+2708
+%%EOF

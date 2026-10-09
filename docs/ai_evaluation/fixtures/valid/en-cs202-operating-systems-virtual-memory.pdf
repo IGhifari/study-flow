@@ -1,0 +1,122 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [3 0 R 4 0 R 5 0 R 6 0 R 7 0 R] /Count 5 >>
+endobj
+3 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 << /Type /Font /Subtype /Type1 /BaseFont /Helvetica >> >> >> /Contents 8 0 R >>
+endobj
+4 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 << /Type /Font /Subtype /Type1 /BaseFont /Helvetica >> >> >> /Contents 9 0 R >>
+endobj
+5 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 << /Type /Font /Subtype /Type1 /BaseFont /Helvetica >> >> >> /Contents 10 0 R >>
+endobj
+6 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 << /Type /Font /Subtype /Type1 /BaseFont /Helvetica >> >> >> /Contents 11 0 R >>
+endobj
+7 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 << /Type /Font /Subtype /Type1 /BaseFont /Helvetica >> >> >> /Contents 12 0 R >>
+endobj
+8 0 obj
+<< /Length 495 >>
+stream
+BT
+/F1 11 Tf
+50 720 Td
+14 TL
+(Operating Systems: Virtual Memory - Page 1) '
+(Virtual memory separates logical user memory from physical random access memory \(RAM\).) '
+(This allows execution of processes whose memory size exceeds the available physical memory.) '
+(Paging breaks physical memory into fixed-size blocks called frames, and logical memory into pages of the same size.) '
+(The Memory Management Unit \(MMU\) translates virtual addresses to physical addresses via page tables.) '
+ET
+endstream
+endobj
+9 0 obj
+<< /Length 608 >>
+stream
+BT
+/F1 11 Tf
+50 720 Td
+14 TL
+(Operating Systems: Virtual Memory - Page 2: Page Faults) '
+(A page fault occurs when a process attempts to access a virtual page marked not present in physical RAM.) '
+(Page Fault Handling Sequence:) '
+(1. Hardware traps to the operating system kernel.) '
+(2. Kernel verifies memory protection and legality of the address.) '
+(3. Kernel selects a free frame from physical memory.) '
+(4. Disk I/O operation is initiated to fetch the page from backing store \(swap space\).) '
+(5. Page table is updated with the valid bit set to 1.) '
+(6. Faulting instruction is restarted.) '
+ET
+endstream
+endobj
+10 0 obj
+<< /Length 551 >>
+stream
+BT
+/F1 11 Tf
+50 720 Td
+14 TL
+(Operating Systems: Virtual Memory - Page 3: Page Replacement) '
+(When physical memory has no free frames available, page replacement is triggered.) '
+(Common Page Replacement Algorithms:) '
+(- FIFO \(First-In First-Out\): Simple queue; subject to Belady's Anomaly where more frames cause more faults.) '
+(- Optimal \(OPT\): Replaces the page that will not be used for the longest period; theoretical benchmark.) '
+(- LRU \(Least Recently Used\): Replaces the page that has not been referenced for the longest time.) '
+ET
+endstream
+endobj
+11 0 obj
+<< /Length 548 >>
+stream
+BT
+/F1 11 Tf
+50 720 Td
+14 TL
+(Operating Systems: Virtual Memory - Page 4: Thrashing and Working Set) '
+(Thrashing occurs when a computer spends more time paging data into and out of memory than executing actual work.) '
+(Causes of thrashing: Insufficient physical memory allocated to processes to hold their working sets.) '
+(The working set model monitors the locality of reference of a process within a moving time window Delta.) '
+(If the sum of working sets across active processes exceeds physical memory, the OS must suspend a process.) '
+ET
+endstream
+endobj
+12 0 obj
+<< /Length 458 >>
+stream
+BT
+/F1 11 Tf
+50 720 Td
+14 TL
+(Operating Systems: Virtual Memory - Page 5: Summary) '
+(Summary and Core Takeaways:) '
+(Virtual memory provides process isolation, efficient memory sharing, and simplified program loading.) '
+(Translation Lookaside Buffer \(TLB\) caches recent translations to minimize multi-level page table latency overhead.) '
+(Effective memory access time \(EMAT\) depends heavily on high TLB hit rates and low page fault frequencies.) '
+ET
+endstream
+endobj
+xref
+0 13
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000139 00000 n 
+0000000314 00000 n 
+0000000489 00000 n 
+0000000665 00000 n 
+0000000841 00000 n 
+0000001017 00000 n 
+0000001562 00000 n 
+0000002220 00000 n 
+0000002822 00000 n 
+0000003421 00000 n 
+trailer
+<< /Size 13 /Root 1 0 R >>
+startxref
+3930
+%%EOF

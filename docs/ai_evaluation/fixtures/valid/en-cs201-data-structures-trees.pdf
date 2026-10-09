@@ -1,0 +1,68 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [3 0 R 4 0 R] /Count 2 >>
+endobj
+3 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 << /Type /Font /Subtype /Type1 /BaseFont /Helvetica >> >> >> /Contents 5 0 R >>
+endobj
+4 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 << /Type /Font /Subtype /Type1 /BaseFont /Helvetica >> >> >> /Contents 6 0 R >>
+endobj
+5 0 obj
+<< /Length 682 >>
+stream
+BT
+/F1 11 Tf
+50 720 Td
+14 TL
+(StudyFlow Academic Series: Binary Trees and Binary Search Trees) '
+(Verified Synthetic Corpus for StudyFlow AI Evaluation Gate) '
+() '
+(Chapter 1: Tree Terminology and Properties) '
+(A tree is a non-linear hierarchical data structure consisting of nodes connected by directed edges.) '
+(Key definitions:) '
+(- Root: The topmost node of the tree with no parent.) '
+(- Leaf: A node with no children \(degree 0\).) '
+(- Height: The length of the longest path from the node to a leaf.) '
+(- Depth: The distance from the root to the specified node.) '
+(In a binary tree, every node has at most two children, typically termed the left and right child.) '
+ET
+endstream
+endobj
+6 0 obj
+<< /Length 738 >>
+stream
+BT
+/F1 11 Tf
+50 720 Td
+14 TL
+(Chapter 2: Binary Search Tree \(BST\) Invariants) '
+(A Binary Search Tree enforces the following order invariant for every node X:) '
+(1. All keys in the left subtree of X are strictly less than key\(X\).) '
+(2. All keys in the right subtree of X are strictly greater than key\(X\).) '
+() '
+(Operations on Balanced BST:) '
+(- Search: O\(log n\) average time complexity.) '
+(- Insertion: O\(log n\) time by descending left or right until an empty spot is reached.) '
+(- Deletion: O\(log n\) time; handling 0 children, 1 child, or replacing with inorder successor for 2 children.) '
+(Tree traversals: Inorder traversal \(Left, Root, Right\) of a BST produces elements in strictly ascending sorted order.) '
+ET
+endstream
+endobj
+xref
+0 7
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000121 00000 n 
+0000000296 00000 n 
+0000000471 00000 n 
+0000001203 00000 n 
+trailer
+<< /Size 7 /Root 1 0 R >>
+startxref
+1991
+%%EOF

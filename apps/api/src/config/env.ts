@@ -13,30 +13,36 @@ const rootDir = path.resolve(appDir, '../..'); // repository root
 
 // Preserve runtime environment variables set by test runners (e.g. vitest env config)
 const isTestMode = process.env.NODE_ENV === 'test';
+
 const testDatabaseUrl = isTestMode ? process.env.DATABASE_URL : undefined;
 const originalNodeEnv = process.env.NODE_ENV;
 
 // 1. Load root .env first (base settings across workspaces)
 const rootEnvPath = path.join(rootDir, '.env');
 if (fs.existsSync(rootEnvPath)) {
+  // Never override externally set env vars (like Playwright/Vitest provided ones)
   dotenv.config({ path: rootEnvPath });
 }
 
 // 2. Load apps/api/.env second with override: true (workspace-specific secrets and overrides)
 const appEnvPath = path.join(appDir, '.env');
 if (fs.existsSync(appEnvPath)) {
-  dotenv.config({ path: appEnvPath, override: true });
+  if (isTestMode) {
+    // In test mode, we only load the file to fill missing values, never to override existing test config
+    dotenv.config({ path: appEnvPath });
+  } else {
+    dotenv.config({ path: appEnvPath, override: true });
+  }
 }
 
-// Fallback: also load default process.cwd() .env if different
+// Fallback: also load default process.cwd() .env if different (non-overriding)
 dotenv.config();
 
-// Restore test environment variables if running in test mode
-if (originalNodeEnv) {
-  process.env.NODE_ENV = originalNodeEnv;
-}
-if (testDatabaseUrl) {
-  process.env.DATABASE_URL = testDatabaseUrl;
+// Re-enforce externally set variables that might have been overwritten if we used override: true
+// (Though we guarded it above, this is defense-in-depth)
+if (isTestMode) {
+  if (originalNodeEnv) process.env.NODE_ENV = originalNodeEnv;
+  if (testDatabaseUrl) process.env.DATABASE_URL = testDatabaseUrl;
 }
 
 const EnvSchema = z.object({

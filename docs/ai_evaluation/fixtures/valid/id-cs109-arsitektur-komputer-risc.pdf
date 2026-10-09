@@ -1,0 +1,64 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [3 0 R 4 0 R] /Count 2 >>
+endobj
+3 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 << /Type /Font /Subtype /Type1 /BaseFont /Helvetica >> >> >> /Contents 5 0 R >>
+endobj
+4 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 << /Type /Font /Subtype /Type1 /BaseFont /Helvetica >> >> >> /Contents 6 0 R >>
+endobj
+5 0 obj
+<< /Length 534 >>
+stream
+BT
+/F1 11 Tf
+50 720 Td
+14 TL
+(Arsitektur Komputer: Konsep Prosesor RISC dan CISC) '
+(Instruksi prosesor dirancang berdasarkan filosofi arsitektur set instruksi \(ISA\).) '
+(Karakteristik RISC \(Reduced Instruction Set Computer\):) '
+(- Instruksi berukuran tetap dan sederhana.) '
+(- Eksekusi satu instruksi per siklus clock melalui pipelining efektif.) '
+(- Operasi memori hanya dilakukan melalui instruksi LOAD dan STORE khusus.) '
+(- Jumlah register serbaguna \(GPR\) relatif banyak.) '
+(- Contoh prosesor: ARM, RISC-V, MIPS.) '
+ET
+endstream
+endobj
+6 0 obj
+<< /Length 630 >>
+stream
+BT
+/F1 11 Tf
+50 720 Td
+14 TL
+(Karakteristik CISC \(Complex Instruction Set Computer\):) '
+(- Memiliki banyak instruksi kompleks dengan ukuran variabel.) '
+(- Satu instruksi dapat melakukan operasi aritmatika sekaligus membaca memori.) '
+(- Mengurangi jumlah baris kode pada tingkat bahasa rakitan \(assembly\).) '
+(- Unit kontrol prosesor lebih rumit dan membutuhkan daya listrik lebih besar.) '
+(- Contoh prosesor: Intel x86 dan AMD64.) '
+() '
+(Konvergensi Modern: Prosesor x86 modern menerjemahkan instruksi CISC menjadi micro-operations \(uops\)) '
+(berbasis internal RISC untuk mengoptimalkan kinerja pipeline prosesor.) '
+ET
+endstream
+endobj
+xref
+0 7
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000121 00000 n 
+0000000296 00000 n 
+0000000471 00000 n 
+0000001055 00000 n 
+trailer
+<< /Size 7 /Root 1 0 R >>
+startxref
+1735
+%%EOF

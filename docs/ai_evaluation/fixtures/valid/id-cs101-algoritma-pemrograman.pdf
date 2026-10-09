@@ -1,0 +1,67 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [3 0 R 4 0 R] /Count 2 >>
+endobj
+3 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 << /Type /Font /Subtype /Type1 /BaseFont /Helvetica >> >> >> /Contents 5 0 R >>
+endobj
+4 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 << /Type /Font /Subtype /Type1 /BaseFont /Helvetica >> >> >> /Contents 6 0 R >>
+endobj
+5 0 obj
+<< /Length 797 >>
+stream
+BT
+/F1 11 Tf
+50 720 Td
+14 TL
+(StudyFlow Academic Series: Dasar Algoritma dan Pemrograman) '
+(Dokumen Sintetis Terverifikasi untuk Evaluasi AI MVP StudyFlow) '
+() '
+(Bab 1: Pengenalan Algoritma) '
+(Algoritma adalah urutan langkah logis yang tersusun secara sistematis untuk memecahkan suatu masalah komputasi.) '
+(Karakteristik penting dari algoritma meliputi: keterbatasan \(finiteness\), kepastian \(definiteness\),) '
+(masukan \(input\), keluaran \(output\), dan efektivitas \(effectiveness\).) '
+() '
+(Setiap algoritma harus berhenti setelah mengerjakan sejumlah langkah terhingga.) '
+(Notasi algoritma yang umum digunakan adalah deskriptif, diagram alir \(flowchart\), dan pseudocode.) '
+(Pseudocode memudahkan programmer menerjemahkan logika ke dalam bahasa pemrograman tingkat tinggi.) '
+ET
+endstream
+endobj
+6 0 obj
+<< /Length 681 >>
+stream
+BT
+/F1 11 Tf
+50 720 Td
+14 TL
+(Bab 2: Struktur Kontrol Dasar) '
+(Struktur kontrol dalam algoritma terdiri dari tiga jenis utama:) '
+(1. Struktur Runtunan \(Sequence\): Instruksi dieksekusi baris demi baris dari atas ke bawah.) '
+(2. Struktur Pemilihan \(Selection\): Percabangan kondisi menggunakan pernyataan if-then-else atau switch-case.) '
+(3. Struktur Pengulangan \(Repetition/Loop\): Iterasi blok kode menggunakan for, while, atau do-while.) '
+() '
+(Analisis Kompleksitas Dasar:) '
+(Efisiensi algoritma diukur melalui kompleksitas waktu dan ruang menggunakan notasi Big-O.) '
+(Kompleksitas konstan dinyatakan sebagai O\(1\), sedangkan kompleksitas linier adalah O\(n\).) '
+ET
+endstream
+endobj
+xref
+0 7
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000121 00000 n 
+0000000296 00000 n 
+0000000471 00000 n 
+0000001318 00000 n 
+trailer
+<< /Size 7 /Root 1 0 R >>
+startxref
+2049
+%%EOF

@@ -48,3 +48,21 @@ packages/database/src/generated/
 # Docker volumes / persistence
 pgdata/
 redisdata/
+
+
+
+# Build E2E
+**/.next-e2e/
+
+# Hasil tes Playwright
+**/test-results/
+**/playwright-report/
+**/blob-report/
+.storage-e2e/
+test-results-e2e/
+
+# TypeScript build cache
+*.tsbuildinfo
+
+# Catatan lokal agent
+/.omo/

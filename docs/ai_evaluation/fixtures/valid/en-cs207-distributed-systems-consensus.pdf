@@ -1,0 +1,111 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [3 0 R 4 0 R 5 0 R 6 0 R] /Count 4 >>
+endobj
+3 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 << /Type /Font /Subtype /Type1 /BaseFont /Helvetica >> >> >> /Contents 7 0 R >>
+endobj
+4 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 << /Type /Font /Subtype /Type1 /BaseFont /Helvetica >> >> >> /Contents 8 0 R >>
+endobj
+5 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 << /Type /Font /Subtype /Type1 /BaseFont /Helvetica >> >> >> /Contents 9 0 R >>
+endobj
+6 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 << /Type /Font /Subtype /Type1 /BaseFont /Helvetica >> >> >> /Contents 10 0 R >>
+endobj
+7 0 obj
+<< /Length 802 >>
+stream
+BT
+/F1 11 Tf
+50 720 Td
+14 TL
+(Distributed Systems: Foundational Principles [Left Column | Right Column]) '
+(Left: The CAP Theorem                     | Right: Fallacies of Distributed Computing) '
+(In any distributed data store, you can    | Developers often falsely assume:) '
+(guarantee at most two out of three:       | - The network is reliable.) '
+(1. Consistency \(C\): Every read receives  | - Latency is zero.) '
+(   the most recent write.                 | - Bandwidth is infinite.) '
+(2. Availability \(A\): Every request gets   | - The network is secure.) '
+(   a non-error response.                  | - Topology does not change.) '
+(3. Partition Tolerance \(P\): Sustained     | - There is one administrator.) '
+(   operation despite network drops.       | - Transport cost is zero.) '
+ET
+endstream
+endobj
+8 0 obj
+<< /Length 719 >>
+stream
+BT
+/F1 11 Tf
+50 720 Td
+14 TL
+(Distributed Systems: Consensus with Raft [Left Column | Right Column]) '
+(Left: Raft Node Roles                    | Right: Log Replication Process) '
+(A Raft cluster typically has 5 nodes.     | 1. Client sends command to Leader.) '
+(Roles:                                    | 2. Leader appends entry to its local log.) '
+(- Leader: Handles all client requests.   | 3. Leader sends AppendEntries RPC to followers.) '
+(- Follower: Passive; responds to RPCs.    | 4. When majority of followers replicate entry,) '
+(- Candidate: Requests votes during        |    the entry is committed.) '
+(  leader election when heartbeat times out.| 5. Leader applies entry and responds to client.) '
+ET
+endstream
+endobj
+9 0 obj
+<< /Length 629 >>
+stream
+BT
+/F1 11 Tf
+50 720 Td
+14 TL
+(Distributed Systems: Two-Phase Commit \(2PC\) vs Sagas) '
+(Atomic transactions across multiple independent databases:) '
+(Two-Phase Commit \(2PC\):) '
+(- Phase 1 \(Prepare\): Coordinator asks all participants if they can commit.) '
+(- Phase 2 \(Commit\): If all agree, coordinator sends commit; otherwise abort.) '
+(- Limitation: Blocking protocol; if coordinator crashes, participants remain locked.) '
+() '
+(Saga Pattern:) '
+(A sequence of local transactions where each step publishes an event.) '
+(If a step fails, compensating transactions are executed in reverse order to rollback state.) '
+ET
+endstream
+endobj
+10 0 obj
+<< /Length 515 >>
+stream
+BT
+/F1 11 Tf
+50 720 Td
+14 TL
+(Distributed Systems: Idempotency in Distributed APIs) '
+(An operation is idempotent if executing it multiple times produces the same outcome as executing it once.) '
+(Techniques for ensuring idempotency:) '
+(- Idempotency Keys: Client generates a unique UUID sent in request headers.) '
+(- Database Unique Constraints: Guarding concurrent creations with composite unique indexes.) '
+(- Deduplication in Message Queues: Storing message identifiers to drop redundant retried jobs.) '
+ET
+endstream
+endobj
+xref
+0 11
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000133 00000 n 
+0000000308 00000 n 
+0000000483 00000 n 
+0000000658 00000 n 
+0000000834 00000 n 
+0000001686 00000 n 
+0000002455 00000 n 
+0000003134 00000 n 
+trailer
+<< /Size 11 /Root 1 0 R >>
+startxref
+3700
+%%EOF

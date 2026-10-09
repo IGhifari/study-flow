@@ -1,0 +1,100 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [3 0 R 4 0 R 5 0 R] /Count 3 >>
+endobj
+3 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 << /Type /Font /Subtype /Type1 /BaseFont /Helvetica >> >> >> /Contents 6 0 R >>
+endobj
+4 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 << /Type /Font /Subtype /Type1 /BaseFont /Helvetica >> >> >> /Contents 7 0 R >>
+endobj
+5 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 << /Type /Font /Subtype /Type1 /BaseFont /Helvetica >> >> >> /Contents 8 0 R >>
+endobj
+6 0 obj
+<< /Length 1427 >>
+stream
+BT
+/F1 11 Tf
+50 720 Td
+14 TL
+(Database Normalization: Concepts and Anomalies) '
+(Normalization is the process of organizing relational schema columns and tables to minimize redundancy and anomalies.) '
+(Modification Anomalies in Unnormalized Tables:) '
+(- Insertion Anomaly: Inability to record certain facts without adding unrelated attributes.) '
+(- Deletion Anomaly: Deletion of one record inadvertently causes unintended loss of other independent facts.) '
+(- Update Anomaly: Inconsistent updates across duplicate rows containing redundant values.) '
+() '
+(Table 1: Progressive Normal Forms Overview) '
+(+---------------+-----------------------------------+------------------------------------------+) '
+(| Normal Form   | Core Requirement                  | Solves Anomaly / Dependency Eliminated   |) '
+(+---------------+-----------------------------------+------------------------------------------+) '
+(| 1NF \(First\)   | Atomic attributes, no repeating   | Eliminates multivalued and repeating sets|) '
+(| 2NF \(Second\)  | In 1NF + No partial dependencies  | Eliminates dependency on part of cand-key|) '
+(| 3NF \(Third\)   | In 2NF + No transitive depend.    | Non-key attributes depend ONLY on key    |) '
+(| BCNF \(Boyce\)  | In 3NF + Every determinant is key | Solves overlapping candidate key anomalies|) '
+(+---------------+-----------------------------------+------------------------------------------+) '
+ET
+endstream
+endobj
+7 0 obj
+<< /Length 1326 >>
+stream
+BT
+/F1 11 Tf
+50 720 Td
+14 TL
+(Database Normalization: Step-by-Step Breakdown) '
+(Table 2: Normal Form Transition Rules) '
+(+---------------+-------------------------------------------------------------------------------+) '
+(| Rule          | Detailed Explanation and Example                                              |) '
+(+---------------+-------------------------------------------------------------------------------+) '
+(| 1NF Rule      | Each cell must contain a single atomic scalar value. Multi-value phone arrays |) '
+(|               | must be decomposed into a separate related child table.                       |) '
+(| 2NF Rule      | Applicable when composite primary key exists. Every non-prime attribute must  |) '
+(|               | depend on the entire composite key, not just a subset of it.                  |) '
+(| 3NF Rule      | For every functional dependency X -> Y, X is a superkey or Y is prime.        |) '
+(|               | No transitive relation like A -> B and B -> C where A is primary key.         |) '
+(+---------------+-------------------------------------------------------------------------------+) '
+() '
+(Denormalization Trade-offs: In read-heavy analytical databases \(OLAP\), controlled denormalization) '
+(is often introduced to avoid expensive multi-table JOIN operations.) '
+ET
+endstream
+endobj
+8 0 obj
+<< /Length 562 >>
+stream
+BT
+/F1 11 Tf
+50 720 Td
+14 TL
+(Database Normalization: Functional Dependency Analysis) '
+(A functional dependency X -> Y states that the value of X uniquely determines the value of Y.) '
+(Armstrong's Axioms for Functional Dependencies:) '
+(1. Reflexivity: If Y is a subset of X, then X -> Y holds.) '
+(2. Augmentation: If X -> Y, then XZ -> YZ for any attribute set Z.) '
+(3. Transitivity: If X -> Y and Y -> Z, then X -> Z holds.) '
+(Lossless Join Decomposition ensures that the natural join of decomposed relations reproduces the exact original relation.) '
+ET
+endstream
+endobj
+xref
+0 9
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000127 00000 n 
+0000000302 00000 n 
+0000000477 00000 n 
+0000000652 00000 n 
+0000002130 00000 n 
+0000003507 00000 n 
+trailer
+<< /Size 9 /Root 1 0 R >>
+startxref
+4119
+%%EOF

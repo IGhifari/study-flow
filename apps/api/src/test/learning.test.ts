@@ -407,5 +407,274 @@ describe('Material AI Flashcard & Quiz Endpoints Verification', () => {
       });
       expect(dbAnswers).toHaveLength(2);
     });
+
+    it('should persist quiz answers before submit, resume attempt with preserved answers on reload, and never leak keys', async () => {
+      // 1. Create quiz with 3 questions
+      const quiz = await prisma.quiz.create({
+        data: {
+          userId: userAId,
+          materialId: readyMaterialAId,
+          title: 'Kuis Pohon Biner Resume Test',
+          targetCount: 5,
+          status: 'READY',
+          questions: {
+            create: [
+              {
+                question: 'Definisi pohon biner?',
+                options: ['Maks 1 anak', 'Maks 2 anak', 'Maks 3 anak', 'Tanpa anak'],
+                correctIndex: 1,
+                explanation: 'Pohon biner memiliki maksimal 2 anak.',
+                pageReferences: [1],
+                orderIndex: 0,
+              },
+              {
+                question: 'Simpul paling atas disebut?',
+                options: ['Leaf', 'Branch', 'Root', 'Edge'],
+                correctIndex: 2,
+                explanation: 'Simpul paling atas adalah root (akar).',
+                pageReferences: [1],
+                orderIndex: 1,
+              },
+              {
+                question: 'Simpul tanpa anak disebut?',
+                options: ['Leaf', 'Root', 'Internal', 'Null'],
+                correctIndex: 0,
+                explanation: 'Simpul daun (leaf) tidak memiliki anak.',
+                pageReferences: [2],
+                orderIndex: 2,
+              },
+            ],
+          },
+        },
+        include: { questions: true },
+      });
+
+      const [q1, q2, q3] = quiz.questions;
+
+      // 2. Start attempt
+      const startRes = await request(app)
+        .post(`/api/quizzes/${quiz.id}/attempts`)
+        .set('Origin', TRUSTED_ORIGIN)
+        .set('Cookie', cookieA)
+        .send();
+
+      expect(startRes.status).toBe(200);
+      const attemptId = startRes.body.attemptId;
+      expect(startRes.body.existingAnswers).toEqual({});
+
+      // Verify no answers or explanations leaked
+      for (const q of startRes.body.questions) {
+        expect((q as any).correctIndex).toBeUndefined();
+        expect((q as any).explanation).toBeUndefined();
+      }
+
+      // 3. Save draft answers for question 1 and question 2 before submit
+      const saveDraftRes = await request(app)
+        .patch(`/api/attempts/${attemptId}/answers`)
+        .set('Origin', TRUSTED_ORIGIN)
+        .set('Cookie', cookieA)
+        .send({
+          answers: [
+            { questionId: q1.id, selectedIndex: 1 },
+            { questionId: q2.id, selectedIndex: 2 },
+          ],
+        });
+
+      expect(saveDraftRes.status).toBe(200);
+      expect(saveDraftRes.body.success).toBe(true);
+
+      // Verify draft answers in DB do not leak or mark as correct prematurely
+      const draftAnswers = await prisma.quizAttemptAnswer.findMany({
+        where: { attemptId },
+      });
+      expect(draftAnswers).toHaveLength(2);
+      expect(draftAnswers.find((a) => a.questionId === q1.id)?.selectedIndex).toBe(1);
+      expect(draftAnswers.find((a) => a.questionId === q2.id)?.selectedIndex).toBe(2);
+
+      // 4. Simulate page refresh / resume attempt
+      const resumeRes = await request(app)
+        .post(`/api/quizzes/${quiz.id}/attempts`)
+        .set('Origin', TRUSTED_ORIGIN)
+        .set('Cookie', cookieA)
+        .send();
+
+      expect(resumeRes.status).toBe(200);
+      expect(resumeRes.body.attemptId).toBe(attemptId);
+      expect(resumeRes.body.existingAnswers).toEqual({
+        [q1.id]: 1,
+        [q2.id]: 2,
+      });
+
+      // Still NO correctIndex or explanation leaked!
+      for (const q of resumeRes.body.questions) {
+        expect((q as any).correctIndex).toBeUndefined();
+        expect((q as any).explanation).toBeUndefined();
+      }
+
+      // 5. User answers remaining question and submits
+      const submitRes = await request(app)
+        .post(`/api/attempts/${attemptId}/submit`)
+        .set('Origin', TRUSTED_ORIGIN)
+        .set('Cookie', cookieA)
+        .send({
+          answers: [
+            { questionId: q1.id, selectedIndex: 1 },
+            { questionId: q2.id, selectedIndex: 2 },
+            { questionId: q3.id, selectedIndex: 0 },
+          ],
+        });
+
+      expect(submitRes.status).toBe(200);
+      expect(submitRes.body.score).toBe(100);
+      expect(submitRes.body.correctAnswersCount).toBe(3);
+
+      // After submission, correctIndex and explanation are present
+      const submittedQ1 = submitRes.body.questions.find((q: any) => q.id === q1.id);
+      expect(submittedQ1.correctIndex).toBe(1);
+      expect(submittedQ1.explanation).toBe('Pohon biner memiliki maksimal 2 anak.');
+    });
+
+    it('should enforce PRD soft delete retention: clean up downstream flashcards, quizzes, attempts and reject direct endpoint access', async () => {
+      // Create a dedicated material with flashcards, quizzes, and attempt
+      const matToDelete = await prisma.material.create({
+        data: {
+          userId: userAId,
+          courseId: courseAId,
+          title: 'Materi Siap Hapus',
+          originalFilename: 'to-delete.pdf',
+          storageKey: `materials/${userAId}/to-delete.pdf`,
+          mimeType: 'application/pdf',
+          bytes: 15000,
+          pageCount: 2,
+          status: 'READY',
+        },
+      });
+
+      // Create flashcard set
+      const fSet = await prisma.flashcardSet.create({
+        data: {
+          userId: userAId,
+          materialId: matToDelete.id,
+          title: 'Flashcard Materi Hapus',
+          status: 'READY',
+          cards: {
+            create: [
+              {
+                front: 'Kartu 1',
+                back: 'Isi 1',
+                pageReferences: [1],
+                orderIndex: 0,
+              },
+            ],
+          },
+        },
+        include: { cards: true },
+      });
+      const cardId = fSet.cards[0].id;
+
+      // Create quiz
+      const quiz = await prisma.quiz.create({
+        data: {
+          userId: userAId,
+          materialId: matToDelete.id,
+          title: 'Kuis Materi Hapus',
+          status: 'READY',
+          questions: {
+            create: [
+              {
+                question: 'Pertanyaan Hapus',
+                options: ['1', '2', '3', '4'],
+                correctIndex: 0,
+                explanation: 'Penjelasan',
+                pageReferences: [1],
+                orderIndex: 0,
+              },
+            ],
+          },
+        },
+        include: { questions: true },
+      });
+
+      // Start attempt
+      const startRes = await request(app)
+        .post(`/api/quizzes/${quiz.id}/attempts`)
+        .set('Origin', TRUSTED_ORIGIN)
+        .set('Cookie', cookieA)
+        .send();
+      const attemptId = startRes.body.attemptId;
+
+      // Save a draft answer
+      await request(app)
+        .patch(`/api/attempts/${attemptId}/answers`)
+        .set('Origin', TRUSTED_ORIGIN)
+        .set('Cookie', cookieA)
+        .send({
+          answers: [{ questionId: quiz.questions[0].id, selectedIndex: 0 }],
+        });
+
+      // Perform soft delete on the material via API
+      const deleteRes = await request(app)
+        .delete(`/api/materials/${matToDelete.id}`)
+        .set('Origin', TRUSTED_ORIGIN)
+        .set('Cookie', cookieA);
+      expect(deleteRes.status).toBe(200);
+
+      // Verify material is soft-deleted
+      const matAfter = await prisma.material.findUnique({
+        where: { id: matToDelete.id },
+      });
+      expect(matAfter?.deletedAt).not.toBeNull();
+
+      // Check PRD retention: downstream AI records should be cleaned up
+      const quizzesRemaining = await prisma.quiz.findMany({
+        where: { materialId: matToDelete.id },
+      });
+      expect(quizzesRemaining).toHaveLength(0);
+
+      const flashcardsRemaining = await prisma.flashcardSet.findMany({
+        where: { materialId: matToDelete.id },
+      });
+      expect(flashcardsRemaining).toHaveLength(0);
+
+      const attemptsRemaining = await prisma.quizAttempt.findMany({
+        where: { id: attemptId },
+      });
+      expect(attemptsRemaining).toHaveLength(0);
+
+      // Verify direct endpoint access to downstream items returns 404 NOT_FOUND
+      const cardAccess = await request(app)
+        .patch(`/api/flashcards/${cardId}`)
+        .set('Origin', TRUSTED_ORIGIN)
+        .set('Cookie', cookieA)
+        .send({ masteryStatus: 'MASTERED' });
+      expect(cardAccess.status).toBe(404);
+
+      const quizStartAccess = await request(app)
+        .post(`/api/quizzes/${quiz.id}/attempts`)
+        .set('Origin', TRUSTED_ORIGIN)
+        .set('Cookie', cookieA)
+        .send();
+      expect(quizStartAccess.status).toBe(404);
+
+      const attemptSubmitAccess = await request(app)
+        .post(`/api/attempts/${attemptId}/submit`)
+        .set('Origin', TRUSTED_ORIGIN)
+        .set('Cookie', cookieA)
+        .send({ answers: [] });
+      expect(attemptSubmitAccess.status).toBe(404);
+
+      const attemptResultAccess = await request(app)
+        .get(`/api/attempts/${attemptId}`)
+        .set('Origin', TRUSTED_ORIGIN)
+        .set('Cookie', cookieA);
+      expect(attemptResultAccess.status).toBe(404);
+
+      const attemptAnswersAccess = await request(app)
+        .patch(`/api/attempts/${attemptId}/answers`)
+        .set('Origin', TRUSTED_ORIGIN)
+        .set('Cookie', cookieA)
+        .send({ answers: [] });
+      expect(attemptAnswersAccess.status).toBe(404);
+    });
   });
 });

@@ -1,0 +1,95 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [3 0 R 4 0 R 5 0 R] /Count 3 >>
+endobj
+3 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 << /Type /Font /Subtype /Type1 /BaseFont /Helvetica >> >> >> /Contents 6 0 R >>
+endobj
+4 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 << /Type /Font /Subtype /Type1 /BaseFont /Helvetica >> >> >> /Contents 7 0 R >>
+endobj
+5 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 << /Type /Font /Subtype /Type1 /BaseFont /Helvetica >> >> >> /Contents 8 0 R >>
+endobj
+6 0 obj
+<< /Length 934 >>
+stream
+BT
+/F1 11 Tf
+50 720 Td
+14 TL
+(Supervised Machine Learning: Classification Framework) '
+(Supervised learning trains algorithms on labeled datasets where inputs X map to known targets y.) '
+(Tasks are divided into Regression \(predicting continuous numbers\) and Classification \(predicting discrete classes\).) '
+() '
+(Table 1: Confusion Matrix for Binary Classification) '
+(+--------------------+-------------------------------+-------------------------------+) '
+(| Actual Class       | Predicted Positive            | Predicted Negative            |) '
+(+--------------------+-------------------------------+-------------------------------+) '
+(| Positive \(True\)    | True Positive \(TP\)            | False Negative \(FN\) - Type II |) '
+(| Negative \(False\)   | False Positive \(FP\) - Type I  | True Negative \(TN\)            |) '
+(+--------------------+-------------------------------+-------------------------------+) '
+ET
+endstream
+endobj
+7 0 obj
+<< /Length 1178 >>
+stream
+BT
+/F1 11 Tf
+50 720 Td
+14 TL
+(Supervised Machine Learning: Evaluation Metrics) '
+(Table 2: Formula and Interpretations of Classification Metrics) '
+(+---------------+-------------------------------+-----------------------------------------------+) '
+(| Metric        | Formula                       | Practical Interpretation                      |) '
+(+---------------+-------------------------------+-----------------------------------------------+) '
+(| Accuracy      | \(TP + TN\) / \(TP + TN + FP + FN\)| Overall percentage of correct predictions.     |) '
+(|               |                               | Misleading on imbalanced datasets.            |) '
+(| Precision     | TP / \(TP + FP\)                | Of all predicted positives, how many are true?|) '
+(| Recall        | TP / \(TP + FN\)                | Of all actual positives, how many were found? |) '
+(| F1-Score      | 2 * \(Prec * Rec\) / \(Prec+Rec\) | Harmonic mean of precision and recall.        |) '
+(+---------------+-------------------------------+-----------------------------------------------+) '
+() '
+(Trade-off: Increasing precision threshold generally decreases recall, and vice versa.) '
+ET
+endstream
+endobj
+8 0 obj
+<< /Length 790 >>
+stream
+BT
+/F1 11 Tf
+50 720 Td
+14 TL
+(Supervised Machine Learning: Overfitting and Regularization) '
+(Bias-Variance Trade-off:) '
+(- High Bias \(Underfitting\): Model is overly simplistic and fails to capture underlying data patterns.) '
+(- High Variance \(Overfitting\): Model memorizes training noise and generalizes poorly to unseen data.) '
+(Techniques to mitigate overfitting:) '
+(1. Cross-Validation: K-fold partitioning ensures all data subsets are used for training and testing.) '
+(2. L1 Regularization \(Lasso\): Adds absolute weights penalty; drives irrelevant feature weights to zero.) '
+(3. L2 Regularization \(Ridge\): Adds squared weights penalty; shrinks weights smoothly without zeroing.) '
+(4. Dropout: In deep neural networks, randomly deactivates neurons during training.) '
+ET
+endstream
+endobj
+xref
+0 9
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000127 00000 n 
+0000000302 00000 n 
+0000000477 00000 n 
+0000000652 00000 n 
+0000001636 00000 n 
+0000002865 00000 n 
+trailer
+<< /Size 9 /Root 1 0 R >>
+startxref
+3705
+%%EOF

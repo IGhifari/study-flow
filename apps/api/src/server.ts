@@ -17,10 +17,10 @@ const server: Server = app.listen(env.PORT, () => {
     environment: env.NODE_ENV,
   }));
 
-  // Start background outbox sweep in non-test environments
-  if (env.NODE_ENV !== 'test') {
-    startOutboxDispatcherLoop(5000);
-  }
+  // Start outbox dispatch loop. Must also run when NODE_ENV=test: unit tests
+  // never import server.ts (entry-only module), and the E2E test server needs
+  // document/AI jobs to reach BullMQ queues.
+  startOutboxDispatcherLoop(5000);
 });
 
 let isShuttingDown = false;

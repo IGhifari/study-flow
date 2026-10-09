@@ -1,0 +1,63 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [3 0 R 4 0 R] /Count 2 >>
+endobj
+3 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 << /Type /Font /Subtype /Type1 /BaseFont /Helvetica >> >> >> /Contents 5 0 R >>
+endobj
+4 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 << /Type /Font /Subtype /Type1 /BaseFont /Helvetica >> >> >> /Contents 6 0 R >>
+endobj
+5 0 obj
+<< /Length 974 >>
+stream
+BT
+/F1 11 Tf
+50 720 Td
+14 TL
+(Cybersecurity Threat Modeling: The STRIDE Methodology) '
+(Threat modeling identifies, enumerates, and prioritizes potential security threats in a system design.) '
+(The STRIDE Framework \(developed by Microsoft\):) '
+(- Spoofing Identity: Impersonating someone or something else. Countermeasure: Strong authentication & MFA.) '
+(- Tampering with Data: Modifying data without authorization. Countermeasure: Digital signatures & HMAC hashes.) '
+(- Repudiation: Denying an action took place. Countermeasure: Immutable audit logs and non-repudiation controls.) '
+(- Information Disclosure: Exposing confidential data to unauthorized entities. Countermeasure: Encryption at rest & transit.) '
+(- Denial of Service: Degrading or interrupting legitimate service availability. Countermeasure: Rate limiting & filtering.) '
+(- Elevation of Privilege: Gaining unauthorized administrative capabilities. Countermeasure: Principle of least privilege.) '
+ET
+endstream
+endobj
+6 0 obj
+<< /Length 661 >>
+stream
+BT
+/F1 11 Tf
+50 720 Td
+14 TL
+(Defense in Depth and Least Privilege Architecture:) '
+(Defense in Depth employs multiple layers of security controls across the entire computing stack:) '
+(1. Perimeter Layer: Web Application Firewall \(WAF\) and DDoS protection.) '
+(2. Network Layer: Virtual private clouds, subnet isolation, and zero-trust policies.) '
+(3. Host Layer: Hardened OS images, vulnerability scanning, and process isolation.) '
+(4. Application Layer: Strict input validation schemas \(Zod\), CSRF protection, and parameterized SQL.) '
+(5. Data Layer: Transparent data encryption \(TDE\), scoped storage buckets, and minimal credential exposure.) '
+ET
+endstream
+endobj
+xref
+0 7
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000121 00000 n 
+0000000296 00000 n 
+0000000471 00000 n 
+0000001495 00000 n 
+trailer
+<< /Size 7 /Root 1 0 R >>
+startxref
+2206
+%%EOF

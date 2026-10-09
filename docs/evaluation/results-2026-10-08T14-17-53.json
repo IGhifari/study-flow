@@ -1,0 +1,309 @@
+{
+  "timestamp": "2026-10-08T14:17:53.179Z",
+  "configuration": {
+    "model": "gemini-3.5-flash-lite",
+    "provider": "mock",
+    "sampleSize": 20,
+    "negativeOnly": false
+  },
+  "datasets": {
+    "valid": [
+      {
+        "file": "doc-01-id-short-intro.pdf",
+        "sizeBytes": 1487,
+        "checks": {
+          "fileExists": true,
+          "isValidPdf": true,
+          "hasTextLayer": true
+        },
+        "validationPassed": true
+      },
+      {
+        "file": "doc-02-id-long-algos.pdf",
+        "sizeBytes": 4154,
+        "checks": {
+          "fileExists": true,
+          "isValidPdf": true,
+          "hasTextLayer": true
+        },
+        "validationPassed": true
+      },
+      {
+        "file": "doc-03-en-short-networking.pdf",
+        "sizeBytes": 1522,
+        "checks": {
+          "fileExists": true,
+          "isValidPdf": true,
+          "hasTextLayer": true
+        },
+        "validationPassed": true
+      },
+      {
+        "file": "doc-04-en-long-db.pdf",
+        "sizeBytes": 3114,
+        "checks": {
+          "fileExists": true,
+          "isValidPdf": true,
+          "hasTextLayer": true
+        },
+        "validationPassed": true
+      },
+      {
+        "file": "doc-05-id-table-stats.pdf",
+        "sizeBytes": 1490,
+        "checks": {
+          "fileExists": true,
+          "isValidPdf": true,
+          "hasTextLayer": true
+        },
+        "validationPassed": true
+      },
+      {
+        "file": "doc-06-en-table-finance.pdf",
+        "sizeBytes": 1406,
+        "checks": {
+          "fileExists": true,
+          "isValidPdf": true,
+          "hasTextLayer": true
+        },
+        "validationPassed": true
+      },
+      {
+        "file": "doc-07-id-twocolumn-os.pdf",
+        "sizeBytes": 1442,
+        "checks": {
+          "fileExists": true,
+          "isValidPdf": true,
+          "hasTextLayer": true
+        },
+        "validationPassed": true
+      },
+      {
+        "file": "doc-08-en-twocolumn-ai.pdf",
+        "sizeBytes": 1367,
+        "checks": {
+          "fileExists": true,
+          "isValidPdf": true,
+          "hasTextLayer": true
+        },
+        "validationPassed": true
+      },
+      {
+        "file": "doc-09-id-math-discrete.pdf",
+        "sizeBytes": 1352,
+        "checks": {
+          "fileExists": true,
+          "isValidPdf": true,
+          "hasTextLayer": true
+        },
+        "validationPassed": true
+      },
+      {
+        "file": "doc-10-en-software-eng.pdf",
+        "sizeBytes": 1386,
+        "checks": {
+          "fileExists": true,
+          "isValidPdf": true,
+          "hasTextLayer": true
+        },
+        "validationPassed": true
+      },
+      {
+        "file": "doc-11-id-cybersecurity.pdf",
+        "sizeBytes": 1394,
+        "checks": {
+          "fileExists": true,
+          "isValidPdf": true,
+          "hasTextLayer": true
+        },
+        "validationPassed": true
+      },
+      {
+        "file": "doc-12-en-cloud-computing.pdf",
+        "sizeBytes": 1362,
+        "checks": {
+          "fileExists": true,
+          "isValidPdf": true,
+          "hasTextLayer": true
+        },
+        "validationPassed": true
+      },
+      {
+        "file": "doc-13-id-mobile-dev.pdf",
+        "sizeBytes": 1346,
+        "checks": {
+          "fileExists": true,
+          "isValidPdf": true,
+          "hasTextLayer": true
+        },
+        "validationPassed": true
+      },
+      {
+        "file": "doc-14-en-human-computer.pdf",
+        "sizeBytes": 1423,
+        "checks": {
+          "fileExists": true,
+          "isValidPdf": true,
+          "hasTextLayer": true
+        },
+        "validationPassed": true
+      },
+      {
+        "file": "doc-15-id-compiler.pdf",
+        "sizeBytes": 1428,
+        "checks": {
+          "fileExists": true,
+          "isValidPdf": true,
+          "hasTextLayer": true
+        },
+        "validationPassed": true
+      },
+      {
+        "file": "doc-16-en-distributed-sys.pdf",
+        "sizeBytes": 1358,
+        "checks": {
+          "fileExists": true,
+          "isValidPdf": true,
+          "hasTextLayer": true
+        },
+        "validationPassed": true
+      },
+      {
+        "file": "doc-17-id-machine-learning.pdf",
+        "sizeBytes": 1370,
+        "checks": {
+          "fileExists": true,
+          "isValidPdf": true,
+          "hasTextLayer": true
+        },
+        "validationPassed": true
+      },
+      {
+        "file": "doc-18-en-computer-graphics.pdf",
+        "sizeBytes": 1349,
+        "checks": {
+          "fileExists": true,
+          "isValidPdf": true,
+          "hasTextLayer": true
+        },
+        "validationPassed": true
+      },
+      {
+        "file": "doc-19-id-bioinformatics.pdf",
+        "sizeBytes": 1290,
+        "checks": {
+          "fileExists": true,
+          "isValidPdf": true,
+          "hasTextLayer": true
+        },
+        "validationPassed": true
+      },
+      {
+        "file": "doc-20-en-quantum-computing.pdf",
+        "sizeBytes": 1278,
+        "checks": {
+          "fileExists": true,
+          "isValidPdf": true,
+          "hasTextLayer": true
+        },
+        "validationPassed": true
+      }
+    ],
+    "negative": [
+      {
+        "file": "neg-01-scanned-no-text.pdf",
+        "sizeBytes": 761,
+        "expectedBehavior": "SCANNED_PDF_NO_TEXT",
+        "description": "Scanned PDF (no text)",
+        "checks": {
+          "fileExists": true,
+          "isValidPdf": true,
+          "shouldRejectOrHandle": true
+        },
+        "handledCorrectly": true
+      },
+      {
+        "file": "neg-02-encrypted-sim.pdf",
+        "sizeBytes": 971,
+        "expectedBehavior": "ENCRYPTED_OR_PROTECTED",
+        "description": "Encrypted/Protected",
+        "checks": {
+          "fileExists": true,
+          "isValidPdf": true,
+          "shouldRejectOrHandle": true
+        },
+        "handledCorrectly": true
+      },
+      {
+        "file": "neg-03-corrupted.pdf",
+        "sizeBytes": 53,
+        "expectedBehavior": "FILE_CORRUPTED",
+        "description": "Corrupted PDF",
+        "checks": {
+          "fileExists": true,
+          "isValidPdf": true,
+          "shouldRejectOrHandle": true
+        },
+        "handledCorrectly": true
+      },
+      {
+        "file": "neg-04-oversized.pdf",
+        "sizeBytes": 25802,
+        "expectedBehavior": "EXCEEDS_PAGE_LIMIT",
+        "description": "Oversized (>100 pages)",
+        "checks": {
+          "fileExists": true,
+          "isValidPdf": true,
+          "shouldRejectOrHandle": true
+        },
+        "handledCorrectly": true
+      },
+      {
+        "file": "neg-05-prompt-injection.pdf",
+        "sizeBytes": 1268,
+        "expectedBehavior": "TREATED_AS_CONTENT",
+        "description": "Prompt Injection",
+        "checks": {
+          "fileExists": true,
+          "isValidPdf": true,
+          "shouldRejectOrHandle": true
+        },
+        "handledCorrectly": true
+      }
+    ]
+  },
+  "summary": {
+    "totalDocuments": 25,
+    "passedValidation": 25,
+    "failedValidation": 0,
+    "criteria": {
+      "summaryPageReferences": {
+        "pass": 20,
+        "fail": 0
+      },
+      "flashcardPageReferences": {
+        "pass": 20,
+        "fail": 0
+      },
+      "quizPageReferences": {
+        "pass": 20,
+        "fail": 0
+      },
+      "quizCorrectAnswerExists": {
+        "pass": 20,
+        "fail": 0
+      },
+      "negativeHandling": {
+        "pass": 5,
+        "fail": 0
+      }
+    }
+  },
+  "notes": [
+    "This evaluation validates PDF structure and file integrity only.",
+    "Live AI quality assessment (summary accuracy, flashcard clarity, quiz correctness) requires manual review or live API execution.",
+    "Mock evaluation provided for CI/local testing without consuming API quota.",
+    "For production evaluation, run with --provider=gemini and monitor API costs.",
+    "Manual review of 3-5 samples recommended per language (ID/EN) before M8 release."
+  ]
+}

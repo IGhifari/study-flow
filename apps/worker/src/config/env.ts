@@ -24,18 +24,21 @@ if (fs.existsSync(rootEnvPath)) {
 // 2. Load apps/worker/.env second with override: true (workspace-specific secrets and overrides)
 const workerEnvPath = path.join(workerDir, '.env');
 if (fs.existsSync(workerEnvPath)) {
-  dotenv.config({ path: workerEnvPath, override: true });
+  if (isTestMode) {
+    // In test mode, we only load the file to fill missing values, never to override existing test config
+    dotenv.config({ path: workerEnvPath });
+  } else {
+    dotenv.config({ path: workerEnvPath, override: true });
+  }
 }
 
 // Fallback: also load default process.cwd() .env if different
 dotenv.config();
 
 // Restore test environment variables if running in test mode
-if (originalNodeEnv) {
-  process.env.NODE_ENV = originalNodeEnv;
-}
-if (testDatabaseUrl) {
-  process.env.DATABASE_URL = testDatabaseUrl;
+if (isTestMode) {
+  if (originalNodeEnv) process.env.NODE_ENV = originalNodeEnv;
+  if (testDatabaseUrl) process.env.DATABASE_URL = testDatabaseUrl;
 }
 
 const WorkerEnvSchema = z.object({

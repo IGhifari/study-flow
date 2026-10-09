@@ -1,0 +1,107 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [3 0 R 4 0 R 5 0 R 6 0 R] /Count 4 >>
+endobj
+3 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 << /Type /Font /Subtype /Type1 /BaseFont /Helvetica >> >> >> /Contents 7 0 R >>
+endobj
+4 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 << /Type /Font /Subtype /Type1 /BaseFont /Helvetica >> >> >> /Contents 8 0 R >>
+endobj
+5 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 << /Type /Font /Subtype /Type1 /BaseFont /Helvetica >> >> >> /Contents 9 0 R >>
+endobj
+6 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 << /Type /Font /Subtype /Type1 /BaseFont /Helvetica >> >> >> /Contents 10 0 R >>
+endobj
+7 0 obj
+<< /Length 630 >>
+stream
+BT
+/F1 11 Tf
+50 720 Td
+14 TL
+(TCP/IP Architecture: Overview [Left Column | Right Column]) '
+(Left: Protocol Layers                  | Right: Data Encapsulation) '
+(The TCP/IP model has four primary layers:   | Data flows downward during sending:) '
+(1. Application Layer \(HTTP, DNS, SSH\)       | - Application creates user payload data.) '
+(2. Transport Layer \(TCP, UDP\)               | - Transport adds TCP header -> Segment.) '
+(3. Internet Layer \(IP, ICMP, ARP\)           | - Internet adds IP header -> Packet.) '
+(4. Network Access Layer \(Ethernet, Wi-Fi\)   | - Network Access adds Frame header and FCS trailer.) '
+ET
+endstream
+endobj
+8 0 obj
+<< /Length 713 >>
+stream
+BT
+/F1 11 Tf
+50 720 Td
+14 TL
+(TCP/IP Architecture: IP Addressing [Left Column | Right Column]) '
+(Left: IPv4 Address Space               | Right: IPv6 Evolution) '
+(IPv4 uses 32-bit addresses formatted as     | IPv6 uses 128-bit hexadecimal addresses.) '
+(four decimal octets \(e.g. 192.168.1.1\).    | Key IPv6 advantages:) '
+(Private address ranges \(RFC 1918\):          | - Massive address space \(3.4 x 10^38 addresses\).) '
+(- 10.0.0.0/8                                | - Simplified 40-byte fixed header structure.) '
+(- 172.16.0.0/12                             | - Built-in IPsec security support.) '
+(- 192.168.0.0/16                            | - Elimination of broadcast traffic via multicast.) '
+ET
+endstream
+endobj
+9 0 obj
+<< /Length 727 >>
+stream
+BT
+/F1 11 Tf
+50 720 Td
+14 TL
+(TCP/IP Architecture: TCP Three-Way Handshake [Left Column | Right Column]) '
+(Left: Handshake Mechanism              | Right: TCP Connection Teardown) '
+(Connection establishment sequence:          | Normal connection termination uses FIN/ACK:) '
+(1. Client sends SYN \(seq = x\).              | 1. Initiator sends FIN segment.) '
+(2. Server replies with SYN-ACK              | 2. Receiver responds with ACK.) '
+(   \(seq = y, ack = x + 1\).                  | 3. Receiver sends its own FIN segment.) '
+(3. Client responds with ACK \(ack = y + 1\).  | 4. Initiator replies with ACK and enters TIME_WAIT) '
+(Connection is now in ESTABLISHED state.    |    state to ensure late packets drain.) '
+ET
+endstream
+endobj
+10 0 obj
+<< /Length 586 >>
+stream
+BT
+/F1 11 Tf
+50 720 Td
+14 TL
+(TCP/IP Architecture: Domain Name System \(DNS\)) '
+(DNS translates human-readable hostnames into numeric IP addresses.) '
+(Hierarchy of DNS servers:) '
+(- Root DNS Servers: Top of the hierarchy; coordinates 13 logical root server clusters.) '
+(- Top-Level Domain \(TLD\) Servers: Responsible for domains ending in .com, .org, .edu, .id.) '
+(- Authoritative DNS Servers: Contains the definitive records for specific registered domain names.) '
+(Common DNS Record Types: A \(IPv4\), AAAA \(IPv6\), CNAME \(Canonical Name alias\), MX \(Mail Exchange\).) '
+ET
+endstream
+endobj
+xref
+0 11
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000133 00000 n 
+0000000308 00000 n 
+0000000483 00000 n 
+0000000658 00000 n 
+0000000834 00000 n 
+0000001514 00000 n 
+0000002277 00000 n 
+0000003054 00000 n 
+trailer
+<< /Size 11 /Root 1 0 R >>
+startxref
+3691
+%%EOF

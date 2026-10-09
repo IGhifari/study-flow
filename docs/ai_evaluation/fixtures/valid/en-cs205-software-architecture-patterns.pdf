@@ -1,0 +1,146 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [3 0 R 4 0 R 5 0 R 6 0 R 7 0 R 8 0 R] /Count 6 >>
+endobj
+3 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 << /Type /Font /Subtype /Type1 /BaseFont /Helvetica >> >> >> /Contents 9 0 R >>
+endobj
+4 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 << /Type /Font /Subtype /Type1 /BaseFont /Helvetica >> >> >> /Contents 10 0 R >>
+endobj
+5 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 << /Type /Font /Subtype /Type1 /BaseFont /Helvetica >> >> >> /Contents 11 0 R >>
+endobj
+6 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 << /Type /Font /Subtype /Type1 /BaseFont /Helvetica >> >> >> /Contents 12 0 R >>
+endobj
+7 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 << /Type /Font /Subtype /Type1 /BaseFont /Helvetica >> >> >> /Contents 13 0 R >>
+endobj
+8 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 << /Type /Font /Subtype /Type1 /BaseFont /Helvetica >> >> >> /Contents 14 0 R >>
+endobj
+9 0 obj
+<< /Length 613 >>
+stream
+BT
+/F1 11 Tf
+50 720 Td
+14 TL
+(Enterprise Software Architecture - Page 1: Layered \(N-Tier\) Architecture) '
+(The Layered Architecture pattern organizes systems into horizontal layers with distinct responsibilities.) '
+(Standard layers:) '
+(- Presentation Layer: User interface components, request controllers, and client interaction.) '
+(- Business/Domain Layer: Core business rules, domain entities, and operational workflows.) '
+(- Persistence/Data Access Layer: Database queries, object-relational mapping, and repository abstractions.) '
+(- Database Layer: Relational or NoSQL physical storage engines.) '
+ET
+endstream
+endobj
+10 0 obj
+<< /Length 620 >>
+stream
+BT
+/F1 11 Tf
+50 720 Td
+14 TL
+(Enterprise Software Architecture - Page 2: Microservices Pattern) '
+(Microservices architecture structures an application as a collection of loosely coupled, fine-grained services.) '
+(Key characteristics:) '
+(- Single Responsibility: Each service owns one business capability.) '
+(- Decentralized Data: Each microservice maintains its own private database.) '
+(- Independent Deployment: Teams can release individual services without coordinating whole-system deployments.) '
+(- Challenges: Network latency, distributed transactions, eventual consistency, and operational complexity.) '
+ET
+endstream
+endobj
+11 0 obj
+<< /Length 598 >>
+stream
+BT
+/F1 11 Tf
+50 720 Td
+14 TL
+(Enterprise Software Architecture - Page 3: Event-Driven Architecture) '
+(Event-Driven Architecture \(EDA\) relies on the production, detection, and consumption of asynchronous events.) '
+(Components:) '
+(- Event Producers: Components that publish state changes without knowing who consumes them.) '
+(- Message Brokers: Distributed logs or message queues \(e.g. Redis Streams, RabbitMQ, Apache Kafka\).) '
+(- Event Consumers: Decoupled workers that react to messages asynchronously.) '
+(Benefits: High scalability, responsive user experience, and loose coupling.) '
+ET
+endstream
+endobj
+12 0 obj
+<< /Length 639 >>
+stream
+BT
+/F1 11 Tf
+50 720 Td
+14 TL
+(Enterprise Software Architecture - Page 4: Hexagonal \(Ports and Adapters\)) '
+(Hexagonal Architecture isolates domain business logic from external technologies and frameworks.) '
+(Core concepts:) '
+(- Domain Core: Pure business entities and use cases without external dependencies.) '
+(- Ports: Interfaces that define how outside systems interact with the core \(inbound and outbound\).) '
+(- Adapters: Concrete implementations for specific technologies \(e.g., Express controllers, Prisma repos\).) '
+(Advantage: Highly testable without requiring actual database connections or external HTTP servers.) '
+ET
+endstream
+endobj
+13 0 obj
+<< /Length 591 >>
+stream
+BT
+/F1 11 Tf
+50 720 Td
+14 TL
+(Enterprise Software Architecture - Page 5: CQRS and Event Sourcing) '
+(Command Query Responsibility Segregation \(CQRS\) separates read and write models:) '
+(- Command Model: Handles state-mutating requests, enforcing validations and transactional integrity.) '
+(- Query Model: Optimized read-only projections tailored for fast user interface presentation.) '
+(Event Sourcing stores the state of an application as an append-only sequence of immutable domain events.) '
+(Instead of updating columns, every state transition is recorded as a historic event.) '
+ET
+endstream
+endobj
+14 0 obj
+<< /Length 471 >>
+stream
+BT
+/F1 11 Tf
+50 720 Td
+14 TL
+(Enterprise Software Architecture - Page 6: Architectural Trade-off Summary) '
+(Architecture is the art of making trade-offs between competing non-functional qualities.) '
+(No single architecture is universally superior for all projects.) '
+(Early-stage products benefit from a Modular Monolith with clear domain boundaries,) '
+(migrating to distributed microservices only when team scale and independent deployment demands justify it.) '
+ET
+endstream
+endobj
+xref
+0 15
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000145 00000 n 
+0000000320 00000 n 
+0000000496 00000 n 
+0000000672 00000 n 
+0000000848 00000 n 
+0000001024 00000 n 
+0000001200 00000 n 
+0000001863 00000 n 
+0000002534 00000 n 
+0000003183 00000 n 
+0000003873 00000 n 
+0000004515 00000 n 
+trailer
+<< /Size 15 /Root 1 0 R >>
+startxref
+5037
+%%EOF

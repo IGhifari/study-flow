@@ -1,0 +1,108 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [3 0 R 4 0 R 5 0 R 6 0 R] /Count 4 >>
+endobj
+3 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 << /Type /Font /Subtype /Type1 /BaseFont /Helvetica >> >> >> /Contents 7 0 R >>
+endobj
+4 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 << /Type /Font /Subtype /Type1 /BaseFont /Helvetica >> >> >> /Contents 8 0 R >>
+endobj
+5 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 << /Type /Font /Subtype /Type1 /BaseFont /Helvetica >> >> >> /Contents 9 0 R >>
+endobj
+6 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 << /Type /Font /Subtype /Type1 /BaseFont /Helvetica >> >> >> /Contents 10 0 R >>
+endobj
+7 0 obj
+<< /Length 767 >>
+stream
+BT
+/F1 11 Tf
+50 720 Td
+14 TL
+(Sistem Operasi: Manajemen Proses [Kolom Kiri | Kolom Kanan]) '
+(Kolom 1: Konsep Proses                   | Kolom 2: State Transisi Proses) '
+(Proses adalah program yang sedang dieksekusi.   | Proses mengalami beberapa kondisi siklus hidup:) '
+(Proses memiliki alokasi memori khusus:        | - New: Proses baru saja diciptakan.) '
+(- Text section \(kode program biner\)           | - Ready: Menunggu giliran alokasi prosesor CPU.) '
+(- Data section \(variabel global\)              | - Running: Instruksi sedang diproses di CPU.) '
+(- Stack \(variabel lokal dan parameter fungsi\)  | - Waiting/Blocked: Menunggu event I/O selesai.) '
+(- Heap \(alokasi memori dinamis\)              | - Terminated: Proses telah selesai dieksekusi.) '
+ET
+endstream
+endobj
+8 0 obj
+<< /Length 784 >>
+stream
+BT
+/F1 11 Tf
+50 720 Td
+14 TL
+(Sistem Operasi: Process Control Block \(PCB\) [Kolom Kiri | Kolom Kanan]) '
+(Kolom 1: Informasi Dalam PCB             | Kolom 2: Context Switching) '
+(Setiap proses direpresentasikan oleh PCB.     | Context switch adalah mekanisme penghentian proses) '
+(PCB menyimpan:                                | aktif untuk menyimpan state-nya ke PCB, lalu memuat) '
+(- Process ID \(PID\) unik                       | state proses lain dari PCB untuk dijalankan.) '
+(- Program Counter \(alamat instruksi berikutnya\)| Context switch murni merupakan overhead sistem karena) '
+(- Nilai register CPU dan pointer stack       | CPU tidak melakukan pekerjaan komputasi pengguna) '
+(- Informasi alokasi memori dan batas register | saat peralihan state berlangsung.) '
+ET
+endstream
+endobj
+9 0 obj
+<< /Length 786 >>
+stream
+BT
+/F1 11 Tf
+50 720 Td
+14 TL
+(Sistem Operasi: Algoritma Penjadwalan CPU [Kolom Kiri | Kolom Kanan]) '
+(Kolom 1: Algoritma Non-Preemptive            | Kolom 2: Algoritma Preemptive) '
+(1. First-Come First-Served \(FCFS\):            | 1. Round Robin \(RR\):) '
+(Proses dilayani sesuai urutan kedatangan.      | Setiap proses diberikan jatah waktu \(time quantum\).) '
+(Dapat mengalami convoy effect bila ada proses | Jika quantum habis, proses dipindahkan ke antrean belakang.) '
+(panjang di depan antrean.                     | 2. Shortest Remaining Time First \(SRTF\):) '
+(2. Shortest Job First \(SJF\) Non-Preemptive:   | Versi preemptive dari SJF. Proses yang memiliki sisa waktu) '
+(Memilih proses dengan CPU burst terpendek.    | terpendek akan mengambil alih eksekusi CPU.) '
+ET
+endstream
+endobj
+10 0 obj
+<< /Length 551 >>
+stream
+BT
+/F1 11 Tf
+50 720 Td
+14 TL
+(Sistem Operasi: Evaluasi Kinerja Penjadwalan) '
+(Kriteria utama dalam mengevaluasi algoritma penjadwalan CPU:) '
+(- CPU Utilization: Persentase waktu CPU bekerja aktif menyelesaikan tugas \(target 40% - 90%\).) '
+(- Throughput: Jumlah proses yang selesai per satuan waktu.) '
+(- Turnaround Time: Selang waktu dari pengiriman proses hingga selesai.) '
+(- Waiting Time: Total waktu yang dihabiskan proses menunggu di antrean ready.) '
+(- Response Time: Waktu dari pengiriman permintaan hingga respons pertama muncul.) '
+ET
+endstream
+endobj
+xref
+0 11
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000133 00000 n 
+0000000308 00000 n 
+0000000483 00000 n 
+0000000658 00000 n 
+0000000834 00000 n 
+0000001651 00000 n 
+0000002485 00000 n 
+0000003321 00000 n 
+trailer
+<< /Size 11 /Root 1 0 R >>
+startxref
+3923
+%%EOF

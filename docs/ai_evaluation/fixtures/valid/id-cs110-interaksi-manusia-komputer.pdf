@@ -1,0 +1,121 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [3 0 R 4 0 R 5 0 R 6 0 R 7 0 R] /Count 5 >>
+endobj
+3 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 << /Type /Font /Subtype /Type1 /BaseFont /Helvetica >> >> >> /Contents 8 0 R >>
+endobj
+4 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 << /Type /Font /Subtype /Type1 /BaseFont /Helvetica >> >> >> /Contents 9 0 R >>
+endobj
+5 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 << /Type /Font /Subtype /Type1 /BaseFont /Helvetica >> >> >> /Contents 10 0 R >>
+endobj
+6 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 << /Type /Font /Subtype /Type1 /BaseFont /Helvetica >> >> >> /Contents 11 0 R >>
+endobj
+7 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 << /Type /Font /Subtype /Type1 /BaseFont /Helvetica >> >> >> /Contents 12 0 R >>
+endobj
+8 0 obj
+<< /Length 482 >>
+stream
+BT
+/F1 11 Tf
+50 720 Td
+14 TL
+(Interaksi Manusia dan Komputer - Halaman 1) '
+(Human-Computer Interaction \(HCI\) mempelajari perancangan dan evaluasi sistem interaktif) '
+(agar dapat digunakan secara efektif, efisien, dan memuaskan bagi pengguna manusia.) '
+(Prinsip Usability Nielsen:) '
+(1. Visibilitas status sistem: Memberikan umpan balik yang jelas dalam waktu wajar.) '
+(2. Kecocokan antara sistem dan dunia nyata: Menggunakan bahasa dan konsep yang akrab bagi pengguna.) '
+ET
+endstream
+endobj
+9 0 obj
+<< /Length 490 >>
+stream
+BT
+/F1 11 Tf
+50 720 Td
+14 TL
+(Interaksi Manusia dan Komputer - Halaman 2: Heuristik Lanjutan) '
+(3. Kendali pengguna dan kebebasan: Menyediakan opsi pembatalan \(Undo/Redo\) dan tombol keluar darurat.) '
+(4. Konsistensi dan standar: Mengikuti konvensi antarmuka baku agar pengguna tidak bingung.) '
+(5. Pencegahan kesalahan: Merancang dialog konfirmasi untuk tindakan destruktif permanen.) '
+(6. Pengenalan daripada mengingat kembali: Membuat opsi, objek, dan aksi terlihat langsung.) '
+ET
+endstream
+endobj
+10 0 obj
+<< /Length 589 >>
+stream
+BT
+/F1 11 Tf
+50 720 Td
+14 TL
+(Interaksi Manusia dan Komputer - Halaman 3: Aksesibilitas Web \(WCAG\)) '
+(Empat Prinsip Utama Web Content Accessibility Guidelines \(POUR\):) '
+(- Perceivable \(Dapat Dirasakan\): Menyediakan teks alternatif untuk gambar dan kontras warna yang cukup.) '
+(- Operable \(Dapat Dioperasikan\): Seluruh fungsi dapat dinavigasi menggunakan keyboard tanpa perangkap fokus.) '
+(- Understandable \(Dapat Dipahami\): Konten teks mudah dibaca dan navigasi konsisten.) '
+(- Robust \(Kuat\): Kompatibel dengan berbagai peramban dan pembaca layar \(screen reader\).) '
+ET
+endstream
+endobj
+11 0 obj
+<< /Length 538 >>
+stream
+BT
+/F1 11 Tf
+50 720 Td
+14 TL
+(Interaksi Manusia dan Komputer - Halaman 4: Desain Responsif dan Mobile) '
+(Prinsip Desain Responsif:) '
+(- Fluid Grid: Tata letak proporsional yang menyesuaikan dimensi viewport layar.) '
+(- Flexible Media: Gambar dan elemen media yang tidak meluap dari kontainer pembungkusnya.) '
+(- CSS Media Queries: Menentukan batas breakpoint yang adaptif \(mobile 360px, tablet 768px, desktop 1440px\).) '
+(- Touch Target: Tombol pada layar sentuh minimal berukuran 44x44 piksel dengan jarak sentuh yang cukup.) '
+ET
+endstream
+endobj
+12 0 obj
+<< /Length 581 >>
+stream
+BT
+/F1 11 Tf
+50 720 Td
+14 TL
+(Interaksi Manusia dan Komputer - Halaman 5: Evaluasi dan Pengujian Pengguna) '
+(Metode Pengujian Kegunaan \(Usability Testing\):) '
+(- Think-Aloud Protocol: Pengguna mengutarakan proses berpikirnya saat menyelesaikan tugas tertentu.) '
+(- System Usability Scale \(SUS\): Kuesioner standar 10 pertanyaan untuk mengukur skor kepuasan antarmuka.) '
+(- A/B Testing: Membandingkan dua variasi desain secara kuantitatif untuk melihat konversi performa.) '
+(Kesimpulan: Desain yang baik mengutamakan kejelasan konten di atas ornamen visual berlebihan.) '
+ET
+endstream
+endobj
+xref
+0 13
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000139 00000 n 
+0000000314 00000 n 
+0000000489 00000 n 
+0000000665 00000 n 
+0000000841 00000 n 
+0000001017 00000 n 
+0000001549 00000 n 
+0000002089 00000 n 
+0000002729 00000 n 
+0000003318 00000 n 
+trailer
+<< /Size 13 /Root 1 0 R >>
+startxref
+3950
+%%EOF

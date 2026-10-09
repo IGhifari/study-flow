@@ -25,6 +25,7 @@ import {
   getMaterialQuizzes,
   generateQuiz,
   startQuizAttempt,
+  saveQuizDraftAnswers,
   submitQuizAttempt,
   getQuizAttemptResult,
 } from '@/lib/learning-client';
@@ -156,6 +157,13 @@ export function MaterialQuizTab({
       ...prev,
       [questionId]: optionIndex,
     }));
+    if (activeAttempt) {
+      saveQuizDraftAnswers(activeAttempt.attemptId, [
+        { questionId, selectedIndex: optionIndex },
+      ]).catch((err) => {
+        console.error('Failed to save draft answer:', err);
+      });
+    }
   };
 
   const handleConfirmSubmit = async () => {

@@ -148,6 +148,89 @@ describe('Worker AI Flashcards & Quiz Queue Processing', () => {
       });
       expect(usage?.activeJobsCount).toBe(0);
     });
+
+    it('should abort flashcard job and not create cards if material was soft-deleted while generating', async () => {
+      const material = await prisma.material.create({
+        data: {
+          userId: testUserId,
+          courseId: testCourseId,
+          title: 'Materi Dihapus Saat Flashcard',
+          originalFilename: 'deleted-fc.pdf',
+          storageKey: `materials/${testUserId}/test-deleted-fc.pdf`,
+          mimeType: 'application/pdf',
+          bytes: 10000,
+          pageCount: 1,
+          status: 'READY',
+          deletedAt: new Date(), // Soft-deleted
+        },
+      });
+
+      await prisma.materialPage.create({
+        data: {
+          materialId: material.id,
+          pageNumber: 1,
+          extractedText: 'Teks materi yang kemudian dihapus oleh pengguna secara sengaja.',
+          characterCount: 65,
+        },
+      });
+
+      const flashcardSet = await prisma.flashcardSet.create({
+        data: {
+          userId: testUserId,
+          materialId: material.id,
+          title: 'Flashcard Materi Dihapus',
+          targetCount: 5,
+          status: 'QUEUED',
+        },
+      });
+
+      const jobRecord = await prisma.processingJob.create({
+        data: {
+          userId: testUserId,
+          materialId: material.id,
+          type: 'AI_FLASHCARD_GENERATION',
+          status: 'PENDING',
+        },
+      });
+
+      await prisma.aiUsage.create({
+        data: {
+          userId: testUserId,
+          dailyGenerationCount: 1,
+          activeJobsCount: 1,
+        },
+      });
+
+      const mockJob = {
+        id: 'job-fc-deleted',
+        data: {
+          jobId: jobRecord.id,
+          materialId: material.id,
+          userId: testUserId,
+          setId: flashcardSet.id,
+          targetCount: 5,
+        } as AiFlashcardJobData,
+        attemptsMade: 0,
+        opts: { attempts: 3 },
+      } as unknown as Job<AiFlashcardJobData>;
+
+      const result = await processAiFlashcardJob(mockJob);
+      expect(result.status).toBe('FAILED');
+      expect(result.errorCode).toBe('MATERIAL_DELETED');
+
+      // Verify no cards created
+      const cards = await prisma.flashcard.findMany({
+        where: { setId: flashcardSet.id },
+      });
+      expect(cards).toHaveLength(0);
+
+      // Verify job marked FAILED
+      const jobAfter = await prisma.processingJob.findUnique({
+        where: { id: jobRecord.id },
+      });
+      expect(jobAfter?.status).toBe('FAILED');
+      expect(jobAfter?.errorCode).toBe('MATERIAL_DELETED');
+    });
   });
 
   describe('processAiQuizJob', () => {
@@ -243,6 +326,89 @@ describe('Worker AI Flashcards & Quiz Queue Processing', () => {
         where: { userId: testUserId },
       });
       expect(usage?.activeJobsCount).toBe(0);
+    });
+
+    it('should abort quiz job and not create questions if material was soft-deleted while generating', async () => {
+      const material = await prisma.material.create({
+        data: {
+          userId: testUserId,
+          courseId: testCourseId,
+          title: 'Materi Dihapus Saat Quiz',
+          originalFilename: 'deleted-qz.pdf',
+          storageKey: `materials/${testUserId}/test-deleted-qz.pdf`,
+          mimeType: 'application/pdf',
+          bytes: 11000,
+          pageCount: 1,
+          status: 'READY',
+          deletedAt: new Date(), // Soft-deleted
+        },
+      });
+
+      await prisma.materialPage.create({
+        data: {
+          materialId: material.id,
+          pageNumber: 1,
+          extractedText: 'Teks materi kuis yang kemudian dihapus oleh pengguna.',
+          characterCount: 55,
+        },
+      });
+
+      const quiz = await prisma.quiz.create({
+        data: {
+          userId: testUserId,
+          materialId: material.id,
+          title: 'Kuis Materi Dihapus',
+          targetCount: 5,
+          status: 'QUEUED',
+        },
+      });
+
+      const jobRecord = await prisma.processingJob.create({
+        data: {
+          userId: testUserId,
+          materialId: material.id,
+          type: 'AI_QUIZ_GENERATION',
+          status: 'PENDING',
+        },
+      });
+
+      await prisma.aiUsage.create({
+        data: {
+          userId: testUserId,
+          dailyGenerationCount: 1,
+          activeJobsCount: 1,
+        },
+      });
+
+      const mockJob = {
+        id: 'job-qz-deleted',
+        data: {
+          jobId: jobRecord.id,
+          materialId: material.id,
+          userId: testUserId,
+          quizId: quiz.id,
+          targetCount: 5,
+        } as AiQuizJobData,
+        attemptsMade: 0,
+        opts: { attempts: 3 },
+      } as unknown as Job<AiQuizJobData>;
+
+      const result = await processAiQuizJob(mockJob);
+      expect(result.status).toBe('FAILED');
+      expect(result.errorCode).toBe('MATERIAL_DELETED');
+
+      // Verify no questions created
+      const questions = await prisma.quizQuestion.findMany({
+        where: { quizId: quiz.id },
+      });
+      expect(questions).toHaveLength(0);
+
+      // Verify job marked FAILED
+      const jobAfter = await prisma.processingJob.findUnique({
+        where: { id: jobRecord.id },
+      });
+      expect(jobAfter?.status).toBe('FAILED');
+      expect(jobAfter?.errorCode).toBe('MATERIAL_DELETED');
     });
   });
 });

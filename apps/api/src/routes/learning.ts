@@ -2,10 +2,12 @@ import { Router, Request, Response, NextFunction } from 'express';
 import {
   UpdateFlashcardMasteryInputSchema,
   SubmitQuizAttemptInputSchema,
+  SaveQuizDraftAnswersInputSchema,
 } from '@studyflow/shared';
 import {
   updateFlashcardMastery,
   startOrResumeQuizAttempt,
+  saveQuizDraftAnswers,
   submitQuizAttempt,
   getQuizAttemptResult,
 } from '../services/learning.service.js';
@@ -53,6 +55,29 @@ quizRouter.post('/:id/attempts', async (req: Request, res: Response, next: NextF
 
 export const attemptRouter = Router();
 attemptRouter.use(authenticate);
+
+// PATCH /api/attempts/:id/answers — Save draft answers before submit
+attemptRouter.patch('/:id/answers', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const id = req.params.id as string;
+    const parsedBody = SaveQuizDraftAnswersInputSchema.safeParse(req.body);
+    if (!parsedBody.success) {
+      res.status(400).json({
+        error: {
+          code: 'VALIDATION_ERROR',
+          message: 'Format penyimpanan jawaban kuis tidak valid',
+          details: parsedBody.error.format(),
+        },
+      });
+      return;
+    }
+
+    const result = await saveQuizDraftAnswers(req.user!.id, id, parsedBody.data.answers);
+    res.status(200).json(result);
+  } catch (err) {
+    next(err);
+  }
+});
 
 // POST /api/attempts/:id/submit — Submit answers, score on server, return review
 attemptRouter.post('/:id/submit', async (req: Request, res: Response, next: NextFunction) => {

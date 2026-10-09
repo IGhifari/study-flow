@@ -174,6 +174,11 @@ export const QuizAttemptResponseSchema = z.object({
 });
 export type QuizAttemptResponse = z.infer<typeof QuizAttemptResponseSchema>;
 
+export const SaveQuizDraftAnswersInputSchema = z.object({
+  answers: z.array(SubmitQuizAnswerItemSchema),
+});
+export type SaveQuizDraftAnswersInput = z.infer<typeof SaveQuizDraftAnswersInputSchema>;
+
 export const StartQuizAttemptResponseSchema = z.object({
   attemptId: z.string(),
   quizId: z.string(),
@@ -184,3 +189,4 @@ export const StartQuizAttemptResponseSchema = z.object({
   existingAnswers: z.record(z.string(), z.number().int().min(0).max(3)).optional(),
 });
 export type StartQuizAttemptResponse = z.infer<typeof StartQuizAttemptResponseSchema>;
+

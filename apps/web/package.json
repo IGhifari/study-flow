@@ -27,6 +27,7 @@
     "tailwind-merge": "^3.0.2"
   },
   "devDependencies": {
+    "@playwright/test": "^1.64.0",
     "@studyflow/config": "*",
     "@tailwindcss/postcss": "^4.0.9",
     "@types/node": "^22.13.9",

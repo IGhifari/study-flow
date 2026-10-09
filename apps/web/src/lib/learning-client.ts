@@ -129,6 +129,26 @@ export async function startQuizAttempt(quizId: string): Promise<StartQuizAttempt
   return res.json();
 }
 
+export async function saveQuizDraftAnswers(
+  attemptId: string,
+  answers: { questionId: string; selectedIndex: number | null }[]
+): Promise<{ success: boolean; savedCount: number }> {
+  const res = await authFetch(`/api/attempts/${attemptId}/answers`, {
+    method: 'PATCH',
+    body: JSON.stringify({ answers }),
+  });
+
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    throw new LearningApiError(
+      errorData.error?.message || 'Gagal menyimpan jawaban sementara kuis',
+      errorData.error?.code,
+      res.status
+    );
+  }
+  return res.json();
+}
+
 export async function submitQuizAttempt(
   attemptId: string,
   answers: { questionId: string; selectedIndex: number | null }[]

@@ -1,0 +1,120 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [3 0 R 4 0 R 5 0 R 6 0 R 7 0 R] /Count 5 >>
+endobj
+3 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 << /Type /Font /Subtype /Type1 /BaseFont /Helvetica >> >> >> /Contents 8 0 R >>
+endobj
+4 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 << /Type /Font /Subtype /Type1 /BaseFont /Helvetica >> >> >> /Contents 9 0 R >>
+endobj
+5 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 << /Type /Font /Subtype /Type1 /BaseFont /Helvetica >> >> >> /Contents 10 0 R >>
+endobj
+6 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 << /Type /Font /Subtype /Type1 /BaseFont /Helvetica >> >> >> /Contents 11 0 R >>
+endobj
+7 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 << /Type /Font /Subtype /Type1 /BaseFont /Helvetica >> >> >> /Contents 12 0 R >>
+endobj
+8 0 obj
+<< /Length 432 >>
+stream
+BT
+/F1 11 Tf
+50 720 Td
+14 TL
+(Rekayasa Perangkat Lunak: Halaman 1 - Pengantar SDLC) '
+(Software Development Life Cycle \(SDLC\) adalah kerangka kerja sistematis untuk merancang,) '
+(mengembangkan, dan memelihara aplikasi perangkat lunak berkualitas tinggi.) '
+(Tahapan baku SDLC mencakup: Analisis Kebutuhan, Desain Sistem, Implementasi \(Pengkodean\),) '
+(Pengujian \(Testing\), Deployment, dan Pemeliharaan \(Maintenance\).) '
+ET
+endstream
+endobj
+9 0 obj
+<< /Length 493 >>
+stream
+BT
+/F1 11 Tf
+50 720 Td
+14 TL
+(Rekayasa Perangkat Lunak: Halaman 2 - Model Waterfall) '
+(Model Waterfall adalah pendekatan sekuensial klasik di mana setiap fase harus selesai sebelum fase berikutnya dimulai.) '
+(Kelebihan Waterfall: Struktur terdokumentasi rapi, milestone jelas, dan mudah dipahami tim.) '
+(Kekurangan Waterfall: Sangat tidak fleksibel terhadap perubahan kebutuhan klien di tengah jalan,) '
+(dan perangkat lunak yang berfungsi baru terlihat pada akhir fase siklus hidup.) '
+ET
+endstream
+endobj
+10 0 obj
+<< /Length 542 >>
+stream
+BT
+/F1 11 Tf
+50 720 Td
+14 TL
+(Rekayasa Perangkat Lunak: Halaman 3 - Metodologi Agile dan Scrum) '
+(Agile mengedepankan fleksibilitas, kolaborasi tim, dan rilis bertahap secara berkala \(inkremental\).) '
+(Scrum merupakan implementasi Agile paling populer dengan siklus kerja iteratif yang disebut Sprint \(biasanya 1-4 minggu\).) '
+(Peran dalam Scrum: Product Owner \(pemilik visi produk\), Scrum Master \(fasilitator\), dan Development Team.) '
+(Seremoni Scrum: Sprint Planning, Daily Standup, Sprint Review, dan Sprint Retrospective.) '
+ET
+endstream
+endobj
+11 0 obj
+<< /Length 680 >>
+stream
+BT
+/F1 11 Tf
+50 720 Td
+14 TL
+(Rekayasa Perangkat Lunak: Halaman 4 - Prinsip Desain SOLID) '
+(Prinsip SOLID dalam pemrograman berorientasi objek:) '
+(- Single Responsibility Principle \(SRP\): Setiap kelas hanya memiliki satu alasan untuk berubah.) '
+(- Open/Closed Principle \(OCP\): Terbuka untuk ekstensi, tertutup untuk modifikasi langsung.) '
+(- Liskov Substitution Principle \(LSP\): Subkelas harus dapat menggantikan superkelas tanpa merusak sistem.) '
+(- Interface Segregation Principle \(ISP\): Klien tidak boleh dipaksa bergantung pada antarmuka yang tidak dipakai.) '
+(- Dependency Inversion Principle \(DIP\): Bergantung pada abstraksi, bukan konseptual konkrit.) '
+ET
+endstream
+endobj
+12 0 obj
+<< /Length 509 >>
+stream
+BT
+/F1 11 Tf
+50 720 Td
+14 TL
+(Rekayasa Perangkat Lunak: Halaman 5 - Pengujian Perangkat Lunak) '
+(Tingkatan Pengujian \(Testing Pyramid\):) '
+(1. Unit Testing: Menguji fungsi dan modul individual secara terisolasi.) '
+(2. Integration Testing: Memastikan interaksi antarmodul, basis data, dan API berjalan selaras.) '
+(3. End-to-End \(E2E\) Testing: Menguji seluruh alur pengguna nyata dari awal hingga akhir pada peramban.) '
+(Pengujian otomatis mencegah terjadinya regresi saat fitur baru ditambahkan.) '
+ET
+endstream
+endobj
+xref
+0 13
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000139 00000 n 
+0000000314 00000 n 
+0000000489 00000 n 
+0000000665 00000 n 
+0000000841 00000 n 
+0000001017 00000 n 
+0000001499 00000 n 
+0000002042 00000 n 
+0000002635 00000 n 
+0000003366 00000 n 
+trailer
+<< /Size 13 /Root 1 0 R >>
+startxref
+3926
+%%EOF

@@ -1,0 +1,97 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [3 0 R 4 0 R 5 0 R] /Count 3 >>
+endobj
+3 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 << /Type /Font /Subtype /Type1 /BaseFont /Helvetica >> >> >> /Contents 6 0 R >>
+endobj
+4 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 << /Type /Font /Subtype /Type1 /BaseFont /Helvetica >> >> >> /Contents 7 0 R >>
+endobj
+5 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 << /Type /Font /Subtype /Type1 /BaseFont /Helvetica >> >> >> /Contents 8 0 R >>
+endobj
+6 0 obj
+<< /Length 1015 >>
+stream
+BT
+/F1 11 Tf
+50 720 Td
+14 TL
+(Jaringan Komputer: Model Referensi OSI 7 Lapisan) '
+(Model OSI \(Open Systems Interconnection\) membagi komunikasi data ke dalam 7 lapisan abstraksi.) '
+(Tabel 1: Ringkasan Lapisan OSI) '
+(+-------+-------------------+--------------------+-------------------------------------------+) '
+(| Layer | Nama Lapisan      | PDU \(Unit Data\)    | Protokol dan Perangkat Utama              |) '
+(+-------+-------------------+--------------------+-------------------------------------------+) '
+(| 7     | Application       | Data               | HTTP, HTTPS, DNS, SMTP, FTP, SSH          |) '
+(| 6     | Presentation      | Data               | TLS, SSL, JPEG, ASCII, Kompresi/Enkripsi  |) '
+(| 5     | Session           | Data               | NetBIOS, RPC, Pengelolaan Dialog Sesi     |) '
+(| 4     | Transport         | Segment / Datagram | TCP, UDP, Port Addressing                 |) '
+(+-------+-------------------+--------------------+-------------------------------------------+) '
+ET
+endstream
+endobj
+7 0 obj
+<< /Length 1033 >>
+stream
+BT
+/F1 11 Tf
+50 720 Td
+14 TL
+(Jaringan Komputer: Lapisan Bawah Model OSI) '
+(Tabel 2: Lapisan 3 sampai Lapisan 1 OSI) '
+(+-------+-------------------+--------------------+-------------------------------------------+) '
+(| Layer | Nama Lapisan      | PDU \(Unit Data\)    | Protokol dan Perangkat Utama              |) '
+(+-------+-------------------+--------------------+-------------------------------------------+) '
+(| 3     | Network           | Packet             | IP \(IPv4, IPv6\), ICMP, ARP, Router        |) '
+(| 2     | Data Link         | Frame              | Ethernet, Wi-Fi 802.11, MAC Address, Switch|) '
+(| 1     | Physical          | Bit                | Kabel UTP, Fiber Optic, Radio, Hub, NIC   |) '
+(+-------+-------------------+--------------------+-------------------------------------------+) '
+() '
+(Enkapsulasi dan Dekapsulasi:) '
+(Saat data dikirim, setiap lapisan menambahkan header khusus \(enkapsulasi\).) '
+(Saat data diterima, setiap lapisan memeriksa dan melepas header terkait \(dekapsulasi\).) '
+ET
+endstream
+endobj
+8 0 obj
+<< /Length 988 >>
+stream
+BT
+/F1 11 Tf
+50 720 Td
+14 TL
+(Jaringan Komputer: Perbandingan TCP vs UDP di Lapisan Transport) '
+(Tabel 3: Matriks Perbedaan TCP dan UDP) '
+(+--------------------+-------------------------------+-------------------------------+) '
+(| Parameter          | TCP \(Transmission Control\)    | UDP \(User Datagram Protocol\)  |) '
+(+--------------------+-------------------------------+-------------------------------+) '
+(| Sifat Koneksi      | Connection-oriented \(Handshake\)| Connectionless \(Tanpa jabat\)  |) '
+(| Keandalan          | Reliable \(ACK & Retransmit\)   | Unreliable \(Best-effort\)      |) '
+(| Urutan Data        | Terjamin urut \(Sequence No\)   | Tidak dijamin urut            |) '
+(| Kecepatan          | Lebih lambat karena overhead   | Sangat cepat, latency rendah  |) '
+(| Contoh Pemakaian   | Web \(HTTP\), Email, Transfer berkas| Streaming video, Game online, DNS |) '
+(+--------------------+-------------------------------+-------------------------------+) '
+ET
+endstream
+endobj
+xref
+0 9
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000127 00000 n 
+0000000302 00000 n 
+0000000477 00000 n 
+0000000652 00000 n 
+0000001718 00000 n 
+0000002802 00000 n 
+trailer
+<< /Size 9 /Root 1 0 R >>
+startxref
+3840
+%%EOF

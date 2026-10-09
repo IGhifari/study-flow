@@ -1,0 +1,119 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [3 0 R 4 0 R 5 0 R 6 0 R] /Count 4 >>
+endobj
+3 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 << /Type /Font /Subtype /Type1 /BaseFont /Helvetica >> >> >> /Contents 7 0 R >>
+endobj
+4 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 << /Type /Font /Subtype /Type1 /BaseFont /Helvetica >> >> >> /Contents 8 0 R >>
+endobj
+5 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 << /Type /Font /Subtype /Type1 /BaseFont /Helvetica >> >> >> /Contents 9 0 R >>
+endobj
+6 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 << /Type /Font /Subtype /Type1 /BaseFont /Helvetica >> >> >> /Contents 10 0 R >>
+endobj
+7 0 obj
+<< /Length 1215 >>
+stream
+BT
+/F1 11 Tf
+50 720 Td
+14 TL
+(Keamanan Informasi: Prinsip Triad CIA dan Kriptografi) '
+(Prinsip Utama Keamanan Informasi \(CIA Triad\):) '
+(- Confidentiality \(Kerahasiaan\): Mencegah pihak yang tidak berhak mengakses data.) '
+(- Integrity \(Integritas\): Menjamin keaslian data tidak dimanipulasi tanpa izin.) '
+(- Availability \(Ketersediaan\): Memastikan sistem dan data dapat diakses saat dibutuhkan pengguna sah.) '
+() '
+(Tabel 1: Perbandingan Kriptografi Simetris vs Asimetris) '
+(+-------------------+-------------------------------+-------------------------------+) '
+(| Aspek             | Kriptografi Simetris          | Kriptografi Asimetris         |) '
+(+-------------------+-------------------------------+-------------------------------+) '
+(| Kunci Enkripsi    | 1 Kunci Rahasia Sama          | Sepasang Kunci \(Publik/Privat\)|) '
+(| Kecepatan         | Sangat Cepat \(Hardware-ready\) | Jauh Lebih Lambat             |) '
+(| Distribusi Kunci  | Berisiko saat pertukaran      | Aman melalui Public Key       |) '
+(| Algoritma Populer | AES-256, ChaCha20, DES        | RSA, ECC \(Elliptic Curve\), DSA|) '
+(+-------------------+-------------------------------+-------------------------------+) '
+ET
+endstream
+endobj
+8 0 obj
+<< /Length 1183 >>
+stream
+BT
+/F1 11 Tf
+50 720 Td
+14 TL
+(Keamanan Informasi: Fungsi Hash Kriptografi) '
+(Fungsi hash satu arah mengubah pesan panjang variabel menjadi digest berukuran tetap.) '
+(Tabel 2: Karakteristik Algoritma Hash) '
+(+-------------------+---------------+------------------+-----------------------------+) '
+(| Algoritma         | Ukuran Digest | Status Keamanan  | Penggunaan Utama            |) '
+(+-------------------+---------------+------------------+-----------------------------+) '
+(| MD5               | 128 bit       | Tidak Aman \(Kolisi\)| Checksum berkas non-kritis  |) '
+(| SHA-1             | 160 bit       | Tidak Aman \(Rentan\)| Sistem warisan \(Deprecated\) |) '
+(| SHA-256           | 256 bit       | Sangat Aman      | TLS sertifikat, Blockchain  |) '
+(| Argon2id          | Dinamis       | Standar Emas Auth| Penyimpanan Password Hash   |) '
+(+-------------------+---------------+------------------+-----------------------------+) '
+() '
+(Catatan Kunci: Password pengguna tidak boleh disimpan dalam plaintext atau algoritma hash cepat biasa seperti MD5/SHA256.) '
+(Gunakan Argon2id atau bcrypt dengan cost factor yang memadai untuk mitigasi serangan brute-force.) '
+ET
+endstream
+endobj
+9 0 obj
+<< /Length 553 >>
+stream
+BT
+/F1 11 Tf
+50 720 Td
+14 TL
+(Keamanan Informasi: Digital Signature dan Sertifikat Digital) '
+(Tanda tangan digital membuktikan integritas pesan dan non-repudiation \(penyangkalan\).) '
+(Mekanisme tanda tangan digital:) '
+(1. Pengirim membuat hash dari dokumen.) '
+(2. Hash dienkripsi menggunakan private key pengirim untuk menghasilkan tanda tangan.) '
+(3. Penerima mendekripsi tanda tangan dengan public key pengirim dan membandingkan hash hasil hitung ulang.) '
+(Jika kedua hash cocok, dokumen terbukti asli dan belum diubah oleh pihak ketiga.) '
+ET
+endstream
+endobj
+10 0 obj
+<< /Length 599 >>
+stream
+BT
+/F1 11 Tf
+50 720 Td
+14 TL
+(Keamanan Informasi: Mitigasi Serangan Web Umum) '
+(Daftar Kerentanan Web dan Pencegahannya:) '
+(- Cross-Site Scripting \(XSS\): Sanitasi masukan pengguna dan gunakan encoding konteks pada template HTML.) '
+(- Cross-Site Request Forgery \(CSRF\): Validasi header Origin/Referer dan gunakan cookie SameSite=Lax atau SameSite=Strict.) '
+(- SQL Injection: Gunakan parameter binding, ORM seperti Prisma, dan hindari konkatenasi string SQL secara mentah.) '
+(- Session Hijacking: Terapkan token rotasi, masa berlaku token singkat, dan flag HttpOnly Secure pada cookie.) '
+ET
+endstream
+endobj
+xref
+0 11
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000133 00000 n 
+0000000308 00000 n 
+0000000483 00000 n 
+0000000658 00000 n 
+0000000834 00000 n 
+0000002100 00000 n 
+0000003334 00000 n 
+0000003937 00000 n 
+trailer
+<< /Size 11 /Root 1 0 R >>
+startxref
+4587
+%%EOF
