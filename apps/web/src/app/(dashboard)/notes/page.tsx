@@ -34,7 +34,14 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { Select } from '@/components/ui/select';
+import {
+  RadixSelect,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+  NativeSelect,
+} from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import {
   Card,
@@ -229,35 +236,43 @@ export default function NotesPage(): React.JSX.Element {
           </div>
 
           {/* Filter Semester */}
-          <div>
-            <Select
+          <div className="w-full sm:w-[200px]">
+            <RadixSelect
               value={selectedSemesterId}
-              onChange={(e) => setSelectedSemesterId(e.target.value)}
-              aria-label="Filter Semester"
+              onValueChange={(val) => setSelectedSemesterId(val)}
             >
-              <option value="all">Semua Semester</option>
-              {semesters.map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.name} {s.isActive ? '(Aktif)' : ''}
-                </option>
-              ))}
-            </Select>
+              <SelectTrigger className="h-11">
+                <SelectValue placeholder="Semua Semester" />
+              </SelectTrigger>
+              <SelectContent className="max-w-[calc(100vw-2rem)] sm:max-w-[280px]">
+                <SelectItem value="all">Semua Semester</SelectItem>
+                {semesters.map((s) => (
+                  <SelectItem key={s.id} value={s.id}>
+                    {s.name} {s.isActive ? '(Aktif)' : ''}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </RadixSelect>
           </div>
 
           {/* Filter Course */}
-          <div>
-            <Select
+          <div className="w-full sm:w-[220px]">
+            <RadixSelect
               value={selectedCourseId}
-              onChange={(e) => setSelectedCourseId(e.target.value)}
-              aria-label="Filter Mata Kuliah"
+              onValueChange={(val) => setSelectedCourseId(val)}
             >
-              <option value="all">Semua Mata Kuliah</option>
-              {courses.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name} {c.code ? `(${c.code})` : ''} {c.archivedAt ? '[Arsip]' : ''}
-                </option>
-              ))}
-            </Select>
+              <SelectTrigger className="h-11">
+                <SelectValue placeholder="Semua Mata Kuliah" />
+              </SelectTrigger>
+              <SelectContent className="max-w-[calc(100vw-2rem)] sm:max-w-[320px]">
+                <SelectItem value="all">Semua Mata Kuliah</SelectItem>
+                {courses.map((c) => (
+                  <SelectItem key={c.id} value={c.id}>
+                    {c.name} {c.code ? `(${c.code})` : ''} {c.archivedAt ? '[Arsip]' : ''}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </RadixSelect>
           </div>
         </div>
       </Card>
@@ -403,7 +418,7 @@ export default function NotesPage(): React.JSX.Element {
 
             <div className="space-y-1.5">
               <Label htmlFor="create-note-course">Mata Kuliah *</Label>
-              <Select
+              <NativeSelect
                 id="create-note-course"
                 value={createCourseId}
                 onChange={(e) => setCreateCourseId(e.target.value)}
@@ -415,7 +430,7 @@ export default function NotesPage(): React.JSX.Element {
                     {c.name} {c.code ? `(${c.code})` : ''}
                   </option>
                 ))}
-              </Select>
+              </NativeSelect>
             </div>
 
             <div className="space-y-1.5">

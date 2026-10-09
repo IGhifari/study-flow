@@ -3,9 +3,26 @@
 import * as React from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { CalendarRange, ChevronDown, Plus, Check } from 'lucide-react';
+import {
+  CalendarRange,
+  ChevronsUpDown,
+  Check,
+  Plus,
+  Loader2,
+  AlertCircle,
+  X,
+} from 'lucide-react';
 import { Semester } from '@studyflow/shared';
 import { listSemesters, activateSemester } from '@/lib/semester-client';
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+} from '@/components/ui/dropdown-menu';
+import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 
 interface SidebarSemesterSelectorProps {
   isCollapsed: boolean;
@@ -20,16 +37,16 @@ export function SidebarSemesterSelector({
   const [semesters, setSemesters] = React.useState<Semester[]>([]);
   const [activeSemester, setActiveSemester] = React.useState<Semester | null>(null);
   const [isLoading, setIsLoading] = React.useState(true);
-  const [isOpen, setIsOpen] = React.useState(false);
   const [isActivating, setIsActivating] = React.useState(false);
+  const [errorMessage, setErrorMessage] = React.useState<string | null>(null);
 
   const loadData = React.useCallback(async () => {
     try {
       const res = await listSemesters('all');
       setSemesters(res.semesters);
       setActiveSemester(res.activeSemester);
-    } catch {
-      // Ignored in background
+    } catch (err: any) {
+      setErrorMessage(err.message || 'Gagal memuat daftar semester.');
     } finally {
       setIsLoading(false);
     }
@@ -39,97 +56,101 @@ export function SidebarSemesterSelector({
     loadData();
   }, [loadData]);
 
+  // Listen to semester changes triggered from other components (e.g. Semesters management page)
+  React.useEffect(() => {
+    const handleSemesterChange = () => {
+      loadData();
+    };
+    window.addEventListener('studyflow:semester-changed', handleSemesterChange);
+    return () => {
+      window.removeEventListener('studyflow:semester-changed', handleSemesterChange);
+    };
+  }, [loadData]);
+
   const handleSelectSemester = async (sem: Semester) => {
-    if (sem.isActive || sem.archivedAt) {
-      setIsOpen(false);
+    if (sem.isActive) {
       return;
     }
+
+    if (sem.archivedAt) {
+      setErrorMessage('Semester yang diarsipkan tidak dapat diaktifkan.');
+      return;
+    }
+
     setIsActivating(true);
+    setErrorMessage(null);
+
     try {
       await activateSemester(sem.id);
-      await loadData();
+      setActiveSemester(sem);
+      setSemesters((prev) =>
+        prev.map((s) => ({
+          ...s,
+          isActive: s.id === sem.id,
+        }))
+      );
+
+      // 1. Dispatch custom event to notify all active client views to reload data
+      window.dispatchEvent(
+        new CustomEvent('studyflow:semester-changed', {
+          detail: { semesterId: sem.id },
+        })
+      );
+
+      // 2. Trigger Next.js server component refresh
       router.refresh();
-    } catch (err) {
-      console.error('Failed to activate semester:', err);
+    } catch (err: any) {
+      setErrorMessage(
+        err.message || 'Gagal mengubah semester aktif. Silakan coba lagi.'
+      );
     } finally {
       setIsActivating(false);
-      setIsOpen(false);
     }
   };
 
+  // View when sidebar is collapsed (Desktop Icon-only mode)
   if (isCollapsed) {
     return (
-      <div className="flex justify-center py-2">
-        <Link
-          href="/semesters"
-          onClick={onNavigate}
-          className="flex h-9 w-9 items-center justify-center rounded-lg text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors"
-          title={activeSemester ? `Semester Aktif: ${activeSemester.name}` : 'Kelola Semester'}
-        >
-          <CalendarRange className="h-5 w-5" />
-        </Link>
-      </div>
-    );
-  }
+      <div className="flex justify-center py-2 px-1">
+        <DropdownMenu>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <DropdownMenuTrigger asChild>
+                <button
+                  type="button"
+                  aria-label={
+                    activeSemester
+                      ? `Semester Aktif: ${activeSemester.name} (${activeSemester.academicYear})`
+                      : 'Pilih Semester Aktif'
+                  }
+                  className="flex h-10 w-10 items-center justify-center rounded-lg text-sidebar-foreground transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-sidebar-ring"
+                >
+                  <CalendarRange className="h-5 w-5" />
+                </button>
+              </DropdownMenuTrigger>
+            </TooltipTrigger>
+            <TooltipContent side="right" align="center">
+              {activeSemester ? (
+                <div>
+                  <p className="font-semibold">{activeSemester.name}</p>
+                  <p className="text-[11px] text-muted-foreground">{activeSemester.academicYear}</p>
+                </div>
+              ) : (
+                'Pilih Semester Aktif'
+              )}
+            </TooltipContent>
+          </Tooltip>
 
-  return (
-    <div className="px-3 py-2 border-b border-sidebar-border">
-      <div className="flex items-center justify-between mb-1.5 px-1">
-        <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-          Semester Aktif
-        </span>
-        <Link
-          href="/semesters"
-          onClick={onNavigate}
-          className="text-xs text-primary hover:underline flex items-center gap-1 font-medium"
-        >
-          Kelola
-        </Link>
-      </div>
-
-      <div className="relative">
-        <button
-          type="button"
-          onClick={() => setIsOpen(!isOpen)}
-          className="w-full flex items-center justify-between rounded-lg border border-sidebar-border bg-sidebar-accent/50 px-2.5 py-2 text-left text-sm transition-colors hover:bg-sidebar-accent focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring"
-          aria-expanded={isOpen}
-          aria-label="Pilih semester aktif"
-        >
-          <div className="min-w-0 flex-1 pr-2">
-            {isLoading ? (
-              <span className="text-xs text-muted-foreground">Memuat...</span>
-            ) : activeSemester ? (
-              <div>
-                <p className="truncate font-medium text-sidebar-foreground text-xs leading-tight">
-                  {activeSemester.name}
-                </p>
-                <p className="truncate text-[11px] text-muted-foreground leading-tight mt-0.5">
-                  {activeSemester.academicYear}
-                </p>
-              </div>
-            ) : (
-              <span className="text-xs text-muted-foreground">Belum ada semester aktif</span>
-            )}
-          </div>
-          <ChevronDown
-            className={`h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-200 ${
-              isOpen ? 'rotate-180' : ''
-            }`}
-          />
-        </button>
-
-        {isOpen && (
-          <div className="absolute left-0 right-0 top-full z-50 mt-1 max-h-56 overflow-y-auto rounded-lg border border-border bg-card p-1 shadow-md">
+          <DropdownMenuContent side="right" align="start" className="w-64">
+            <DropdownMenuLabel>Pilih Semester Aktif</DropdownMenuLabel>
+            <DropdownMenuSeparator />
             {semesters.length === 0 ? (
-              <div className="p-2 text-center text-xs text-muted-foreground">
-                <p>Belum ada semester.</p>
+              <div className="p-3 text-center text-xs text-muted-foreground">
+                <p>Belum ada semester</p>
                 <Link
                   href="/semesters"
-                  onClick={() => {
-                    setIsOpen(false);
-                    onNavigate?.();
-                  }}
-                  className="mt-1.5 inline-flex items-center gap-1 text-xs text-primary hover:underline font-medium"
+                  onClick={onNavigate}
+                  className="mt-1.5 inline-flex items-center gap-1 font-medium text-primary hover:underline"
                 >
                   <Plus className="h-3.5 w-3.5" /> Tambah Semester
                 </Link>
@@ -138,33 +159,169 @@ export function SidebarSemesterSelector({
               semesters.map((sem) => {
                 const isArchived = Boolean(sem.archivedAt);
                 return (
-                  <button
+                  <DropdownMenuItem
                     key={sem.id}
-                    type="button"
-                    disabled={isArchived || isActivating}
+                    disabled={isArchived || isActivating || sem.isActive}
                     onClick={() => handleSelectSemester(sem)}
-                    className={`flex w-full items-center justify-between rounded-md px-2 py-1.5 text-left text-xs transition-colors ${
-                      sem.isActive
-                        ? 'bg-primary/10 text-primary font-semibold'
-                        : isArchived
-                        ? 'opacity-50 cursor-not-allowed text-muted-foreground'
-                        : 'text-foreground hover:bg-accent'
-                    }`}
+                    className="flex items-center justify-between py-2 cursor-pointer"
                   >
                     <div className="min-w-0 flex-1 pr-2">
-                      <p className="truncate">{sem.name}</p>
-                      <p className="text-[10px] text-muted-foreground">
+                      <p className={`truncate text-xs ${sem.isActive ? 'font-semibold text-primary' : ''}`}>
+                        {sem.name}
+                      </p>
+                      <p className="truncate text-[11px] text-muted-foreground">
                         {sem.academicYear} {isArchived ? '(Arsip)' : ''}
                       </p>
                     </div>
-                    {sem.isActive && <Check className="h-3.5 w-3.5 shrink-0 text-primary" />}
-                  </button>
+                    {sem.isActive && <Check className="h-4 w-4 shrink-0 text-primary" />}
+                  </DropdownMenuItem>
                 );
               })
             )}
-          </div>
-        )}
+            <DropdownMenuSeparator />
+            <DropdownMenuItem asChild>
+              <Link
+                href="/semesters"
+                onClick={onNavigate}
+                className="flex items-center gap-2 cursor-pointer text-xs font-medium text-primary"
+              >
+                <Plus className="h-4 w-4" />
+                <span>Kelola / Tambah Semester</span>
+              </Link>
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
+    );
+  }
+
+  // View when sidebar is expanded or in mobile drawer
+  return (
+    <div className="px-3 py-2 border-b border-sidebar-border">
+      <div className="flex items-center justify-between mb-1.5 px-0.5">
+        <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+          Semester Aktif
+        </span>
+        <Link
+          href="/semesters"
+          onClick={onNavigate}
+          className="text-xs text-primary hover:underline font-medium"
+        >
+          Kelola
+        </Link>
+      </div>
+
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <button
+            type="button"
+            disabled={isActivating}
+            aria-label="Pilih semester aktif"
+            className="w-full flex items-center justify-between gap-2 rounded-lg border border-sidebar-border bg-sidebar-accent/40 px-3 py-2 text-left transition-colors hover:bg-sidebar-accent focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-sidebar-ring disabled:opacity-60"
+          >
+            <div className="min-w-0 flex-1">
+              {isLoading ? (
+                <div className="flex items-center gap-2 py-0.5 text-xs text-muted-foreground">
+                  <Loader2 className="h-3.5 w-3.5 animate-spin text-primary" />
+                  <span>Memuat semester...</span>
+                </div>
+              ) : isActivating ? (
+                <div className="flex items-center gap-2 py-0.5 text-xs text-primary">
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  <span>Mengaktifkan...</span>
+                </div>
+              ) : activeSemester ? (
+                <div>
+                  <p className="truncate text-sm font-semibold text-sidebar-foreground leading-tight">
+                    {activeSemester.name}
+                  </p>
+                  <p className="truncate text-xs text-muted-foreground leading-tight mt-0.5">
+                    {activeSemester.academicYear}
+                  </p>
+                </div>
+              ) : (
+                <span className="text-xs text-muted-foreground">Belum ada semester aktif</span>
+              )}
+            </div>
+            <ChevronsUpDown className="h-4 w-4 shrink-0 text-muted-foreground opacity-70" />
+          </button>
+        </DropdownMenuTrigger>
+
+        <DropdownMenuContent align="start" className="w-[256px]">
+          <DropdownMenuLabel>Pilih Semester Aktif</DropdownMenuLabel>
+          <DropdownMenuSeparator />
+
+          {semesters.length === 0 ? (
+            <div className="p-3 text-center text-xs text-muted-foreground">
+              <p>Belum ada semester.</p>
+              <Link
+                href="/semesters"
+                onClick={onNavigate}
+                className="mt-1.5 inline-flex items-center gap-1 font-medium text-primary hover:underline"
+              >
+                <Plus className="h-3.5 w-3.5" /> Tambah Semester
+              </Link>
+            </div>
+          ) : (
+            semesters.map((sem) => {
+              const isArchived = Boolean(sem.archivedAt);
+              return (
+                <DropdownMenuItem
+                  key={sem.id}
+                  disabled={isArchived || isActivating || sem.isActive}
+                  onClick={() => handleSelectSemester(sem)}
+                  className={`flex items-center justify-between py-2 cursor-pointer ${
+                    sem.isActive ? 'bg-primary/10 text-primary font-semibold' : ''
+                  }`}
+                >
+                  <div className="min-w-0 flex-1 pr-2">
+                    <p className={`truncate text-xs ${sem.isActive ? 'font-semibold text-primary' : 'text-foreground'}`}>
+                      {sem.name}
+                    </p>
+                    <p className="truncate text-[11px] text-muted-foreground">
+                      {sem.academicYear} {isArchived ? '(Arsip)' : ''}
+                    </p>
+                  </div>
+                  {sem.isActive && <Check className="h-4 w-4 shrink-0 text-primary" />}
+                </DropdownMenuItem>
+              );
+            })
+          )}
+
+          <DropdownMenuSeparator />
+          <DropdownMenuItem asChild>
+            <Link
+              href="/semesters"
+              onClick={onNavigate}
+              className="flex items-center gap-2 cursor-pointer text-xs font-medium text-primary"
+            >
+              <Plus className="h-4 w-4" />
+              <span>Kelola / Tambah Semester</span>
+            </Link>
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+
+      {/* Visible Error Notification */}
+      {errorMessage && (
+        <div
+          role="alert"
+          className="mt-2 flex items-start justify-between gap-1.5 rounded-md border border-danger/30 bg-danger/10 p-2 text-xs text-danger"
+        >
+          <div className="flex items-start gap-1.5">
+            <AlertCircle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+            <span className="leading-tight">{errorMessage}</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => setErrorMessage(null)}
+            className="text-danger/70 hover:text-danger"
+            aria-label="Tutup pesan error"
+          >
+            <X className="h-3.5 w-3.5" />
+          </button>
+        </div>
+      )}
     </div>
   );
 }

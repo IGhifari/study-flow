@@ -298,8 +298,22 @@ test.describe('StudyFlow End-to-End Suite', () => {
 
     // 3. Uji Tampilan Desktop (1440x900)
     await page.setViewportSize({ width: 1440, height: 900 });
-    await page.goto('/assignments');
-    await expect(page.locator('h1:has-text("Tugas Kuliah")')).toBeVisible();
+    await page.goto('/dashboard');
+    await expect(page.locator('nav[aria-label="breadcrumb"]')).toBeVisible();
+
+    // Verifikasi pengelompokan navigasi di sidebar desktop (Belajar, Perkuliahan, Pengaturan)
+    await expect(page.getByText('Belajar', { exact: true })).toBeVisible();
+    await expect(page.getByText('Perkuliahan', { exact: true })).toBeVisible();
+    await expect(page.locator('[data-sidebar="group-label"]:has-text("Pengaturan")')).toBeVisible();
+
+    // Uji Collapsed Sidebar via Trigger
+    const desktopToggle = page.locator('button[aria-label="Alihkan navigasi sidebar"]');
+    await desktopToggle.click();
+    await expect(page.locator('[data-sidebar="sidebar"]').first()).toHaveAttribute('data-state', 'collapsed');
+
+    // Kembalikan ke Expanded
+    await desktopToggle.click();
+    await expect(page.locator('[data-sidebar="sidebar"]').first()).toHaveAttribute('data-state', 'expanded');
 
     // 4. Uji Penggantian Tema (Dark / Light Theme Toggle)
     const darkBtn = page.locator('button[title="Gunakan tema gelap"]').first();
@@ -312,5 +326,98 @@ test.describe('StudyFlow End-to-End Suite', () => {
     await page.keyboard.press('Tab');
     const activeElement = await page.evaluate(() => document.activeElement?.tagName);
     expect(activeElement).toBeTruthy();
+
+    // 6. Uji Header Account Dropdown Menu
+    const accountMenuBtn = page.locator('button[aria-label^="Menu akun untuk"]');
+    await expect(accountMenuBtn).toBeVisible();
+    await accountMenuBtn.click();
+    await expect(page.locator('div[role="menu"]').getByText('Pengaturan Akun')).toBeVisible();
+  });
+
+  test('Flow 5: Dashboard Redesign, Checkbox Aksesibel, & Pemisahan State', async ({ page }) => {
+    const userEmail = `dash-${timestamp}@studyflow.test`;
+    await registerAndLogin(page, 'User Dashboard Test', userEmail);
+
+    // 1. Verifikasi Empty State A: "Mulai dari semester pertamamu" (karena user baru belum punya semester)
+    await page.goto('/dashboard');
+    await expect(page.locator('h1:has-text("Dashboard")')).toBeVisible();
+    await expect(page.locator('h2:has-text("Mulai dari semester pertamamu")')).toBeVisible();
+    await expect(page.locator('a[href="/semesters"]:has-text("Tambah Semester")')).toBeVisible();
+
+    // 2. Buat Semester
+    await page.click('a[href="/semesters"]:has-text("Tambah Semester")');
+    await page.waitForURL('**/semesters');
+    await page.click('button:has-text("Tambah Semester")');
+    await page.fill('#create-sem-name', 'Semester Gasal 2026/2027');
+    await page.fill('#create-sem-year', '2026/2027');
+    await page.click('button:has-text("Simpan Semester")');
+    await expect(page.locator('text=Semester Gasal 2026/2027')).toBeVisible({ timeout: 10000 });
+
+    // 3. Verifikasi Empty State B: "Belum ada mata kuliah di semester ini"
+    await page.goto('/dashboard');
+    await expect(page.locator('h2:has-text("Belum ada mata kuliah di semester ini")')).toBeVisible();
+    await expect(page.locator('a[href="/courses"]:has-text("Tambah Mata Kuliah")').first()).toBeVisible();
+
+    // 4. Tambah Mata Kuliah
+    await page.click('a[href="/courses"]:has-text("Tambah Mata Kuliah")');
+    await page.waitForURL('**/courses');
+    await page.click('button:has-text("Tambah Mata Kuliah")');
+    await page.selectOption('#create-course-sem', { index: 1 });
+    await page.fill('#create-course-name', 'Jaringan Komputer');
+    await page.fill('#create-course-code', 'IF3110');
+    await page.click('button:has-text("Simpan Mata Kuliah")');
+    await expect(page.locator('text=Jaringan Komputer')).toBeVisible({ timeout: 10000 });
+
+    // 5. Verifikasi Dashboard Aktif dengan Baris Statistik
+    await page.goto('/dashboard');
+    await expect(page.getByRole('heading', { name: 'Tugas Hari Ini' })).toBeVisible();
+    await expect(page.getByText('Tugas Terlambat')).toBeVisible();
+    await expect(page.getByText('Tugas Selesai')).toBeVisible();
+
+    // 6. Uji Aksi Utama: Tambah Tugas dari Dashboard via Modal
+    await page.click('button:has-text("Tambah tugas")');
+    await expect(page.locator('h2:has-text("Tambah Tugas Baru")')).toBeVisible();
+    await page.fill('#task-title', 'Laporan Praktikum Socket TCP');
+    await page.fill('#task-duedate', '2026-10-15T23:59');
+    await page.selectOption('#task-priority', 'HIGH');
+    await page.click('button:has-text("Simpan Tugas")');
+
+    // Dialog menutup dan tugas muncul di daftar
+    await expect(page.locator('h2:has-text("Tambah Tugas Baru")')).not.toBeVisible();
+    await expect(page.getByText('Laporan Praktikum Socket TCP')).toBeVisible({ timeout: 10000 });
+    await expect(page.getByText('Tinggi')).toBeVisible();
+
+    // 7. Uji Checkbox Penyelesaian Tugas (Keyboard Accessible & Status Persistence)
+    const taskCheckbox = page.locator('button[role="checkbox"][aria-label*="Laporan Praktikum Socket TCP"]');
+    await expect(taskCheckbox).toBeVisible();
+    await expect(taskCheckbox).toHaveAttribute('data-state', 'unchecked');
+
+    // Klik checkbox untuk menyelesaikan tugas
+    await taskCheckbox.click();
+
+    // Setelah tugas diselesaikan, status diperbarui: tugas berpindah dari daftar belum selesai dan count Tugas Selesai bertambah
+    await expect(page.locator('button[role="checkbox"][aria-label*="Laporan Praktikum Socket TCP"]')).not.toBeVisible({ timeout: 10000 });
+    await expect(page.locator('text=1').first()).toBeVisible(); // 1 selesai
+
+    // 8. Verifikasi Sinkronisasi Selector Semester di Sidebar dengan Dashboard
+    // Semester Gasal 2026/2027 yang aktif harus muncul baik di sidebar maupun header dashboard
+    await expect(page.locator('button[aria-label="Pilih semester aktif"]').getByText('Semester Gasal 2026/2027')).toBeVisible();
+
+    // 9. Verifikasi Filter Dropdown Radix di Halaman Materi (Buka/Tutup & Opsi)
+    await page.goto('/materials');
+    await expect(page.locator('h1:has-text("Materi PDF")')).toBeVisible();
+    const courseSelectTrigger = page.locator('button[role="combobox"]').first();
+    await expect(courseSelectTrigger).toBeVisible();
+    await courseSelectTrigger.click();
+    await expect(page.locator('[role="listbox"]').getByText('Semua Mata Kuliah')).toBeVisible();
+    await page.keyboard.press('Escape');
+    await expect(page.locator('[role="listbox"]')).not.toBeVisible();
+
+    // 10. Verifikasi Pemisahan Error Fetch (bukan ditampilkan sebagai semester kosong)
+    // Simulasikan kegagalan network pada endpoint dashboard
+    await page.route('**/api/dashboard**', (route) => route.abort('failed'));
+    await page.goto('/dashboard');
+    await expect(page.locator('text=Terjadi kesalahan saat memuat data')).toBeVisible({ timeout: 10000 });
+    await expect(page.locator('text=Mulai dari semester pertamamu')).not.toBeVisible();
   });
 });

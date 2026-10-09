@@ -5,14 +5,27 @@ import {
 } from '@studyflow/shared';
 import { authFetch } from './auth-client';
 
-export async function listSemesters(status?: 'all' | 'active' | 'archived'): Promise<{ semesters: Semester[]; activeSemester: Semester | null }> {
+export async function listSemesters(status?: 'all' | 'active' | 'archived'): Promise<{ semesters: Semester[]; activeSemester: Semester | null; activeSemesterId: string | null }> {
   const query = status ? `?status=${status}` : '';
   const res = await authFetch(`/api/semesters${query}`);
   if (!res.ok) {
     const errorData = await res.json().catch(() => ({}));
     throw new Error(errorData.error?.message || 'Gagal memuat daftar semester');
   }
-  return res.json();
+  const data = await res.json();
+  const semesters: Semester[] = data.semesters || [];
+  const activeSemesterId: string | null = data.activeSemesterId || null;
+  const activeSemester: Semester | null =
+    data.activeSemester ||
+    semesters.find((s) => s.id === activeSemesterId) ||
+    semesters.find((s) => s.isActive && !s.archivedAt) ||
+    null;
+
+  return {
+    semesters,
+    activeSemester,
+    activeSemesterId,
+  };
 }
 
 export async function getSemester(id: string): Promise<Semester> {

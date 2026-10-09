@@ -165,6 +165,9 @@ export default function SemestersPage(): React.JSX.Element {
     try {
       await activateSemester(id);
       await fetchSemesters();
+      window.dispatchEvent(
+        new CustomEvent('studyflow:semester-changed', { detail: { semesterId: id } })
+      );
       router.refresh();
     } catch (err) {
       setErrorMsg(err instanceof Error ? err.message : 'Gagal mengaktifkan semester');

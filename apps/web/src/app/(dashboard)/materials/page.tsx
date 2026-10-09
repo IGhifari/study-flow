@@ -26,7 +26,13 @@ import { listCourses } from '@/lib/course-client';
 import { getProfile } from '@/lib/auth-client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Select } from '@/components/ui/select';
+import {
+  RadixSelect as Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from '@/components/ui/select';
 import { Card, CardContent } from '@/components/ui/card';
 import { MaterialUploadDialog } from '@/components/materials/material-upload-dialog';
 import { MaterialStatusBadge } from '@/components/materials/material-status-badge';
@@ -154,42 +160,54 @@ export default function MaterialsPage(): React.JSX.Element {
       {/* Filter and Search Toolbar */}
       <Card>
         <CardContent className="p-4">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
                 placeholder="Cari judul materi..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="pl-9"
+                className="pl-9 h-11"
               />
             </div>
 
-            <div className="flex flex-wrap items-center gap-2">
-              <Select
-                value={courseFilter}
-                onChange={(e) => setCourseFilter(e.target.value)}
-                className="w-[180px]"
-              >
-                <option value="">Semua Mata Kuliah</option>
-                {courses.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.name}
-                  </option>
-                ))}
-              </Select>
+            <div className="flex flex-col sm:flex-row sm:items-center gap-2.5">
+              <div className="w-full sm:w-[220px]">
+                <Select
+                  value={courseFilter || 'ALL'}
+                  onValueChange={(val) => setCourseFilter(val === 'ALL' ? '' : val)}
+                >
+                  <SelectTrigger className="h-11">
+                    <SelectValue placeholder="Semua Mata Kuliah" />
+                  </SelectTrigger>
+                  <SelectContent className="max-w-[calc(100vw-2rem)] sm:max-w-[320px]">
+                    <SelectItem value="ALL">Semua Mata Kuliah</SelectItem>
+                    {courses.map((c) => (
+                      <SelectItem key={c.id} value={c.id}>
+                        {c.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
 
-              <Select
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-                className="w-[160px]"
-              >
-                <option value="">Semua Status</option>
-                <option value="READY">Siap dipelajari</option>
-                <option value="PROCESSING">Membaca PDF</option>
-                <option value="QUEUED">Dalam antrean</option>
-                <option value="FAILED">Gagal</option>
-              </Select>
+              <div className="w-full sm:w-[180px]">
+                <Select
+                  value={statusFilter || 'ALL'}
+                  onValueChange={(val) => setStatusFilter(val === 'ALL' ? '' : val)}
+                >
+                  <SelectTrigger className="h-11">
+                    <SelectValue placeholder="Semua Status" />
+                  </SelectTrigger>
+                  <SelectContent className="max-w-[calc(100vw-2rem)] sm:max-w-[240px]">
+                    <SelectItem value="ALL">Semua Status</SelectItem>
+                    <SelectItem value="READY">Siap dipelajari</SelectItem>
+                    <SelectItem value="PROCESSING">Membaca PDF</SelectItem>
+                    <SelectItem value="QUEUED">Dalam antrean</SelectItem>
+                    <SelectItem value="FAILED">Gagal</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
 
               {hasFilter && (
                 <Button
@@ -200,7 +218,7 @@ export default function MaterialsPage(): React.JSX.Element {
                     setCourseFilter('');
                     setStatusFilter('');
                   }}
-                  className="text-xs text-muted-foreground"
+                  className="h-11 px-3 text-xs text-muted-foreground hover:text-foreground shrink-0"
                 >
                   Hapus filter
                 </Button>

@@ -36,7 +36,14 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { Select } from '@/components/ui/select';
+import {
+  RadixSelect,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+  NativeSelect,
+} from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import {
   Card,
@@ -110,6 +117,14 @@ export default function CoursesPage(): React.JSX.Element {
       }
     }
     loadSemesters();
+
+    const handleSemesterChange = () => {
+      loadSemesters();
+    };
+    window.addEventListener('studyflow:semester-changed', handleSemesterChange);
+    return () => {
+      window.removeEventListener('studyflow:semester-changed', handleSemesterChange);
+    };
   }, []);
 
   const fetchCourses = React.useCallback(async () => {
@@ -284,19 +299,23 @@ export default function CoursesPage(): React.JSX.Element {
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex flex-wrap items-center gap-3">
           {/* Semester Selector */}
-          <div className="w-48 sm:w-56">
-            <Select
+          <div className="w-56 sm:w-64">
+            <RadixSelect
               value={selectedSemesterId}
-              onChange={(e) => setSelectedSemesterId(e.target.value)}
-              aria-label="Pilih filter semester"
+              onValueChange={(val) => setSelectedSemesterId(val)}
             >
-              <option value="all">Semua Semester</option>
-              {semesters.map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.name} {s.isActive ? '(Aktif)' : ''}
-                </option>
-              ))}
-            </Select>
+              <SelectTrigger className="h-11">
+                <SelectValue placeholder="Semua Semester" />
+              </SelectTrigger>
+              <SelectContent className="max-w-[calc(100vw-2rem)] sm:max-w-[300px]">
+                <SelectItem value="all">Semua Semester</SelectItem>
+                {semesters.map((s) => (
+                  <SelectItem key={s.id} value={s.id}>
+                    {s.name} {s.isActive ? '(Aktif)' : ''}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </RadixSelect>
           </div>
 
           {/* Archive Status Toggle */}
@@ -549,7 +568,7 @@ export default function CoursesPage(): React.JSX.Element {
             <div className="mt-4 space-y-4">
               <div className="space-y-1.5">
                 <Label htmlFor="create-course-sem">Semester</Label>
-                <Select
+                <NativeSelect
                   id="create-course-sem"
                   value={createSemesterId}
                   onChange={(e) => setCreateSemesterId(e.target.value)}
@@ -561,7 +580,7 @@ export default function CoursesPage(): React.JSX.Element {
                       {s.name} ({s.academicYear}) {s.isActive ? '— Aktif' : ''}
                     </option>
                   ))}
-                </Select>
+                </NativeSelect>
               </div>
 
               <div className="space-y-1.5">

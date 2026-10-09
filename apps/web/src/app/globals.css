@@ -129,3 +129,62 @@
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
 }
+
+@keyframes dropdown-fade-in {
+  from {
+    opacity: 0;
+    transform: scale(0.98) translateY(var(--dropdown-shift-in, -4px));
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@keyframes dropdown-fade-out {
+  from {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: scale(0.98) translateY(var(--dropdown-shift-out, -4px));
+  }
+}
+
+.animate-dropdown-in {
+  animation: dropdown-fade-in 170ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-dropdown-out {
+  animation: dropdown-fade-out 120ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+[data-side="top"] {
+  --dropdown-shift-in: 4px;
+  --dropdown-shift-out: 4px;
+}
+
+[data-side="bottom"] {
+  --dropdown-shift-in: -4px;
+  --dropdown-shift-out: -4px;
+}
+
+[data-side="left"] {
+  --dropdown-shift-in: 0px;
+  --dropdown-shift-out: 0px;
+}
+
+[data-side="right"] {
+  --dropdown-shift-in: 0px;
+  --dropdown-shift-out: 0px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-dropdown-in,
+  .animate-dropdown-out {
+    animation-duration: 1ms !important;
+    animation-timing-function: linear !important;
+    transform: none !important;
+  }
+}

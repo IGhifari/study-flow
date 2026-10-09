@@ -41,7 +41,14 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { Select } from '@/components/ui/select';
+import {
+  RadixSelect,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+  NativeSelect,
+} from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import {
   Card,
@@ -338,71 +345,88 @@ export default function AssignmentsPage(): React.JSX.Element {
           </div>
 
           {/* Filter Semester */}
-          <div>
-            <Select
+          <div className="w-full sm:w-[190px]">
+            <RadixSelect
               value={selectedSemesterId}
-              onChange={(e) => setSelectedSemesterId(e.target.value)}
-              aria-label="Filter Semester"
+              onValueChange={(val) => setSelectedSemesterId(val)}
             >
-              <option value="all">Semua Semester</option>
-              {semesters.map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.name} {s.isActive ? '(Aktif)' : ''}
-                </option>
-              ))}
-            </Select>
+              <SelectTrigger className="h-11">
+                <SelectValue placeholder="Semua Semester" />
+              </SelectTrigger>
+              <SelectContent className="max-w-[calc(100vw-2rem)] sm:max-w-[280px]">
+                <SelectItem value="all">Semua Semester</SelectItem>
+                {semesters.map((s) => (
+                  <SelectItem key={s.id} value={s.id}>
+                    {s.name} {s.isActive ? '(Aktif)' : ''}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </RadixSelect>
           </div>
 
           {/* Filter Course */}
-          <div>
-            <Select
+          <div className="w-full sm:w-[210px]">
+            <RadixSelect
               value={selectedCourseId}
-              onChange={(e) => setSelectedCourseId(e.target.value)}
-              aria-label="Filter Mata Kuliah"
+              onValueChange={(val) => setSelectedCourseId(val)}
             >
-              <option value="all">Semua Mata Kuliah</option>
-              {courses.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name} {c.code ? `(${c.code})` : ''} {c.archivedAt ? '[Arsip]' : ''}
-                </option>
-              ))}
-            </Select>
+              <SelectTrigger className="h-11">
+                <SelectValue placeholder="Semua Mata Kuliah" />
+              </SelectTrigger>
+              <SelectContent className="max-w-[calc(100vw-2rem)] sm:max-w-[320px]">
+                <SelectItem value="all">Semua Mata Kuliah</SelectItem>
+                {courses.map((c) => (
+                  <SelectItem key={c.id} value={c.id}>
+                    {c.name} {c.code ? `(${c.code})` : ''} {c.archivedAt ? '[Arsip]' : ''}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </RadixSelect>
           </div>
 
           {/* Filter Status */}
-          <div>
-            <Select
+          <div className="w-full sm:w-[170px]">
+            <RadixSelect
               value={selectedStatus}
-              onChange={(e) => setSelectedStatus(e.target.value)}
-              aria-label="Filter Status"
+              onValueChange={(val) => setSelectedStatus(val)}
             >
-              <option value="ALL">Semua Status</option>
-              <option value="TODO">Belum Dikerjakan</option>
-              <option value="IN_PROGRESS">Sedang Dikerjakan</option>
-              <option value="DONE">Selesai</option>
-            </Select>
+              <SelectTrigger className="h-11">
+                <SelectValue placeholder="Semua Status" />
+              </SelectTrigger>
+              <SelectContent className="max-w-[calc(100vw-2rem)] sm:max-w-[240px]">
+                <SelectItem value="ALL">Semua Status</SelectItem>
+                <SelectItem value="TODO">Belum Dikerjakan</SelectItem>
+                <SelectItem value="IN_PROGRESS">Sedang Dikerjakan</SelectItem>
+                <SelectItem value="DONE">Selesai</SelectItem>
+              </SelectContent>
+            </RadixSelect>
           </div>
 
           {/* Filter Priority & Overdue */}
-          <div className="flex items-center gap-2">
-            <Select
-              value={selectedPriority}
-              onChange={(e) => setSelectedPriority(e.target.value)}
-              aria-label="Filter Prioritas"
-              className="w-full"
-            >
-              <option value="ALL">Prioritas: Semua</option>
-              <option value="HIGH">Tinggi (High)</option>
-              <option value="MEDIUM">Sedang (Medium)</option>
-              <option value="LOW">Rendah (Low)</option>
-            </Select>
+          <div className="flex items-center gap-2 w-full sm:w-auto">
+            <div className="w-full sm:w-[180px]">
+              <RadixSelect
+                value={selectedPriority}
+                onValueChange={(val) => setSelectedPriority(val)}
+              >
+                <SelectTrigger className="h-11">
+                  <SelectValue placeholder="Semua Prioritas" />
+                </SelectTrigger>
+                <SelectContent className="max-w-[calc(100vw-2rem)] sm:max-w-[220px]">
+                  <SelectItem value="ALL">Semua Prioritas</SelectItem>
+                  <SelectItem value="HIGH">Tinggi (High)</SelectItem>
+                  <SelectItem value="MEDIUM">Sedang (Medium)</SelectItem>
+                  <SelectItem value="LOW">Rendah (Low)</SelectItem>
+                </SelectContent>
+              </RadixSelect>
+            </div>
 
             <Button
               variant={isOverdueOnly ? 'destructive' : 'outline'}
               size="sm"
               onClick={() => setIsOverdueOnly(!isOverdueOnly)}
               title="Hanya tampilkan tugas terlambat"
-              className="shrink-0"
+              className="h-11 w-11 p-0 shrink-0"
             >
               <Clock className="h-4 w-4" />
             </Button>
@@ -412,7 +436,7 @@ export default function AssignmentsPage(): React.JSX.Element {
               size="sm"
               onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
               title={`Urutkan deadline: ${sortOrder === 'asc' ? 'Terdekat' : 'Terjauh'}`}
-              className="shrink-0"
+              className="h-11 w-11 p-0 shrink-0"
             >
               <ArrowUpDown className="h-4 w-4" />
             </Button>
@@ -746,7 +770,7 @@ export default function AssignmentsPage(): React.JSX.Element {
 
             <div className="space-y-1.5">
               <Label htmlFor="create-course">Mata Kuliah *</Label>
-              <Select
+              <NativeSelect
                 id="create-course"
                 value={createCourseId}
                 onChange={(e) => setCreateCourseId(e.target.value)}
@@ -758,7 +782,7 @@ export default function AssignmentsPage(): React.JSX.Element {
                     {c.name} {c.code ? `(${c.code})` : ''}
                   </option>
                 ))}
-              </Select>
+              </NativeSelect>
             </div>
 
             <div className="space-y-1.5">
@@ -778,7 +802,7 @@ export default function AssignmentsPage(): React.JSX.Element {
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
                 <Label htmlFor="create-priority">Prioritas</Label>
-                <Select
+                <NativeSelect
                   id="create-priority"
                   value={createPriority}
                   onChange={(e) => setCreatePriority(e.target.value as any)}
@@ -786,12 +810,12 @@ export default function AssignmentsPage(): React.JSX.Element {
                   <option value="LOW">Rendah (Low)</option>
                   <option value="MEDIUM">Sedang (Medium)</option>
                   <option value="HIGH">Tinggi (High)</option>
-                </Select>
+                </NativeSelect>
               </div>
 
               <div className="space-y-1.5">
                 <Label htmlFor="create-status">Status</Label>
-                <Select
+                <NativeSelect
                   id="create-status"
                   value={createStatus}
                   onChange={(e) => setCreateStatus(e.target.value as any)}
@@ -799,7 +823,7 @@ export default function AssignmentsPage(): React.JSX.Element {
                   <option value="TODO">Belum Dikerjakan</option>
                   <option value="IN_PROGRESS">Sedang Dikerjakan</option>
                   <option value="DONE">Selesai</option>
-                </Select>
+                </NativeSelect>
               </div>
             </div>
 
@@ -894,7 +918,7 @@ export default function AssignmentsPage(): React.JSX.Element {
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
                 <Label htmlFor="edit-priority">Prioritas</Label>
-                <Select
+                <NativeSelect
                   id="edit-priority"
                   value={editPriority}
                   onChange={(e) => setEditPriority(e.target.value as any)}
@@ -902,12 +926,12 @@ export default function AssignmentsPage(): React.JSX.Element {
                   <option value="LOW">Rendah (Low)</option>
                   <option value="MEDIUM">Sedang (Medium)</option>
                   <option value="HIGH">Tinggi (High)</option>
-                </Select>
+                </NativeSelect>
               </div>
 
               <div className="space-y-1.5">
                 <Label htmlFor="edit-status">Status</Label>
-                <Select
+                <NativeSelect
                   id="edit-status"
                   value={editStatus}
                   onChange={(e) => setEditStatus(e.target.value as any)}
@@ -915,7 +939,7 @@ export default function AssignmentsPage(): React.JSX.Element {
                   <option value="TODO">Belum Dikerjakan</option>
                   <option value="IN_PROGRESS">Sedang Dikerjakan</option>
                   <option value="DONE">Selesai</option>
-                </Select>
+                </NativeSelect>
               </div>
             </div>
 
