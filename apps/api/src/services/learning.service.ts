@@ -404,76 +404,110 @@ export async function startOrResumeQuizAttempt(
   userId: string,
   quizId: string
 ): Promise<StartQuizAttemptResponse> {
-  const quiz = await prisma.quiz.findUnique({
-    where: { id: quizId },
-    include: {
-      material: { select: { deletedAt: true } },
-      questions: { orderBy: { orderIndex: 'asc' } },
-    },
-  });
+  return await prisma.$transaction(async (tx) => {
+    // 1. Lock Quiz row to serialize attempt creation/resumption for this quiz
+    const quizRows = await tx.$queryRaw<
+      Array<{
+        id: string;
+        userId: string;
+        status: string;
+        title: string;
+        materialId: string;
+      }>
+    >`
+      SELECT
+        q.id AS id,
+        q.user_id AS "userId",
+        q.status AS status,
+        q.title AS title,
+        q.material_id AS "materialId"
+      FROM quizzes q
+      WHERE q.id = ${quizId}
+      FOR UPDATE
+    `;
 
-  if (!quiz || (quiz.material && quiz.material.deletedAt !== null)) {
-    throw createError(404, 'NOT_FOUND', 'Kuis tidak ditemukan');
-  }
-  if (quiz.userId !== userId) {
-    throw createError(403, 'FORBIDDEN', 'Anda tidak memiliki akses ke kuis ini');
-  }
-  if (quiz.status !== 'READY') {
-    throw createError(400, 'QUIZ_NOT_READY', 'Kuis belum siap dikerjakan.');
-  }
+    const quizRow = quizRows[0];
+    if (!quizRow) {
+      throw createError(404, 'NOT_FOUND', 'Kuis tidak ditemukan');
+    }
 
-  // Look for existing unfinished attempt or create new one
-  let attempt = await prisma.quizAttempt.findFirst({
-    where: {
-      quizId,
-      userId,
-      submittedAt: null,
-    },
-    include: {
-      answers: true,
-    },
-  });
+    if (quizRow.userId !== userId) {
+      throw createError(403, 'FORBIDDEN', 'Anda tidak memiliki akses ke kuis ini');
+    }
 
-  if (!attempt) {
-    attempt = await prisma.quizAttempt.create({
-      data: {
+    if (quizRow.status !== 'READY') {
+      throw createError(400, 'QUIZ_NOT_READY', 'Kuis belum siap dikerjakan.');
+    }
+
+    // Check material deletedAt
+    const materialRows = await tx.$queryRaw<Array<{ id: string; deletedAt: Date | null }>>`
+      SELECT id, deleted_at AS "deletedAt" FROM materials WHERE id = ${quizRow.materialId}
+    `;
+    const materialRow = materialRows[0];
+    if (!materialRow || materialRow.deletedAt !== null) {
+      throw createError(404, 'NOT_FOUND', 'Kuis tidak ditemukan');
+    }
+
+    // 2. Fetch quiz questions
+    const questions = await tx.quizQuestion.findMany({
+      where: { quizId },
+      orderBy: { orderIndex: 'asc' },
+    });
+
+    // 3. Check for existing active attempt (submittedAt IS NULL) for this user and quiz
+    let attempt = await tx.quizAttempt.findFirst({
+      where: {
         quizId,
         userId,
-        totalQuestions: quiz.questions.length,
+        submittedAt: null,
       },
       include: {
         answers: true,
       },
     });
-  }
 
-  // Map client questions WITHOUT leaking correctIndex or explanation
-  const questions: ClientQuizQuestion[] = quiz.questions.map((q) => ({
-    id: q.id,
-    quizId: q.quizId,
-    question: q.question,
-    options: q.options,
-    orderIndex: q.orderIndex,
-  }));
+    // 4. If no active attempt exists, create one
+    if (!attempt) {
+      attempt = await tx.quizAttempt.create({
+        data: {
+          quizId,
+          userId,
+          totalQuestions: questions.length,
+        },
+        include: {
+          answers: true,
+        },
+      });
+    }
 
-  const existingAnswers: Record<string, number> = {};
-  if (attempt.answers) {
-    for (const ans of attempt.answers) {
-      if (ans.selectedIndex !== null) {
-        existingAnswers[ans.questionId] = ans.selectedIndex;
+    // 5. Map client questions WITHOUT leaking correctIndex or explanation
+    const clientQuestions: ClientQuizQuestion[] = questions.map((q) => ({
+      id: q.id,
+      quizId: q.quizId,
+      question: q.question,
+      options: q.options,
+      orderIndex: q.orderIndex,
+    }));
+
+    const existingAnswers: Record<string, number> = {};
+    if (attempt.answers) {
+      for (const ans of attempt.answers) {
+        if (ans.selectedIndex !== null) {
+          existingAnswers[ans.questionId] = ans.selectedIndex;
+        }
       }
     }
-  }
 
-  return {
-    attemptId: attempt.id,
-    quizId: quiz.id,
-    materialId: quiz.materialId,
-    title: quiz.title,
-    totalQuestions: quiz.questions.length,
-    questions,
-    existingAnswers,
-  };
+    return {
+      attemptId: attempt.id,
+      quizId: quizRow.id,
+      materialId: quizRow.materialId,
+      title: quizRow.title,
+      totalQuestions: questions.length,
+      questions: clientQuestions,
+      existingAnswers,
+    };
+  });
 }
 
 export async function saveQuizDraftAnswers(
@@ -481,34 +515,75 @@ export async function saveQuizDraftAnswers(
   attemptId: string,
   answers: { questionId: string; selectedIndex: number | null }[]
 ): Promise<{ success: boolean; savedCount: number }> {
-  const attempt = await prisma.quizAttempt.findUnique({
-    where: { id: attemptId },
-    include: {
-      quiz: {
-        include: {
-          material: { select: { deletedAt: true } },
-          questions: { select: { id: true } },
-        },
+  return await prisma.$transaction(async (tx) => {
+    // 1. Acquire row lock on the attempt
+    const attemptRows = await tx.$queryRaw<
+      Array<{
+        id: string;
+        quizId: string;
+        userId: string;
+        submittedAt: Date | null;
+      }>
+    >`
+      SELECT
+        id,
+        quiz_id AS "quizId",
+        user_id AS "userId",
+        submitted_at AS "submittedAt"
+      FROM quiz_attempts
+      WHERE id = ${attemptId}
+      FOR UPDATE
+    `;
+
+    const attempt = attemptRows[0];
+    if (!attempt) {
+      throw createError(404, 'NOT_FOUND', 'Sesi pengerjaan kuis tidak ditemukan');
+    }
+
+    if (attempt.userId !== userId) {
+      throw createError(403, 'FORBIDDEN', 'Anda tidak memiliki akses ke sesi pengerjaan kuis ini');
+    }
+
+    // 2. Check if already submitted inside the row lock!
+    if (attempt.submittedAt !== null) {
+      throw createError(400, 'ATTEMPT_ALREADY_SUBMITTED', 'Kuis sudah disubmit dan tidak dapat diubah.');
+    }
+
+    // 3. Verify material deletedAt and quiz
+    const quiz = await tx.quiz.findUnique({
+      where: { id: attempt.quizId },
+      include: {
+        material: { select: { deletedAt: true } },
+        questions: { select: { id: true, options: true, question: true } },
       },
-    },
-  });
+    });
 
-  if (!attempt || (attempt.quiz.material && attempt.quiz.material.deletedAt !== null)) {
-    throw createError(404, 'NOT_FOUND', 'Sesi pengerjaan kuis tidak ditemukan');
-  }
-  if (attempt.userId !== userId) {
-    throw createError(403, 'FORBIDDEN', 'Anda tidak memiliki akses ke sesi pengerjaan kuis ini');
-  }
-  if (attempt.submittedAt !== null) {
-    throw createError(400, 'ATTEMPT_ALREADY_SUBMITTED', 'Kuis sudah disubmit dan tidak dapat diubah.');
-  }
+    if (!quiz || (quiz.material && quiz.material.deletedAt !== null)) {
+      throw createError(404, 'NOT_FOUND', 'Sesi pengerjaan kuis tidak ditemukan');
+    }
 
-  const validQuestionIds = new Set(attempt.quiz.questions.map((q) => q.id));
+    const questionMap = new Map(quiz.questions.map((q) => [q.id, q]));
 
-  await prisma.$transaction(async (tx) => {
+    // 4. Validate all answer inputs
+    const seenQuestions = new Set<string>();
     for (const ans of answers) {
-      if (!validQuestionIds.has(ans.questionId)) continue;
+      if (seenQuestions.has(ans.questionId)) {
+        throw createError(400, 'VALIDATION_ERROR', 'Jawaban memuat duplikasi pertanyaan');
+      }
+      seenQuestions.add(ans.questionId);
 
+      const question = questionMap.get(ans.questionId);
+      if (!question) {
+        throw createError(400, 'VALIDATION_ERROR', 'Pertanyaan tidak ditemukan pada kuis ini.');
+      }
+
+      if (ans.selectedIndex !== null && (ans.selectedIndex < 0 || ans.selectedIndex >= question.options.length)) {
+        throw createError(400, 'VALIDATION_ERROR', 'Indeks pilihan jawaban tidak valid.');
+      }
+    }
+
+    // 5. Upsert or delete answers
+    for (const ans of answers) {
       if (ans.selectedIndex === null) {
         await tx.quizAttemptAnswer.deleteMany({
           where: { attemptId, questionId: ans.questionId },
@@ -523,6 +598,7 @@ export async function saveQuizDraftAnswers(
           },
           update: {
             selectedIndex: ans.selectedIndex,
+            isCorrect: false, // draft answers are never marked correct
           },
           create: {
             attemptId,
@@ -533,9 +609,9 @@ export async function saveQuizDraftAnswers(
         });
       }
     }
-  });
 
-  return { success: true, savedCount: answers.length };
+    return { success: true, savedCount: answers.length };
+  });
 }
 
 export async function submitQuizAttempt(
@@ -543,63 +619,136 @@ export async function submitQuizAttempt(
   attemptId: string,
   userAnswers: { questionId: string; selectedIndex: number | null }[]
 ): Promise<QuizAttemptResponse> {
-  const attempt = await prisma.quizAttempt.findUnique({
-    where: { id: attemptId },
-    include: {
-      quiz: {
-        include: {
-          material: { select: { deletedAt: true } },
-          questions: { orderBy: { orderIndex: 'asc' } },
-        },
+  return await prisma.$transaction(async (tx) => {
+    // 1. Acquire row lock on the attempt
+    const attemptRows = await tx.$queryRaw<
+      Array<{
+        id: string;
+        quizId: string;
+        userId: string;
+        score: number;
+        totalQuestions: number;
+        correctAnswersCount: number;
+        submittedAt: Date | null;
+      }>
+    >`
+      SELECT
+        id,
+        quiz_id AS "quizId",
+        user_id AS "userId",
+        score,
+        total_questions AS "totalQuestions",
+        correct_answers_count AS "correctAnswersCount",
+        submitted_at AS "submittedAt"
+      FROM quiz_attempts
+      WHERE id = ${attemptId}
+      FOR UPDATE
+    `;
+
+    const attempt = attemptRows[0];
+    if (!attempt) {
+      throw createError(404, 'NOT_FOUND', 'Sesi pengerjaan kuis tidak ditemukan');
+    }
+
+    if (attempt.userId !== userId) {
+      throw createError(403, 'FORBIDDEN', 'Anda tidak memiliki akses ke sesi pengerjaan kuis ini');
+    }
+
+    // 2. Fetch quiz and questions
+    const quiz = await tx.quiz.findUnique({
+      where: { id: attempt.quizId },
+      include: {
+        material: { select: { deletedAt: true } },
+        questions: { orderBy: { orderIndex: 'asc' } },
       },
-      answers: true,
-    },
-  });
-
-  if (!attempt || (attempt.quiz.material && attempt.quiz.material.deletedAt !== null)) {
-    throw createError(404, 'NOT_FOUND', 'Sesi pengerjaan kuis tidak ditemukan');
-  }
-  if (attempt.userId !== userId) {
-    throw createError(403, 'FORBIDDEN', 'Anda tidak memiliki akses ke sesi pengerjaan kuis ini');
-  }
-
-  // If already submitted (idempotent submission support), return existing evaluation
-  if (attempt.submittedAt !== null) {
-    return getQuizAttemptResult(userId, attemptId);
-  }
-
-  const questions = attempt.quiz.questions;
-
-  // Calculate score on server
-  let correctCount = 0;
-  const answerRecords: {
-    questionId: string;
-    selectedIndex: number | null;
-    isCorrect: boolean;
-  }[] = [];
-
-  for (const q of questions) {
-    const userAns = userAnswers.find((a) => a.questionId === q.id);
-    const selectedIdx = userAns?.selectedIndex ?? null;
-    const isCorrect = selectedIdx !== null && selectedIdx === q.correctIndex;
-
-    if (isCorrect) correctCount++;
-    answerRecords.push({
-      questionId: q.id,
-      selectedIndex: selectedIdx,
-      isCorrect,
     });
-  }
 
-  const totalQuestions = questions.length;
-  const score = totalQuestions > 0 ? Math.round((correctCount / totalQuestions) * 100 * 10) / 10 : 0;
-  const now = new Date();
+    if (!quiz || (quiz.material && quiz.material.deletedAt !== null)) {
+      throw createError(404, 'NOT_FOUND', 'Sesi pengerjaan kuis tidak ditemukan');
+    }
 
-  await prisma.$transaction(async (tx) => {
-    // Delete any draft answers
+    // 3. IDEMPOTENT SUBMISSION: If already submitted, return existing finalized evaluation
+    if (attempt.submittedAt !== null) {
+      const existingAnswers = await tx.quizAttemptAnswer.findMany({
+        where: { attemptId },
+      });
+      const answerMap = new Map(existingAnswers.map((a) => [a.questionId, a]));
+
+      const completedQuestions: CompletedQuizQuestion[] = quiz.questions.map((q) => {
+        const ans = answerMap.get(q.id);
+        return {
+          id: q.id,
+          quizId: q.quizId,
+          question: q.question,
+          options: q.options,
+          correctIndex: q.correctIndex,
+          explanation: q.explanation,
+          pageReferences: q.pageReferences,
+          orderIndex: q.orderIndex,
+          userSelectedIndex: ans?.selectedIndex ?? null,
+          isCorrect: ans?.isCorrect ?? false,
+        };
+      });
+
+      return {
+        id: attempt.id,
+        quizId: attempt.quizId,
+        userId: attempt.userId,
+        score: attempt.score,
+        totalQuestions: attempt.totalQuestions,
+        correctAnswersCount: attempt.correctAnswersCount,
+        submittedAt: attempt.submittedAt.toISOString(),
+        questions: completedQuestions,
+      };
+    }
+
+    // 4. Validate userAnswers
+    const questionMap = new Map(quiz.questions.map((q) => [q.id, q]));
+    const seenQuestions = new Set<string>();
+
+    for (const ans of userAnswers) {
+      if (seenQuestions.has(ans.questionId)) {
+        throw createError(400, 'VALIDATION_ERROR', 'Jawaban memuat duplikasi pertanyaan');
+      }
+      seenQuestions.add(ans.questionId);
+
+      const question = questionMap.get(ans.questionId);
+      if (!question) {
+        throw createError(400, 'VALIDATION_ERROR', 'Pertanyaan tidak ditemukan pada kuis ini.');
+      }
+
+      if (ans.selectedIndex !== null && (ans.selectedIndex < 0 || ans.selectedIndex >= question.options.length)) {
+        throw createError(400, 'VALIDATION_ERROR', 'Indeks pilihan jawaban tidak valid.');
+      }
+    }
+
+    // 5. Calculate score on server
+    const userAnswersMap = new Map(userAnswers.map((a) => [a.questionId, a.selectedIndex]));
+    let correctCount = 0;
+    const answerRecords: {
+      questionId: string;
+      selectedIndex: number | null;
+      isCorrect: boolean;
+    }[] = [];
+
+    for (const q of quiz.questions) {
+      const selectedIdx = userAnswersMap.has(q.id) ? (userAnswersMap.get(q.id) ?? null) : null;
+      const isCorrect = selectedIdx !== null && selectedIdx === q.correctIndex;
+      if (isCorrect) correctCount++;
+      answerRecords.push({
+        questionId: q.id,
+        selectedIndex: selectedIdx,
+        isCorrect,
+      });
+    }
+
+    const totalQuestions = quiz.questions.length;
+    const score = totalQuestions > 0 ? Math.round((correctCount / totalQuestions) * 100 * 10) / 10 : 0;
+    const now = new Date();
+
+    // 6. Delete draft answers and insert scored answers atomically
     await tx.quizAttemptAnswer.deleteMany({ where: { attemptId } });
 
-    // Insert scored answers
     await tx.quizAttemptAnswer.createMany({
       data: answerRecords.map((a) => ({
         attemptId,
@@ -609,7 +758,7 @@ export async function submitQuizAttempt(
       })),
     });
 
-    // Update attempt
+    // 7. Update attempt row with score and submittedAt
     await tx.quizAttempt.update({
       where: { id: attemptId },
       data: {
@@ -619,9 +768,36 @@ export async function submitQuizAttempt(
         submittedAt: now,
       },
     });
-  });
 
-  return getQuizAttemptResult(userId, attemptId);
+    // 8. Build completed questions for response
+    const answerMap = new Map(answerRecords.map((a) => [a.questionId, a]));
+    const completedQuestions: CompletedQuizQuestion[] = quiz.questions.map((q) => {
+      const ans = answerMap.get(q.id);
+      return {
+        id: q.id,
+        quizId: q.quizId,
+        question: q.question,
+        options: q.options,
+        correctIndex: q.correctIndex,
+        explanation: q.explanation,
+        pageReferences: q.pageReferences,
+        orderIndex: q.orderIndex,
+        userSelectedIndex: ans?.selectedIndex ?? null,
+        isCorrect: ans?.isCorrect ?? false,
+      };
+    });
+
+    return {
+      id: attempt.id,
+      quizId: attempt.quizId,
+      userId: attempt.userId,
+      score,
+      totalQuestions,
+      correctAnswersCount: correctCount,
+      submittedAt: now.toISOString(),
+      questions: completedQuestions,
+    };
+  });
 }
 
 export async function getQuizAttemptResult(
