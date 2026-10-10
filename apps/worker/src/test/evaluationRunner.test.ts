@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import fs from 'node:fs';
 import path from 'node:path';
+import { spawnSync } from 'node:child_process';
 import {
   parseCliArgs,
   CliArgumentError,
@@ -12,6 +13,7 @@ import {
 } from '../../../../scripts/run-ai-evaluation.js';
 import {
   MockAiProviderAdapter,
+  GeminiAiProviderAdapter,
   AiProviderError,
   AiQuizInput,
   AiQuizResult,
@@ -187,60 +189,150 @@ describe('Evaluasi AI - Akuntabilitas dan Tata Kelola Runner', () => {
     expect(validParsed.maxCalls).toBe(15);
   });
 
-  it('6. Pemeriksaan wajib yang gagal menghasilkan status gagal (exit code nonzero)', async () => {
-    // Negative fixture corrupted expects FILE_CORRUPTED.
-    // If a negative fixture unexpectedly passes extraction or fails to match expected code:
-    const faultyNegativeFixture = {
-      id: 'faulty-negative',
-      filename: 'id-cs101-algoritma-pemrograman.pdf', // A valid PDF placed in negative list!
-      category: 'FILE_CORRUPTED',
-      expectedError: 'FILE_CORRUPTED',
-      description: 'Faulty test fixture',
+  it('6. Pemeriksaan wajib yang gagal menghasilkan status gagal (exit code nonzero)', () => {
+    const tsxCli = path.resolve(repoRoot, 'node_modules/tsx/dist/cli.mjs');
+    const runnerScript = path.resolve(repoRoot, 'scripts/run-ai-evaluation.ts');
+
+    // 6a. Argumen CLI tidak sah harus keluar dengan exit code 1
+    const invalidArgProc = spawnSync(
+      process.execPath,
+      [tsxCli, runnerScript, '--invalid-argument-test-flag'],
+      {
+        encoding: 'utf-8',
+        cwd: repoRoot,
+      }
+    );
+    expect(invalidArgProc.status).toBe(1);
+    expect(invalidArgProc.stderr).toContain('[ERROR CLI]');
+
+    // 6b. Pemeriksaan wajib fixture yang gagal harus menyebabkan proses CLI keluar dengan exit code 1
+    const tempFailingManifestPath = path.resolve(fixtureBaseDir, 'temp-failing-manifest.json');
+    const failingManifest = {
+      schemaVersion: '1.0.0',
+      datasetName: 'Failing Test Manifest',
+      validDocuments: [],
+      negativeFixtures: [
+        {
+          id: 'negative-faulty-check',
+          filename: 'id-cs101-algoritma-pemrograman.pdf', // PDF valid sengaja ditempatkan di daftar negatif
+          category: 'FILE_CORRUPTED',
+          expectedError: 'FILE_CORRUPTED',
+          description: 'Fixture yang sengaja gagal',
+        },
+      ],
     };
-
-    const res = await evaluateNegativeFixture(faultyNegativeFixture, validFixtureDir);
-    expect(res.status).toBe('FAIL');
-    expect(res.detail).toContain('seharusnya ditolak');
-  });
-
-  it('7. Batas panggilan mode live diuji memakai transport mock tanpa akses AI', async () => {
-    const baseMock = new MockAiProviderAdapter();
-    // Wrap with BudgetTrackedAdapter with maximum budget of 2 calls
-    const tracked = new BudgetTrackedAdapter(baseMock, 2);
-
-    expect(tracked.getCallCount()).toBe(0);
-    expect(tracked.getMaxCalls()).toBe(2);
-
-    const dummyInput = {
-      materialTitle: 'Test Material',
-      pages: [{ pageNumber: 1, text: 'Sample text' }],
-      totalPages: 1,
-    };
-
-    // Call 1: Summary (Succeeds)
-    await tracked.generateSummary(dummyInput);
-    expect(tracked.getCallCount()).toBe(1);
-
-    // Call 2: Flashcards (Succeeds)
-    await tracked.generateFlashcards({ ...dummyInput, targetCount: 3 });
-    expect(tracked.getCallCount()).toBe(2);
-
-    // Call 3: Quiz (MUST THROW AI_BUDGET_EXCEEDED before reaching provider)
-    await expect(
-      tracked.generateQuiz({ ...dummyInput, targetCount: 3 })
-    ).rejects.toThrow(AiProviderError);
+    fs.writeFileSync(tempFailingManifestPath, JSON.stringify(failingManifest, null, 2), 'utf-8');
 
     try {
-      await tracked.generateQuiz({ ...dummyInput, targetCount: 3 });
-    } catch (err: unknown) {
-      const aiErr = err as AiProviderError;
-      expect(aiErr.code).toBe('AI_BUDGET_EXCEEDED');
-      expect(aiErr.statusCode).toBe(429);
-      expect(aiErr.message).toContain('Batas maksimum panggilan AI (2) tercapai');
+      const failingProc = spawnSync(
+        process.execPath,
+        [tsxCli, runnerScript, `--manifest=${tempFailingManifestPath}`],
+        {
+          encoding: 'utf-8',
+          cwd: repoRoot,
+        }
+      );
+      // Proses CLI WAJIB keluar dengan exit code 1 (nonzero)
+      expect(failingProc.status).toBe(1);
+      expect(failingProc.stderr).toContain('[FATAL] Satu atau lebih pemeriksaan wajib gagal. Evaluasi berakhir dengan exit code 1.');
+    } finally {
+      if (fs.existsSync(tempFailingManifestPath)) {
+        fs.unlinkSync(tempFailingManifestPath);
+      }
+    }
+  });
+
+  it('7. Batas panggilan mode live diuji memakai transport mock tanpa akses AI (Chunk & Retry)', async () => {
+    // 7a. Uji Kasus Multi-Chunk: Dokumen membutuhkan 3 request (2 chunk + 1 merge), Budget = 2
+    const sentChunkHttpRequests: string[] = [];
+    const mockChunkFetch = vi.fn(async (url: string | URL | Request) => {
+      sentChunkHttpRequests.push(String(url));
+      const responseBody = {
+        candidates: [
+          {
+            content: {
+              parts: [
+                {
+                  text: JSON.stringify({
+                    keyConcepts: [{ concept: 'Konsep Chunk', explanation: 'Penjelasan konsep', pageReferences: [1] }],
+                    sections: [{ heading: 'Bab Bagian', content: 'Uraian isi bab bagian ini', pageReferences: [1] }],
+                  }),
+                },
+              ],
+            },
+            finishReason: 'STOP',
+          },
+        ],
+        usageMetadata: { promptTokenCount: 150, candidatesTokenCount: 100 },
+      };
+      return new Response(JSON.stringify(responseBody), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    });
+
+    const geminiChunkAdapter = new GeminiAiProviderAdapter('mock-api-key', 'gemini-2.5-flash', {
+      fetchFn: mockChunkFetch as unknown as typeof fetch,
+    });
+    const trackedChunk = new BudgetTrackedAdapter(geminiChunkAdapter, 2);
+
+    // Multi-chunk input: 2 halaman masing-masing 30.000 karakter (> 40.000 batas satu chunk) -> menghasilkan 2 chunks + 1 merge = 3 request
+    const multiChunkInput = {
+      materialTitle: 'Materi Kuliah Multi-Chunk',
+      pages: [
+        { pageNumber: 1, text: 'A'.repeat(30000) },
+        { pageNumber: 2, text: 'B'.repeat(30000) },
+      ],
+      totalPages: 2,
+    };
+
+    // Eksekusi generateSummary multi-chunk harus terhenti oleh AI_BUDGET_EXCEEDED saat mencoba request ke-3 (merge)
+    await expect(trackedChunk.generateSummary(multiChunkInput)).rejects.toThrow(AiProviderError);
+
+    // BUKTI: TEPAT 2 request HTTP yang dikirim, percobaan ke-3 ditahan sebelum request provider dikirim!
+    expect(sentChunkHttpRequests.length).toBe(2);
+    expect(trackedChunk.getCallCount()).toBe(2);
+
+    // 7b. Uji Kasus Retry: Alur mencoba retry ketika terjadi 503 error, Budget = 2
+    const sentRetryHttpRequests: string[] = [];
+    const mockRetryFetch = vi.fn(async (url: string | URL | Request) => {
+      sentRetryHttpRequests.push(String(url));
+      return new Response(JSON.stringify({ error: { message: 'Layanan AI 503 Sedang Sibuk' } }), {
+        status: 503,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    });
+
+    const geminiRetryAdapter = new GeminiAiProviderAdapter('mock-api-key', 'gemini-2.5-flash', {
+      fetchFn: mockRetryFetch as unknown as typeof fetch,
+    });
+    const trackedRetry = new BudgetTrackedAdapter(geminiRetryAdapter, 2);
+
+    let lastError: any = null;
+    // Alur caller melakukan 3 kali percobaan (request awal + 2 retry)
+    for (let attempt = 1; attempt <= 3; attempt++) {
+      try {
+        await trackedRetry.generateQuiz({
+          materialTitle: 'Materi Percobaan Retry',
+          pages: [{ pageNumber: 1, text: 'Teks dokumen singkat untuk kuis' }],
+          totalPages: 1,
+          targetCount: 3,
+        });
+      } catch (err: any) {
+        lastError = err;
+        if (err.code === 'AI_BUDGET_EXCEEDED') {
+          break;
+        }
+      }
     }
 
-    // Call count remains strictly capped at 2
-    expect(tracked.getCallCount()).toBe(2);
+    // BUKTI: Percobaan ke-3 ditolak seketika oleh budget limiter dengan AI_BUDGET_EXCEEDED sebelum HTTP fetch dikirim!
+    expect(lastError).toBeInstanceOf(AiProviderError);
+    expect(lastError.code).toBe('AI_BUDGET_EXCEEDED');
+    expect(lastError.statusCode).toBe(429);
+    // TEPAT 2 request HTTP yang terkirim (percobaan 1 dan retry 1), retry 2 TIDAK terkirim!
+    expect(sentRetryHttpRequests.length).toBe(2);
+    expect(trackedRetry.getCallCount()).toBe(2);
   });
 
   it('8. Laporan menyebut jumlah sampel yang benar-benar diproses', async () => {

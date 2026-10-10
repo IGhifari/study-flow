@@ -245,9 +245,14 @@ export function splitPagesIntoChunks(
  */
 export class MockAiProviderAdapter implements AiProviderAdapter {
   private customHandler?: (input: AiSummaryInput) => Promise<AiSummaryResult>;
+  private requestAttemptHook?: () => Promise<void> | void;
 
   setCustomHandler(handler?: (input: AiSummaryInput) => Promise<AiSummaryResult>) {
     this.customHandler = handler;
+  }
+
+  setRequestAttemptHook(hook?: () => Promise<void> | void) {
+    this.requestAttemptHook = hook;
   }
 
   async generateSummary(
@@ -369,6 +374,15 @@ export class MockAiProviderAdapter implements AiProviderAdapter {
     };
 
     if (chunks.length > 1) {
+      for (const _c of chunks) {
+        if (this.requestAttemptHook) {
+          await this.requestAttemptHook();
+        }
+      }
+      if (this.requestAttemptHook) {
+        await this.requestAttemptHook();
+      }
+
       // Deterministic merged output for multi-chunk documents
       const sections = chunks.map((c) => ({
         heading: `Bagian ${c.chunkIndex}: Halaman ${c.startPage}–${c.endPage}`,
@@ -405,6 +419,10 @@ export class MockAiProviderAdapter implements AiProviderAdapter {
         outputTokens: 350,
         durationMs: Date.now() - startTime,
       };
+    }
+
+    if (this.requestAttemptHook) {
+      await this.requestAttemptHook();
     }
 
     const result: AiSummaryResult = {
@@ -480,6 +498,10 @@ export class MockAiProviderAdapter implements AiProviderAdapter {
       await globalAiRateLimiter.acquirePermit(options.jobId);
     }
 
+    if (this.requestAttemptHook) {
+      await this.requestAttemptHook();
+    }
+
     const startTime = Date.now();
     const availablePages = input.pages.map((p) => p.pageNumber);
 
@@ -532,6 +554,10 @@ export class MockAiProviderAdapter implements AiProviderAdapter {
 
     if (options?.jobId) {
       await globalAiRateLimiter.acquirePermit(options.jobId);
+    }
+
+    if (this.requestAttemptHook) {
+      await this.requestAttemptHook();
     }
 
     const startTime = Date.now();
@@ -812,6 +838,11 @@ export const GEMINI_QUIZ_RESPONSE_SCHEMA = {
   required: ['title', 'questions'],
 };
 
+export interface GeminiAdapterOptions {
+  onRequestAttempt?: () => Promise<void> | void;
+  fetchFn?: typeof fetch;
+}
+
 /**
  * Gemini Developer API Provider Adapter using Google AI Studio Free Tier.
  * Uses structured JSON outputs and defense against prompt injection in PDF texts.
@@ -819,10 +850,26 @@ export const GEMINI_QUIZ_RESPONSE_SCHEMA = {
 export class GeminiAiProviderAdapter implements AiProviderAdapter {
   private apiKey: string;
   private model: string;
+  private options?: GeminiAdapterOptions;
 
-  constructor(apiKey: string, model = 'gemini-2.5-flash') {
+  constructor(
+    apiKey: string,
+    model = 'gemini-2.5-flash',
+    options?: GeminiAdapterOptions
+  ) {
     this.apiKey = apiKey;
     this.model = model;
+    this.options = options;
+  }
+
+  setRequestAttemptHook(hook?: () => Promise<void> | void) {
+    if (!this.options) this.options = {};
+    this.options.onRequestAttempt = hook;
+  }
+
+  setFetchFn(fetchFn?: typeof fetch) {
+    if (!this.options) this.options = {};
+    this.options.fetchFn = fetchFn;
   }
 
   private async callGeminiApi(
@@ -838,6 +885,11 @@ export class GeminiAiProviderAdapter implements AiProviderAdapter {
   }> {
     // Enforce shared rate limiter and per-job call limit before every provider call
     await globalAiRateLimiter.acquirePermit(jobId);
+
+    // Enforce request attempt hook (e.g. max-calls budget check & increment) before sending request
+    if (this.options?.onRequestAttempt) {
+      await this.options.onRequestAttempt();
+    }
 
     const generationConfig: Record<string, unknown> = {
       responseMimeType: 'application/json',
@@ -864,9 +916,10 @@ export class GeminiAiProviderAdapter implements AiProviderAdapter {
       this.model
     )}:generateContent?key=${encodeURIComponent(this.apiKey)}`;
 
+    const fetchImpl = this.options?.fetchFn || fetch;
     let response: Response;
     try {
-      response = await fetch(endpoint, {
+      response = await fetchImpl(endpoint, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
