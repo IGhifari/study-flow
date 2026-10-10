@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { resolveForwardedClientIp } from '../../../../lib/clientIp.js';
 
 const INTERNAL_API_URL =
   process.env.INTERNAL_API_URL ||
@@ -95,6 +96,10 @@ async function handleProxy(req: NextRequest, { params }: { params: Promise<{ pat
   const requestId = req.headers.get('x-request-id') || crypto.randomUUID();
   requestHeaders.set('x-request-id', requestId);
 
+  // Forward client IP using explicit trusted ingress configuration
+  const trustedClientIp = resolveForwardedClientIp(req.headers);
+  requestHeaders.set('x-forwarded-for', trustedClientIp);
+
   let body: string | undefined;
   if (req.method !== 'GET' && req.method !== 'HEAD') {
     try {
@@ -114,11 +119,27 @@ async function handleProxy(req: NextRequest, { params }: { params: Promise<{ pat
 
     const responseData = await expressRes.text();
 
+    const responseHeaders = new Headers();
+    responseHeaders.set('Content-Type', expressRes.headers.get('content-type') || 'application/json');
+
+    // Forward standard rate-limit and retry headers to allow client handling (e.g. 429)
+    const rateLimitHeaders = [
+      'retry-after',
+      'ratelimit-limit',
+      'ratelimit-remaining',
+      'ratelimit-reset',
+      'ratelimit-policy',
+    ];
+    for (const h of rateLimitHeaders) {
+      const val = expressRes.headers.get(h);
+      if (val !== null) {
+        responseHeaders.set(h, val);
+      }
+    }
+
     const response = new NextResponse(responseData, {
       status: expressRes.status,
-      headers: {
-        'Content-Type': expressRes.headers.get('content-type') || 'application/json',
-      },
+      headers: responseHeaders,
     });
 
     // Forward Set-Cookie headers from Express to Browser

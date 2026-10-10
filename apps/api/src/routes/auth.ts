@@ -17,7 +17,7 @@ import {
 } from '../services/auth.service.js';
 import { setAuthCookies, clearAuthCookies } from '../services/cookie.service.js';
 import { authenticate } from '../middleware/authenticate.js';
-import { authRateLimiter } from '../middleware/rateLimiter.js';
+import { authRateLimiter, loginAccountRateLimiter } from '../middleware/rateLimiter.js';
 import { originCheckMiddleware } from '../middleware/originCheck.js';
 import { AppError } from '../middleware/errorHandler.js';
 
@@ -56,6 +56,7 @@ authRouter.post(
 authRouter.post(
   '/login',
   authRateLimiter,
+  loginAccountRateLimiter,
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const parsed = LoginInputSchema.safeParse(req.body);

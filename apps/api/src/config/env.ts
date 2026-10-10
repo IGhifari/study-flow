@@ -56,6 +56,15 @@ const EnvSchema = z.object({
   COOKIE_SECRET: z.string().min(16).default('studyflow_dev_cookie_signing_secret_123456'),
   ACCESS_TOKEN_EXPIRES_IN: z.string().default('15m'),
   REFRESH_TOKEN_EXPIRES_IN_DAYS: z.coerce.number().default(7),
+  // Proxy configuration: Controls Express 'trust proxy' setting.
+  // Defaults to 'loopback' (trusts 127.0.0.1/::1, matching local Next.js BFF proxy).
+  // In production with reverse proxies, set to explicit CIDR/IP list (e.g. '10.0.0.0/8, 127.0.0.1').
+  // Can be 'false', 'true', 'loopback', or comma-separated IPs/subnets.
+  TRUST_PROXY: z.string().default('loopback'),
+  // Rate limiting shared store ('redis' | 'memory')
+  RATE_LIMIT_STORE: z
+    .enum(['redis', 'memory'])
+    .default(process.env.NODE_ENV === 'test' ? 'memory' : 'redis'),
   // Storage configuration (M5)
   STORAGE_DRIVER: z
     .enum(['supabase', 'local', 'memory', 'none'])

@@ -3,6 +3,7 @@ import { createApp } from './app.js';
 import { env } from './config/env.js';
 import { prisma } from '@studyflow/database';
 import { closeRedisClient } from './routes/ready.js';
+import { closeRateLimitRedisClient } from './middleware/rateLimiter.js';
 import { startOutboxDispatcherLoop, closeQueueConnections } from './services/outbox.service.js';
 import { Server } from 'node:http';
 
@@ -58,6 +59,7 @@ async function gracefulShutdown(signal: string): Promise<void> {
         prisma.$disconnect(),
         closeRedisClient(),
         closeQueueConnections(),
+        closeRateLimitRedisClient(),
       ]);
       console.log(JSON.stringify({
         level: 'info',

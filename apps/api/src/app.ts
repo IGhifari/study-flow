@@ -21,6 +21,19 @@ import { localStorageRouter } from './routes/localStorage.js';
 export function createApp(): Express {
   const app = express();
 
+  // Configure trust proxy explicitly based on deployment topology
+  if (env.TRUST_PROXY === 'false') {
+    app.set('trust proxy', false);
+  } else if (env.TRUST_PROXY === 'true') {
+    app.set('trust proxy', true);
+  } else if (env.TRUST_PROXY.includes(',')) {
+    // Comma-separated list of trusted proxies / subnets
+    app.set('trust proxy', env.TRUST_PROXY.split(',').map((p) => p.trim()));
+  } else {
+    // Single keyword e.g. 'loopback' or single IP/subnet
+    app.set('trust proxy', env.TRUST_PROXY);
+  }
+
   // Security headers with cross-origin resource policy for local file previews
   app.use(
     helmet({

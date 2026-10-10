@@ -107,6 +107,49 @@ StudyFlow dibangun menggunakan arsitektur modular terpisah untuk memisahkan logi
    - Next.js Middleware (`apps/web/src/middleware.ts`) melindungi rute `/dashboard`, `/semesters`, `/courses`, dan `/settings` dengan memeriksa keberadaan sesi cookie, melakukan redirect ke `/login?returnUrl=...`.
    - Server Component (`getServerSessionUser`) memverifikasi keabsahan sesi secara aman di server sebelum merender data pengguna.
 
+#### 3.4.1 Identifikasi Klien dan Rate Limiting (Browser → BFF → Express API)
+
+```
+[Browser / Klien]
+      │
+      │ 1. Request (dengan header IP pengguna / spoofing potensial)
+      ▼
+[Next.js App Router BFF Proxy] (apps/web/src/app/api/auth/[...path]/route.ts)
+      │
+      ├─► Mode Default (TRUSTED_CLIENT_IP_HEADER unset / 'none'):
+      │   TIDAK mempercayai header IP dari klien; forward 127.0.0.1.
+      │   Seluruh pengguna berbagi bucket IP; perlindungan akun aktif.
+      │
+      ├─► Mode Reverse Proxy Terpercaya (TRUSTED_CLIENT_IP_HEADER='x-real-ip'):
+      │   Hanya membaca satu header terkonfigurasi yang dijamin ditimpa oleh ingress.
+      │   Header alternatif diabaikan. Validasi format IP ketat (IPv4/IPv6 via isIP()).
+      │   Akses publik langsung ke origin port BFF wajib dibatasi firewall.
+      ▼
+[Express REST API] (apps/api)
+      │
+      ├─► Express trust proxy = 'loopback' (Hanya mempercayai loopback BFF 127.0.0.1/::1)
+      ├─► IP Rate Limiter (authRateLimiter)
+      ├─► Account Defense-in-Depth (loginAccountRateLimiter: hash SHA-256 email)
+      └─► RedisRateLimitStore: Atomik via Lua Script (INCR + PEXPIRE seketika)
+      │
+      ▼ (Respons 429 jika melebihi batas)
+[Next.js BFF Proxy]
+      │
+      └─► Meneruskan Retry-After dan header RateLimit-* utuh ke browser klien
+```
+
+1. **Model Kepercayaan Header Ingress**:
+   - Secara default, BFF menolak mempercayai header IP yang dikirim peramban (`X-Forwarded-For`, `X-Real-IP`, `CF-Connecting-IP`, `Forwarded`).
+   - Pada **Mode Default** (tanpa ingress terpercaya yang diverifikasi), identifikasi IP perorangan melalui BFF belum tersedia; seluruh request diteruskan dengan alamat loopback `127.0.0.1`. Perlindungan terhadap credential stuffing ditegakkan pada tingkat akun (`loginAccountRateLimiter`) menggunakan hash SHA-256 identifier yang dinormalisasi.
+   - Pada **Mode Reverse Proxy Terpercaya**, sistem administrator mengonfigurasi variabel `TRUSTED_CLIENT_IP_HEADER` secara eksplisit (misal `x-real-ip` atau `cf-connecting-ip`). Ingress proxy (Nginx, Cloudflare, ALB) wajib dikonfigurasi untuk selalu menimpa header tersebut dari IP TCP koneksi nyata, dan akses langsung ke origin BFF dari internet harus diblokir oleh firewall. BFF mengabaikan seluruh header alternatif dan memvalidasi sintaks IPv4/IPv6 menggunakan `isIP()` sebelum meneruskannya ke backend.
+2. **Pembatasan Trust Proxy Express**:
+   - Express dikonfigurasi dengan `trust proxy = 'loopback'` secara default, sehingga hanya mempercayai `X-Forwarded-For` dari hop terdekat (BFF lokal). Koneksi langsung dari luar jaringan tidak dapat memalsukan identitas klien.
+3. **Penyimpanan Terdistribusi & Atomisitas Lua**:
+   - `RedisRateLimitStore` menggunakan evaluasi script Lua atomik (`INCR` + `PEXPIRE` saat `hits == 1` + `PTTL`).
+   - Mencegah kebocoran kunci tanpa batas waktu (TTL) bila proses terhenti di tengah eksekusi, serta menjamin pembagian kuota yang presisi antarinstandi Express API.
+4. **Passthrough Header Respons 429**:
+   - BFF meneruskan header `Retry-After`, `RateLimit-Limit`, `RateLimit-Remaining`, dan `RateLimit-Reset` dari Express ke respons browser tanpa modifikasi.
+
 ### 3.5 Pengelolaan Semester dan Mata Kuliah (Milestone 3)
 
 ```

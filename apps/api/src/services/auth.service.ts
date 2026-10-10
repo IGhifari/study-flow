@@ -161,133 +161,227 @@ export async function rotateRefreshToken(rawRefreshToken: string): Promise<{
 
   const tokenHash = hashToken(rawRefreshToken);
 
-  const session = await prisma.refreshSession.findUnique({
+  // Preliminary unlocked lookup to find the userId associated with the tokenHash
+  const initialSession = await prisma.refreshSession.findUnique({
     where: { tokenHash },
-    include: { user: true },
+    select: { userId: true },
   });
 
-  if (!session) {
+  if (!initialSession) {
     const error: AppError = new Error('Sesi tidak valid atau telah berakhir. Silakan login kembali.');
     error.statusCode = 401;
     error.code = 'SESSION_NOT_FOUND';
     throw error;
   }
 
-  // Check if session has already been revoked
-  if (session.revokedAt !== null) {
-    const elapsedSinceRevoke = Date.now() - session.revokedAt.getTime();
+  const result = await prisma.$transaction(async (tx) => {
+    // 1. Lock the USER row first (consistent order: users -> refresh_sessions)
+    const lockedUsers = await tx.$queryRaw<Array<{
+      id: string;
+      name: string;
+      email: string;
+      timezone: string;
+      token_version: number;
+      created_at: Date;
+      updated_at: Date;
+    }>>`
+      SELECT id, name, email, timezone, token_version, created_at, updated_at
+      FROM users
+      WHERE id = ${initialSession.userId}
+      LIMIT 1
+      FOR UPDATE
+    `;
 
-    // Tolerant grace period: If revoked within REFRESH_GRACE_PERIOD_MS,
-    // accommodate race conditions from parallel requests or multiple tabs
-    if (elapsedSinceRevoke <= REFRESH_GRACE_PERIOD_MS) {
-      // Find the active session in this family
-      const activeSession = await prisma.refreshSession.findFirst({
-        where: {
-          familyId: session.familyId,
-          revokedAt: null,
-          expiresAt: { gt: new Date() },
-        },
-        include: { user: true },
-        orderBy: { createdAt: 'desc' },
-      });
+    const user = lockedUsers[0];
 
-      if (activeSession) {
-        // Return a fresh access token for the active session without revoking
-        const accessToken = createAccessToken({
-          userId: activeSession.user.id,
-          email: activeSession.user.email,
-          tokenVersion: activeSession.user.tokenVersion,
-        });
-
-        return {
-          user: toUserProfile(activeSession.user),
-          accessToken,
-          // Intentionally omit refreshToken so the browser cookie set by the winning request is retained
-        };
-      }
+    if (!user) {
+      const error: AppError = new Error('Pengguna tidak ditemukan');
+      error.statusCode = 404;
+      error.code = 'USER_NOT_FOUND';
+      throw error;
     }
 
-    // Token reuse / replay attack detected outside grace period:
-    // Revoke the ENTIRE session family immediately!
-    await prisma.refreshSession.updateMany({
-      where: {
-        familyId: session.familyId,
-        revokedAt: null,
-      },
+    // 2. Lock the specific SESSION row second (users -> refresh_sessions)
+    const lockedSessions = await tx.$queryRaw<Array<{
+      id: string;
+      user_id: string;
+      token_hash: string;
+      family_id: string;
+      expires_at: Date;
+      revoked_at: Date | null;
+    }>>`
+      SELECT id, user_id, token_hash, family_id, expires_at, revoked_at
+      FROM refresh_sessions
+      WHERE token_hash = ${tokenHash}
+      LIMIT 1
+      FOR UPDATE
+    `;
+
+    const session = lockedSessions[0];
+
+    if (!session) {
+      const error: AppError = new Error('Sesi tidak valid atau telah berakhir. Silakan login kembali.');
+      error.statusCode = 401;
+      error.code = 'SESSION_NOT_FOUND';
+      throw error;
+    }
+
+    const userProfile: UserProfile = {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      timezone: user.timezone,
+      createdAt: new Date(user.created_at).toISOString(),
+      updatedAt: new Date(user.updated_at).toISOString(),
+    };
+
+    const now = new Date();
+
+    // 3. Check if session has already been revoked (checked under lock!)
+    if (session.revoked_at !== null) {
+      const elapsedSinceRevoke = now.getTime() - new Date(session.revoked_at).getTime();
+
+      // Grace period: If revoked within REFRESH_GRACE_PERIOD_MS,
+      // allow parallel requests from other tabs/clients to receive a fresh access token
+      // WITHOUT creating duplicate child sessions or branching the family.
+      // NOTE: If the session was revoked due to password change or logout, activeSession will be null!
+      if (elapsedSinceRevoke <= REFRESH_GRACE_PERIOD_MS) {
+        // Find the active (non-revoked) session in this family
+        const activeSession = await tx.refreshSession.findFirst({
+          where: {
+            familyId: session.family_id,
+            revokedAt: null,
+            expiresAt: { gt: now },
+          },
+          orderBy: { createdAt: 'desc' },
+        });
+
+        if (activeSession) {
+          const accessToken = createAccessToken({
+            userId: user.id,
+            email: user.email,
+            tokenVersion: user.token_version,
+          });
+
+          return {
+            user: userProfile,
+            accessToken,
+            // Intentionally omit refreshToken so the browser retains the winning cookie
+          };
+        }
+      }
+
+      // Replay attack detected outside grace period (or family already completely revoked):
+      // Revoke the ENTIRE session family immediately!
+      await tx.refreshSession.updateMany({
+        where: {
+          familyId: session.family_id,
+          revokedAt: null,
+        },
+        data: {
+          revokedAt: now,
+        },
+      });
+
+      return {
+        replayDetected: true,
+      };
+    }
+
+    // 4. Check if session has expired
+    if (new Date(session.expires_at) < now) {
+      await tx.refreshSession.update({
+        where: { id: session.id },
+        data: { revokedAt: now },
+      });
+
+      return {
+        expired: true,
+      };
+    }
+
+    // 5. Normal rotation: revoke current session and create exactly one child session
+    const newRawRefreshToken = generateRandomToken();
+    const newTokenHash = hashToken(newRawRefreshToken);
+    const newExpiresAt = getRefreshTokenExpiryDate();
+
+    await tx.refreshSession.update({
+      where: { id: session.id },
+      data: { revokedAt: now },
+    });
+
+    await tx.refreshSession.create({
       data: {
-        revokedAt: new Date(),
+        userId: session.user_id,
+        familyId: session.family_id,
+        tokenHash: newTokenHash,
+        expiresAt: newExpiresAt,
       },
     });
 
+    const accessToken = createAccessToken({
+      userId: user.id,
+      email: user.email,
+      tokenVersion: user.token_version,
+    });
+
+    return {
+      user: userProfile,
+      accessToken,
+      refreshToken: newRawRefreshToken,
+    };
+  });
+
+  if ('replayDetected' in result && result.replayDetected) {
     const error: AppError = new Error('Penyalahgunaan sesi terdeteksi. Seluruh sesi telah dicabut demi keamanan.');
     error.statusCode = 401;
     error.code = 'SESSION_REPLAY_DETECTED';
     throw error;
   }
 
-  // Check if session has expired
-  if (session.expiresAt < new Date()) {
-    await prisma.refreshSession.update({
-      where: { id: session.id },
-      data: { revokedAt: new Date() },
-    });
-
+  if ('expired' in result && result.expired) {
     const error: AppError = new Error('Sesi telah kedaluwarsa. Silakan login kembali.');
     error.statusCode = 401;
     error.code = 'SESSION_EXPIRED';
     throw error;
   }
 
-  // Atomic rotation in transaction
-  const newRawRefreshToken = generateRandomToken();
-  const newTokenHash = hashToken(newRawRefreshToken);
-  const newExpiresAt = getRefreshTokenExpiryDate();
-
-  await prisma.$transaction([
-    prisma.refreshSession.update({
-      where: { id: session.id },
-      data: { revokedAt: new Date() },
-    }),
-    prisma.refreshSession.create({
-      data: {
-        userId: session.userId,
-        familyId: session.familyId,
-        tokenHash: newTokenHash,
-        expiresAt: newExpiresAt,
-      },
-    }),
-  ]);
-
-  const accessToken = createAccessToken({
-    userId: session.user.id,
-    email: session.user.email,
-    tokenVersion: session.user.tokenVersion,
-  });
-
-  return {
-    user: toUserProfile(session.user),
-    accessToken,
-    refreshToken: newRawRefreshToken,
+  return result as {
+    user: UserProfile;
+    accessToken: string;
+    refreshToken?: string;
   };
 }
 
 export async function logoutUser(rawRefreshToken?: string): Promise<void> {
   if (rawRefreshToken && typeof rawRefreshToken === 'string') {
     const tokenHash = hashToken(rawRefreshToken);
-    const session = await prisma.refreshSession.findUnique({
+
+    const initialSession = await prisma.refreshSession.findUnique({
       where: { tokenHash },
+      select: { userId: true, familyId: true },
     });
 
-    if (session) {
-      // Revoke the entire session family for this login session
-      await prisma.refreshSession.updateMany({
-        where: {
-          familyId: session.familyId,
-          revokedAt: null,
-        },
-        data: {
-          revokedAt: new Date(),
-        },
+    if (initialSession) {
+      await prisma.$transaction(async (tx) => {
+        // 1. Lock the user row first (consistent order: users -> refresh_sessions)
+        await tx.$queryRaw`
+          SELECT id FROM users
+          WHERE id = ${initialSession.userId}
+          LIMIT 1
+          FOR UPDATE
+        `;
+
+        // 2. Revoke the entire session family for this login session
+        await tx.refreshSession.updateMany({
+          where: {
+            familyId: initialSession.familyId,
+            revokedAt: null,
+          },
+          data: {
+            revokedAt: new Date(),
+          },
+        });
       });
     }
   }
@@ -362,15 +456,26 @@ export async function changeUserPassword(
   const newPasswordHash = await hashPassword(input.newPassword);
 
   // Invalidate all sessions and increment tokenVersion so existing access tokens are immediately rejected
-  await prisma.$transaction([
-    prisma.user.update({
+  await prisma.$transaction(async (tx) => {
+    // 1. Lock the user row to serialize with concurrent rotateRefreshToken
+    await tx.$queryRaw`
+      SELECT id FROM users
+      WHERE id = ${userId}
+      LIMIT 1
+      FOR UPDATE
+    `;
+
+    // 2. Increment tokenVersion and set new password hash
+    await tx.user.update({
       where: { id: userId },
       data: {
         passwordHash: newPasswordHash,
         tokenVersion: { increment: 1 },
       },
-    }),
-    prisma.refreshSession.updateMany({
+    });
+
+    // 3. Revoke all currently active refresh sessions for this user
+    await tx.refreshSession.updateMany({
       where: {
         userId,
         revokedAt: null,
@@ -378,6 +483,6 @@ export async function changeUserPassword(
       data: {
         revokedAt: new Date(),
       },
-    }),
-  ]);
+    });
+  });
 }
