@@ -123,6 +123,7 @@ describe('AiCallRateLimiter Unit Tests', () => {
     // 2. Mock Redis client restored
     const mockRedis: any = {
       status: 'ready',
+      eval: async () => ['ALLOWED', '1', '1'],
       incr: async () => 1,
       expire: async () => 1,
       pipeline: () => ({

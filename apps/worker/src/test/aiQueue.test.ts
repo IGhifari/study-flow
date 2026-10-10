@@ -1006,6 +1006,7 @@ describe('Worker AI Summary Queue Processing', () => {
     // 3. Redis is restored
     const mockRedis: any = {
       status: 'ready',
+      eval: async () => ['ALLOWED', '1', '1'],
       incr: async () => 1,
       expire: async () => 1,
       pipeline: () => ({
