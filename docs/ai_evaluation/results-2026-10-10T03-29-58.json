@@ -1,0 +1,2673 @@
+{
+  "timestamp": "2026-10-10T03:29:58.402Z",
+  "nodeVersion": "v22.17.0",
+  "gitCommit": "53b1cdb",
+  "mode": "mock",
+  "providerName": "MockAiProviderAdapter (Deterministik)",
+  "modelName": "reference-mock-v1",
+  "promptVersion": "v1 (Summary, Flashcard, Quiz)",
+  "totalProviderCalls": 60,
+  "maxCallsLimit": 1000,
+  "validDocumentsTarget": 20,
+  "validDocumentsProcessed": 20,
+  "negativeFixturesTarget": 5,
+  "negativeFixturesProcessed": 5,
+  "overallVerdict": "PASS_MOCK",
+  "summaryMetrics": {
+    "validDocumentsPassCount": 20,
+    "validDocumentsFailCount": 0,
+    "negativeFixturesPassCount": 5,
+    "negativeFixturesFailCount": 0,
+    "totalQuizQuestionsEvaluated": 94,
+    "quizQuestionsStructurallyValid": 94,
+    "quizQuestionsFactualAccuracyReviewed": 0,
+    "quizQuestionsFactualAccuracyPassed": 0,
+    "invalidPageReferencesCount": 0,
+    "unreviewedCriteriaCount": 40
+  },
+  "validDocuments": [
+    {
+      "id": "id-cs101-algoritma-pemrograman",
+      "filename": "id-cs101-algoritma-pemrograman.pdf",
+      "language": "id",
+      "fileHashSha256": "b4428729f8b94a60fbfe626feb220ba062289c4f85238b241e208a89e5548873",
+      "fileSizeBytes": 2253,
+      "expectedPageCount": 2,
+      "extractedPageCount": 2,
+      "extractedCharacters": 1304,
+      "overallStatus": "PASS",
+      "criteria": {
+        "pdfExtraction": {
+          "name": "Ekstraksi PDF",
+          "status": "PASS",
+          "detail": "Berhasil diekstrak (2 halaman, 1304 karakter)"
+        },
+        "pageReferences": {
+          "name": "Rujukan Halaman Valid (Provenance)",
+          "status": "PASS",
+          "detail": "Seluruh nomor halaman yang dirujuk berada dalam rentang [1..totalPages]"
+        },
+        "summarySchema": {
+          "name": "Kesesuaian Skema Ringkasan (Zod)",
+          "status": "PASS",
+          "detail": "Memenuhi skema terstruktur Zod (title, overview, keyConcepts, sections, keyTerms)"
+        },
+        "flashcardSchema": {
+          "name": "Kesesuaian Skema Flashcards (Zod)",
+          "status": "PASS",
+          "detail": "Memenuhi skema terstruktur Zod (4 kartu)"
+        },
+        "quizStructuralValidity": {
+          "name": "Validitas Struktur Format Kuis",
+          "status": "PASS",
+          "detail": "Struktur format valid (4 soal): tepat 4 opsi unik, indeks 0..3, ada pembahasan, & rujukan halaman valid"
+        },
+        "quizAnswerKeyFactualAccuracy": {
+          "name": "Akurasi Faktual Kunci Jawaban Kuis",
+          "status": "NOT_EVALUATED",
+          "detail": "Mode mock hanya memvalidasi struktur format; akurasi faktual terhadap teks sumber memerlukan evaluasi model riil & review manual."
+        },
+        "modelPromptInjectionDefense": {
+          "name": "Ketahanan Model Terhadap Prompt Injection",
+          "status": "NOT_EVALUATED",
+          "detail": "Mode mock menghasilkan keluaran deterministik; perilaku model terhadap instruksi jahat tidak dievaluasi oleh mock adapter."
+        }
+      },
+      "sampleQuizQuestions": [
+        {
+          "question": "Soal 1: Berdasarkan materi pada halaman 1, manakah pernyataan berikut yang tepat?",
+          "options": [
+            "Pilihan A untuk soal nomor 1",
+            "Pilihan B untuk soal nomor 1",
+            "Pilihan C untuk soal nomor 1",
+            "Pilihan D untuk soal nomor 1"
+          ],
+          "correctIndex": 0,
+          "explanation": "Pembahasan 1: Opsi yang benar adalah pilihan ke-1 karena sesuai dengan penjelasan konsep pada halaman 1.",
+          "pageReferences": [
+            1
+          ]
+        },
+        {
+          "question": "Soal 2: Berdasarkan materi pada halaman 2, manakah pernyataan berikut yang tepat?",
+          "options": [
+            "Pilihan A untuk soal nomor 2",
+            "Pilihan B untuk soal nomor 2",
+            "Pilihan C untuk soal nomor 2",
+            "Pilihan D untuk soal nomor 2"
+          ],
+          "correctIndex": 1,
+          "explanation": "Pembahasan 2: Opsi yang benar adalah pilihan ke-2 karena sesuai dengan penjelasan konsep pada halaman 2.",
+          "pageReferences": [
+            2
+          ]
+        },
+        {
+          "question": "Soal 3: Berdasarkan materi pada halaman 1, manakah pernyataan berikut yang tepat?",
+          "options": [
+            "Pilihan A untuk soal nomor 3",
+            "Pilihan B untuk soal nomor 3",
+            "Pilihan C untuk soal nomor 3",
+            "Pilihan D untuk soal nomor 3"
+          ],
+          "correctIndex": 2,
+          "explanation": "Pembahasan 3: Opsi yang benar adalah pilihan ke-3 karena sesuai dengan penjelasan konsep pada halaman 1.",
+          "pageReferences": [
+            1
+          ]
+        },
+        {
+          "question": "Soal 4: Berdasarkan materi pada halaman 2, manakah pernyataan berikut yang tepat?",
+          "options": [
+            "Pilihan A untuk soal nomor 4",
+            "Pilihan B untuk soal nomor 4",
+            "Pilihan C untuk soal nomor 4",
+            "Pilihan D untuk soal nomor 4"
+          ],
+          "correctIndex": 3,
+          "explanation": "Pembahasan 4: Opsi yang benar adalah pilihan ke-4 karena sesuai dengan penjelasan konsep pada halaman 2.",
+          "pageReferences": [
+            2
+          ]
+        }
+      ]
+    },
+    {
+      "id": "id-cs102-struktur-data-linear",
+      "filename": "id-cs102-struktur-data-linear.pdf",
+      "language": "id",
+      "fileHashSha256": "7946e3ba4eb9fd0954ce8ee60f0252d21cbbdc19914b534e54017d28e91a0d23",
+      "fileSizeBytes": 4741,
+      "expectedPageCount": 6,
+      "extractedPageCount": 6,
+      "extractedCharacters": 2465,
+      "overallStatus": "PASS",
+      "criteria": {
+        "pdfExtraction": {
+          "name": "Ekstraksi PDF",
+          "status": "PASS",
+          "detail": "Berhasil diekstrak (6 halaman, 2465 karakter)"
+        },
+        "pageReferences": {
+          "name": "Rujukan Halaman Valid (Provenance)",
+          "status": "PASS",
+          "detail": "Seluruh nomor halaman yang dirujuk berada dalam rentang [1..totalPages]"
+        },
+        "summarySchema": {
+          "name": "Kesesuaian Skema Ringkasan (Zod)",
+          "status": "PASS",
+          "detail": "Memenuhi skema terstruktur Zod (title, overview, keyConcepts, sections, keyTerms)"
+        },
+        "flashcardSchema": {
+          "name": "Kesesuaian Skema Flashcards (Zod)",
+          "status": "PASS",
+          "detail": "Memenuhi skema terstruktur Zod (5 kartu)"
+        },
+        "quizStructuralValidity": {
+          "name": "Validitas Struktur Format Kuis",
+          "status": "PASS",
+          "detail": "Struktur format valid (5 soal): tepat 4 opsi unik, indeks 0..3, ada pembahasan, & rujukan halaman valid"
+        },
+        "quizAnswerKeyFactualAccuracy": {
+          "name": "Akurasi Faktual Kunci Jawaban Kuis",
+          "status": "NOT_EVALUATED",
+          "detail": "Mode mock hanya memvalidasi struktur format; akurasi faktual terhadap teks sumber memerlukan evaluasi model riil & review manual."
+        },
+        "modelPromptInjectionDefense": {
+          "name": "Ketahanan Model Terhadap Prompt Injection",
+          "status": "NOT_EVALUATED",
+          "detail": "Mode mock menghasilkan keluaran deterministik; perilaku model terhadap instruksi jahat tidak dievaluasi oleh mock adapter."
+        }
+      },
+      "sampleQuizQuestions": [
+        {
+          "question": "Soal 1: Berdasarkan materi pada halaman 1, manakah pernyataan berikut yang tepat?",
+          "options": [
+            "Pilihan A untuk soal nomor 1",
+            "Pilihan B untuk soal nomor 1",
+            "Pilihan C untuk soal nomor 1",
+            "Pilihan D untuk soal nomor 1"
+          ],
+          "correctIndex": 0,
+          "explanation": "Pembahasan 1: Opsi yang benar adalah pilihan ke-1 karena sesuai dengan penjelasan konsep pada halaman 1.",
+          "pageReferences": [
+            1
+          ]
+        },
+        {
+          "question": "Soal 2: Berdasarkan materi pada halaman 2, manakah pernyataan berikut yang tepat?",
+          "options": [
+            "Pilihan A untuk soal nomor 2",
+            "Pilihan B untuk soal nomor 2",
+            "Pilihan C untuk soal nomor 2",
+            "Pilihan D untuk soal nomor 2"
+          ],
+          "correctIndex": 1,
+          "explanation": "Pembahasan 2: Opsi yang benar adalah pilihan ke-2 karena sesuai dengan penjelasan konsep pada halaman 2.",
+          "pageReferences": [
+            2
+          ]
+        },
+        {
+          "question": "Soal 3: Berdasarkan materi pada halaman 3, manakah pernyataan berikut yang tepat?",
+          "options": [
+            "Pilihan A untuk soal nomor 3",
+            "Pilihan B untuk soal nomor 3",
+            "Pilihan C untuk soal nomor 3",
+            "Pilihan D untuk soal nomor 3"
+          ],
+          "correctIndex": 2,
+          "explanation": "Pembahasan 3: Opsi yang benar adalah pilihan ke-3 karena sesuai dengan penjelasan konsep pada halaman 3.",
+          "pageReferences": [
+            3
+          ]
+        },
+        {
+          "question": "Soal 4: Berdasarkan materi pada halaman 4, manakah pernyataan berikut yang tepat?",
+          "options": [
+            "Pilihan A untuk soal nomor 4",
+            "Pilihan B untuk soal nomor 4",
+            "Pilihan C untuk soal nomor 4",
+            "Pilihan D untuk soal nomor 4"
+          ],
+          "correctIndex": 3,
+          "explanation": "Pembahasan 4: Opsi yang benar adalah pilihan ke-4 karena sesuai dengan penjelasan konsep pada halaman 4.",
+          "pageReferences": [
+            4
+          ]
+        },
+        {
+          "question": "Soal 5: Berdasarkan materi pada halaman 5, manakah pernyataan berikut yang tepat?",
+          "options": [
+            "Pilihan A untuk soal nomor 5",
+            "Pilihan B untuk soal nomor 5",
+            "Pilihan C untuk soal nomor 5",
+            "Pilihan D untuk soal nomor 5"
+          ],
+          "correctIndex": 0,
+          "explanation": "Pembahasan 5: Opsi yang benar adalah pilihan ke-1 karena sesuai dengan penjelasan konsep pada halaman 5.",
+          "pageReferences": [
+            5
+          ]
+        }
+      ]
+    },
+    {
+      "id": "id-cs103-sistem-operasi-proses",
+      "filename": "id-cs103-sistem-operasi-proses.pdf",
+      "language": "id",
+      "fileHashSha256": "a6d21851672f6fcb90f8b79fe45e44feede7fb11bde6b65899d31d44b5f45622",
+      "fileSizeBytes": 4209,
+      "expectedPageCount": 4,
+      "extractedPageCount": 4,
+      "extractedCharacters": 2432,
+      "overallStatus": "PASS",
+      "criteria": {
+        "pdfExtraction": {
+          "name": "Ekstraksi PDF",
+          "status": "PASS",
+          "detail": "Berhasil diekstrak (4 halaman, 2432 karakter)"
+        },
+        "pageReferences": {
+          "name": "Rujukan Halaman Valid (Provenance)",
+          "status": "PASS",
+          "detail": "Seluruh nomor halaman yang dirujuk berada dalam rentang [1..totalPages]"
+        },
+        "summarySchema": {
+          "name": "Kesesuaian Skema Ringkasan (Zod)",
+          "status": "PASS",
+          "detail": "Memenuhi skema terstruktur Zod (title, overview, keyConcepts, sections, keyTerms)"
+        },
+        "flashcardSchema": {
+          "name": "Kesesuaian Skema Flashcards (Zod)",
+          "status": "PASS",
+          "detail": "Memenuhi skema terstruktur Zod (5 kartu)"
+        },
+        "quizStructuralValidity": {
+          "name": "Validitas Struktur Format Kuis",
+          "status": "PASS",
+          "detail": "Struktur format valid (5 soal): tepat 4 opsi unik, indeks 0..3, ada pembahasan, & rujukan halaman valid"
+        },
+        "quizAnswerKeyFactualAccuracy": {
+          "name": "Akurasi Faktual Kunci Jawaban Kuis",
+          "status": "NOT_EVALUATED",
+          "detail": "Mode mock hanya memvalidasi struktur format; akurasi faktual terhadap teks sumber memerlukan evaluasi model riil & review manual."
+        },
+        "modelPromptInjectionDefense": {
+          "name": "Ketahanan Model Terhadap Prompt Injection",
+          "status": "NOT_EVALUATED",
+          "detail": "Mode mock menghasilkan keluaran deterministik; perilaku model terhadap instruksi jahat tidak dievaluasi oleh mock adapter."
+        }
+      },
+      "sampleQuizQuestions": [
+        {
+          "question": "Soal 1: Berdasarkan materi pada halaman 1, manakah pernyataan berikut yang tepat?",
+          "options": [
+            "Pilihan A untuk soal nomor 1",
+            "Pilihan B untuk soal nomor 1",
+            "Pilihan C untuk soal nomor 1",
+            "Pilihan D untuk soal nomor 1"
+          ],
+          "correctIndex": 0,
+          "explanation": "Pembahasan 1: Opsi yang benar adalah pilihan ke-1 karena sesuai dengan penjelasan konsep pada halaman 1.",
+          "pageReferences": [
+            1
+          ]
+        },
+        {
+          "question": "Soal 2: Berdasarkan materi pada halaman 2, manakah pernyataan berikut yang tepat?",
+          "options": [
+            "Pilihan A untuk soal nomor 2",
+            "Pilihan B untuk soal nomor 2",
+            "Pilihan C untuk soal nomor 2",
+            "Pilihan D untuk soal nomor 2"
+          ],
+          "correctIndex": 1,
+          "explanation": "Pembahasan 2: Opsi yang benar adalah pilihan ke-2 karena sesuai dengan penjelasan konsep pada halaman 2.",
+          "pageReferences": [
+            2
+          ]
+        },
+        {
+          "question": "Soal 3: Berdasarkan materi pada halaman 3, manakah pernyataan berikut yang tepat?",
+          "options": [
+            "Pilihan A untuk soal nomor 3",
+            "Pilihan B untuk soal nomor 3",
+            "Pilihan C untuk soal nomor 3",
+            "Pilihan D untuk soal nomor 3"
+          ],
+          "correctIndex": 2,
+          "explanation": "Pembahasan 3: Opsi yang benar adalah pilihan ke-3 karena sesuai dengan penjelasan konsep pada halaman 3.",
+          "pageReferences": [
+            3
+          ]
+        },
+        {
+          "question": "Soal 4: Berdasarkan materi pada halaman 4, manakah pernyataan berikut yang tepat?",
+          "options": [
+            "Pilihan A untuk soal nomor 4",
+            "Pilihan B untuk soal nomor 4",
+            "Pilihan C untuk soal nomor 4",
+            "Pilihan D untuk soal nomor 4"
+          ],
+          "correctIndex": 3,
+          "explanation": "Pembahasan 4: Opsi yang benar adalah pilihan ke-4 karena sesuai dengan penjelasan konsep pada halaman 4.",
+          "pageReferences": [
+            4
+          ]
+        },
+        {
+          "question": "Soal 5: Berdasarkan materi pada halaman 1, manakah pernyataan berikut yang tepat?",
+          "options": [
+            "Pilihan A untuk soal nomor 5",
+            "Pilihan B untuk soal nomor 5",
+            "Pilihan C untuk soal nomor 5",
+            "Pilihan D untuk soal nomor 5"
+          ],
+          "correctIndex": 0,
+          "explanation": "Pembahasan 5: Opsi yang benar adalah pilihan ke-1 karena sesuai dengan penjelasan konsep pada halaman 1.",
+          "pageReferences": [
+            1
+          ]
+        }
+      ]
+    },
+    {
+      "id": "id-cs104-jaringan-komputer-osi",
+      "filename": "id-cs104-jaringan-komputer-osi.pdf",
+      "language": "id",
+      "fileHashSha256": "97700775ef20ea9babdcb91f8c505cf89b39b50449d314f85a94190d3b46a836",
+      "fileSizeBytes": 4084,
+      "expectedPageCount": 3,
+      "extractedPageCount": 3,
+      "extractedCharacters": 2495,
+      "overallStatus": "PASS",
+      "criteria": {
+        "pdfExtraction": {
+          "name": "Ekstraksi PDF",
+          "status": "PASS",
+          "detail": "Berhasil diekstrak (3 halaman, 2495 karakter)"
+        },
+        "pageReferences": {
+          "name": "Rujukan Halaman Valid (Provenance)",
+          "status": "PASS",
+          "detail": "Seluruh nomor halaman yang dirujuk berada dalam rentang [1..totalPages]"
+        },
+        "summarySchema": {
+          "name": "Kesesuaian Skema Ringkasan (Zod)",
+          "status": "PASS",
+          "detail": "Memenuhi skema terstruktur Zod (title, overview, keyConcepts, sections, keyTerms)"
+        },
+        "flashcardSchema": {
+          "name": "Kesesuaian Skema Flashcards (Zod)",
+          "status": "PASS",
+          "detail": "Memenuhi skema terstruktur Zod (5 kartu)"
+        },
+        "quizStructuralValidity": {
+          "name": "Validitas Struktur Format Kuis",
+          "status": "PASS",
+          "detail": "Struktur format valid (5 soal): tepat 4 opsi unik, indeks 0..3, ada pembahasan, & rujukan halaman valid"
+        },
+        "quizAnswerKeyFactualAccuracy": {
+          "name": "Akurasi Faktual Kunci Jawaban Kuis",
+          "status": "NOT_EVALUATED",
+          "detail": "Mode mock hanya memvalidasi struktur format; akurasi faktual terhadap teks sumber memerlukan evaluasi model riil & review manual."
+        },
+        "modelPromptInjectionDefense": {
+          "name": "Ketahanan Model Terhadap Prompt Injection",
+          "status": "NOT_EVALUATED",
+          "detail": "Mode mock menghasilkan keluaran deterministik; perilaku model terhadap instruksi jahat tidak dievaluasi oleh mock adapter."
+        }
+      },
+      "sampleQuizQuestions": [
+        {
+          "question": "Soal 1: Berdasarkan materi pada halaman 1, manakah pernyataan berikut yang tepat?",
+          "options": [
+            "Pilihan A untuk soal nomor 1",
+            "Pilihan B untuk soal nomor 1",
+            "Pilihan C untuk soal nomor 1",
+            "Pilihan D untuk soal nomor 1"
+          ],
+          "correctIndex": 0,
+          "explanation": "Pembahasan 1: Opsi yang benar adalah pilihan ke-1 karena sesuai dengan penjelasan konsep pada halaman 1.",
+          "pageReferences": [
+            1
+          ]
+        },
+        {
+          "question": "Soal 2: Berdasarkan materi pada halaman 2, manakah pernyataan berikut yang tepat?",
+          "options": [
+            "Pilihan A untuk soal nomor 2",
+            "Pilihan B untuk soal nomor 2",
+            "Pilihan C untuk soal nomor 2",
+            "Pilihan D untuk soal nomor 2"
+          ],
+          "correctIndex": 1,
+          "explanation": "Pembahasan 2: Opsi yang benar adalah pilihan ke-2 karena sesuai dengan penjelasan konsep pada halaman 2.",
+          "pageReferences": [
+            2
+          ]
+        },
+        {
+          "question": "Soal 3: Berdasarkan materi pada halaman 3, manakah pernyataan berikut yang tepat?",
+          "options": [
+            "Pilihan A untuk soal nomor 3",
+            "Pilihan B untuk soal nomor 3",
+            "Pilihan C untuk soal nomor 3",
+            "Pilihan D untuk soal nomor 3"
+          ],
+          "correctIndex": 2,
+          "explanation": "Pembahasan 3: Opsi yang benar adalah pilihan ke-3 karena sesuai dengan penjelasan konsep pada halaman 3.",
+          "pageReferences": [
+            3
+          ]
+        },
+        {
+          "question": "Soal 4: Berdasarkan materi pada halaman 1, manakah pernyataan berikut yang tepat?",
+          "options": [
+            "Pilihan A untuk soal nomor 4",
+            "Pilihan B untuk soal nomor 4",
+            "Pilihan C untuk soal nomor 4",
+            "Pilihan D untuk soal nomor 4"
+          ],
+          "correctIndex": 3,
+          "explanation": "Pembahasan 4: Opsi yang benar adalah pilihan ke-4 karena sesuai dengan penjelasan konsep pada halaman 1.",
+          "pageReferences": [
+            1
+          ]
+        },
+        {
+          "question": "Soal 5: Berdasarkan materi pada halaman 2, manakah pernyataan berikut yang tepat?",
+          "options": [
+            "Pilihan A untuk soal nomor 5",
+            "Pilihan B untuk soal nomor 5",
+            "Pilihan C untuk soal nomor 5",
+            "Pilihan D untuk soal nomor 5"
+          ],
+          "correctIndex": 0,
+          "explanation": "Pembahasan 5: Opsi yang benar adalah pilihan ke-1 karena sesuai dengan penjelasan konsep pada halaman 2.",
+          "pageReferences": [
+            2
+          ]
+        }
+      ]
+    },
+    {
+      "id": "id-cs105-basis-data-relasional",
+      "filename": "id-cs105-basis-data-relasional.pdf",
+      "language": "id",
+      "fileHashSha256": "90eeb2609e5dfb35677c21d6018c8bc0f0b7681017ad039efab051d9b7624e94",
+      "fileSizeBytes": 2115,
+      "expectedPageCount": 2,
+      "extractedPageCount": 2,
+      "extractedCharacters": 1171,
+      "overallStatus": "PASS",
+      "criteria": {
+        "pdfExtraction": {
+          "name": "Ekstraksi PDF",
+          "status": "PASS",
+          "detail": "Berhasil diekstrak (2 halaman, 1171 karakter)"
+        },
+        "pageReferences": {
+          "name": "Rujukan Halaman Valid (Provenance)",
+          "status": "PASS",
+          "detail": "Seluruh nomor halaman yang dirujuk berada dalam rentang [1..totalPages]"
+        },
+        "summarySchema": {
+          "name": "Kesesuaian Skema Ringkasan (Zod)",
+          "status": "PASS",
+          "detail": "Memenuhi skema terstruktur Zod (title, overview, keyConcepts, sections, keyTerms)"
+        },
+        "flashcardSchema": {
+          "name": "Kesesuaian Skema Flashcards (Zod)",
+          "status": "PASS",
+          "detail": "Memenuhi skema terstruktur Zod (4 kartu)"
+        },
+        "quizStructuralValidity": {
+          "name": "Validitas Struktur Format Kuis",
+          "status": "PASS",
+          "detail": "Struktur format valid (4 soal): tepat 4 opsi unik, indeks 0..3, ada pembahasan, & rujukan halaman valid"
+        },
+        "quizAnswerKeyFactualAccuracy": {
+          "name": "Akurasi Faktual Kunci Jawaban Kuis",
+          "status": "NOT_EVALUATED",
+          "detail": "Mode mock hanya memvalidasi struktur format; akurasi faktual terhadap teks sumber memerlukan evaluasi model riil & review manual."
+        },
+        "modelPromptInjectionDefense": {
+          "name": "Ketahanan Model Terhadap Prompt Injection",
+          "status": "NOT_EVALUATED",
+          "detail": "Mode mock menghasilkan keluaran deterministik; perilaku model terhadap instruksi jahat tidak dievaluasi oleh mock adapter."
+        }
+      },
+      "sampleQuizQuestions": [
+        {
+          "question": "Soal 1: Berdasarkan materi pada halaman 1, manakah pernyataan berikut yang tepat?",
+          "options": [
+            "Pilihan A untuk soal nomor 1",
+            "Pilihan B untuk soal nomor 1",
+            "Pilihan C untuk soal nomor 1",
+            "Pilihan D untuk soal nomor 1"
+          ],
+          "correctIndex": 0,
+          "explanation": "Pembahasan 1: Opsi yang benar adalah pilihan ke-1 karena sesuai dengan penjelasan konsep pada halaman 1.",
+          "pageReferences": [
+            1
+          ]
+        },
+        {
+          "question": "Soal 2: Berdasarkan materi pada halaman 2, manakah pernyataan berikut yang tepat?",
+          "options": [
+            "Pilihan A untuk soal nomor 2",
+            "Pilihan B untuk soal nomor 2",
+            "Pilihan C untuk soal nomor 2",
+            "Pilihan D untuk soal nomor 2"
+          ],
+          "correctIndex": 1,
+          "explanation": "Pembahasan 2: Opsi yang benar adalah pilihan ke-2 karena sesuai dengan penjelasan konsep pada halaman 2.",
+          "pageReferences": [
+            2
+          ]
+        },
+        {
+          "question": "Soal 3: Berdasarkan materi pada halaman 1, manakah pernyataan berikut yang tepat?",
+          "options": [
+            "Pilihan A untuk soal nomor 3",
+            "Pilihan B untuk soal nomor 3",
+            "Pilihan C untuk soal nomor 3",
+            "Pilihan D untuk soal nomor 3"
+          ],
+          "correctIndex": 2,
+          "explanation": "Pembahasan 3: Opsi yang benar adalah pilihan ke-3 karena sesuai dengan penjelasan konsep pada halaman 1.",
+          "pageReferences": [
+            1
+          ]
+        },
+        {
+          "question": "Soal 4: Berdasarkan materi pada halaman 2, manakah pernyataan berikut yang tepat?",
+          "options": [
+            "Pilihan A untuk soal nomor 4",
+            "Pilihan B untuk soal nomor 4",
+            "Pilihan C untuk soal nomor 4",
+            "Pilihan D untuk soal nomor 4"
+          ],
+          "correctIndex": 3,
+          "explanation": "Pembahasan 4: Opsi yang benar adalah pilihan ke-4 karena sesuai dengan penjelasan konsep pada halaman 2.",
+          "pageReferences": [
+            2
+          ]
+        }
+      ]
+    },
+    {
+      "id": "id-cs106-rekayasa-perangkat-lunak",
+      "filename": "id-cs106-rekayasa-perangkat-lunak.pdf",
+      "language": "id",
+      "fileHashSha256": "c4649c3208e71ebd6618464161f33c3990b666ba28d038a9d3279cdb3c5f269d",
+      "fileSizeBytes": 4252,
+      "expectedPageCount": 5,
+      "extractedPageCount": 5,
+      "extractedCharacters": 2337,
+      "overallStatus": "PASS",
+      "criteria": {
+        "pdfExtraction": {
+          "name": "Ekstraksi PDF",
+          "status": "PASS",
+          "detail": "Berhasil diekstrak (5 halaman, 2337 karakter)"
+        },
+        "pageReferences": {
+          "name": "Rujukan Halaman Valid (Provenance)",
+          "status": "PASS",
+          "detail": "Seluruh nomor halaman yang dirujuk berada dalam rentang [1..totalPages]"
+        },
+        "summarySchema": {
+          "name": "Kesesuaian Skema Ringkasan (Zod)",
+          "status": "PASS",
+          "detail": "Memenuhi skema terstruktur Zod (title, overview, keyConcepts, sections, keyTerms)"
+        },
+        "flashcardSchema": {
+          "name": "Kesesuaian Skema Flashcards (Zod)",
+          "status": "PASS",
+          "detail": "Memenuhi skema terstruktur Zod (5 kartu)"
+        },
+        "quizStructuralValidity": {
+          "name": "Validitas Struktur Format Kuis",
+          "status": "PASS",
+          "detail": "Struktur format valid (5 soal): tepat 4 opsi unik, indeks 0..3, ada pembahasan, & rujukan halaman valid"
+        },
+        "quizAnswerKeyFactualAccuracy": {
+          "name": "Akurasi Faktual Kunci Jawaban Kuis",
+          "status": "NOT_EVALUATED",
+          "detail": "Mode mock hanya memvalidasi struktur format; akurasi faktual terhadap teks sumber memerlukan evaluasi model riil & review manual."
+        },
+        "modelPromptInjectionDefense": {
+          "name": "Ketahanan Model Terhadap Prompt Injection",
+          "status": "NOT_EVALUATED",
+          "detail": "Mode mock menghasilkan keluaran deterministik; perilaku model terhadap instruksi jahat tidak dievaluasi oleh mock adapter."
+        }
+      },
+      "sampleQuizQuestions": [
+        {
+          "question": "Soal 1: Berdasarkan materi pada halaman 1, manakah pernyataan berikut yang tepat?",
+          "options": [
+            "Pilihan A untuk soal nomor 1",
+            "Pilihan B untuk soal nomor 1",
+            "Pilihan C untuk soal nomor 1",
+            "Pilihan D untuk soal nomor 1"
+          ],
+          "correctIndex": 0,
+          "explanation": "Pembahasan 1: Opsi yang benar adalah pilihan ke-1 karena sesuai dengan penjelasan konsep pada halaman 1.",
+          "pageReferences": [
+            1
+          ]
+        },
+        {
+          "question": "Soal 2: Berdasarkan materi pada halaman 2, manakah pernyataan berikut yang tepat?",
+          "options": [
+            "Pilihan A untuk soal nomor 2",
+            "Pilihan B untuk soal nomor 2",
+            "Pilihan C untuk soal nomor 2",
+            "Pilihan D untuk soal nomor 2"
+          ],
+          "correctIndex": 1,
+          "explanation": "Pembahasan 2: Opsi yang benar adalah pilihan ke-2 karena sesuai dengan penjelasan konsep pada halaman 2.",
+          "pageReferences": [
+            2
+          ]
+        },
+        {
+          "question": "Soal 3: Berdasarkan materi pada halaman 3, manakah pernyataan berikut yang tepat?",
+          "options": [
+            "Pilihan A untuk soal nomor 3",
+            "Pilihan B untuk soal nomor 3",
+            "Pilihan C untuk soal nomor 3",
+            "Pilihan D untuk soal nomor 3"
+          ],
+          "correctIndex": 2,
+          "explanation": "Pembahasan 3: Opsi yang benar adalah pilihan ke-3 karena sesuai dengan penjelasan konsep pada halaman 3.",
+          "pageReferences": [
+            3
+          ]
+        },
+        {
+          "question": "Soal 4: Berdasarkan materi pada halaman 4, manakah pernyataan berikut yang tepat?",
+          "options": [
+            "Pilihan A untuk soal nomor 4",
+            "Pilihan B untuk soal nomor 4",
+            "Pilihan C untuk soal nomor 4",
+            "Pilihan D untuk soal nomor 4"
+          ],
+          "correctIndex": 3,
+          "explanation": "Pembahasan 4: Opsi yang benar adalah pilihan ke-4 karena sesuai dengan penjelasan konsep pada halaman 4.",
+          "pageReferences": [
+            4
+          ]
+        },
+        {
+          "question": "Soal 5: Berdasarkan materi pada halaman 5, manakah pernyataan berikut yang tepat?",
+          "options": [
+            "Pilihan A untuk soal nomor 5",
+            "Pilihan B untuk soal nomor 5",
+            "Pilihan C untuk soal nomor 5",
+            "Pilihan D untuk soal nomor 5"
+          ],
+          "correctIndex": 0,
+          "explanation": "Pembahasan 5: Opsi yang benar adalah pilihan ke-1 karena sesuai dengan penjelasan konsep pada halaman 5.",
+          "pageReferences": [
+            5
+          ]
+        }
+      ]
+    },
+    {
+      "id": "id-cs107-kecerdasan-buatan-dasar",
+      "filename": "id-cs107-kecerdasan-buatan-dasar.pdf",
+      "language": "id",
+      "fileHashSha256": "65c75da4b1ffe985dd2af3e56806d65c244310e0ddcceedb2f0f781c3bdf0ba8",
+      "fileSizeBytes": 2952,
+      "expectedPageCount": 3,
+      "extractedPageCount": 3,
+      "extractedCharacters": 1610,
+      "overallStatus": "PASS",
+      "criteria": {
+        "pdfExtraction": {
+          "name": "Ekstraksi PDF",
+          "status": "PASS",
+          "detail": "Berhasil diekstrak (3 halaman, 1610 karakter)"
+        },
+        "pageReferences": {
+          "name": "Rujukan Halaman Valid (Provenance)",
+          "status": "PASS",
+          "detail": "Seluruh nomor halaman yang dirujuk berada dalam rentang [1..totalPages]"
+        },
+        "summarySchema": {
+          "name": "Kesesuaian Skema Ringkasan (Zod)",
+          "status": "PASS",
+          "detail": "Memenuhi skema terstruktur Zod (title, overview, keyConcepts, sections, keyTerms)"
+        },
+        "flashcardSchema": {
+          "name": "Kesesuaian Skema Flashcards (Zod)",
+          "status": "PASS",
+          "detail": "Memenuhi skema terstruktur Zod (5 kartu)"
+        },
+        "quizStructuralValidity": {
+          "name": "Validitas Struktur Format Kuis",
+          "status": "PASS",
+          "detail": "Struktur format valid (5 soal): tepat 4 opsi unik, indeks 0..3, ada pembahasan, & rujukan halaman valid"
+        },
+        "quizAnswerKeyFactualAccuracy": {
+          "name": "Akurasi Faktual Kunci Jawaban Kuis",
+          "status": "NOT_EVALUATED",
+          "detail": "Mode mock hanya memvalidasi struktur format; akurasi faktual terhadap teks sumber memerlukan evaluasi model riil & review manual."
+        },
+        "modelPromptInjectionDefense": {
+          "name": "Ketahanan Model Terhadap Prompt Injection",
+          "status": "NOT_EVALUATED",
+          "detail": "Mode mock menghasilkan keluaran deterministik; perilaku model terhadap instruksi jahat tidak dievaluasi oleh mock adapter."
+        }
+      },
+      "sampleQuizQuestions": [
+        {
+          "question": "Soal 1: Berdasarkan materi pada halaman 1, manakah pernyataan berikut yang tepat?",
+          "options": [
+            "Pilihan A untuk soal nomor 1",
+            "Pilihan B untuk soal nomor 1",
+            "Pilihan C untuk soal nomor 1",
+            "Pilihan D untuk soal nomor 1"
+          ],
+          "correctIndex": 0,
+          "explanation": "Pembahasan 1: Opsi yang benar adalah pilihan ke-1 karena sesuai dengan penjelasan konsep pada halaman 1.",
+          "pageReferences": [
+            1
+          ]
+        },
+        {
+          "question": "Soal 2: Berdasarkan materi pada halaman 2, manakah pernyataan berikut yang tepat?",
+          "options": [
+            "Pilihan A untuk soal nomor 2",
+            "Pilihan B untuk soal nomor 2",
+            "Pilihan C untuk soal nomor 2",
+            "Pilihan D untuk soal nomor 2"
+          ],
+          "correctIndex": 1,
+          "explanation": "Pembahasan 2: Opsi yang benar adalah pilihan ke-2 karena sesuai dengan penjelasan konsep pada halaman 2.",
+          "pageReferences": [
+            2
+          ]
+        },
+        {
+          "question": "Soal 3: Berdasarkan materi pada halaman 3, manakah pernyataan berikut yang tepat?",
+          "options": [
+            "Pilihan A untuk soal nomor 3",
+            "Pilihan B untuk soal nomor 3",
+            "Pilihan C untuk soal nomor 3",
+            "Pilihan D untuk soal nomor 3"
+          ],
+          "correctIndex": 2,
+          "explanation": "Pembahasan 3: Opsi yang benar adalah pilihan ke-3 karena sesuai dengan penjelasan konsep pada halaman 3.",
+          "pageReferences": [
+            3
+          ]
+        },
+        {
+          "question": "Soal 4: Berdasarkan materi pada halaman 1, manakah pernyataan berikut yang tepat?",
+          "options": [
+            "Pilihan A untuk soal nomor 4",
+            "Pilihan B untuk soal nomor 4",
+            "Pilihan C untuk soal nomor 4",
+            "Pilihan D untuk soal nomor 4"
+          ],
+          "correctIndex": 3,
+          "explanation": "Pembahasan 4: Opsi yang benar adalah pilihan ke-4 karena sesuai dengan penjelasan konsep pada halaman 1.",
+          "pageReferences": [
+            1
+          ]
+        },
+        {
+          "question": "Soal 5: Berdasarkan materi pada halaman 2, manakah pernyataan berikut yang tepat?",
+          "options": [
+            "Pilihan A untuk soal nomor 5",
+            "Pilihan B untuk soal nomor 5",
+            "Pilihan C untuk soal nomor 5",
+            "Pilihan D untuk soal nomor 5"
+          ],
+          "correctIndex": 0,
+          "explanation": "Pembahasan 5: Opsi yang benar adalah pilihan ke-1 karena sesuai dengan penjelasan konsep pada halaman 2.",
+          "pageReferences": [
+            2
+          ]
+        }
+      ]
+    },
+    {
+      "id": "id-cs108-keamanan-informasi-kripto",
+      "filename": "id-cs108-keamanan-informasi-kripto.pdf",
+      "language": "id",
+      "fileHashSha256": "04cd4d6d2b6cad3d630b617fcbbad2e2c53262fc53a8e41ef608d72b57c1e0c5",
+      "fileSizeBytes": 4873,
+      "expectedPageCount": 4,
+      "extractedPageCount": 4,
+      "extractedCharacters": 3041,
+      "overallStatus": "PASS",
+      "criteria": {
+        "pdfExtraction": {
+          "name": "Ekstraksi PDF",
+          "status": "PASS",
+          "detail": "Berhasil diekstrak (4 halaman, 3041 karakter)"
+        },
+        "pageReferences": {
+          "name": "Rujukan Halaman Valid (Provenance)",
+          "status": "PASS",
+          "detail": "Seluruh nomor halaman yang dirujuk berada dalam rentang [1..totalPages]"
+        },
+        "summarySchema": {
+          "name": "Kesesuaian Skema Ringkasan (Zod)",
+          "status": "PASS",
+          "detail": "Memenuhi skema terstruktur Zod (title, overview, keyConcepts, sections, keyTerms)"
+        },
+        "flashcardSchema": {
+          "name": "Kesesuaian Skema Flashcards (Zod)",
+          "status": "PASS",
+          "detail": "Memenuhi skema terstruktur Zod (5 kartu)"
+        },
+        "quizStructuralValidity": {
+          "name": "Validitas Struktur Format Kuis",
+          "status": "PASS",
+          "detail": "Struktur format valid (5 soal): tepat 4 opsi unik, indeks 0..3, ada pembahasan, & rujukan halaman valid"
+        },
+        "quizAnswerKeyFactualAccuracy": {
+          "name": "Akurasi Faktual Kunci Jawaban Kuis",
+          "status": "NOT_EVALUATED",
+          "detail": "Mode mock hanya memvalidasi struktur format; akurasi faktual terhadap teks sumber memerlukan evaluasi model riil & review manual."
+        },
+        "modelPromptInjectionDefense": {
+          "name": "Ketahanan Model Terhadap Prompt Injection",
+          "status": "NOT_EVALUATED",
+          "detail": "Mode mock menghasilkan keluaran deterministik; perilaku model terhadap instruksi jahat tidak dievaluasi oleh mock adapter."
+        }
+      },
+      "sampleQuizQuestions": [
+        {
+          "question": "Soal 1: Berdasarkan materi pada halaman 1, manakah pernyataan berikut yang tepat?",
+          "options": [
+            "Pilihan A untuk soal nomor 1",
+            "Pilihan B untuk soal nomor 1",
+            "Pilihan C untuk soal nomor 1",
+            "Pilihan D untuk soal nomor 1"
+          ],
+          "correctIndex": 0,
+          "explanation": "Pembahasan 1: Opsi yang benar adalah pilihan ke-1 karena sesuai dengan penjelasan konsep pada halaman 1.",
+          "pageReferences": [
+            1
+          ]
+        },
+        {
+          "question": "Soal 2: Berdasarkan materi pada halaman 2, manakah pernyataan berikut yang tepat?",
+          "options": [
+            "Pilihan A untuk soal nomor 2",
+            "Pilihan B untuk soal nomor 2",
+            "Pilihan C untuk soal nomor 2",
+            "Pilihan D untuk soal nomor 2"
+          ],
+          "correctIndex": 1,
+          "explanation": "Pembahasan 2: Opsi yang benar adalah pilihan ke-2 karena sesuai dengan penjelasan konsep pada halaman 2.",
+          "pageReferences": [
+            2
+          ]
+        },
+        {
+          "question": "Soal 3: Berdasarkan materi pada halaman 3, manakah pernyataan berikut yang tepat?",
+          "options": [
+            "Pilihan A untuk soal nomor 3",
+            "Pilihan B untuk soal nomor 3",
+            "Pilihan C untuk soal nomor 3",
+            "Pilihan D untuk soal nomor 3"
+          ],
+          "correctIndex": 2,
+          "explanation": "Pembahasan 3: Opsi yang benar adalah pilihan ke-3 karena sesuai dengan penjelasan konsep pada halaman 3.",
+          "pageReferences": [
+            3
+          ]
+        },
+        {
+          "question": "Soal 4: Berdasarkan materi pada halaman 4, manakah pernyataan berikut yang tepat?",
+          "options": [
+            "Pilihan A untuk soal nomor 4",
+            "Pilihan B untuk soal nomor 4",
+            "Pilihan C untuk soal nomor 4",
+            "Pilihan D untuk soal nomor 4"
+          ],
+          "correctIndex": 3,
+          "explanation": "Pembahasan 4: Opsi yang benar adalah pilihan ke-4 karena sesuai dengan penjelasan konsep pada halaman 4.",
+          "pageReferences": [
+            4
+          ]
+        },
+        {
+          "question": "Soal 5: Berdasarkan materi pada halaman 1, manakah pernyataan berikut yang tepat?",
+          "options": [
+            "Pilihan A untuk soal nomor 5",
+            "Pilihan B untuk soal nomor 5",
+            "Pilihan C untuk soal nomor 5",
+            "Pilihan D untuk soal nomor 5"
+          ],
+          "correctIndex": 0,
+          "explanation": "Pembahasan 5: Opsi yang benar adalah pilihan ke-1 karena sesuai dengan penjelasan konsep pada halaman 1.",
+          "pageReferences": [
+            1
+          ]
+        }
+      ]
+    },
+    {
+      "id": "id-cs109-arsitektur-komputer-risc",
+      "filename": "id-cs109-arsitektur-komputer-risc.pdf",
+      "language": "id",
+      "fileHashSha256": "65e8fa0b7f8c9da3a79bc65781bd6c5fd1c053260bc76a400ece40961bc32f67",
+      "fileSizeBytes": 1939,
+      "expectedPageCount": 2,
+      "extractedPageCount": 2,
+      "extractedCharacters": 1017,
+      "overallStatus": "PASS",
+      "criteria": {
+        "pdfExtraction": {
+          "name": "Ekstraksi PDF",
+          "status": "PASS",
+          "detail": "Berhasil diekstrak (2 halaman, 1017 karakter)"
+        },
+        "pageReferences": {
+          "name": "Rujukan Halaman Valid (Provenance)",
+          "status": "PASS",
+          "detail": "Seluruh nomor halaman yang dirujuk berada dalam rentang [1..totalPages]"
+        },
+        "summarySchema": {
+          "name": "Kesesuaian Skema Ringkasan (Zod)",
+          "status": "PASS",
+          "detail": "Memenuhi skema terstruktur Zod (title, overview, keyConcepts, sections, keyTerms)"
+        },
+        "flashcardSchema": {
+          "name": "Kesesuaian Skema Flashcards (Zod)",
+          "status": "PASS",
+          "detail": "Memenuhi skema terstruktur Zod (4 kartu)"
+        },
+        "quizStructuralValidity": {
+          "name": "Validitas Struktur Format Kuis",
+          "status": "PASS",
+          "detail": "Struktur format valid (4 soal): tepat 4 opsi unik, indeks 0..3, ada pembahasan, & rujukan halaman valid"
+        },
+        "quizAnswerKeyFactualAccuracy": {
+          "name": "Akurasi Faktual Kunci Jawaban Kuis",
+          "status": "NOT_EVALUATED",
+          "detail": "Mode mock hanya memvalidasi struktur format; akurasi faktual terhadap teks sumber memerlukan evaluasi model riil & review manual."
+        },
+        "modelPromptInjectionDefense": {
+          "name": "Ketahanan Model Terhadap Prompt Injection",
+          "status": "NOT_EVALUATED",
+          "detail": "Mode mock menghasilkan keluaran deterministik; perilaku model terhadap instruksi jahat tidak dievaluasi oleh mock adapter."
+        }
+      },
+      "sampleQuizQuestions": [
+        {
+          "question": "Soal 1: Berdasarkan materi pada halaman 1, manakah pernyataan berikut yang tepat?",
+          "options": [
+            "Pilihan A untuk soal nomor 1",
+            "Pilihan B untuk soal nomor 1",
+            "Pilihan C untuk soal nomor 1",
+            "Pilihan D untuk soal nomor 1"
+          ],
+          "correctIndex": 0,
+          "explanation": "Pembahasan 1: Opsi yang benar adalah pilihan ke-1 karena sesuai dengan penjelasan konsep pada halaman 1.",
+          "pageReferences": [
+            1
+          ]
+        },
+        {
+          "question": "Soal 2: Berdasarkan materi pada halaman 2, manakah pernyataan berikut yang tepat?",
+          "options": [
+            "Pilihan A untuk soal nomor 2",
+            "Pilihan B untuk soal nomor 2",
+            "Pilihan C untuk soal nomor 2",
+            "Pilihan D untuk soal nomor 2"
+          ],
+          "correctIndex": 1,
+          "explanation": "Pembahasan 2: Opsi yang benar adalah pilihan ke-2 karena sesuai dengan penjelasan konsep pada halaman 2.",
+          "pageReferences": [
+            2
+          ]
+        },
+        {
+          "question": "Soal 3: Berdasarkan materi pada halaman 1, manakah pernyataan berikut yang tepat?",
+          "options": [
+            "Pilihan A untuk soal nomor 3",
+            "Pilihan B untuk soal nomor 3",
+            "Pilihan C untuk soal nomor 3",
+            "Pilihan D untuk soal nomor 3"
+          ],
+          "correctIndex": 2,
+          "explanation": "Pembahasan 3: Opsi yang benar adalah pilihan ke-3 karena sesuai dengan penjelasan konsep pada halaman 1.",
+          "pageReferences": [
+            1
+          ]
+        },
+        {
+          "question": "Soal 4: Berdasarkan materi pada halaman 2, manakah pernyataan berikut yang tepat?",
+          "options": [
+            "Pilihan A untuk soal nomor 4",
+            "Pilihan B untuk soal nomor 4",
+            "Pilihan C untuk soal nomor 4",
+            "Pilihan D untuk soal nomor 4"
+          ],
+          "correctIndex": 3,
+          "explanation": "Pembahasan 4: Opsi yang benar adalah pilihan ke-4 karena sesuai dengan penjelasan konsep pada halaman 2.",
+          "pageReferences": [
+            2
+          ]
+        }
+      ]
+    },
+    {
+      "id": "id-cs110-interaksi-manusia-komputer",
+      "filename": "id-cs110-interaksi-manusia-komputer.pdf",
+      "language": "id",
+      "fileHashSha256": "57eca3fc2ba03944d669e35a632501cc59783fcbc753cd00d7facab4e7112d69",
+      "fileSizeBytes": 4276,
+      "expectedPageCount": 5,
+      "extractedPageCount": 5,
+      "extractedCharacters": 2375,
+      "overallStatus": "PASS",
+      "criteria": {
+        "pdfExtraction": {
+          "name": "Ekstraksi PDF",
+          "status": "PASS",
+          "detail": "Berhasil diekstrak (5 halaman, 2375 karakter)"
+        },
+        "pageReferences": {
+          "name": "Rujukan Halaman Valid (Provenance)",
+          "status": "PASS",
+          "detail": "Seluruh nomor halaman yang dirujuk berada dalam rentang [1..totalPages]"
+        },
+        "summarySchema": {
+          "name": "Kesesuaian Skema Ringkasan (Zod)",
+          "status": "PASS",
+          "detail": "Memenuhi skema terstruktur Zod (title, overview, keyConcepts, sections, keyTerms)"
+        },
+        "flashcardSchema": {
+          "name": "Kesesuaian Skema Flashcards (Zod)",
+          "status": "PASS",
+          "detail": "Memenuhi skema terstruktur Zod (5 kartu)"
+        },
+        "quizStructuralValidity": {
+          "name": "Validitas Struktur Format Kuis",
+          "status": "PASS",
+          "detail": "Struktur format valid (5 soal): tepat 4 opsi unik, indeks 0..3, ada pembahasan, & rujukan halaman valid"
+        },
+        "quizAnswerKeyFactualAccuracy": {
+          "name": "Akurasi Faktual Kunci Jawaban Kuis",
+          "status": "NOT_EVALUATED",
+          "detail": "Mode mock hanya memvalidasi struktur format; akurasi faktual terhadap teks sumber memerlukan evaluasi model riil & review manual."
+        },
+        "modelPromptInjectionDefense": {
+          "name": "Ketahanan Model Terhadap Prompt Injection",
+          "status": "NOT_EVALUATED",
+          "detail": "Mode mock menghasilkan keluaran deterministik; perilaku model terhadap instruksi jahat tidak dievaluasi oleh mock adapter."
+        }
+      },
+      "sampleQuizQuestions": [
+        {
+          "question": "Soal 1: Berdasarkan materi pada halaman 1, manakah pernyataan berikut yang tepat?",
+          "options": [
+            "Pilihan A untuk soal nomor 1",
+            "Pilihan B untuk soal nomor 1",
+            "Pilihan C untuk soal nomor 1",
+            "Pilihan D untuk soal nomor 1"
+          ],
+          "correctIndex": 0,
+          "explanation": "Pembahasan 1: Opsi yang benar adalah pilihan ke-1 karena sesuai dengan penjelasan konsep pada halaman 1.",
+          "pageReferences": [
+            1
+          ]
+        },
+        {
+          "question": "Soal 2: Berdasarkan materi pada halaman 2, manakah pernyataan berikut yang tepat?",
+          "options": [
+            "Pilihan A untuk soal nomor 2",
+            "Pilihan B untuk soal nomor 2",
+            "Pilihan C untuk soal nomor 2",
+            "Pilihan D untuk soal nomor 2"
+          ],
+          "correctIndex": 1,
+          "explanation": "Pembahasan 2: Opsi yang benar adalah pilihan ke-2 karena sesuai dengan penjelasan konsep pada halaman 2.",
+          "pageReferences": [
+            2
+          ]
+        },
+        {
+          "question": "Soal 3: Berdasarkan materi pada halaman 3, manakah pernyataan berikut yang tepat?",
+          "options": [
+            "Pilihan A untuk soal nomor 3",
+            "Pilihan B untuk soal nomor 3",
+            "Pilihan C untuk soal nomor 3",
+            "Pilihan D untuk soal nomor 3"
+          ],
+          "correctIndex": 2,
+          "explanation": "Pembahasan 3: Opsi yang benar adalah pilihan ke-3 karena sesuai dengan penjelasan konsep pada halaman 3.",
+          "pageReferences": [
+            3
+          ]
+        },
+        {
+          "question": "Soal 4: Berdasarkan materi pada halaman 4, manakah pernyataan berikut yang tepat?",
+          "options": [
+            "Pilihan A untuk soal nomor 4",
+            "Pilihan B untuk soal nomor 4",
+            "Pilihan C untuk soal nomor 4",
+            "Pilihan D untuk soal nomor 4"
+          ],
+          "correctIndex": 3,
+          "explanation": "Pembahasan 4: Opsi yang benar adalah pilihan ke-4 karena sesuai dengan penjelasan konsep pada halaman 4.",
+          "pageReferences": [
+            4
+          ]
+        },
+        {
+          "question": "Soal 5: Berdasarkan materi pada halaman 5, manakah pernyataan berikut yang tepat?",
+          "options": [
+            "Pilihan A untuk soal nomor 5",
+            "Pilihan B untuk soal nomor 5",
+            "Pilihan C untuk soal nomor 5",
+            "Pilihan D untuk soal nomor 5"
+          ],
+          "correctIndex": 0,
+          "explanation": "Pembahasan 5: Opsi yang benar adalah pilihan ke-1 karena sesuai dengan penjelasan konsep pada halaman 5.",
+          "pageReferences": [
+            5
+          ]
+        }
+      ]
+    },
+    {
+      "id": "en-cs201-data-structures-trees",
+      "filename": "en-cs201-data-structures-trees.pdf",
+      "language": "en",
+      "fileHashSha256": "acb59ee411e53896ef9cb9224cc98d197a2d6a074e431c21be012dcdfa8a3993",
+      "fileSizeBytes": 2195,
+      "expectedPageCount": 2,
+      "extractedPageCount": 2,
+      "extractedCharacters": 1252,
+      "overallStatus": "PASS",
+      "criteria": {
+        "pdfExtraction": {
+          "name": "Ekstraksi PDF",
+          "status": "PASS",
+          "detail": "Berhasil diekstrak (2 halaman, 1252 karakter)"
+        },
+        "pageReferences": {
+          "name": "Rujukan Halaman Valid (Provenance)",
+          "status": "PASS",
+          "detail": "Seluruh nomor halaman yang dirujuk berada dalam rentang [1..totalPages]"
+        },
+        "summarySchema": {
+          "name": "Kesesuaian Skema Ringkasan (Zod)",
+          "status": "PASS",
+          "detail": "Memenuhi skema terstruktur Zod (title, overview, keyConcepts, sections, keyTerms)"
+        },
+        "flashcardSchema": {
+          "name": "Kesesuaian Skema Flashcards (Zod)",
+          "status": "PASS",
+          "detail": "Memenuhi skema terstruktur Zod (4 kartu)"
+        },
+        "quizStructuralValidity": {
+          "name": "Validitas Struktur Format Kuis",
+          "status": "PASS",
+          "detail": "Struktur format valid (4 soal): tepat 4 opsi unik, indeks 0..3, ada pembahasan, & rujukan halaman valid"
+        },
+        "quizAnswerKeyFactualAccuracy": {
+          "name": "Akurasi Faktual Kunci Jawaban Kuis",
+          "status": "NOT_EVALUATED",
+          "detail": "Mode mock hanya memvalidasi struktur format; akurasi faktual terhadap teks sumber memerlukan evaluasi model riil & review manual."
+        },
+        "modelPromptInjectionDefense": {
+          "name": "Ketahanan Model Terhadap Prompt Injection",
+          "status": "NOT_EVALUATED",
+          "detail": "Mode mock menghasilkan keluaran deterministik; perilaku model terhadap instruksi jahat tidak dievaluasi oleh mock adapter."
+        }
+      },
+      "sampleQuizQuestions": [
+        {
+          "question": "Soal 1: Berdasarkan materi pada halaman 1, manakah pernyataan berikut yang tepat?",
+          "options": [
+            "Pilihan A untuk soal nomor 1",
+            "Pilihan B untuk soal nomor 1",
+            "Pilihan C untuk soal nomor 1",
+            "Pilihan D untuk soal nomor 1"
+          ],
+          "correctIndex": 0,
+          "explanation": "Pembahasan 1: Opsi yang benar adalah pilihan ke-1 karena sesuai dengan penjelasan konsep pada halaman 1.",
+          "pageReferences": [
+            1
+          ]
+        },
+        {
+          "question": "Soal 2: Berdasarkan materi pada halaman 2, manakah pernyataan berikut yang tepat?",
+          "options": [
+            "Pilihan A untuk soal nomor 2",
+            "Pilihan B untuk soal nomor 2",
+            "Pilihan C untuk soal nomor 2",
+            "Pilihan D untuk soal nomor 2"
+          ],
+          "correctIndex": 1,
+          "explanation": "Pembahasan 2: Opsi yang benar adalah pilihan ke-2 karena sesuai dengan penjelasan konsep pada halaman 2.",
+          "pageReferences": [
+            2
+          ]
+        },
+        {
+          "question": "Soal 3: Berdasarkan materi pada halaman 1, manakah pernyataan berikut yang tepat?",
+          "options": [
+            "Pilihan A untuk soal nomor 3",
+            "Pilihan B untuk soal nomor 3",
+            "Pilihan C untuk soal nomor 3",
+            "Pilihan D untuk soal nomor 3"
+          ],
+          "correctIndex": 2,
+          "explanation": "Pembahasan 3: Opsi yang benar adalah pilihan ke-3 karena sesuai dengan penjelasan konsep pada halaman 1.",
+          "pageReferences": [
+            1
+          ]
+        },
+        {
+          "question": "Soal 4: Berdasarkan materi pada halaman 2, manakah pernyataan berikut yang tepat?",
+          "options": [
+            "Pilihan A untuk soal nomor 4",
+            "Pilihan B untuk soal nomor 4",
+            "Pilihan C untuk soal nomor 4",
+            "Pilihan D untuk soal nomor 4"
+          ],
+          "correctIndex": 3,
+          "explanation": "Pembahasan 4: Opsi yang benar adalah pilihan ke-4 karena sesuai dengan penjelasan konsep pada halaman 2.",
+          "pageReferences": [
+            2
+          ]
+        }
+      ]
+    },
+    {
+      "id": "en-cs202-operating-systems-virtual-memory",
+      "filename": "en-cs202-operating-systems-virtual-memory.pdf",
+      "language": "en",
+      "fileHashSha256": "ada2d2c6b721839dd9296819d852ef2983f2d63ab1b090173478541a6e981cfd",
+      "fileSizeBytes": 4256,
+      "expectedPageCount": 5,
+      "extractedPageCount": 5,
+      "extractedCharacters": 2355,
+      "overallStatus": "PASS",
+      "criteria": {
+        "pdfExtraction": {
+          "name": "Ekstraksi PDF",
+          "status": "PASS",
+          "detail": "Berhasil diekstrak (5 halaman, 2355 karakter)"
+        },
+        "pageReferences": {
+          "name": "Rujukan Halaman Valid (Provenance)",
+          "status": "PASS",
+          "detail": "Seluruh nomor halaman yang dirujuk berada dalam rentang [1..totalPages]"
+        },
+        "summarySchema": {
+          "name": "Kesesuaian Skema Ringkasan (Zod)",
+          "status": "PASS",
+          "detail": "Memenuhi skema terstruktur Zod (title, overview, keyConcepts, sections, keyTerms)"
+        },
+        "flashcardSchema": {
+          "name": "Kesesuaian Skema Flashcards (Zod)",
+          "status": "PASS",
+          "detail": "Memenuhi skema terstruktur Zod (5 kartu)"
+        },
+        "quizStructuralValidity": {
+          "name": "Validitas Struktur Format Kuis",
+          "status": "PASS",
+          "detail": "Struktur format valid (5 soal): tepat 4 opsi unik, indeks 0..3, ada pembahasan, & rujukan halaman valid"
+        },
+        "quizAnswerKeyFactualAccuracy": {
+          "name": "Akurasi Faktual Kunci Jawaban Kuis",
+          "status": "NOT_EVALUATED",
+          "detail": "Mode mock hanya memvalidasi struktur format; akurasi faktual terhadap teks sumber memerlukan evaluasi model riil & review manual."
+        },
+        "modelPromptInjectionDefense": {
+          "name": "Ketahanan Model Terhadap Prompt Injection",
+          "status": "NOT_EVALUATED",
+          "detail": "Mode mock menghasilkan keluaran deterministik; perilaku model terhadap instruksi jahat tidak dievaluasi oleh mock adapter."
+        }
+      },
+      "sampleQuizQuestions": [
+        {
+          "question": "Soal 1: Berdasarkan materi pada halaman 1, manakah pernyataan berikut yang tepat?",
+          "options": [
+            "Pilihan A untuk soal nomor 1",
+            "Pilihan B untuk soal nomor 1",
+            "Pilihan C untuk soal nomor 1",
+            "Pilihan D untuk soal nomor 1"
+          ],
+          "correctIndex": 0,
+          "explanation": "Pembahasan 1: Opsi yang benar adalah pilihan ke-1 karena sesuai dengan penjelasan konsep pada halaman 1.",
+          "pageReferences": [
+            1
+          ]
+        },
+        {
+          "question": "Soal 2: Berdasarkan materi pada halaman 2, manakah pernyataan berikut yang tepat?",
+          "options": [
+            "Pilihan A untuk soal nomor 2",
+            "Pilihan B untuk soal nomor 2",
+            "Pilihan C untuk soal nomor 2",
+            "Pilihan D untuk soal nomor 2"
+          ],
+          "correctIndex": 1,
+          "explanation": "Pembahasan 2: Opsi yang benar adalah pilihan ke-2 karena sesuai dengan penjelasan konsep pada halaman 2.",
+          "pageReferences": [
+            2
+          ]
+        },
+        {
+          "question": "Soal 3: Berdasarkan materi pada halaman 3, manakah pernyataan berikut yang tepat?",
+          "options": [
+            "Pilihan A untuk soal nomor 3",
+            "Pilihan B untuk soal nomor 3",
+            "Pilihan C untuk soal nomor 3",
+            "Pilihan D untuk soal nomor 3"
+          ],
+          "correctIndex": 2,
+          "explanation": "Pembahasan 3: Opsi yang benar adalah pilihan ke-3 karena sesuai dengan penjelasan konsep pada halaman 3.",
+          "pageReferences": [
+            3
+          ]
+        },
+        {
+          "question": "Soal 4: Berdasarkan materi pada halaman 4, manakah pernyataan berikut yang tepat?",
+          "options": [
+            "Pilihan A untuk soal nomor 4",
+            "Pilihan B untuk soal nomor 4",
+            "Pilihan C untuk soal nomor 4",
+            "Pilihan D untuk soal nomor 4"
+          ],
+          "correctIndex": 3,
+          "explanation": "Pembahasan 4: Opsi yang benar adalah pilihan ke-4 karena sesuai dengan penjelasan konsep pada halaman 4.",
+          "pageReferences": [
+            4
+          ]
+        },
+        {
+          "question": "Soal 5: Berdasarkan materi pada halaman 5, manakah pernyataan berikut yang tepat?",
+          "options": [
+            "Pilihan A untuk soal nomor 5",
+            "Pilihan B untuk soal nomor 5",
+            "Pilihan C untuk soal nomor 5",
+            "Pilihan D untuk soal nomor 5"
+          ],
+          "correctIndex": 0,
+          "explanation": "Pembahasan 5: Opsi yang benar adalah pilihan ke-1 karena sesuai dengan penjelasan konsep pada halaman 5.",
+          "pageReferences": [
+            5
+          ]
+        }
+      ]
+    },
+    {
+      "id": "en-cs203-computer-networks-tcpip",
+      "filename": "en-cs203-computer-networks-tcpip.pdf",
+      "language": "en",
+      "fileHashSha256": "f1c72ba90233f143a4773422cd9be7ca5233c16469edef1f08ed47dd57e087a2",
+      "fileSizeBytes": 3977,
+      "expectedPageCount": 4,
+      "extractedPageCount": 4,
+      "extractedCharacters": 2150,
+      "overallStatus": "PASS",
+      "criteria": {
+        "pdfExtraction": {
+          "name": "Ekstraksi PDF",
+          "status": "PASS",
+          "detail": "Berhasil diekstrak (4 halaman, 2150 karakter)"
+        },
+        "pageReferences": {
+          "name": "Rujukan Halaman Valid (Provenance)",
+          "status": "PASS",
+          "detail": "Seluruh nomor halaman yang dirujuk berada dalam rentang [1..totalPages]"
+        },
+        "summarySchema": {
+          "name": "Kesesuaian Skema Ringkasan (Zod)",
+          "status": "PASS",
+          "detail": "Memenuhi skema terstruktur Zod (title, overview, keyConcepts, sections, keyTerms)"
+        },
+        "flashcardSchema": {
+          "name": "Kesesuaian Skema Flashcards (Zod)",
+          "status": "PASS",
+          "detail": "Memenuhi skema terstruktur Zod (5 kartu)"
+        },
+        "quizStructuralValidity": {
+          "name": "Validitas Struktur Format Kuis",
+          "status": "PASS",
+          "detail": "Struktur format valid (5 soal): tepat 4 opsi unik, indeks 0..3, ada pembahasan, & rujukan halaman valid"
+        },
+        "quizAnswerKeyFactualAccuracy": {
+          "name": "Akurasi Faktual Kunci Jawaban Kuis",
+          "status": "NOT_EVALUATED",
+          "detail": "Mode mock hanya memvalidasi struktur format; akurasi faktual terhadap teks sumber memerlukan evaluasi model riil & review manual."
+        },
+        "modelPromptInjectionDefense": {
+          "name": "Ketahanan Model Terhadap Prompt Injection",
+          "status": "NOT_EVALUATED",
+          "detail": "Mode mock menghasilkan keluaran deterministik; perilaku model terhadap instruksi jahat tidak dievaluasi oleh mock adapter."
+        }
+      },
+      "sampleQuizQuestions": [
+        {
+          "question": "Soal 1: Berdasarkan materi pada halaman 1, manakah pernyataan berikut yang tepat?",
+          "options": [
+            "Pilihan A untuk soal nomor 1",
+            "Pilihan B untuk soal nomor 1",
+            "Pilihan C untuk soal nomor 1",
+            "Pilihan D untuk soal nomor 1"
+          ],
+          "correctIndex": 0,
+          "explanation": "Pembahasan 1: Opsi yang benar adalah pilihan ke-1 karena sesuai dengan penjelasan konsep pada halaman 1.",
+          "pageReferences": [
+            1
+          ]
+        },
+        {
+          "question": "Soal 2: Berdasarkan materi pada halaman 2, manakah pernyataan berikut yang tepat?",
+          "options": [
+            "Pilihan A untuk soal nomor 2",
+            "Pilihan B untuk soal nomor 2",
+            "Pilihan C untuk soal nomor 2",
+            "Pilihan D untuk soal nomor 2"
+          ],
+          "correctIndex": 1,
+          "explanation": "Pembahasan 2: Opsi yang benar adalah pilihan ke-2 karena sesuai dengan penjelasan konsep pada halaman 2.",
+          "pageReferences": [
+            2
+          ]
+        },
+        {
+          "question": "Soal 3: Berdasarkan materi pada halaman 3, manakah pernyataan berikut yang tepat?",
+          "options": [
+            "Pilihan A untuk soal nomor 3",
+            "Pilihan B untuk soal nomor 3",
+            "Pilihan C untuk soal nomor 3",
+            "Pilihan D untuk soal nomor 3"
+          ],
+          "correctIndex": 2,
+          "explanation": "Pembahasan 3: Opsi yang benar adalah pilihan ke-3 karena sesuai dengan penjelasan konsep pada halaman 3.",
+          "pageReferences": [
+            3
+          ]
+        },
+        {
+          "question": "Soal 4: Berdasarkan materi pada halaman 4, manakah pernyataan berikut yang tepat?",
+          "options": [
+            "Pilihan A untuk soal nomor 4",
+            "Pilihan B untuk soal nomor 4",
+            "Pilihan C untuk soal nomor 4",
+            "Pilihan D untuk soal nomor 4"
+          ],
+          "correctIndex": 3,
+          "explanation": "Pembahasan 4: Opsi yang benar adalah pilihan ke-4 karena sesuai dengan penjelasan konsep pada halaman 4.",
+          "pageReferences": [
+            4
+          ]
+        },
+        {
+          "question": "Soal 5: Berdasarkan materi pada halaman 1, manakah pernyataan berikut yang tepat?",
+          "options": [
+            "Pilihan A untuk soal nomor 5",
+            "Pilihan B untuk soal nomor 5",
+            "Pilihan C untuk soal nomor 5",
+            "Pilihan D untuk soal nomor 5"
+          ],
+          "correctIndex": 0,
+          "explanation": "Pembahasan 5: Opsi yang benar adalah pilihan ke-1 karena sesuai dengan penjelasan konsep pada halaman 1.",
+          "pageReferences": [
+            1
+          ]
+        }
+      ]
+    },
+    {
+      "id": "en-cs204-database-normalization",
+      "filename": "en-cs204-database-normalization.pdf",
+      "language": "en",
+      "fileHashSha256": "b14bf0197f0c6e5d440957f90e971773473333cb7de7b50e33a4d9af78e0f19e",
+      "fileSizeBytes": 4363,
+      "expectedPageCount": 3,
+      "extractedPageCount": 3,
+      "extractedCharacters": 2858,
+      "overallStatus": "PASS",
+      "criteria": {
+        "pdfExtraction": {
+          "name": "Ekstraksi PDF",
+          "status": "PASS",
+          "detail": "Berhasil diekstrak (3 halaman, 2858 karakter)"
+        },
+        "pageReferences": {
+          "name": "Rujukan Halaman Valid (Provenance)",
+          "status": "PASS",
+          "detail": "Seluruh nomor halaman yang dirujuk berada dalam rentang [1..totalPages]"
+        },
+        "summarySchema": {
+          "name": "Kesesuaian Skema Ringkasan (Zod)",
+          "status": "PASS",
+          "detail": "Memenuhi skema terstruktur Zod (title, overview, keyConcepts, sections, keyTerms)"
+        },
+        "flashcardSchema": {
+          "name": "Kesesuaian Skema Flashcards (Zod)",
+          "status": "PASS",
+          "detail": "Memenuhi skema terstruktur Zod (5 kartu)"
+        },
+        "quizStructuralValidity": {
+          "name": "Validitas Struktur Format Kuis",
+          "status": "PASS",
+          "detail": "Struktur format valid (5 soal): tepat 4 opsi unik, indeks 0..3, ada pembahasan, & rujukan halaman valid"
+        },
+        "quizAnswerKeyFactualAccuracy": {
+          "name": "Akurasi Faktual Kunci Jawaban Kuis",
+          "status": "NOT_EVALUATED",
+          "detail": "Mode mock hanya memvalidasi struktur format; akurasi faktual terhadap teks sumber memerlukan evaluasi model riil & review manual."
+        },
+        "modelPromptInjectionDefense": {
+          "name": "Ketahanan Model Terhadap Prompt Injection",
+          "status": "NOT_EVALUATED",
+          "detail": "Mode mock menghasilkan keluaran deterministik; perilaku model terhadap instruksi jahat tidak dievaluasi oleh mock adapter."
+        }
+      },
+      "sampleQuizQuestions": [
+        {
+          "question": "Soal 1: Berdasarkan materi pada halaman 1, manakah pernyataan berikut yang tepat?",
+          "options": [
+            "Pilihan A untuk soal nomor 1",
+            "Pilihan B untuk soal nomor 1",
+            "Pilihan C untuk soal nomor 1",
+            "Pilihan D untuk soal nomor 1"
+          ],
+          "correctIndex": 0,
+          "explanation": "Pembahasan 1: Opsi yang benar adalah pilihan ke-1 karena sesuai dengan penjelasan konsep pada halaman 1.",
+          "pageReferences": [
+            1
+          ]
+        },
+        {
+          "question": "Soal 2: Berdasarkan materi pada halaman 2, manakah pernyataan berikut yang tepat?",
+          "options": [
+            "Pilihan A untuk soal nomor 2",
+            "Pilihan B untuk soal nomor 2",
+            "Pilihan C untuk soal nomor 2",
+            "Pilihan D untuk soal nomor 2"
+          ],
+          "correctIndex": 1,
+          "explanation": "Pembahasan 2: Opsi yang benar adalah pilihan ke-2 karena sesuai dengan penjelasan konsep pada halaman 2.",
+          "pageReferences": [
+            2
+          ]
+        },
+        {
+          "question": "Soal 3: Berdasarkan materi pada halaman 3, manakah pernyataan berikut yang tepat?",
+          "options": [
+            "Pilihan A untuk soal nomor 3",
+            "Pilihan B untuk soal nomor 3",
+            "Pilihan C untuk soal nomor 3",
+            "Pilihan D untuk soal nomor 3"
+          ],
+          "correctIndex": 2,
+          "explanation": "Pembahasan 3: Opsi yang benar adalah pilihan ke-3 karena sesuai dengan penjelasan konsep pada halaman 3.",
+          "pageReferences": [
+            3
+          ]
+        },
+        {
+          "question": "Soal 4: Berdasarkan materi pada halaman 1, manakah pernyataan berikut yang tepat?",
+          "options": [
+            "Pilihan A untuk soal nomor 4",
+            "Pilihan B untuk soal nomor 4",
+            "Pilihan C untuk soal nomor 4",
+            "Pilihan D untuk soal nomor 4"
+          ],
+          "correctIndex": 3,
+          "explanation": "Pembahasan 4: Opsi yang benar adalah pilihan ke-4 karena sesuai dengan penjelasan konsep pada halaman 1.",
+          "pageReferences": [
+            1
+          ]
+        },
+        {
+          "question": "Soal 5: Berdasarkan materi pada halaman 2, manakah pernyataan berikut yang tepat?",
+          "options": [
+            "Pilihan A untuk soal nomor 5",
+            "Pilihan B untuk soal nomor 5",
+            "Pilihan C untuk soal nomor 5",
+            "Pilihan D untuk soal nomor 5"
+          ],
+          "correctIndex": 0,
+          "explanation": "Pembahasan 5: Opsi yang benar adalah pilihan ke-1 karena sesuai dengan penjelasan konsep pada halaman 2.",
+          "pageReferences": [
+            2
+          ]
+        }
+      ]
+    },
+    {
+      "id": "en-cs205-software-architecture-patterns",
+      "filename": "en-cs205-software-architecture-patterns.pdf",
+      "language": "en",
+      "fileHashSha256": "72ea23464d57301b59f0ad0bf54372d89749e415c02d5b2b4718f1194add453e",
+      "fileSizeBytes": 5403,
+      "expectedPageCount": 6,
+      "extractedPageCount": 6,
+      "extractedCharacters": 3164,
+      "overallStatus": "PASS",
+      "criteria": {
+        "pdfExtraction": {
+          "name": "Ekstraksi PDF",
+          "status": "PASS",
+          "detail": "Berhasil diekstrak (6 halaman, 3164 karakter)"
+        },
+        "pageReferences": {
+          "name": "Rujukan Halaman Valid (Provenance)",
+          "status": "PASS",
+          "detail": "Seluruh nomor halaman yang dirujuk berada dalam rentang [1..totalPages]"
+        },
+        "summarySchema": {
+          "name": "Kesesuaian Skema Ringkasan (Zod)",
+          "status": "PASS",
+          "detail": "Memenuhi skema terstruktur Zod (title, overview, keyConcepts, sections, keyTerms)"
+        },
+        "flashcardSchema": {
+          "name": "Kesesuaian Skema Flashcards (Zod)",
+          "status": "PASS",
+          "detail": "Memenuhi skema terstruktur Zod (5 kartu)"
+        },
+        "quizStructuralValidity": {
+          "name": "Validitas Struktur Format Kuis",
+          "status": "PASS",
+          "detail": "Struktur format valid (5 soal): tepat 4 opsi unik, indeks 0..3, ada pembahasan, & rujukan halaman valid"
+        },
+        "quizAnswerKeyFactualAccuracy": {
+          "name": "Akurasi Faktual Kunci Jawaban Kuis",
+          "status": "NOT_EVALUATED",
+          "detail": "Mode mock hanya memvalidasi struktur format; akurasi faktual terhadap teks sumber memerlukan evaluasi model riil & review manual."
+        },
+        "modelPromptInjectionDefense": {
+          "name": "Ketahanan Model Terhadap Prompt Injection",
+          "status": "NOT_EVALUATED",
+          "detail": "Mode mock menghasilkan keluaran deterministik; perilaku model terhadap instruksi jahat tidak dievaluasi oleh mock adapter."
+        }
+      },
+      "sampleQuizQuestions": [
+        {
+          "question": "Soal 1: Berdasarkan materi pada halaman 1, manakah pernyataan berikut yang tepat?",
+          "options": [
+            "Pilihan A untuk soal nomor 1",
+            "Pilihan B untuk soal nomor 1",
+            "Pilihan C untuk soal nomor 1",
+            "Pilihan D untuk soal nomor 1"
+          ],
+          "correctIndex": 0,
+          "explanation": "Pembahasan 1: Opsi yang benar adalah pilihan ke-1 karena sesuai dengan penjelasan konsep pada halaman 1.",
+          "pageReferences": [
+            1
+          ]
+        },
+        {
+          "question": "Soal 2: Berdasarkan materi pada halaman 2, manakah pernyataan berikut yang tepat?",
+          "options": [
+            "Pilihan A untuk soal nomor 2",
+            "Pilihan B untuk soal nomor 2",
+            "Pilihan C untuk soal nomor 2",
+            "Pilihan D untuk soal nomor 2"
+          ],
+          "correctIndex": 1,
+          "explanation": "Pembahasan 2: Opsi yang benar adalah pilihan ke-2 karena sesuai dengan penjelasan konsep pada halaman 2.",
+          "pageReferences": [
+            2
+          ]
+        },
+        {
+          "question": "Soal 3: Berdasarkan materi pada halaman 3, manakah pernyataan berikut yang tepat?",
+          "options": [
+            "Pilihan A untuk soal nomor 3",
+            "Pilihan B untuk soal nomor 3",
+            "Pilihan C untuk soal nomor 3",
+            "Pilihan D untuk soal nomor 3"
+          ],
+          "correctIndex": 2,
+          "explanation": "Pembahasan 3: Opsi yang benar adalah pilihan ke-3 karena sesuai dengan penjelasan konsep pada halaman 3.",
+          "pageReferences": [
+            3
+          ]
+        },
+        {
+          "question": "Soal 4: Berdasarkan materi pada halaman 4, manakah pernyataan berikut yang tepat?",
+          "options": [
+            "Pilihan A untuk soal nomor 4",
+            "Pilihan B untuk soal nomor 4",
+            "Pilihan C untuk soal nomor 4",
+            "Pilihan D untuk soal nomor 4"
+          ],
+          "correctIndex": 3,
+          "explanation": "Pembahasan 4: Opsi yang benar adalah pilihan ke-4 karena sesuai dengan penjelasan konsep pada halaman 4.",
+          "pageReferences": [
+            4
+          ]
+        },
+        {
+          "question": "Soal 5: Berdasarkan materi pada halaman 5, manakah pernyataan berikut yang tepat?",
+          "options": [
+            "Pilihan A untuk soal nomor 5",
+            "Pilihan B untuk soal nomor 5",
+            "Pilihan C untuk soal nomor 5",
+            "Pilihan D untuk soal nomor 5"
+          ],
+          "correctIndex": 0,
+          "explanation": "Pembahasan 5: Opsi yang benar adalah pilihan ke-1 karena sesuai dengan penjelasan konsep pada halaman 5.",
+          "pageReferences": [
+            5
+          ]
+        }
+      ]
+    },
+    {
+      "id": "en-cs206-cloud-computing-essentials",
+      "filename": "en-cs206-cloud-computing-essentials.pdf",
+      "language": "en",
+      "fileHashSha256": "093d501e736bcebafb5c2d5afa2a0fac6e8ee7bd5ac226c3f16f33f173cf45a8",
+      "fileSizeBytes": 2262,
+      "expectedPageCount": 2,
+      "extractedPageCount": 2,
+      "extractedCharacters": 1290,
+      "overallStatus": "PASS",
+      "criteria": {
+        "pdfExtraction": {
+          "name": "Ekstraksi PDF",
+          "status": "PASS",
+          "detail": "Berhasil diekstrak (2 halaman, 1290 karakter)"
+        },
+        "pageReferences": {
+          "name": "Rujukan Halaman Valid (Provenance)",
+          "status": "PASS",
+          "detail": "Seluruh nomor halaman yang dirujuk berada dalam rentang [1..totalPages]"
+        },
+        "summarySchema": {
+          "name": "Kesesuaian Skema Ringkasan (Zod)",
+          "status": "PASS",
+          "detail": "Memenuhi skema terstruktur Zod (title, overview, keyConcepts, sections, keyTerms)"
+        },
+        "flashcardSchema": {
+          "name": "Kesesuaian Skema Flashcards (Zod)",
+          "status": "PASS",
+          "detail": "Memenuhi skema terstruktur Zod (4 kartu)"
+        },
+        "quizStructuralValidity": {
+          "name": "Validitas Struktur Format Kuis",
+          "status": "PASS",
+          "detail": "Struktur format valid (4 soal): tepat 4 opsi unik, indeks 0..3, ada pembahasan, & rujukan halaman valid"
+        },
+        "quizAnswerKeyFactualAccuracy": {
+          "name": "Akurasi Faktual Kunci Jawaban Kuis",
+          "status": "NOT_EVALUATED",
+          "detail": "Mode mock hanya memvalidasi struktur format; akurasi faktual terhadap teks sumber memerlukan evaluasi model riil & review manual."
+        },
+        "modelPromptInjectionDefense": {
+          "name": "Ketahanan Model Terhadap Prompt Injection",
+          "status": "NOT_EVALUATED",
+          "detail": "Mode mock menghasilkan keluaran deterministik; perilaku model terhadap instruksi jahat tidak dievaluasi oleh mock adapter."
+        }
+      },
+      "sampleQuizQuestions": [
+        {
+          "question": "Soal 1: Berdasarkan materi pada halaman 1, manakah pernyataan berikut yang tepat?",
+          "options": [
+            "Pilihan A untuk soal nomor 1",
+            "Pilihan B untuk soal nomor 1",
+            "Pilihan C untuk soal nomor 1",
+            "Pilihan D untuk soal nomor 1"
+          ],
+          "correctIndex": 0,
+          "explanation": "Pembahasan 1: Opsi yang benar adalah pilihan ke-1 karena sesuai dengan penjelasan konsep pada halaman 1.",
+          "pageReferences": [
+            1
+          ]
+        },
+        {
+          "question": "Soal 2: Berdasarkan materi pada halaman 2, manakah pernyataan berikut yang tepat?",
+          "options": [
+            "Pilihan A untuk soal nomor 2",
+            "Pilihan B untuk soal nomor 2",
+            "Pilihan C untuk soal nomor 2",
+            "Pilihan D untuk soal nomor 2"
+          ],
+          "correctIndex": 1,
+          "explanation": "Pembahasan 2: Opsi yang benar adalah pilihan ke-2 karena sesuai dengan penjelasan konsep pada halaman 2.",
+          "pageReferences": [
+            2
+          ]
+        },
+        {
+          "question": "Soal 3: Berdasarkan materi pada halaman 1, manakah pernyataan berikut yang tepat?",
+          "options": [
+            "Pilihan A untuk soal nomor 3",
+            "Pilihan B untuk soal nomor 3",
+            "Pilihan C untuk soal nomor 3",
+            "Pilihan D untuk soal nomor 3"
+          ],
+          "correctIndex": 2,
+          "explanation": "Pembahasan 3: Opsi yang benar adalah pilihan ke-3 karena sesuai dengan penjelasan konsep pada halaman 1.",
+          "pageReferences": [
+            1
+          ]
+        },
+        {
+          "question": "Soal 4: Berdasarkan materi pada halaman 2, manakah pernyataan berikut yang tepat?",
+          "options": [
+            "Pilihan A untuk soal nomor 4",
+            "Pilihan B untuk soal nomor 4",
+            "Pilihan C untuk soal nomor 4",
+            "Pilihan D untuk soal nomor 4"
+          ],
+          "correctIndex": 3,
+          "explanation": "Pembahasan 4: Opsi yang benar adalah pilihan ke-4 karena sesuai dengan penjelasan konsep pada halaman 2.",
+          "pageReferences": [
+            2
+          ]
+        }
+      ]
+    },
+    {
+      "id": "en-cs207-distributed-systems-consensus",
+      "filename": "en-cs207-distributed-systems-consensus.pdf",
+      "language": "en",
+      "fileHashSha256": "aa4a53d1b621f07121ad1c4ab31ac1bdf18a514ac03da1ec4835a5b4deb28b21",
+      "fileSizeBytes": 3986,
+      "expectedPageCount": 4,
+      "extractedPageCount": 4,
+      "extractedCharacters": 2238,
+      "overallStatus": "PASS",
+      "criteria": {
+        "pdfExtraction": {
+          "name": "Ekstraksi PDF",
+          "status": "PASS",
+          "detail": "Berhasil diekstrak (4 halaman, 2238 karakter)"
+        },
+        "pageReferences": {
+          "name": "Rujukan Halaman Valid (Provenance)",
+          "status": "PASS",
+          "detail": "Seluruh nomor halaman yang dirujuk berada dalam rentang [1..totalPages]"
+        },
+        "summarySchema": {
+          "name": "Kesesuaian Skema Ringkasan (Zod)",
+          "status": "PASS",
+          "detail": "Memenuhi skema terstruktur Zod (title, overview, keyConcepts, sections, keyTerms)"
+        },
+        "flashcardSchema": {
+          "name": "Kesesuaian Skema Flashcards (Zod)",
+          "status": "PASS",
+          "detail": "Memenuhi skema terstruktur Zod (5 kartu)"
+        },
+        "quizStructuralValidity": {
+          "name": "Validitas Struktur Format Kuis",
+          "status": "PASS",
+          "detail": "Struktur format valid (5 soal): tepat 4 opsi unik, indeks 0..3, ada pembahasan, & rujukan halaman valid"
+        },
+        "quizAnswerKeyFactualAccuracy": {
+          "name": "Akurasi Faktual Kunci Jawaban Kuis",
+          "status": "NOT_EVALUATED",
+          "detail": "Mode mock hanya memvalidasi struktur format; akurasi faktual terhadap teks sumber memerlukan evaluasi model riil & review manual."
+        },
+        "modelPromptInjectionDefense": {
+          "name": "Ketahanan Model Terhadap Prompt Injection",
+          "status": "NOT_EVALUATED",
+          "detail": "Mode mock menghasilkan keluaran deterministik; perilaku model terhadap instruksi jahat tidak dievaluasi oleh mock adapter."
+        }
+      },
+      "sampleQuizQuestions": [
+        {
+          "question": "Soal 1: Berdasarkan materi pada halaman 1, manakah pernyataan berikut yang tepat?",
+          "options": [
+            "Pilihan A untuk soal nomor 1",
+            "Pilihan B untuk soal nomor 1",
+            "Pilihan C untuk soal nomor 1",
+            "Pilihan D untuk soal nomor 1"
+          ],
+          "correctIndex": 0,
+          "explanation": "Pembahasan 1: Opsi yang benar adalah pilihan ke-1 karena sesuai dengan penjelasan konsep pada halaman 1.",
+          "pageReferences": [
+            1
+          ]
+        },
+        {
+          "question": "Soal 2: Berdasarkan materi pada halaman 2, manakah pernyataan berikut yang tepat?",
+          "options": [
+            "Pilihan A untuk soal nomor 2",
+            "Pilihan B untuk soal nomor 2",
+            "Pilihan C untuk soal nomor 2",
+            "Pilihan D untuk soal nomor 2"
+          ],
+          "correctIndex": 1,
+          "explanation": "Pembahasan 2: Opsi yang benar adalah pilihan ke-2 karena sesuai dengan penjelasan konsep pada halaman 2.",
+          "pageReferences": [
+            2
+          ]
+        },
+        {
+          "question": "Soal 3: Berdasarkan materi pada halaman 3, manakah pernyataan berikut yang tepat?",
+          "options": [
+            "Pilihan A untuk soal nomor 3",
+            "Pilihan B untuk soal nomor 3",
+            "Pilihan C untuk soal nomor 3",
+            "Pilihan D untuk soal nomor 3"
+          ],
+          "correctIndex": 2,
+          "explanation": "Pembahasan 3: Opsi yang benar adalah pilihan ke-3 karena sesuai dengan penjelasan konsep pada halaman 3.",
+          "pageReferences": [
+            3
+          ]
+        },
+        {
+          "question": "Soal 4: Berdasarkan materi pada halaman 4, manakah pernyataan berikut yang tepat?",
+          "options": [
+            "Pilihan A untuk soal nomor 4",
+            "Pilihan B untuk soal nomor 4",
+            "Pilihan C untuk soal nomor 4",
+            "Pilihan D untuk soal nomor 4"
+          ],
+          "correctIndex": 3,
+          "explanation": "Pembahasan 4: Opsi yang benar adalah pilihan ke-4 karena sesuai dengan penjelasan konsep pada halaman 4.",
+          "pageReferences": [
+            4
+          ]
+        },
+        {
+          "question": "Soal 5: Berdasarkan materi pada halaman 1, manakah pernyataan berikut yang tepat?",
+          "options": [
+            "Pilihan A untuk soal nomor 5",
+            "Pilihan B untuk soal nomor 5",
+            "Pilihan C untuk soal nomor 5",
+            "Pilihan D untuk soal nomor 5"
+          ],
+          "correctIndex": 0,
+          "explanation": "Pembahasan 5: Opsi yang benar adalah pilihan ke-1 karena sesuai dengan penjelasan konsep pada halaman 1.",
+          "pageReferences": [
+            1
+          ]
+        }
+      ]
+    },
+    {
+      "id": "en-cs208-machine-learning-supervised",
+      "filename": "en-cs208-machine-learning-supervised.pdf",
+      "language": "en",
+      "fileHashSha256": "8c3661a35e957c60eab15995365d81eb43ce1b4868ce47b30fb370b7af352a44",
+      "fileSizeBytes": 3949,
+      "expectedPageCount": 3,
+      "extractedPageCount": 3,
+      "extractedCharacters": 2431,
+      "overallStatus": "PASS",
+      "criteria": {
+        "pdfExtraction": {
+          "name": "Ekstraksi PDF",
+          "status": "PASS",
+          "detail": "Berhasil diekstrak (3 halaman, 2431 karakter)"
+        },
+        "pageReferences": {
+          "name": "Rujukan Halaman Valid (Provenance)",
+          "status": "PASS",
+          "detail": "Seluruh nomor halaman yang dirujuk berada dalam rentang [1..totalPages]"
+        },
+        "summarySchema": {
+          "name": "Kesesuaian Skema Ringkasan (Zod)",
+          "status": "PASS",
+          "detail": "Memenuhi skema terstruktur Zod (title, overview, keyConcepts, sections, keyTerms)"
+        },
+        "flashcardSchema": {
+          "name": "Kesesuaian Skema Flashcards (Zod)",
+          "status": "PASS",
+          "detail": "Memenuhi skema terstruktur Zod (5 kartu)"
+        },
+        "quizStructuralValidity": {
+          "name": "Validitas Struktur Format Kuis",
+          "status": "PASS",
+          "detail": "Struktur format valid (5 soal): tepat 4 opsi unik, indeks 0..3, ada pembahasan, & rujukan halaman valid"
+        },
+        "quizAnswerKeyFactualAccuracy": {
+          "name": "Akurasi Faktual Kunci Jawaban Kuis",
+          "status": "NOT_EVALUATED",
+          "detail": "Mode mock hanya memvalidasi struktur format; akurasi faktual terhadap teks sumber memerlukan evaluasi model riil & review manual."
+        },
+        "modelPromptInjectionDefense": {
+          "name": "Ketahanan Model Terhadap Prompt Injection",
+          "status": "NOT_EVALUATED",
+          "detail": "Mode mock menghasilkan keluaran deterministik; perilaku model terhadap instruksi jahat tidak dievaluasi oleh mock adapter."
+        }
+      },
+      "sampleQuizQuestions": [
+        {
+          "question": "Soal 1: Berdasarkan materi pada halaman 1, manakah pernyataan berikut yang tepat?",
+          "options": [
+            "Pilihan A untuk soal nomor 1",
+            "Pilihan B untuk soal nomor 1",
+            "Pilihan C untuk soal nomor 1",
+            "Pilihan D untuk soal nomor 1"
+          ],
+          "correctIndex": 0,
+          "explanation": "Pembahasan 1: Opsi yang benar adalah pilihan ke-1 karena sesuai dengan penjelasan konsep pada halaman 1.",
+          "pageReferences": [
+            1
+          ]
+        },
+        {
+          "question": "Soal 2: Berdasarkan materi pada halaman 2, manakah pernyataan berikut yang tepat?",
+          "options": [
+            "Pilihan A untuk soal nomor 2",
+            "Pilihan B untuk soal nomor 2",
+            "Pilihan C untuk soal nomor 2",
+            "Pilihan D untuk soal nomor 2"
+          ],
+          "correctIndex": 1,
+          "explanation": "Pembahasan 2: Opsi yang benar adalah pilihan ke-2 karena sesuai dengan penjelasan konsep pada halaman 2.",
+          "pageReferences": [
+            2
+          ]
+        },
+        {
+          "question": "Soal 3: Berdasarkan materi pada halaman 3, manakah pernyataan berikut yang tepat?",
+          "options": [
+            "Pilihan A untuk soal nomor 3",
+            "Pilihan B untuk soal nomor 3",
+            "Pilihan C untuk soal nomor 3",
+            "Pilihan D untuk soal nomor 3"
+          ],
+          "correctIndex": 2,
+          "explanation": "Pembahasan 3: Opsi yang benar adalah pilihan ke-3 karena sesuai dengan penjelasan konsep pada halaman 3.",
+          "pageReferences": [
+            3
+          ]
+        },
+        {
+          "question": "Soal 4: Berdasarkan materi pada halaman 1, manakah pernyataan berikut yang tepat?",
+          "options": [
+            "Pilihan A untuk soal nomor 4",
+            "Pilihan B untuk soal nomor 4",
+            "Pilihan C untuk soal nomor 4",
+            "Pilihan D untuk soal nomor 4"
+          ],
+          "correctIndex": 3,
+          "explanation": "Pembahasan 4: Opsi yang benar adalah pilihan ke-4 karena sesuai dengan penjelasan konsep pada halaman 1.",
+          "pageReferences": [
+            1
+          ]
+        },
+        {
+          "question": "Soal 5: Berdasarkan materi pada halaman 2, manakah pernyataan berikut yang tepat?",
+          "options": [
+            "Pilihan A untuk soal nomor 5",
+            "Pilihan B untuk soal nomor 5",
+            "Pilihan C untuk soal nomor 5",
+            "Pilihan D untuk soal nomor 5"
+          ],
+          "correctIndex": 0,
+          "explanation": "Pembahasan 5: Opsi yang benar adalah pilihan ke-1 karena sesuai dengan penjelasan konsep pada halaman 2.",
+          "pageReferences": [
+            2
+          ]
+        }
+      ]
+    },
+    {
+      "id": "en-cs209-cybersecurity-threat-modeling",
+      "filename": "en-cs209-cybersecurity-threat-modeling.pdf",
+      "language": "en",
+      "fileHashSha256": "414295c43862372270629d812c7744b3cbf30297a8dca32623065326a57e2104",
+      "fileSizeBytes": 2410,
+      "expectedPageCount": 2,
+      "extractedPageCount": 2,
+      "extractedCharacters": 1488,
+      "overallStatus": "PASS",
+      "criteria": {
+        "pdfExtraction": {
+          "name": "Ekstraksi PDF",
+          "status": "PASS",
+          "detail": "Berhasil diekstrak (2 halaman, 1488 karakter)"
+        },
+        "pageReferences": {
+          "name": "Rujukan Halaman Valid (Provenance)",
+          "status": "PASS",
+          "detail": "Seluruh nomor halaman yang dirujuk berada dalam rentang [1..totalPages]"
+        },
+        "summarySchema": {
+          "name": "Kesesuaian Skema Ringkasan (Zod)",
+          "status": "PASS",
+          "detail": "Memenuhi skema terstruktur Zod (title, overview, keyConcepts, sections, keyTerms)"
+        },
+        "flashcardSchema": {
+          "name": "Kesesuaian Skema Flashcards (Zod)",
+          "status": "PASS",
+          "detail": "Memenuhi skema terstruktur Zod (4 kartu)"
+        },
+        "quizStructuralValidity": {
+          "name": "Validitas Struktur Format Kuis",
+          "status": "PASS",
+          "detail": "Struktur format valid (4 soal): tepat 4 opsi unik, indeks 0..3, ada pembahasan, & rujukan halaman valid"
+        },
+        "quizAnswerKeyFactualAccuracy": {
+          "name": "Akurasi Faktual Kunci Jawaban Kuis",
+          "status": "NOT_EVALUATED",
+          "detail": "Mode mock hanya memvalidasi struktur format; akurasi faktual terhadap teks sumber memerlukan evaluasi model riil & review manual."
+        },
+        "modelPromptInjectionDefense": {
+          "name": "Ketahanan Model Terhadap Prompt Injection",
+          "status": "NOT_EVALUATED",
+          "detail": "Mode mock menghasilkan keluaran deterministik; perilaku model terhadap instruksi jahat tidak dievaluasi oleh mock adapter."
+        }
+      },
+      "sampleQuizQuestions": [
+        {
+          "question": "Soal 1: Berdasarkan materi pada halaman 1, manakah pernyataan berikut yang tepat?",
+          "options": [
+            "Pilihan A untuk soal nomor 1",
+            "Pilihan B untuk soal nomor 1",
+            "Pilihan C untuk soal nomor 1",
+            "Pilihan D untuk soal nomor 1"
+          ],
+          "correctIndex": 0,
+          "explanation": "Pembahasan 1: Opsi yang benar adalah pilihan ke-1 karena sesuai dengan penjelasan konsep pada halaman 1.",
+          "pageReferences": [
+            1
+          ]
+        },
+        {
+          "question": "Soal 2: Berdasarkan materi pada halaman 2, manakah pernyataan berikut yang tepat?",
+          "options": [
+            "Pilihan A untuk soal nomor 2",
+            "Pilihan B untuk soal nomor 2",
+            "Pilihan C untuk soal nomor 2",
+            "Pilihan D untuk soal nomor 2"
+          ],
+          "correctIndex": 1,
+          "explanation": "Pembahasan 2: Opsi yang benar adalah pilihan ke-2 karena sesuai dengan penjelasan konsep pada halaman 2.",
+          "pageReferences": [
+            2
+          ]
+        },
+        {
+          "question": "Soal 3: Berdasarkan materi pada halaman 1, manakah pernyataan berikut yang tepat?",
+          "options": [
+            "Pilihan A untuk soal nomor 3",
+            "Pilihan B untuk soal nomor 3",
+            "Pilihan C untuk soal nomor 3",
+            "Pilihan D untuk soal nomor 3"
+          ],
+          "correctIndex": 2,
+          "explanation": "Pembahasan 3: Opsi yang benar adalah pilihan ke-3 karena sesuai dengan penjelasan konsep pada halaman 1.",
+          "pageReferences": [
+            1
+          ]
+        },
+        {
+          "question": "Soal 4: Berdasarkan materi pada halaman 2, manakah pernyataan berikut yang tepat?",
+          "options": [
+            "Pilihan A untuk soal nomor 4",
+            "Pilihan B untuk soal nomor 4",
+            "Pilihan C untuk soal nomor 4",
+            "Pilihan D untuk soal nomor 4"
+          ],
+          "correctIndex": 3,
+          "explanation": "Pembahasan 4: Opsi yang benar adalah pilihan ke-4 karena sesuai dengan penjelasan konsep pada halaman 2.",
+          "pageReferences": [
+            2
+          ]
+        }
+      ]
+    },
+    {
+      "id": "en-cs210-compiler-design-parsing",
+      "filename": "en-cs210-compiler-design-parsing.pdf",
+      "language": "en",
+      "fileHashSha256": "58e9e93cde2dc114fcfddd0f8b3b89d6550a152e1e73f5c8bd398c120ba07a59",
+      "fileSizeBytes": 4504,
+      "expectedPageCount": 5,
+      "extractedPageCount": 5,
+      "extractedCharacters": 2555,
+      "overallStatus": "PASS",
+      "criteria": {
+        "pdfExtraction": {
+          "name": "Ekstraksi PDF",
+          "status": "PASS",
+          "detail": "Berhasil diekstrak (5 halaman, 2555 karakter)"
+        },
+        "pageReferences": {
+          "name": "Rujukan Halaman Valid (Provenance)",
+          "status": "PASS",
+          "detail": "Seluruh nomor halaman yang dirujuk berada dalam rentang [1..totalPages]"
+        },
+        "summarySchema": {
+          "name": "Kesesuaian Skema Ringkasan (Zod)",
+          "status": "PASS",
+          "detail": "Memenuhi skema terstruktur Zod (title, overview, keyConcepts, sections, keyTerms)"
+        },
+        "flashcardSchema": {
+          "name": "Kesesuaian Skema Flashcards (Zod)",
+          "status": "PASS",
+          "detail": "Memenuhi skema terstruktur Zod (5 kartu)"
+        },
+        "quizStructuralValidity": {
+          "name": "Validitas Struktur Format Kuis",
+          "status": "PASS",
+          "detail": "Struktur format valid (5 soal): tepat 4 opsi unik, indeks 0..3, ada pembahasan, & rujukan halaman valid"
+        },
+        "quizAnswerKeyFactualAccuracy": {
+          "name": "Akurasi Faktual Kunci Jawaban Kuis",
+          "status": "NOT_EVALUATED",
+          "detail": "Mode mock hanya memvalidasi struktur format; akurasi faktual terhadap teks sumber memerlukan evaluasi model riil & review manual."
+        },
+        "modelPromptInjectionDefense": {
+          "name": "Ketahanan Model Terhadap Prompt Injection",
+          "status": "NOT_EVALUATED",
+          "detail": "Mode mock menghasilkan keluaran deterministik; perilaku model terhadap instruksi jahat tidak dievaluasi oleh mock adapter."
+        }
+      },
+      "sampleQuizQuestions": [
+        {
+          "question": "Soal 1: Berdasarkan materi pada halaman 1, manakah pernyataan berikut yang tepat?",
+          "options": [
+            "Pilihan A untuk soal nomor 1",
+            "Pilihan B untuk soal nomor 1",
+            "Pilihan C untuk soal nomor 1",
+            "Pilihan D untuk soal nomor 1"
+          ],
+          "correctIndex": 0,
+          "explanation": "Pembahasan 1: Opsi yang benar adalah pilihan ke-1 karena sesuai dengan penjelasan konsep pada halaman 1.",
+          "pageReferences": [
+            1
+          ]
+        },
+        {
+          "question": "Soal 2: Berdasarkan materi pada halaman 2, manakah pernyataan berikut yang tepat?",
+          "options": [
+            "Pilihan A untuk soal nomor 2",
+            "Pilihan B untuk soal nomor 2",
+            "Pilihan C untuk soal nomor 2",
+            "Pilihan D untuk soal nomor 2"
+          ],
+          "correctIndex": 1,
+          "explanation": "Pembahasan 2: Opsi yang benar adalah pilihan ke-2 karena sesuai dengan penjelasan konsep pada halaman 2.",
+          "pageReferences": [
+            2
+          ]
+        },
+        {
+          "question": "Soal 3: Berdasarkan materi pada halaman 3, manakah pernyataan berikut yang tepat?",
+          "options": [
+            "Pilihan A untuk soal nomor 3",
+            "Pilihan B untuk soal nomor 3",
+            "Pilihan C untuk soal nomor 3",
+            "Pilihan D untuk soal nomor 3"
+          ],
+          "correctIndex": 2,
+          "explanation": "Pembahasan 3: Opsi yang benar adalah pilihan ke-3 karena sesuai dengan penjelasan konsep pada halaman 3.",
+          "pageReferences": [
+            3
+          ]
+        },
+        {
+          "question": "Soal 4: Berdasarkan materi pada halaman 4, manakah pernyataan berikut yang tepat?",
+          "options": [
+            "Pilihan A untuk soal nomor 4",
+            "Pilihan B untuk soal nomor 4",
+            "Pilihan C untuk soal nomor 4",
+            "Pilihan D untuk soal nomor 4"
+          ],
+          "correctIndex": 3,
+          "explanation": "Pembahasan 4: Opsi yang benar adalah pilihan ke-4 karena sesuai dengan penjelasan konsep pada halaman 4.",
+          "pageReferences": [
+            4
+          ]
+        },
+        {
+          "question": "Soal 5: Berdasarkan materi pada halaman 5, manakah pernyataan berikut yang tepat?",
+          "options": [
+            "Pilihan A untuk soal nomor 5",
+            "Pilihan B untuk soal nomor 5",
+            "Pilihan C untuk soal nomor 5",
+            "Pilihan D untuk soal nomor 5"
+          ],
+          "correctIndex": 0,
+          "explanation": "Pembahasan 5: Opsi yang benar adalah pilihan ke-1 karena sesuai dengan penjelasan konsep pada halaman 5.",
+          "pageReferences": [
+            5
+          ]
+        }
+      ]
+    }
+  ],
+  "negativeFixtures": [
+    {
+      "id": "negative-scanned-no-text",
+      "filename": "negative-scanned-no-text.pdf",
+      "category": "SCANNED_PDF_NO_TEXT",
+      "expectedError": "SCANNED_PDF_NO_TEXT",
+      "status": "PASS",
+      "detail": "Ditolak sesuai kriteria: SCANNED_PDF_NO_TEXT — Teks belum ditemukan. PDF hasil scan gambar tanpa lapisan teks belum didukung (OCR belum tersedia pada versi ini).",
+      "isSimulatedWarning": false
+    },
+    {
+      "id": "negative-encrypted",
+      "filename": "negative-encrypted.pdf",
+      "category": "FILE_ENCRYPTED",
+      "expectedError": "FILE_ENCRYPTED",
+      "status": "PASS",
+      "detail": "Ditolak sesuai kriteria: FILE_ENCRYPTED — Dokumen PDF diproteksi kata sandi (terenkripsi) dan tidak dapat diekstrak",
+      "isSimulatedWarning": false
+    },
+    {
+      "id": "negative-corrupted",
+      "filename": "negative-corrupted.pdf",
+      "category": "FILE_CORRUPTED",
+      "expectedError": "FILE_CORRUPTED",
+      "status": "PASS",
+      "detail": "Ditolak sesuai kriteria: FILE_CORRUPTED — Dokumen PDF rusak atau struktur data tidak dapat dibaca oleh parser",
+      "isSimulatedWarning": false
+    },
+    {
+      "id": "negative-oversized-pages",
+      "filename": "negative-oversized-pages.pdf",
+      "category": "EXCEEDS_PAGE_LIMIT",
+      "expectedError": "EXCEEDS_PAGE_LIMIT",
+      "status": "PASS",
+      "detail": "Ditolak sesuai kriteria: EXCEEDS_PAGE_LIMIT — Jumlah halaman (105) melebihi batas maksimal 100 halaman.",
+      "isSimulatedWarning": false
+    },
+    {
+      "id": "negative-prompt-injection",
+      "filename": "negative-prompt-injection.pdf",
+      "category": "PROMPT_INJECTION",
+      "status": "PASS",
+      "detail": "Teks instruksi berbahaya diekstrak sebagai konten mentah biasa tanpa menyebabkan parser crash. (Catatan: Ketahanan model terhadap instruksi dievaluasi pada Layer 2/3)."
+    }
+  ],
+  "manualReviewItems": [
+    {
+      "docId": "id-cs101-algoritma-pemrograman",
+      "docTitle": "Dasar Algoritma dan Pemrograman Komputer",
+      "category": "quiz",
+      "itemIndex": 1,
+      "generatedText": "Soal 1: Berdasarkan materi pada halaman 1, manakah pernyataan berikut yang tepat? (Kunci: Opsi 1)",
+      "citedPages": [
+        1
+      ],
+      "sourceTextSnippet": "Halaman 1 dari dokumen Dasar Algoritma dan Pemrograman Komputer",
+      "status": "NOT_EVALUATED",
+      "reviewer": null,
+      "reviewerNotes": "Menunggu audit kesesuaian jawaban terhadap naskah akademik sumber."
+    },
+    {
+      "docId": "id-cs102-struktur-data-linear",
+      "docTitle": "Struktur Data Linear: Array, List, Stack, Queue",
+      "category": "quiz",
+      "itemIndex": 1,
+      "generatedText": "Soal 1: Berdasarkan materi pada halaman 1, manakah pernyataan berikut yang tepat? (Kunci: Opsi 1)",
+      "citedPages": [
+        1
+      ],
+      "sourceTextSnippet": "Halaman 1 dari dokumen Struktur Data Linear: Array, List, Stack, Queue",
+      "status": "NOT_EVALUATED",
+      "reviewer": null,
+      "reviewerNotes": "Menunggu audit kesesuaian jawaban terhadap naskah akademik sumber."
+    },
+    {
+      "docId": "id-cs103-sistem-operasi-proses",
+      "docTitle": "Manajemen Proses dan Penjadwalan CPU",
+      "category": "quiz",
+      "itemIndex": 1,
+      "generatedText": "Soal 1: Berdasarkan materi pada halaman 1, manakah pernyataan berikut yang tepat? (Kunci: Opsi 1)",
+      "citedPages": [
+        1
+      ],
+      "sourceTextSnippet": "Halaman 1 dari dokumen Manajemen Proses dan Penjadwalan CPU",
+      "status": "NOT_EVALUATED",
+      "reviewer": null,
+      "reviewerNotes": "Menunggu audit kesesuaian jawaban terhadap naskah akademik sumber."
+    },
+    {
+      "docId": "id-cs104-jaringan-komputer-osi",
+      "docTitle": "Model Referensi OSI 7 Lapisan dan Protokol Jaringan",
+      "category": "quiz",
+      "itemIndex": 1,
+      "generatedText": "Soal 1: Berdasarkan materi pada halaman 1, manakah pernyataan berikut yang tepat? (Kunci: Opsi 1)",
+      "citedPages": [
+        1
+      ],
+      "sourceTextSnippet": "Halaman 1 dari dokumen Model Referensi OSI 7 Lapisan dan Protokol Jaringan",
+      "status": "NOT_EVALUATED",
+      "reviewer": null,
+      "reviewerNotes": "Menunggu audit kesesuaian jawaban terhadap naskah akademik sumber."
+    },
+    {
+      "docId": "id-cs105-basis-data-relasional",
+      "docTitle": "Pengantar Basis Data Relasional dan SQL",
+      "category": "quiz",
+      "itemIndex": 1,
+      "generatedText": "Soal 1: Berdasarkan materi pada halaman 1, manakah pernyataan berikut yang tepat? (Kunci: Opsi 1)",
+      "citedPages": [
+        1
+      ],
+      "sourceTextSnippet": "Halaman 1 dari dokumen Pengantar Basis Data Relasional dan SQL",
+      "status": "NOT_EVALUATED",
+      "reviewer": null,
+      "reviewerNotes": "Menunggu audit kesesuaian jawaban terhadap naskah akademik sumber."
+    },
+    {
+      "docId": "id-cs106-rekayasa-perangkat-lunak",
+      "docTitle": "Prinsip Rekayasa Perangkat Lunak dan Model SDLC",
+      "category": "quiz",
+      "itemIndex": 1,
+      "generatedText": "Soal 1: Berdasarkan materi pada halaman 1, manakah pernyataan berikut yang tepat? (Kunci: Opsi 1)",
+      "citedPages": [
+        1
+      ],
+      "sourceTextSnippet": "Halaman 1 dari dokumen Prinsip Rekayasa Perangkat Lunak dan Model SDLC",
+      "status": "NOT_EVALUATED",
+      "reviewer": null,
+      "reviewerNotes": "Menunggu audit kesesuaian jawaban terhadap naskah akademik sumber."
+    },
+    {
+      "docId": "id-cs107-kecerdasan-buatan-dasar",
+      "docTitle": "Pengantar Kecerdasan Buatan dan Representasi Pengetahuan",
+      "category": "quiz",
+      "itemIndex": 1,
+      "generatedText": "Soal 1: Berdasarkan materi pada halaman 1, manakah pernyataan berikut yang tepat? (Kunci: Opsi 1)",
+      "citedPages": [
+        1
+      ],
+      "sourceTextSnippet": "Halaman 1 dari dokumen Pengantar Kecerdasan Buatan dan Representasi Pengetahuan",
+      "status": "NOT_EVALUATED",
+      "reviewer": null,
+      "reviewerNotes": "Menunggu audit kesesuaian jawaban terhadap naskah akademik sumber."
+    },
+    {
+      "docId": "id-cs108-keamanan-informasi-kripto",
+      "docTitle": "Kriptografi dan Keamanan Informasi",
+      "category": "quiz",
+      "itemIndex": 1,
+      "generatedText": "Soal 1: Berdasarkan materi pada halaman 1, manakah pernyataan berikut yang tepat? (Kunci: Opsi 1)",
+      "citedPages": [
+        1
+      ],
+      "sourceTextSnippet": "Halaman 1 dari dokumen Kriptografi dan Keamanan Informasi",
+      "status": "NOT_EVALUATED",
+      "reviewer": null,
+      "reviewerNotes": "Menunggu audit kesesuaian jawaban terhadap naskah akademik sumber."
+    },
+    {
+      "docId": "id-cs109-arsitektur-komputer-risc",
+      "docTitle": "Arsitektur Komputer: Perbandingan RISC dan CISC",
+      "category": "quiz",
+      "itemIndex": 1,
+      "generatedText": "Soal 1: Berdasarkan materi pada halaman 1, manakah pernyataan berikut yang tepat? (Kunci: Opsi 1)",
+      "citedPages": [
+        1
+      ],
+      "sourceTextSnippet": "Halaman 1 dari dokumen Arsitektur Komputer: Perbandingan RISC dan CISC",
+      "status": "NOT_EVALUATED",
+      "reviewer": null,
+      "reviewerNotes": "Menunggu audit kesesuaian jawaban terhadap naskah akademik sumber."
+    },
+    {
+      "docId": "id-cs110-interaksi-manusia-komputer",
+      "docTitle": "Interaksi Manusia dan Komputer: Prinsip Desain UI/UX",
+      "category": "quiz",
+      "itemIndex": 1,
+      "generatedText": "Soal 1: Berdasarkan materi pada halaman 1, manakah pernyataan berikut yang tepat? (Kunci: Opsi 1)",
+      "citedPages": [
+        1
+      ],
+      "sourceTextSnippet": "Halaman 1 dari dokumen Interaksi Manusia dan Komputer: Prinsip Desain UI/UX",
+      "status": "NOT_EVALUATED",
+      "reviewer": null,
+      "reviewerNotes": "Menunggu audit kesesuaian jawaban terhadap naskah akademik sumber."
+    },
+    {
+      "docId": "en-cs201-data-structures-trees",
+      "docTitle": "Hierarchical Data Structures: Binary Trees and BST",
+      "category": "quiz",
+      "itemIndex": 1,
+      "generatedText": "Soal 1: Berdasarkan materi pada halaman 1, manakah pernyataan berikut yang tepat? (Kunci: Opsi 1)",
+      "citedPages": [
+        1
+      ],
+      "sourceTextSnippet": "Halaman 1 dari dokumen Hierarchical Data Structures: Binary Trees and BST",
+      "status": "NOT_EVALUATED",
+      "reviewer": null,
+      "reviewerNotes": "Menunggu audit kesesuaian jawaban terhadap naskah akademik sumber."
+    },
+    {
+      "docId": "en-cs202-operating-systems-virtual-memory",
+      "docTitle": "Virtual Memory and Page Replacement Algorithms",
+      "category": "quiz",
+      "itemIndex": 1,
+      "generatedText": "Soal 1: Berdasarkan materi pada halaman 1, manakah pernyataan berikut yang tepat? (Kunci: Opsi 1)",
+      "citedPages": [
+        1
+      ],
+      "sourceTextSnippet": "Halaman 1 dari dokumen Virtual Memory and Page Replacement Algorithms",
+      "status": "NOT_EVALUATED",
+      "reviewer": null,
+      "reviewerNotes": "Menunggu audit kesesuaian jawaban terhadap naskah akademik sumber."
+    },
+    {
+      "docId": "en-cs203-computer-networks-tcpip",
+      "docTitle": "The Internet Protocol Suite (TCP/IP Architecture)",
+      "category": "quiz",
+      "itemIndex": 1,
+      "generatedText": "Soal 1: Berdasarkan materi pada halaman 1, manakah pernyataan berikut yang tepat? (Kunci: Opsi 1)",
+      "citedPages": [
+        1
+      ],
+      "sourceTextSnippet": "Halaman 1 dari dokumen The Internet Protocol Suite (TCP/IP Architecture)",
+      "status": "NOT_EVALUATED",
+      "reviewer": null,
+      "reviewerNotes": "Menunggu audit kesesuaian jawaban terhadap naskah akademik sumber."
+    },
+    {
+      "docId": "en-cs204-database-normalization",
+      "docTitle": "Relational Database Normalization and Normal Forms",
+      "category": "quiz",
+      "itemIndex": 1,
+      "generatedText": "Soal 1: Berdasarkan materi pada halaman 1, manakah pernyataan berikut yang tepat? (Kunci: Opsi 1)",
+      "citedPages": [
+        1
+      ],
+      "sourceTextSnippet": "Halaman 1 dari dokumen Relational Database Normalization and Normal Forms",
+      "status": "NOT_EVALUATED",
+      "reviewer": null,
+      "reviewerNotes": "Menunggu audit kesesuaian jawaban terhadap naskah akademik sumber."
+    },
+    {
+      "docId": "en-cs205-software-architecture-patterns",
+      "docTitle": "Enterprise Software Architecture Patterns and Styles",
+      "category": "quiz",
+      "itemIndex": 1,
+      "generatedText": "Soal 1: Berdasarkan materi pada halaman 1, manakah pernyataan berikut yang tepat? (Kunci: Opsi 1)",
+      "citedPages": [
+        1
+      ],
+      "sourceTextSnippet": "Halaman 1 dari dokumen Enterprise Software Architecture Patterns and Styles",
+      "status": "NOT_EVALUATED",
+      "reviewer": null,
+      "reviewerNotes": "Menunggu audit kesesuaian jawaban terhadap naskah akademik sumber."
+    },
+    {
+      "docId": "en-cs206-cloud-computing-essentials",
+      "docTitle": "Cloud Computing Models: IaaS, PaaS, SaaS, and FaaS",
+      "category": "quiz",
+      "itemIndex": 1,
+      "generatedText": "Soal 1: Berdasarkan materi pada halaman 1, manakah pernyataan berikut yang tepat? (Kunci: Opsi 1)",
+      "citedPages": [
+        1
+      ],
+      "sourceTextSnippet": "Halaman 1 dari dokumen Cloud Computing Models: IaaS, PaaS, SaaS, and FaaS",
+      "status": "NOT_EVALUATED",
+      "reviewer": null,
+      "reviewerNotes": "Menunggu audit kesesuaian jawaban terhadap naskah akademik sumber."
+    },
+    {
+      "docId": "en-cs207-distributed-systems-consensus",
+      "docTitle": "Distributed Systems: Fault Tolerance and Consensus Algorithms",
+      "category": "quiz",
+      "itemIndex": 1,
+      "generatedText": "Soal 1: Berdasarkan materi pada halaman 1, manakah pernyataan berikut yang tepat? (Kunci: Opsi 1)",
+      "citedPages": [
+        1
+      ],
+      "sourceTextSnippet": "Halaman 1 dari dokumen Distributed Systems: Fault Tolerance and Consensus Algorithms",
+      "status": "NOT_EVALUATED",
+      "reviewer": null,
+      "reviewerNotes": "Menunggu audit kesesuaian jawaban terhadap naskah akademik sumber."
+    },
+    {
+      "docId": "en-cs208-machine-learning-supervised",
+      "docTitle": "Supervised Machine Learning: Classification and Evaluation",
+      "category": "quiz",
+      "itemIndex": 1,
+      "generatedText": "Soal 1: Berdasarkan materi pada halaman 1, manakah pernyataan berikut yang tepat? (Kunci: Opsi 1)",
+      "citedPages": [
+        1
+      ],
+      "sourceTextSnippet": "Halaman 1 dari dokumen Supervised Machine Learning: Classification and Evaluation",
+      "status": "NOT_EVALUATED",
+      "reviewer": null,
+      "reviewerNotes": "Menunggu audit kesesuaian jawaban terhadap naskah akademik sumber."
+    },
+    {
+      "docId": "en-cs209-cybersecurity-threat-modeling",
+      "docTitle": "Cybersecurity Threat Modeling and Vulnerability Assessment",
+      "category": "quiz",
+      "itemIndex": 1,
+      "generatedText": "Soal 1: Berdasarkan materi pada halaman 1, manakah pernyataan berikut yang tepat? (Kunci: Opsi 1)",
+      "citedPages": [
+        1
+      ],
+      "sourceTextSnippet": "Halaman 1 dari dokumen Cybersecurity Threat Modeling and Vulnerability Assessment",
+      "status": "NOT_EVALUATED",
+      "reviewer": null,
+      "reviewerNotes": "Menunggu audit kesesuaian jawaban terhadap naskah akademik sumber."
+    },
+    {
+      "docId": "en-cs210-compiler-design-parsing",
+      "docTitle": "Compiler Construction: Lexical Analysis and Context-Free Grammars",
+      "category": "quiz",
+      "itemIndex": 1,
+      "generatedText": "Soal 1: Berdasarkan materi pada halaman 1, manakah pernyataan berikut yang tepat? (Kunci: Opsi 1)",
+      "citedPages": [
+        1
+      ],
+      "sourceTextSnippet": "Halaman 1 dari dokumen Compiler Construction: Lexical Analysis and Context-Free Grammars",
+      "status": "NOT_EVALUATED",
+      "reviewer": null,
+      "reviewerNotes": "Menunggu audit kesesuaian jawaban terhadap naskah akademik sumber."
+    }
+  ]
+}

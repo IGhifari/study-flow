@@ -1,5 +1,13 @@
 # AI Evaluation Dataset Manifest — StudyFlow M8
 
+> **Pemberitahuan Status Manifest & Tata Kelola Evaluasi**:  
+> Dokumen ini mencatat riwayat dataset sintetis awal (sekunder) di `docs/evaluation/dataset/`.  
+> Sumber kebenaran tunggal dan resmi (Primary Source of Truth) untuk benchmark evaluasi StudyFlow saat ini adalah [`docs/ai_evaluation/manifest.json`](../ai_evaluation/manifest.json) dengan runner terpadu `scripts/run-ai-evaluation.ts` (dijalankan via `npm run eval:ai`).
+>
+> **Perbedaan Utama Dataset & Fixture**:
+> 1. **Fixture Terenkripsi**: Fixture historis `neg-02-encrypted-sim.pdf` adalah PDF simulasi berbasis teks biasa yang tidak memiliki kamus `/Encrypt`, sehingga tidak menguji penolakan enkripsi riil. Dataset resmi `docs/ai_evaluation` menggunakan `negative-encrypted.pdf` dengan proteksi kata sandi nyata yang memicu galat `FILE_ENCRYPTED`.
+> 2. **Runner & Akuntabilitas**: Runner resmi menerapkan pemisahan 3 Lapisan (Layer 1: Validasi/Ekstraksi, Layer 2: Struktur/Skema Zod Mock, Layer 3: Faktual/Review Manual) dan tidak mengklaim kelulusan Layer 3 saat mode Mock.
+
 **Origin**: Synthetic dataset generated via `scripts/generate-eval-dataset.mjs`  
 **Date**: 2026-10-08  
 **Purpose**: Validate AI summary, flashcard, and quiz generation quality per PRD Section 15.2

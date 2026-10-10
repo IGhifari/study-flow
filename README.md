@@ -182,7 +182,28 @@ Jalankan quality gates dan rangkaian test yang tersedia:
   ```bash
   npm run eval:ai
   ```
-  Menjalankan evaluasi dataset representatif (20 PDF akademik nyata + 5 skenario edge/failure) terhadap akurasi ekstraksi, penolakan PDF non-teks/terkorupsi, sitasi halaman, struktur ringkasan, dan validitas kuis/flashcard.
+  Menjalankan evaluasi dataset representatif berbasis dokumen akademik nyata dan failure fixtures menggunakan runner resmi terpadu ([`scripts/run-ai-evaluation.ts`](file:///scripts/run-ai-evaluation.ts)) dengan sumber kebenaran data di [`docs/ai_evaluation/manifest.json`](file:///docs/ai_evaluation/manifest.json).
+
+  Sistem memisahkan 3 lapisan evaluasi secara akuntabel sesuai PRD Bagian 15.2:
+  1. **Lapisan 1 (Validasi Dokumen & Ekstraksi)**: Ekstraksi teks PDF nyata per halaman via `pdfjs-dist`, validasi magic bytes, serta pembuktian penolakan deterministik berkas negatif (PDF scan tanpa teks, berkas rusak, PDF terenkripsi dengan proteksi kata sandi nyata, dan dokumen melebihi batas 100 halaman).
+  2. **Lapisan 2 (Integrasi & Validitas Struktur Output AI)**: Validasi keluaran model terhadap skema Zod publik aplikasi (`SummaryStructuredOutputSchema`, `FlashcardSetStructuredOutputSchema`, `QuizStructuredOutputSchema`), pengecekan batasan referensi halaman (`1 <= pageReference <= totalPages`), validitas opsi kuis (tepat 4 opsi unik, indeks `0..3`), dan kejelasan penjelasan.
+  3. **Lapisan 3 (Kualitas Faktual & Review Manual)**: Evaluasi kebenaran faktual klaim ringkasan, kartu flashcard, dan kunci jawaban kuis terhadap teks sumber asli. Pada mode Mock, seluruh kriteria Lapisan 3 ditandai strictly **`NOT_EVALUATED`** dan tidak menggelembungkan metrik kelulusan sistem.
+
+  **Opsi CLI Runner Resmi**:
+  ```bash
+  # Mode mock standar (mengevaluasi seluruh dataset manifest)
+  npm run eval:ai
+
+  # Membatasi jumlah dokumen valid (misal 5 dokumen)
+  npx tsx scripts/run-ai-evaluation.ts --limit=5
+
+  # Hanya menguji berkas kegagalan/negatif
+  npx tsx scripts/run-ai-evaluation.ts --negative-only
+
+  # Menjalankan pengujian live provider dengan pengawasan kuota ketat
+  npx tsx scripts/run-ai-evaluation.ts --provider=gemini --limit=2 --max-calls=6
+  ```
+  Laporan komprehensif disimpan secara otomatis di [`docs/ai_evaluation/evaluation_report.md`](file:///docs/ai_evaluation/evaluation_report.md) beserta log audit JSON di `docs/ai_evaluation/results-<timestamp>.json`.
 - **Demo Data Seeding**:
   ```bash
   npm run seed:demo

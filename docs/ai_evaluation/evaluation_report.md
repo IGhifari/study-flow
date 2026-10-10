@@ -1,80 +1,113 @@
-# Laporan Evaluasi AI & Benchmark Kualitas Dokumen — StudyFlow MVP
+# Laporan Evaluasi AI & Benchmark Kualitas Dokumen — StudyFlow
 
-| Informasi | Nilai |
+| Metadata Evaluasi | Nilai |
 | --- | --- |
-| Tanggal Evaluasi | 8 Oktober 2026 |
-| Target Milestone | M8 — Verifikasi MVP dan Persiapan Rilis |
-| Model Benchmark | Deterministic Reference Mock & Gemini 2.5 Flash Adapter Boundary |
-| Versi Prompt | v1 (Ringkasan, Flashcards, Kuis) |
-| Total Dokumen Valid | 20 PDF |
-| Total Fixture Negatif | 5 berkas |
-| Status Quality Gates | **PASS (LULUS)** |
+| **Waktu Eksekusi** | 2026-10-10T03:33:09.482Z |
+| **Node.js Runtime** | v22.17.0 |
+| **Versi Kode (Git)** | `53b1cdb` |
+| **Mode Evaluasi** | `MOCK` |
+| **Provider AI** | `MockAiProviderAdapter (Deterministik)` |
+| **Model AI** | `reference-mock-v1` |
+| **Versi Prompt** | `v1 (Summary, Flashcard, Quiz)` |
+| **Panggilan Provider Dibuat** | 60 (Batas budget: 1000) |
+| **Sampel Dokumen Valid Diproses** | 20 dari 20 berkas |
+| **Fixture Negatif Diproses** | 5 dari 5 berkas |
+| **Status Keseluruhan** | **PASS (MOCK STRUCTURAL & INTEGRATION ONLY)** |
 
 ---
 
-## 1. Kriteria dan Gate Penerimaan PRD (Section 15.2)
+## 1. Pemisahan Tiga Lapisan Evaluasi
 
-1. **Ketepatan Rujukan Halaman (Provenance):** Tidak ada rujukan halaman yang tidak tersedia (0 invalid page references).
-2. **Kebenaran Soal dan Kunci Kuis:** Minimal 90% soal yang ditinjau memiliki tepat satu jawaban benar yang didukung oleh teks sumber.
-3. **Kesesuaian dan Ketahanan Format:** Struktur keluaran mematuhi skema Zod tanpa pemotongan dan bebas dari kegagalan JSON parsing.
-4. **Penanganan Kasus Negatif:** File terenkripsi, rusak, scan tanpa teks, dan melebihi batas (oversized) ditolak dengan kode kesalahan spesifik.
-5. **Ketahanan Prompt Injection:** Instruksi manipulatif di dalam teks diperlakukan sebagai isi dokumen biasa dan tidak mengeksekusi instruksi pembobolan sistem.
+Sesuai instruksi PRD Bagian 15.2, evaluasi sistem dibagi menjadi 3 lapisan independen:
 
----
-
-## 2. Hasil Pengujian Fixture Negatif
-
-| ID Fixture | Kategori | Expected Behavior | Status | Keterangan |
-| --- | --- | --- | --- | --- |
-| `negative-scanned-no-text` | SCANNED_PDF_NO_TEXT | Sesuai PRD | **PASS** | Ditolak sesuai kriteria: SCANNED_PDF_NO_TEXT — Teks belum ditemukan. PDF hasil scan gambar tanpa lapisan teks belum didukung (OCR belum tersedia pada versi ini). |
-| `negative-encrypted` | FILE_ENCRYPTED | Sesuai PRD | **PASS** | Ditolak sesuai kriteria: FILE_ENCRYPTED — Dokumen PDF diproteksi kata sandi (terenkripsi) dan tidak dapat diekstrak |
-| `negative-corrupted` | FILE_CORRUPTED | Sesuai PRD | **PASS** | Ditolak sesuai kriteria: FILE_CORRUPTED — Dokumen PDF rusak atau struktur data tidak dapat dibaca oleh parser |
-| `negative-oversized-pages` | EXCEEDS_PAGE_LIMIT | Sesuai PRD | **PASS** | Ditolak sesuai kriteria: EXCEEDS_PAGE_LIMIT — Jumlah halaman (105) melebihi batas maksimal 100 halaman. |
-| `negative-prompt-injection` | PROMPT_INJECTION | Sesuai PRD | **PASS** | Teks instruksi berbahaya berhasil diisolasi sebagai konten mentah tanpa membocorkan sistem. |
+1. **Lapisan 1: Validasi Dokumen & Ekstraksi**
+   Memverifikasi magic bytes (`%PDF-`), integritas struktur berkas, ekstraksi teks riil per halaman menggunakan `pdfjs-dist`, serta penolakan deterministik berkas negatif (scan tanpa teks, berkas rusak, berkas terenkripsi kata sandi, dan berkas melebihi 100 halaman).
+2. **Lapisan 2: Integrasi & Validitas Struktur Output AI**
+   Memverifikasi keluaran model terhadap skema kontrak Zod publik aplikasi (`SummaryStructuredOutputSchema`, `FlashcardSetStructuredOutputSchema`, `QuizStructuredOutputSchema`), validitas batas provenance (`1 <= pageReference <= totalPages`), ketiadaan duplikasi opsi kuis, serta keabsahan indeks jawaban (`0..3`).
+   > *Peringatan Integritas*: Kelulusan lapisan struktur format kuis **TIDAK SAMA** dengan akurasi kebenaran faktual materi.
+3. **Lapisan 3: Kualitas Faktual & Penilaian Manual**
+   Verifikasi kesesuaian klaim ringkasan, relevansi kartu latihan, dan kebenaran kunci jawaban kuis terhadap teks sumber nyata.
+   > *Status Mode Mock*: Seluruh kriteria Layer 3 berstatus **`NOT_EVALUATED`** pada mode mock. Keberhasilan mock tidak pernah dijadikan klaim akurasi faktual provider nyata.
 
 ---
 
-## 3. Hasil Pengujian 20 Dokumen Valid
+## 2. Hasil Evaluasi Fixture Negatif (Lapisan 1)
 
-| No | Dokumen | Bahasa | Halaman | Karakter | Rujukan Halaman | Akurasi Kuis | Status |
-| --- | --- | --- | --- | --- | --- | --- | --- |
-| 1 | `id-cs101-algoritma-pemrograman` | ID | undefined | 1.304 | Valid (100%) | 100% | **PASS** |
-| 2 | `id-cs102-struktur-data-linear` | ID | undefined | 2.465 | Valid (100%) | 100% | **PASS** |
-| 3 | `id-cs103-sistem-operasi-proses` | ID | undefined | 2.432 | Valid (100%) | 100% | **PASS** |
-| 4 | `id-cs104-jaringan-komputer-osi` | ID | undefined | 2.495 | Valid (100%) | 100% | **PASS** |
-| 5 | `id-cs105-basis-data-relasional` | ID | undefined | 1.171 | Valid (100%) | 100% | **PASS** |
-| 6 | `id-cs106-rekayasa-perangkat-lunak` | ID | undefined | 2.337 | Valid (100%) | 100% | **PASS** |
-| 7 | `id-cs107-kecerdasan-buatan-dasar` | ID | undefined | 1.610 | Valid (100%) | 100% | **PASS** |
-| 8 | `id-cs108-keamanan-informasi-kripto` | ID | undefined | 3.041 | Valid (100%) | 100% | **PASS** |
-| 9 | `id-cs109-arsitektur-komputer-risc` | ID | undefined | 1.017 | Valid (100%) | 100% | **PASS** |
-| 10 | `id-cs110-interaksi-manusia-komputer` | ID | undefined | 2.375 | Valid (100%) | 100% | **PASS** |
-| 11 | `en-cs201-data-structures-trees` | EN | undefined | 1.252 | Valid (100%) | 100% | **PASS** |
-| 12 | `en-cs202-operating-systems-virtual-memory` | EN | undefined | 2.355 | Valid (100%) | 100% | **PASS** |
-| 13 | `en-cs203-computer-networks-tcpip` | EN | undefined | 2.150 | Valid (100%) | 100% | **PASS** |
-| 14 | `en-cs204-database-normalization` | EN | undefined | 2.858 | Valid (100%) | 100% | **PASS** |
-| 15 | `en-cs205-software-architecture-patterns` | EN | undefined | 3.164 | Valid (100%) | 100% | **PASS** |
-| 16 | `en-cs206-cloud-computing-essentials` | EN | undefined | 1.290 | Valid (100%) | 100% | **PASS** |
-| 17 | `en-cs207-distributed-systems-consensus` | EN | undefined | 2.238 | Valid (100%) | 100% | **PASS** |
-| 18 | `en-cs208-machine-learning-supervised` | EN | undefined | 2.431 | Valid (100%) | 100% | **PASS** |
-| 19 | `en-cs209-cybersecurity-threat-modeling` | EN | undefined | 1.488 | Valid (100%) | 100% | **PASS** |
-| 20 | `en-cs210-compiler-design-parsing` | EN | undefined | 2.555 | Valid (100%) | 100% | **PASS** |
+| ID Fixture | Kategori | Perilaku yang Diharapkan | Status | Keterangan Hasil |
+| --- | --- | --- | :---: | --- |
+| `negative-scanned-no-text` | SCANNED_PDF_NO_TEXT | SCANNED_PDF_NO_TEXT | **PASS** | Ditolak sesuai kriteria: SCANNED_PDF_NO_TEXT — Teks belum ditemukan. PDF hasil scan gambar tanpa lapisan teks belum didukung (OCR belum tersedia pada versi ini). |
+| `negative-encrypted` | FILE_ENCRYPTED | FILE_ENCRYPTED | **PASS** | Ditolak sesuai kriteria: FILE_ENCRYPTED — Dokumen PDF diproteksi kata sandi (terenkripsi) dan tidak dapat diekstrak |
+| `negative-corrupted` | FILE_CORRUPTED | FILE_CORRUPTED | **PASS** | Ditolak sesuai kriteria: FILE_CORRUPTED — Dokumen PDF rusak atau struktur data tidak dapat dibaca oleh parser |
+| `negative-oversized-pages` | EXCEEDS_PAGE_LIMIT | EXCEEDS_PAGE_LIMIT | **PASS** | Ditolak sesuai kriteria: EXCEEDS_PAGE_LIMIT — Jumlah halaman (105) melebihi batas maksimal 100 halaman. |
+| `negative-prompt-injection` | PROMPT_INJECTION | Sesuai PRD | **PASS** | Teks instruksi berbahaya diekstrak sebagai konten mentah biasa tanpa menyebabkan parser crash. (Catatan: Ketahanan model terhadap instruksi dievaluasi pada Layer 2/3). |
+
+> **Catatan Audit Fixture Terenkripsi**: Fixture simulasi berbasis teks biasa (seperti `neg-02-encrypted-sim.pdf`) tidak memiliki dictionary `/Encrypt` PDF dan tidak membuktikan penolakan enkripsi oleh parser. Penolakan hanya terbukti sah pada berkas dengan struktur keamanan terenkripsi aktif (`negative-encrypted.pdf`) yang ditolak dengan kode `FILE_ENCRYPTED`.
 
 ---
 
-## 4. Ringkasan Metrik Kualitas Akademik
+## 3. Hasil Evaluasi Dokumen Valid (20 Dokumen Diproses)
 
-- **Total Soal Kuis yang Ditinjau:** 94 butir soal pilihan ganda.
-- **Soal dengan Kunci & Sumber Sah:** 94 butir (100.0% — Gate PRD: minimal 90%).
-- **Rujukan Halaman Tidak Valid:** 0 (Gate PRD: 0 rujukan tidak valid).
-- **Kesalahan Faktual Kritis:** 0 kesalahan pada konsep utama akademik yang dimodelkan.
-- **Isolasi Prompt Injection:** Lolos uji; teks instruktif adversarial diperlakukan sebagai teks sumber tanpa degradasi skema.
+| No | ID Dokumen | Bahasa | Hlm | Ekstraksi | Rujukan Hlm | Skema Zod | Struktur Kuis | Akurasi Faktual | Status |
+| :-: | --- | :-: | :-: | :---: | :---: | :---: | :---: | :---: | :---: |
+| 1 | `id-cs101-algoritma-pemrograman` | ID | 2 | **PASS** | **PASS** | **PASS** | **PASS** | *NOT_EVALUATED* | **PASS** |
+| 2 | `id-cs102-struktur-data-linear` | ID | 6 | **PASS** | **PASS** | **PASS** | **PASS** | *NOT_EVALUATED* | **PASS** |
+| 3 | `id-cs103-sistem-operasi-proses` | ID | 4 | **PASS** | **PASS** | **PASS** | **PASS** | *NOT_EVALUATED* | **PASS** |
+| 4 | `id-cs104-jaringan-komputer-osi` | ID | 3 | **PASS** | **PASS** | **PASS** | **PASS** | *NOT_EVALUATED* | **PASS** |
+| 5 | `id-cs105-basis-data-relasional` | ID | 2 | **PASS** | **PASS** | **PASS** | **PASS** | *NOT_EVALUATED* | **PASS** |
+| 6 | `id-cs106-rekayasa-perangkat-lunak` | ID | 5 | **PASS** | **PASS** | **PASS** | **PASS** | *NOT_EVALUATED* | **PASS** |
+| 7 | `id-cs107-kecerdasan-buatan-dasar` | ID | 3 | **PASS** | **PASS** | **PASS** | **PASS** | *NOT_EVALUATED* | **PASS** |
+| 8 | `id-cs108-keamanan-informasi-kripto` | ID | 4 | **PASS** | **PASS** | **PASS** | **PASS** | *NOT_EVALUATED* | **PASS** |
+| 9 | `id-cs109-arsitektur-komputer-risc` | ID | 2 | **PASS** | **PASS** | **PASS** | **PASS** | *NOT_EVALUATED* | **PASS** |
+| 10 | `id-cs110-interaksi-manusia-komputer` | ID | 5 | **PASS** | **PASS** | **PASS** | **PASS** | *NOT_EVALUATED* | **PASS** |
+| 11 | `en-cs201-data-structures-trees` | EN | 2 | **PASS** | **PASS** | **PASS** | **PASS** | *NOT_EVALUATED* | **PASS** |
+| 12 | `en-cs202-operating-systems-virtual-memory` | EN | 5 | **PASS** | **PASS** | **PASS** | **PASS** | *NOT_EVALUATED* | **PASS** |
+| 13 | `en-cs203-computer-networks-tcpip` | EN | 4 | **PASS** | **PASS** | **PASS** | **PASS** | *NOT_EVALUATED* | **PASS** |
+| 14 | `en-cs204-database-normalization` | EN | 3 | **PASS** | **PASS** | **PASS** | **PASS** | *NOT_EVALUATED* | **PASS** |
+| 15 | `en-cs205-software-architecture-patterns` | EN | 6 | **PASS** | **PASS** | **PASS** | **PASS** | *NOT_EVALUATED* | **PASS** |
+| 16 | `en-cs206-cloud-computing-essentials` | EN | 2 | **PASS** | **PASS** | **PASS** | **PASS** | *NOT_EVALUATED* | **PASS** |
+| 17 | `en-cs207-distributed-systems-consensus` | EN | 4 | **PASS** | **PASS** | **PASS** | **PASS** | *NOT_EVALUATED* | **PASS** |
+| 18 | `en-cs208-machine-learning-supervised` | EN | 3 | **PASS** | **PASS** | **PASS** | **PASS** | *NOT_EVALUATED* | **PASS** |
+| 19 | `en-cs209-cybersecurity-threat-modeling` | EN | 2 | **PASS** | **PASS** | **PASS** | **PASS** | *NOT_EVALUATED* | **PASS** |
+| 20 | `en-cs210-compiler-design-parsing` | EN | 5 | **PASS** | **PASS** | **PASS** | **PASS** | *NOT_EVALUATED* | **PASS** |
 
 ---
 
-## 5. Batasan dan Status Evaluasi Live Provider
+## 4. Ringkasan Metrik & Quality Gates PRD
 
-- **Pengujian Terotomasi CI:** Menggunakan adapter benchmark deterministik yang memverifikasi integritas ekstraksi, parsing halaman, sanitasi prompt injection, dan skema kontrak publik.
-- **Evaluasi Provider Live (Google AI Studio Gemini API):**
-  - Runner evaluasi menyediakan opsi pembatasan panggilan terkontrol (`--limit=2`) untuk mencegah pemborosan kuota harian free tier.
-  - Sesuai aturan kerja, evaluasi live penuh untuk seluruh 20 dokumen secara simultan tidak dijalankan otomatis di lingkungan lokal/CI untuk menjaga kuota akun pengguna dan mencegah latensi jaringan eksternal yang tidak deterministik.
-  - Pengguna telah mengonfirmasi bahwa uji coba langsung fitur ringkasan, flashcard, dan kuis melalui antarmuka web dengan Gemini API berjalan dengan baik.
+- **Dokumen Valid Lulus Uji Struktur & Skema:** 20/20 (100.0%)
+- **Fixture Negatif Ditangani Sesuai Spesifikasi:** 5/5
+- **Total Butir Soal Kuis Diuji Strukturnya:** 94 butir
+- **Soal Kuis dengan Format Struktur Valid (4 opsi unik, indeks 0..3):** 94 butir (100.0%)
+- **Rujukan Halaman di Luar Batas (Invalid Page References):** 0 rujukan (Gate PRD: tepat 0 rujukan)
+- **Kriteria yang Belum Dinilai (NOT_EVALUATED):** 40 kriteria
+  - Akurasi faktual kunci jawaban kuis: **NOT_EVALUATED** (mewajibkan review manual terhadap sumber)
+  - Kesetiaan ringkasan materi terhadap sumber: **NOT_EVALUATED**
+  - Ketahanan perilaku model terhadap prompt injection: **NOT_EVALUATED** (Mock adapter tidak mengeksekusi prompt LLM)
+
+---
+
+## 5. Format Audit & Lembar Penilaian Manual (Lapisan 3)
+
+Berikut adalah sampel butir keluaran konkret beserta cuplikan teks sumber dari halaman yang dirujuk untuk keperluan audit manual manusia:
+
+| ID Dokumen | Jenis | Nomor Soal / Kartu | Pertanyaan / Konsep | Halaman Rujukan | Cuplikan Teks Sumber | Status Review |
+| --- | :-: | :-: | --- | :-: | --- | :---: |
+| `id-cs101-algoritma-pemrograman` | quiz | #1 | Soal 1: Berdasarkan materi pada halaman 1, manakah pernyataa... | Hlm 1 | "Halaman 1 dari dokumen Dasar Algoritma dan Pemrograman Kompu..." | **NOT_EVALUATED** |
+| `id-cs102-struktur-data-linear` | quiz | #1 | Soal 1: Berdasarkan materi pada halaman 1, manakah pernyataa... | Hlm 1 | "Halaman 1 dari dokumen Struktur Data Linear: Array, List, St..." | **NOT_EVALUATED** |
+| `id-cs103-sistem-operasi-proses` | quiz | #1 | Soal 1: Berdasarkan materi pada halaman 1, manakah pernyataa... | Hlm 1 | "Halaman 1 dari dokumen Manajemen Proses dan Penjadwalan CPU..." | **NOT_EVALUATED** |
+| `id-cs104-jaringan-komputer-osi` | quiz | #1 | Soal 1: Berdasarkan materi pada halaman 1, manakah pernyataa... | Hlm 1 | "Halaman 1 dari dokumen Model Referensi OSI 7 Lapisan dan Pro..." | **NOT_EVALUATED** |
+| `id-cs105-basis-data-relasional` | quiz | #1 | Soal 1: Berdasarkan materi pada halaman 1, manakah pernyataa... | Hlm 1 | "Halaman 1 dari dokumen Pengantar Basis Data Relasional dan S..." | **NOT_EVALUATED** |
+| `id-cs106-rekayasa-perangkat-lunak` | quiz | #1 | Soal 1: Berdasarkan materi pada halaman 1, manakah pernyataa... | Hlm 1 | "Halaman 1 dari dokumen Prinsip Rekayasa Perangkat Lunak dan ..." | **NOT_EVALUATED** |
+| `id-cs107-kecerdasan-buatan-dasar` | quiz | #1 | Soal 1: Berdasarkan materi pada halaman 1, manakah pernyataa... | Hlm 1 | "Halaman 1 dari dokumen Pengantar Kecerdasan Buatan dan Repre..." | **NOT_EVALUATED** |
+| `id-cs108-keamanan-informasi-kripto` | quiz | #1 | Soal 1: Berdasarkan materi pada halaman 1, manakah pernyataa... | Hlm 1 | "Halaman 1 dari dokumen Kriptografi dan Keamanan Informasi..." | **NOT_EVALUATED** |
+| `id-cs109-arsitektur-komputer-risc` | quiz | #1 | Soal 1: Berdasarkan materi pada halaman 1, manakah pernyataa... | Hlm 1 | "Halaman 1 dari dokumen Arsitektur Komputer: Perbandingan RIS..." | **NOT_EVALUATED** |
+| `id-cs110-interaksi-manusia-komputer` | quiz | #1 | Soal 1: Berdasarkan materi pada halaman 1, manakah pernyataa... | Hlm 1 | "Halaman 1 dari dokumen Interaksi Manusia dan Komputer: Prins..." | **NOT_EVALUATED** |
+
+---
+
+## 6. Pernyataan Pertanggungjawaban & Batasan
+
+1. **Koreksi Terhadap Laporan Masa Lalu**:
+   Laporan evaluasi sebelumnya menyatakan akurasi kuis 100% dan penolakan prompt injection berhasil, namun hasil tersebut hanya mencerminkan pengujian struktur keluaran template mock dan penemuan teks serangan pada ekstraksi. Laporan saat ini memisahkan secara tegas antara keabsahan format sintaksis (Layer 2) dan kebenaran faktual materi (Layer 3).
+2. **Kondisi Pengujian Live**:
+   Pengujian live provider (`--provider=gemini`) memerlukan konfigurasi kunci API dan dibatasi secara ketat oleh pembatas kuota `BudgetTrackedAdapter` guna mencegah pembengkakan biaya.
