@@ -19,4 +19,6 @@ if (process.env.NODE_ENV !== 'production') {
 }
 
 export { PrismaClient, Prisma };
+export * from './aiJobLifecycle.js';
+export * from './documentJobLifecycle.js';
 export default prisma;

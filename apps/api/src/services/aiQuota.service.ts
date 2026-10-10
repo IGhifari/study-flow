@@ -1,4 +1,4 @@
-import { prisma } from '@studyflow/database';
+import { prisma, finishAiJobAtomically, reconcileAiJobSlots } from '@studyflow/database';
 
 export const AI_QUOTA_CONFIG = {
   DAILY_LIMIT: 20,
@@ -167,15 +167,14 @@ export async function checkAndReserveAiQuota(
  */
 export async function releaseAiJobSlot(userId: string, jobId?: string): Promise<boolean> {
   if (jobId) {
-    const updated = await prisma.$executeRaw`
-      UPDATE processing_jobs
-      SET status = 'FAILED'::"ProcessingJobStatus",
-          updated_at = NOW()
-      WHERE id = ${jobId} AND status IN ('PENDING', 'PROCESSING')
-    `;
-    if (updated === 0) {
-      return false; // Job was already finalized
-    }
+    const res = await finishAiJobAtomically({
+      jobId,
+      userId,
+      status: 'FAILED',
+      errorCode: 'MANUALLY_RELEASED',
+      errorMessage: 'Slot pekerjaan AI dilepas secara manual.',
+    });
+    return res.wasSlotReleased;
   }
 
   await prisma.$executeRaw`
@@ -186,6 +185,8 @@ export async function releaseAiJobSlot(userId: string, jobId?: string): Promise<
   `;
   return true;
 }
+
+export { reconcileAiJobSlots };
 
 /**
  * Refunds a daily generation count in case of early system cancellation

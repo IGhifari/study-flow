@@ -1,5 +1,12 @@
 import { Job } from 'bullmq';
-import { prisma } from '@studyflow/database';
+import {
+  prisma,
+  finishAiJobAtomically,
+  cancelMaterialJobsAtomically,
+  decrementActiveJobsCount,
+  type FinishAiJobParams,
+  type FinishAiJobResult,
+} from '@studyflow/database';
 import { AI_SUMMARY_LIMITS } from '@studyflow/shared';
 import {
   getAiProviderAdapter,
@@ -51,90 +58,13 @@ export interface AiLearningJobResult {
   errorCode?: string;
 }
 
-export interface FinishAiJobParams {
-  jobId: string;
-  userId: string;
-  status: 'COMPLETED' | 'FAILED';
-  errorCode?: string | null;
-  errorMessage?: string | null;
-  payload?: Record<string, unknown>;
-  onSuccessTx?: (tx: Parameters<Parameters<typeof prisma.$transaction>[0]>[0]) => Promise<void>;
-}
-
-/**
- * Atomically marks a processing job as COMPLETED or FAILED and releases the active AI job slot
- * IF AND ONLY IF the job was currently in PENDING or PROCESSING status.
- *
- * If the job was ALREADY COMPLETED or FAILED (e.g. duplicate BullMQ execution or replayed message),
- * exactly 0 rows are updated and the slot is NOT decremented, guaranteeing:
- * 1. Slot is released exactly once per job.
- * 2. Duplicate executions do NOT steal or decrement the active job slot of another concurrent job.
- * 3. Crash / restarts that retry will only release the slot once on final completion/failure.
- */
-export async function finishAiJobAtomically(
-  params: FinishAiJobParams
-): Promise<{ wasSlotReleased: boolean }> {
-  const { jobId, userId, status, errorCode, errorMessage, payload, onSuccessTx } = params;
-  const now = new Date();
-
-  return await prisma.$transaction(async (tx) => {
-    // 1. Atomically transition job status from PENDING/PROCESSING to COMPLETED/FAILED
-    const rowsUpdated = await tx.$executeRaw`
-      UPDATE processing_jobs
-      SET status = ${status}::"ProcessingJobStatus",
-          error_code = ${errorCode ?? null},
-          error_message = ${errorMessage ?? null},
-          completed_at = ${status === 'COMPLETED' ? now : null},
-          failed_at = ${status === 'FAILED' ? now : null},
-          payload = COALESCE(${payload ? JSON.stringify(payload) : null}::jsonb, payload),
-          updated_at = ${now}
-      WHERE id = ${jobId} AND status IN ('PENDING', 'PROCESSING')
-    `;
-
-    const wasSlotReleased = rowsUpdated === 1;
-
-    if (wasSlotReleased) {
-      // 2. Decrement user's activeJobsCount exactly once
-      await tx.$executeRaw`
-        UPDATE ai_usages
-        SET active_jobs_count = GREATEST(0, active_jobs_count - 1),
-            updated_at = ${now}
-        WHERE user_id = ${userId} AND active_jobs_count > 0
-      `;
-
-      if (onSuccessTx) {
-        await onSuccessTx(tx);
-      }
-    } else {
-      console.warn(
-        JSON.stringify({
-          level: 'warn',
-          timestamp: now.toISOString(),
-          message: `[Worker] Job ${jobId} was already finalized. Duplicate execution ignored; active job slot was NOT decremented.`,
-          targetStatus: status,
-        })
-      );
-    }
-
-    return { wasSlotReleased };
-  });
-}
-
-/**
- * Decrements the user's active concurrent AI jobs count safely (standalone fallback).
- */
-export async function decrementActiveJobsCount(userId: string): Promise<void> {
-  try {
-    await prisma.$executeRaw`
-      UPDATE ai_usages
-      SET active_jobs_count = GREATEST(0, active_jobs_count - 1),
-          updated_at = NOW()
-      WHERE user_id = ${userId} AND active_jobs_count > 0
-    `;
-  } catch (err) {
-    console.error(`[Worker] Failed to decrement active jobs for user ${userId}:`, err);
-  }
-}
+export {
+  finishAiJobAtomically,
+  cancelMaterialJobsAtomically,
+  decrementActiveJobsCount,
+  type FinishAiJobParams,
+  type FinishAiJobResult,
+};
 
 export async function processAiSummaryJob(
   job: Job<AiSummaryJobData, AiSummaryJobResult>
@@ -483,6 +413,7 @@ export async function processAiSummaryJob(
     await finishAiJobAtomically({
       jobId,
       userId,
+      materialId,
       status: 'COMPLETED',
       payload: {
         inputTokens: aiResult.inputTokens,
@@ -760,6 +691,7 @@ export async function processAiFlashcardJob(
     await finishAiJobAtomically({
       jobId,
       userId,
+      materialId,
       status: 'COMPLETED',
       payload: {
         cardCount: aiResult.cards.length,
@@ -1009,6 +941,7 @@ export async function processAiQuizJob(
     await finishAiJobAtomically({
       jobId,
       userId,
+      materialId,
       status: 'COMPLETED',
       payload: {
         questionCount: aiResult.questions.length,

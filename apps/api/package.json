@@ -9,7 +9,8 @@
     "start": "node dist/server.js",
     "typecheck": "tsc --noEmit",
     "lint": "echo \"API package linting passed\"",
-    "test": "vitest run"
+    "test": "vitest run",
+    "reconcile:slots": "tsx src/scripts/reconcileSlots.ts"
   },
   "dependencies": {
     "@node-rs/argon2": "^2.2.1",

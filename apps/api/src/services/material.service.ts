@@ -1,5 +1,5 @@
 import crypto from 'node:crypto';
-import { prisma } from '@studyflow/database';
+import { prisma, cancelMaterialJobsAtomically } from '@studyflow/database';
 import {
   InitiateUploadInput,
   InitiateUploadResponse,
@@ -9,13 +9,13 @@ import {
   MaterialListQuery,
   UpdateMaterialInput,
   FILE_UPLOAD_LIMITS,
+  AI_QUOTA_LIMITS,
 } from '@studyflow/shared';
 import { AppError } from '../middleware/errorHandler.js';
 import { getStorageAdapter } from './storage.service.js';
 import {
   checkAndReserveUploadQuota,
   releaseReservation,
-  releaseUsedStorage,
 } from './quota.service.js';
 import { dispatchOutboxEvents } from './outbox.service.js';
 import { toCourseResponse } from './course.service.js';
@@ -507,6 +507,38 @@ export async function retryMaterialProcessing(
   const idempotencyKey = `extract-${material.id}-retry-${previousJobsCount + 1}`;
 
   await prisma.$transaction(async (tx) => {
+    // Check and re-reserve storage quota for retried material under lock
+    const usage = await tx.storageUsage.upsert({
+      where: { userId },
+      create: {
+        userId,
+        usedBytes: BigInt(0),
+        reservedBytes: BigInt(0),
+      },
+      update: {},
+    });
+
+    const currentTotal = Number(usage.usedBytes) + Number(usage.reservedBytes);
+    if (currentTotal + material.bytes > AI_QUOTA_LIMITS.storageLimitBytes) {
+      const remainingBytes = Math.max(0, AI_QUOTA_LIMITS.storageLimitBytes - currentTotal);
+      const remainingMb = (remainingBytes / (1024 * 1024)).toFixed(1);
+      const error: AppError = new Error(
+        `Kapasitas penyimpanan tidak mencukupi untuk mencoba ulang. Sisa kuota: ${remainingMb} MB dari total 200 MB.`
+      );
+      error.statusCode = 400;
+      error.code = 'STORAGE_LIMIT_EXCEEDED';
+      throw error;
+    }
+
+    await tx.storageUsage.update({
+      where: { userId },
+      data: {
+        reservedBytes: {
+          increment: BigInt(material.bytes),
+        },
+      },
+    });
+
     await tx.material.update({
       where: { id: material.id },
       data: {
@@ -584,11 +616,30 @@ export async function deleteMaterial(userId: string, id: string): Promise<void> 
     throw error;
   }
 
-  // 1. Atomically soft-delete material & clear Note link (SetNull)
-  const isReady = material.status === 'READY';
-  const bytesToFree = material.bytes;
+  // 1. Atomically soft-delete material, unlink notes, clean up downstream AI, cancel jobs, and adjust storage
+  let bytesToFree = material.bytes;
+  let isReady = material.status === 'READY';
 
   await prisma.$transaction(async (tx) => {
+    // Lock material row to evaluate committed status and prevent concurrent modifications
+    const matRows = await tx.$queryRaw<
+      Array<{ status: string; bytes: number }>
+    >`
+      SELECT status, bytes
+      FROM materials
+      WHERE id = ${material.id} AND user_id = ${userId} AND deleted_at IS NULL
+      FOR UPDATE
+    `;
+
+    if (matRows.length === 0) {
+      // Already deleted or not found: exit cleanly without duplicate quota decrement
+      return;
+    }
+
+    const currentMaterial = matRows[0]!;
+    isReady = currentMaterial.status === 'READY';
+    bytesToFree = currentMaterial.bytes;
+
     // Soft-delete material immediately so it cannot be queried or updated
     await tx.material.update({
       where: { id: material.id },
@@ -621,15 +672,30 @@ export async function deleteMaterial(userId: string, id: string): Promise<void> 
       where: { materialId: material.id },
     });
 
-    // Cancel pending processing jobs
-    await tx.processingJob.updateMany({
-      where: { materialId: material.id, status: 'PENDING' },
-      data: {
-        status: 'FAILED',
-        errorCode: 'MATERIAL_DELETED',
-        errorMessage: 'Materi telah dihapus oleh pengguna',
-      },
+    // Atomically cancel all active jobs (both PENDING and PROCESSING) for this material
+    // and release held AI slots if any active AI jobs were cancelled
+    await cancelMaterialJobsAtomically({
+      materialId: material.id,
+      userId,
+      tx,
     });
+
+    // Adjust storage usage atomically inside the same transaction
+    if (isReady) {
+      await tx.$executeRaw`
+        UPDATE storage_usages
+        SET used_bytes = GREATEST(0, used_bytes - ${bytesToFree}),
+            updated_at = NOW()
+        WHERE user_id = ${userId}
+      `;
+    } else {
+      await tx.$executeRaw`
+        UPDATE storage_usages
+        SET reserved_bytes = GREATEST(0, reserved_bytes - ${bytesToFree}),
+            updated_at = NOW()
+        WHERE user_id = ${userId}
+      `;
+    }
 
     // Create background cleanup job event in outbox
     await tx.outboxEvent.create({
@@ -646,14 +712,6 @@ export async function deleteMaterial(userId: string, id: string): Promise<void> 
       },
     });
   });
-
-  // 2. Adjust storage usage (if material was READY, release used bytes; otherwise release reservation)
-  if (isReady) {
-    await releaseUsedStorage(userId, bytesToFree);
-  } else {
-    // If in UPLOADING, QUEUED, or PROCESSING, release the held quota reservation
-    await releaseReservation(userId, bytesToFree, false);
-  }
 
   // 3. Immediately attempt storage object removal via storage adapter
   const storageAdapter = getStorageAdapter();
