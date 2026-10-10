@@ -187,6 +187,62 @@ describe('Note Endpoints & Invariants', () => {
     expect(editTabBRetryRes.body.note.version).toBe(3);
   });
 
+  it('handles truly simultaneous concurrent updates: exactly one succeeds and one receives 409', async () => {
+    // 1. Create note with version 1
+    const createRes = await request(app)
+      .post('/api/notes')
+      .set('Origin', TRUSTED_ORIGIN)
+      .set('Cookie', cookieA)
+      .send({
+        courseId: courseAId,
+        title: 'Catatan Konkurensi Paralel',
+        content: 'Konten awal v1',
+      });
+
+    const noteId = createRes.body.note.id;
+    expect(createRes.body.note.version).toBe(1);
+
+    // 2. Fire two requests simultaneously with version = 1
+    const [res1, res2] = await Promise.all([
+      request(app)
+        .patch(`/api/notes/${noteId}`)
+        .set('Origin', TRUSTED_ORIGIN)
+        .set('Cookie', cookieA)
+        .send({
+          version: 1,
+          content: 'Konten dari Tab 1',
+        }),
+      request(app)
+        .patch(`/api/notes/${noteId}`)
+        .set('Origin', TRUSTED_ORIGIN)
+        .set('Cookie', cookieA)
+        .send({
+          version: 1,
+          content: 'Konten dari Tab 2',
+        }),
+    ]);
+
+    const statuses = [res1.status, res2.status].sort();
+    expect(statuses).toEqual([200, 409]);
+
+    const successRes = res1.status === 200 ? res1 : res2;
+    const conflictRes = res1.status === 409 ? res1 : res2;
+
+    expect(successRes.body.note.version).toBe(2);
+    expect(conflictRes.body.error.code).toBe('NOTE_VERSION_CONFLICT');
+    expect(conflictRes.body.error.currentVersion).toBe(2);
+
+    // 3. Verify final state in DB: version incremented exactly once (2), content matches the successful request
+    const fetchRes = await request(app)
+      .get(`/api/notes/${noteId}`)
+      .set('Origin', TRUSTED_ORIGIN)
+      .set('Cookie', cookieA);
+
+    expect(fetchRes.status).toBe(200);
+    expect(fetchRes.body.note.version).toBe(2);
+    expect(fetchRes.body.note.content).toBe(successRes.body.note.content);
+  });
+
   it('rejects editing courseId', async () => {
     const createRes = await request(app)
       .post('/api/notes')

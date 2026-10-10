@@ -37,6 +37,14 @@ import { NativeSelect } from '@/components/ui/select';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { SafeMarkdownRenderer } from '@/components/notes/markdown-renderer';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '@/components/ui/dialog';
 
 type SaveStatus = 'SAVED' | 'DIRTY' | 'SAVING' | 'ERROR';
 
@@ -72,6 +80,20 @@ export default function NoteDetailPage(): React.JSX.Element {
   } | null>(null);
 
   const textareaRef = React.useRef<HTMLTextAreaElement>(null);
+
+  // Live refs to guarantee access to the latest edits without stale closures
+  const titleRef = React.useRef(title);
+  titleRef.current = title;
+  const contentRef = React.useRef(content);
+  contentRef.current = content;
+  const materialIdRef = React.useRef(materialId);
+  materialIdRef.current = materialId;
+
+  // Unsaved changes navigation guard state
+  const isNavigatingRef = React.useRef(false);
+  const [isConfirmOpen, setIsConfirmOpen] = React.useState(false);
+  const [pendingNavigation, setPendingNavigation] = React.useState<string | 'BACK' | null>(null);
+  const [isSavingAndLeaving, setIsSavingAndLeaving] = React.useState(false);
 
   const timezone = userProfile?.timezone || 'Asia/Jakarta';
 
@@ -185,19 +207,25 @@ export default function NoteDetailPage(): React.JSX.Element {
   };
 
   // Perform Save
-  const handleSave = async (overrideVersion?: number) => {
-    if (!note) return;
-    if (!title.trim()) {
+  // Perform Save
+  const handleSave = async (overrideVersion?: number): Promise<{ success: boolean; stillDirty: boolean }> => {
+    if (!note) return { success: false, stillDirty: false };
+    const currentTitle = titleRef.current;
+    if (!currentTitle.trim()) {
       setSaveErrorMessage('Judul catatan wajib diisi.');
       setSaveStatus('ERROR');
-      return;
+      return { success: false, stillDirty: true };
     }
 
     setSaveStatus('SAVING');
     setSaveErrorMessage(null);
     setVersionConflict(null);
 
-    const snapshotBeingSaved = { title, content, materialId };
+    const snapshotBeingSaved = {
+      title: titleRef.current,
+      content: contentRef.current,
+      materialId: materialIdRef.current,
+    };
 
     try {
       const targetVersion = overrideVersion ?? note.version;
@@ -217,7 +245,18 @@ export default function NoteDetailPage(): React.JSX.Element {
         now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })
       );
 
-      setSaveStatus('SAVED');
+      // Check if user continued typing while saving was in-flight
+      const stillHasChanges =
+        titleRef.current !== snapshotBeingSaved.title ||
+        contentRef.current !== snapshotBeingSaved.content ||
+        materialIdRef.current !== snapshotBeingSaved.materialId;
+
+      if (stillHasChanges) {
+        setSaveStatus('DIRTY');
+      } else {
+        setSaveStatus('SAVED');
+      }
+      return { success: true, stillDirty: stillHasChanges };
     } catch (err: any) {
       if (err.code === 'NOTE_VERSION_CONFLICT') {
         setVersionConflict({
@@ -228,6 +267,145 @@ export default function NoteDetailPage(): React.JSX.Element {
       }
       setSaveErrorMessage(err.message || 'Gagal menyimpan catatan.');
       setSaveStatus('ERROR');
+      return { success: false, stillDirty: true };
+    }
+  };
+
+  // Intercept internal link clicks when unsaved changes exist
+  React.useEffect(() => {
+    const handleAnchorClick = (e: MouseEvent) => {
+      if (isNavigatingRef.current) return;
+      if (!hasUnsavedChanges) return;
+
+      if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) {
+        return;
+      }
+
+      const target = e.target as HTMLElement | null;
+      const anchor = target?.closest('a');
+      if (!anchor) return;
+
+      const href = anchor.getAttribute('href');
+      if (!href) return;
+
+      if (href.startsWith('#') || href.startsWith('javascript:') || anchor.target === '_blank') {
+        return;
+      }
+
+      let url: URL;
+      try {
+        url = new URL(href, window.location.href);
+      } catch {
+        return;
+      }
+
+      if (url.origin !== window.location.origin) {
+        return;
+      }
+
+      const currentFull = window.location.pathname + window.location.search;
+      const targetFull = url.pathname + url.search;
+      if (targetFull === currentFull) {
+        return;
+      }
+
+      e.preventDefault();
+      e.stopPropagation();
+
+      setPendingNavigation(targetFull);
+      setIsConfirmOpen(true);
+    };
+
+    document.addEventListener('click', handleAnchorClick, true);
+    return () => {
+      document.removeEventListener('click', handleAnchorClick, true);
+    };
+  }, [hasUnsavedChanges]);
+
+  // Keep ref updated for popstate handler to avoid stale closures
+  const hasUnsavedChangesRef = React.useRef(false);
+  hasUnsavedChangesRef.current = hasUnsavedChanges;
+  const sentinelPushedRef = React.useRef(false);
+
+  // Push sentinel history state ONCE when transitioning to dirty
+  React.useEffect(() => {
+    if (hasUnsavedChanges && !sentinelPushedRef.current && !isNavigatingRef.current) {
+      window.history.pushState({ noteEditorGuard: true }, '', window.location.href);
+      sentinelPushedRef.current = true;
+    }
+  }, [hasUnsavedChanges]);
+
+  // Listen to popstate (Browser Back/Forward) with anti-loop protection and proper cleanup
+  React.useEffect(() => {
+    const handlePopState = () => {
+      if (isNavigatingRef.current) return;
+
+      if (hasUnsavedChangesRef.current) {
+        // Browser already popped the sentinel on Back. Re-push sentinel so URL stays on editor.
+        window.history.pushState({ noteEditorGuard: true }, '', window.location.href);
+        sentinelPushedRef.current = true;
+
+        setPendingNavigation('BACK');
+        setIsConfirmOpen(true);
+      } else {
+        sentinelPushedRef.current = false;
+      }
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+    };
+  }, []);
+
+  const handleStayAndEdit = () => {
+    setIsConfirmOpen(false);
+    setPendingNavigation(null);
+  };
+
+  const handleDiscardAndLeave = () => {
+    isNavigatingRef.current = true;
+    setIsConfirmOpen(false);
+    const nav = pendingNavigation;
+    setPendingNavigation(null);
+    if (nav === 'BACK') {
+      sentinelPushedRef.current = false;
+      window.history.go(-2);
+    } else if (typeof nav === 'string') {
+      router.push(nav);
+    }
+  };
+
+  const handleSaveAndLeave = async () => {
+    setIsSavingAndLeaving(true);
+    const result = await handleSave();
+    setIsSavingAndLeaving(false);
+
+    // If save succeeded but user typed new edits while save was in-flight, do NOT leave!
+    if (result.success && result.stillDirty) {
+      setIsConfirmOpen(false);
+      setPendingNavigation(null);
+      setSaveErrorMessage(
+        'Ada perubahan baru yang diketik saat proses simpan. Simpan kembali sebelum berpindah.'
+      );
+      return;
+    }
+
+    if (result.success) {
+      isNavigatingRef.current = true;
+      setIsConfirmOpen(false);
+      const nav = pendingNavigation;
+      setPendingNavigation(null);
+      if (nav === 'BACK') {
+        sentinelPushedRef.current = false;
+        window.history.go(-2);
+      } else if (typeof nav === 'string') {
+        router.push(nav);
+      }
+    } else {
+      // Failed to save (HTTP 500, network error, or conflict): stay in editor, keep user edits intact!
+      setIsConfirmOpen(false);
+      setPendingNavigation(null);
     }
   };
 
@@ -631,6 +809,80 @@ export default function NoteDetailPage(): React.JSX.Element {
           </TabsContent>
         </Card>
       </Tabs>
+
+      {/* 7. Dialog Konfirmasi Perubahan Belum Tersimpan */}
+      <Dialog
+        open={isConfirmOpen}
+        onOpenChange={(open) => {
+          if (!open && !isSavingAndLeaving) {
+            handleStayAndEdit();
+          }
+        }}
+      >
+        <DialogContent
+          className="sm:max-w-md"
+          data-testid="unsaved-changes-dialog"
+          aria-describedby="unsaved-changes-description"
+        >
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-base font-semibold">
+              <AlertTriangle className="h-5 w-5 text-amber-500 shrink-0" />
+              Perubahan Belum Tersimpan
+            </DialogTitle>
+            <DialogDescription id="unsaved-changes-description" className="text-sm text-muted-foreground mt-1">
+              Catatan ini memiliki perubahan yang belum disimpan. Pilih tindakan yang ingin Anda lakukan sebelum berpindah halaman:
+            </DialogDescription>
+          </DialogHeader>
+
+          <DialogFooter className="flex flex-col sm:flex-col gap-2 mt-4">
+            {/* 3. Simpan dan lanjutkan */}
+            <Button
+              type="button"
+              variant="default"
+              onClick={handleSaveAndLeave}
+              disabled={isSavingAndLeaving}
+              className="w-full justify-center gap-2 h-9"
+              data-testid="confirm-save-and-leave"
+            >
+              {isSavingAndLeaving ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Menyimpan dan melanjutkan…
+                </>
+              ) : (
+                <>
+                  <Save className="h-4 w-4" />
+                  Simpan dan lanjutkan
+                </>
+              )}
+            </Button>
+
+            {/* 2. Buang perubahan dan lanjutkan */}
+            <Button
+              type="button"
+              variant="destructive"
+              onClick={handleDiscardAndLeave}
+              disabled={isSavingAndLeaving}
+              className="w-full justify-center h-9"
+              data-testid="confirm-discard-and-leave"
+            >
+              Buang perubahan dan lanjutkan
+            </Button>
+
+            {/* 1. Tetap mengedit */}
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handleStayAndEdit}
+              disabled={isSavingAndLeaving}
+              className="w-full justify-center h-9"
+              data-testid="confirm-stay-and-edit"
+            >
+              Tetap mengedit
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

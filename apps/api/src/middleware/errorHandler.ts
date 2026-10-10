@@ -3,6 +3,8 @@ import { Request, Response, NextFunction } from 'express';
 export interface AppError extends Error {
   statusCode?: number;
   code?: string;
+  currentVersion?: number;
+  details?: unknown;
 }
 
 export function errorHandler(
@@ -40,6 +42,8 @@ export function errorHandler(
       code: errorCode,
       message,
       requestId,
+      ...(err.currentVersion !== undefined ? { currentVersion: err.currentVersion } : {}),
+      ...(err.details !== undefined ? { details: err.details } : {}),
     },
   });
 }

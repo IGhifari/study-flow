@@ -296,109 +296,152 @@ export async function updateNote(
     throw error;
   }
 
-  const existing = await prisma.note.findFirst({
-    where: { id, userId },
-    include: {
-      course: {
-        include: {
-          semester: true,
+  return await prisma.$transaction(async (tx) => {
+    const existing = await tx.note.findFirst({
+      where: { id, userId },
+      include: {
+        course: {
+          include: {
+            semester: true,
+          },
         },
-      },
-    },
-  });
-
-  if (!existing) {
-    const error: AppError = new Error('Catatan tidak ditemukan');
-    error.statusCode = 404;
-    error.code = 'NOT_FOUND';
-    throw error;
-  }
-
-  // Read-only invariant on archived Course or Semester
-  if (existing.course.archivedAt !== null) {
-    const error: AppError = new Error(
-      'Catatan pada mata kuliah yang diarsipkan bersifat hanya-baca. Pulihkan mata kuliah terlebih dahulu.'
-    );
-    error.statusCode = 400;
-    error.code = 'COURSE_ARCHIVED';
-    throw error;
-  }
-
-  if (existing.course.semester.archivedAt !== null) {
-    const error: AppError = new Error(
-      'Catatan pada semester yang diarsipkan bersifat hanya-baca. Pulihkan semester terlebih dahulu.'
-    );
-    error.statusCode = 400;
-    error.code = 'SEMESTER_ARCHIVED';
-    throw error;
-  }
-
-  // Verify material if being updated
-  if (input.materialId !== undefined && input.materialId !== null) {
-    const material = await prisma.material.findFirst({
-      where: {
-        id: input.materialId,
-        userId,
-        courseId: existing.courseId,
-        deletedAt: null,
       },
     });
-    if (!material) {
-      const error: AppError = new Error(
-        'Materi tidak ditemukan atau tidak berada pada mata kuliah yang sama'
-      );
-      error.statusCode = 400;
-      error.code = 'INVALID_MATERIAL';
+
+    if (!existing) {
+      const error: AppError = new Error('Catatan tidak ditemukan');
+      error.statusCode = 404;
+      error.code = 'NOT_FOUND';
       throw error;
     }
-  }
 
-  // Optimistic concurrency control check
-  if (input.version !== existing.version) {
-    const error: AppError = new Error(
-      'Catatan telah diperbarui dari sesi atau tab lain. Silakan muat ulang atau periksa perubahan terbaru agar tidak menimpa pekerjaan Anda.'
-    );
-    error.statusCode = 409;
-    error.code = 'NOTE_VERSION_CONFLICT';
-    throw error;
-  }
+    // Read-only invariant on archived Course or Semester
+    if (existing.course.archivedAt !== null) {
+      const error: AppError = new Error(
+        'Catatan pada mata kuliah yang diarsipkan bersifat hanya-baca. Pulihkan mata kuliah terlebih dahulu.'
+      );
+      error.statusCode = 400;
+      error.code = 'COURSE_ARCHIVED';
+      throw error;
+    }
 
-  const dataToUpdate: any = {
-    version: existing.version + 1,
-  };
+    if (existing.course.semester.archivedAt !== null) {
+      const error: AppError = new Error(
+        'Catatan pada semester yang diarsipkan bersifat hanya-baca. Pulihkan semester terlebih dahulu.'
+      );
+      error.statusCode = 400;
+      error.code = 'SEMESTER_ARCHIVED';
+      throw error;
+    }
 
-  if (input.title !== undefined) {
-    dataToUpdate.title = input.title;
-  }
+    // Verify material if being updated
+    if (input.materialId !== undefined && input.materialId !== null) {
+      const material = await tx.material.findFirst({
+        where: {
+          id: input.materialId,
+          userId,
+          courseId: existing.courseId,
+          deletedAt: null,
+        },
+      });
+      if (!material) {
+        const error: AppError = new Error(
+          'Materi tidak ditemukan atau tidak berada pada mata kuliah yang sama'
+        );
+        error.statusCode = 400;
+        error.code = 'INVALID_MATERIAL';
+        throw error;
+      }
+    }
 
-  if (input.content !== undefined) {
-    dataToUpdate.content = input.content;
-  }
+    // Optimistic concurrency control check (fast-path check)
+    if (input.version !== existing.version) {
+      const error: AppError = new Error(
+        'Catatan telah diperbarui dari sesi atau tab lain. Silakan muat ulang atau periksa perubahan terbaru agar tidak menimpa pekerjaan Anda.'
+      );
+      error.statusCode = 409;
+      error.code = 'NOTE_VERSION_CONFLICT';
+      error.currentVersion = existing.version;
+      throw error;
+    }
 
-  if (input.materialId !== undefined) {
-    dataToUpdate.materialId = input.materialId;
-  }
+    const nextVersion = existing.version + 1;
+    const dataToUpdate: any = {
+      version: nextVersion,
+      updatedAt: new Date(),
+    };
 
-  const updated = await prisma.note.update({
-    where: { id },
-    data: dataToUpdate,
-    include: {
-      material: {
-        select: {
-          id: true,
-          title: true,
-          originalFilename: true,
+    if (input.title !== undefined) {
+      dataToUpdate.title = input.title;
+    }
+
+    if (input.content !== undefined) {
+      dataToUpdate.content = input.content;
+    }
+
+    if (input.materialId !== undefined) {
+      dataToUpdate.materialId = input.materialId;
+    }
+
+    // Atomic conditional update targeting id, userId, and version inside transaction
+    const updateResult = await tx.note.updateMany({
+      where: {
+        id,
+        userId,
+        version: input.version,
+      },
+      data: dataToUpdate,
+    });
+
+    if (updateResult.count === 0) {
+      const current = await tx.note.findFirst({
+        where: { id, userId },
+        select: { version: true },
+      });
+
+      if (!current) {
+        const error: AppError = new Error('Catatan tidak ditemukan');
+        error.statusCode = 404;
+        error.code = 'NOT_FOUND';
+        throw error;
+      }
+
+      const error: AppError = new Error(
+        'Catatan telah diperbarui dari sesi atau tab lain. Silakan muat ulang atau periksa perubahan terbaru agar tidak menimpa pekerjaan Anda.'
+      );
+      error.statusCode = 409;
+      error.code = 'NOTE_VERSION_CONFLICT';
+      error.currentVersion = current.version;
+      throw error;
+    }
+
+    // Fetch the exact record produced by this update transaction.
+    // Querying with id, userId AND version = nextVersion ensures that even if a concurrent
+    // transaction commits later, this read strictly returns the output of this specific write.
+    const updated = await tx.note.findFirst({
+      where: {
+        id,
+        userId,
+        version: nextVersion,
+      },
+      include: {
+        material: {
+          select: {
+            id: true,
+            title: true,
+            originalFilename: true,
+          },
+        },
+        course: {
+          include: {
+            semester: true,
+          },
         },
       },
-      course: {
-        include: {
-          semester: true,
-        },
-      },
-    },
+    });
+
+    return toNoteResponse(updated!);
   });
-
-  return toNoteResponse(updated);
 }
 
 export async function deleteNote(userId: string, id: string): Promise<void> {
