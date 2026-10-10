@@ -1,19 +1,45 @@
-# Ignored files for Docker build context
+# Dependency directories
 node_modules
-*/node_modules
-*/*/node_modules
+**/node_modules
+
+# Build artifacts and caches
 .next
-*/.next
+**/.next
+.next-e2e
+**/.next-e2e
 dist
-*/dist
-*/*/dist
+**/dist
+build
+**/build
+*.tsbuildinfo
+**/*.tsbuildinfo
+
+# Version control
 .git
 .gitignore
+
+# Environment variables and secrets
 .env
-.env*.local
+.env.*
+**/.env
+**/.env.*
+
+# Logs
 *.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+
+# OS files
 .DS_Store
 Thumbs.db
+
+# Test reports & local storage
+.storage-e2e
+**/.storage-e2e
+.storage
+**/.storage
+test-results
+**/test-results
+playwright-report
+**/playwright-report

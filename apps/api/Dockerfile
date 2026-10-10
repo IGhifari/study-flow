@@ -20,9 +20,10 @@ COPY packages/shared/ ./packages/shared/
 COPY packages/database/ ./packages/database/
 COPY apps/api/ ./apps/api/
 
-# Build shared package, generate prisma client, and compile API
+# Build shared package, generate prisma client, build database package, and compile API
 RUN npm run build --workspace=@studyflow/shared
 RUN npm run generate --workspace=@studyflow/database
+RUN npm run build --workspace=@studyflow/database
 RUN npm run build --workspace=@studyflow/api
 
 # Stage 2: Production runner

@@ -208,11 +208,10 @@ test.describe('StudyFlow End-to-End Suite', () => {
 
     // 8. Verifikasi Loncat ke Referensi PDF
     const jumpLink = page.locator('button:has-text("Buka Referensi Halaman")').first();
-    if (await jumpLink.isVisible()) {
-      await jumpLink.click();
-      // Tab aktif beralih ke Dokumen PDF
-      await expect(page.locator('button:has-text("Dokumen PDF")')).toBeVisible();
-    }
+    await expect(jumpLink).toBeVisible({ timeout: 10000 });
+    await jumpLink.click();
+    // Tab aktif beralih ke Dokumen PDF
+    await expect(page.locator('button:has-text("Dokumen PDF")')).toBeVisible();
   });
 
   test('Flow 3: Isolasi Data Pengguna (Multi-tenant Ownership)', async ({ browser }) => {
@@ -243,6 +242,27 @@ test.describe('StudyFlow End-to-End Suite', () => {
     await pageA.click('button:has-text("Simpan Semester")');
     await expect(pageA.locator('text=Semester Rahasia A')).toBeVisible();
 
+    // Buat Mata Kuliah Rahasia milik User A
+    await pageA.click('a[href="/courses"], button:has-text("Mata Kuliah")');
+    await pageA.waitForURL('**/courses');
+    await pageA.click('button:has-text("Tambah Mata Kuliah")');
+    await pageA.selectOption('#create-course-sem', { index: 1 });
+    await pageA.fill('#create-course-name', 'Mata Kuliah Rahasia A');
+    await pageA.fill('#create-course-code', 'SEC101');
+    await pageA.click('button:has-text("Simpan Mata Kuliah")');
+    await expect(pageA.locator('text=Mata Kuliah Rahasia A')).toBeVisible({ timeout: 10000 });
+
+    // Buat Catatan Kuliah Rahasia milik User A
+    await pageA.click('a[href="/notes"], button:has-text("Catatan")');
+    await pageA.waitForURL('**/notes');
+    await pageA.click('button:has-text("Buat Catatan")');
+    await pageA.fill('#create-note-title', 'Catatan Rahasia A');
+    await pageA.selectOption('#create-note-course', { index: 1 });
+    await pageA.fill('#create-note-content', '# Dokumen Rahasia Milik User A');
+    await pageA.click('button:has-text("Buat & Buka Editor")');
+    await pageA.waitForURL('**/notes/**', { timeout: 15000 });
+    const noteUrlA = pageA.url();
+
     // Daftarkan Pengguna B
     await pageB.goto('/register');
     await pageB.fill('#name', 'User Tenant B');
@@ -259,9 +279,10 @@ test.describe('StudyFlow End-to-End Suite', () => {
     await pageB.click('a[href="/semesters"], button:has-text("Kelola Semester")');
     await expect(pageB.locator('text=Semester Rahasia A')).not.toBeVisible();
 
-    // 2. Verifikasi akses ID palsu/acak melalui UI dialihkan ke error/not found
-    await pageB.goto('/materials/00000000-0000-0000-0000-000000000000');
-    await expect(pageB.locator('h3:has-text("Gagal Memuat Materi")')).toBeVisible({ timeout: 10000 });
+    // 2. Verifikasi akses ke resource nyata milik User A ditolak (Catatan Tidak Ditemukan)
+    await pageB.goto(noteUrlA);
+    await expect(pageB.locator('h3:has-text("Catatan Tidak Ditemukan")')).toBeVisible({ timeout: 10000 });
+    await expect(pageB.locator('a[href="/notes"]:has-text("Kembali ke Daftar Catatan")')).toBeVisible();
 
     await contextA.close();
     await contextB.close();
@@ -317,10 +338,9 @@ test.describe('StudyFlow End-to-End Suite', () => {
 
     // 4. Uji Penggantian Tema (Dark / Light Theme Toggle)
     const darkBtn = page.locator('button[title="Gunakan tema gelap"]').first();
-    if (await darkBtn.isVisible()) {
-      await darkBtn.click();
-      await expect(page.locator('html')).toHaveClass(/dark/);
-    }
+    await expect(darkBtn).toBeVisible({ timeout: 10000 });
+    await darkBtn.click();
+    await expect(page.locator('html')).toHaveClass(/dark/);
 
     // 5. Uji Navigasi Keyboard (Tab navigation)
     await page.keyboard.press('Tab');

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { resolveForwardedClientIp } from '../../../../lib/clientIp.js';
+import { resolveForwardedClientIp } from '@/lib/clientIp';
 
 const INTERNAL_API_URL =
   process.env.INTERNAL_API_URL ||

@@ -175,9 +175,23 @@ Jalankan quality gates dan rangkaian test yang tersedia:
   Menguji pendaftaran, login, cookie HttpOnly, proteksi rute privat `/dashboard` dan `/settings`, pembaruan profil, perubahan password dengan pencabutan sesi instan, dan logout melalui proxy Next.js.
 - **Pengujian Browser Playwright End-to-End (E2E)**:
   ```bash
+  # 1. Bangun bundle Next.js untuk E2E ke direktori .next-e2e:
+  npm run build:e2e
+
+  # 2. Verifikasi kepatuhan isolasi konfigurasi E2E:
+  npm run test:e2e:config
+
+  # 3. Jalankan test E2E Chromium:
   npm run test:e2e
   ```
-  Menjalankan 4 flow kritis MVP (Lifecycle Akademik & Sesi, AI Pipeline & Latihan Flashcard/Quiz, Isolasi Multi-tenant, serta Responsivitas 375px/768px/1440px & Aksesibilitas) secara terisolasi pada database `studyflow_test`, Redis DB 15, dan server produksi Next.js `.next-e2e`.
+  Menjalankan flow kritis MVP secara hermetis.
+  *Catatan Isolasi Ketat*: E2E Playwright mewajibkan konfigurasi test eksplisit (`DATABASE_URL_TEST` berakhiran `_test`, dan `REDIS_URL_TEST` menggunakan database terpisah misalnya DB 15). Fallback ke `DATABASE_URL` atau `REDIS_URL` development telah dihapus; jika konfigurasi test tidak tersedia atau menunjuk target tidak aman, setup E2E menolak eksekusi seketika sebelum migrasi, seed, atau server dimulai. URL test yang divalidasi hanya diteruskan ke proses anak API dan Worker, bukan ke frontend Next.js.
+- **Verifikasi Docker Image Multi-Stage (Clean Build)**:
+  ```bash
+  docker build -f apps/api/Dockerfile -t studyflow-api:latest .
+  docker build -f apps/worker/Dockerfile -t studyflow-worker:latest .
+  docker build -f apps/web/Dockerfile -t studyflow-web:latest .
+  ```
 - **Evaluasi Performa Ekstraksi & Kualitas AI**:
   ```bash
   npm run eval:ai
