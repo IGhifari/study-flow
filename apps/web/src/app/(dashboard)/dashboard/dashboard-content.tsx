@@ -199,7 +199,7 @@ export function DashboardContent({ user }: DashboardContentProps): React.JSX.Ele
             Pilih atau buat semester aktif untuk mulai mencatat mata kuliah, tugas, dan materi kuliah.
           </p>
           <div className="mt-6 flex justify-center">
-            <Button asChild className="gap-2">
+            <Button asChild size="standard" className="gap-1.5">
               <Link href="/semesters">
                 <Plus className="h-4 w-4" />
                 <span>Tambah Semester</span>
@@ -223,7 +223,7 @@ export function DashboardContent({ user }: DashboardContentProps): React.JSX.Ele
                 {summary.activeSemester.name} ({summary.activeSemester.academicYear}) • {todayFormatted}
               </p>
             </div>
-            <Button asChild size="sm" className="gap-1.5 self-start sm:self-auto">
+            <Button asChild size="standard" className="gap-1.5 self-start sm:self-auto">
               <Link href="/courses">
                 <Plus className="h-4 w-4" />
                 <span>Tambah Mata Kuliah</span>
@@ -241,7 +241,7 @@ export function DashboardContent({ user }: DashboardContentProps): React.JSX.Ele
             Tambahkan mata kuliah yang Anda ambil di {summary.activeSemester.name} untuk menghubungkan tugas dan materi.
           </p>
           <div className="mt-6 flex justify-center">
-            <Button asChild className="gap-2">
+            <Button asChild size="standard" className="gap-1.5">
               <Link href="/courses">
                 <Plus className="h-4 w-4" />
                 <span>Tambah Mata Kuliah</span>
@@ -255,14 +255,14 @@ export function DashboardContent({ user }: DashboardContentProps): React.JSX.Ele
 
   // 5. Active Dashboard with Content
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Header Ringkas */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-border pb-5">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-b border-border pb-3.5 sm:pb-5">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
+          <h1 className="text-xl font-bold tracking-tight text-foreground sm:text-3xl">
             Dashboard
           </h1>
-          <div className="mt-1 flex flex-wrap items-center gap-x-2.5 gap-y-1 text-sm text-muted-foreground">
+          <div className="mt-0.5 sm:mt-1 flex flex-wrap items-center gap-x-2.5 gap-y-1 text-xs sm:text-sm text-muted-foreground">
             <span className="font-medium text-foreground">{summary.activeSemester.name}</span>
             <span>•</span>
             <span>{todayFormatted}</span>
@@ -279,7 +279,8 @@ export function DashboardContent({ user }: DashboardContentProps): React.JSX.Ele
         <div className="flex items-center gap-2">
           <Button
             onClick={() => setIsCreateTaskOpen(true)}
-            className="gap-2 shrink-0"
+            size="standard"
+            className="gap-1.5 shrink-0 self-start sm:self-auto"
           >
             <Plus className="h-4 w-4" />
             <span>Tambah tugas</span>
@@ -325,45 +326,43 @@ export function DashboardContent({ user }: DashboardContentProps): React.JSX.Ele
         </Alert>
       )}
 
-      {/* Baris Statistik Ringkas (1 Baris) */}
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+      {/* Baris Statistik Ringkas: <640px 3 Baris Ringkas, >=640px 3 Kolom Kartu */}
+      <div className="grid grid-cols-1 divide-y sm:divide-y-0 sm:divide-x divide-border rounded-xl border border-border bg-card shadow-xs sm:grid-cols-3">
         {/* Stat 1: Hari Ini */}
-        <div className="flex items-center justify-between rounded-lg border border-border bg-card p-4 transition-colors">
-          <div>
-            <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between px-3.5 py-2.5 sm:px-5 sm:py-3.5">
+          <div className="flex w-full items-center justify-between sm:w-auto sm:flex-col sm:items-start min-w-0">
+            <h3 className="text-xs font-medium uppercase tracking-wider text-muted-foreground shrink-0">
               Tugas Hari Ini
-            </p>
-            <div className="mt-1 flex items-baseline gap-2">
-              <span className="text-2xl font-bold tracking-tight text-foreground">
+            </h3>
+            <div className="flex items-baseline gap-1.5 sm:mt-1">
+              <span className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">
                 {summary.assignmentsToday.length}
               </span>
               <span className="text-xs text-muted-foreground">belum selesai</span>
             </div>
-            <p className="mt-0.5 text-xs text-muted-foreground">
-              Batas 23.59 ({timezone})
+            <p className="hidden sm:block mt-0.5 text-xs text-muted-foreground">
+              Batas 23.59
             </p>
           </div>
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
-            <Clock className="h-5 w-5" />
+          <div className="hidden sm:flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+            <Clock className="h-4.5 w-4.5" />
           </div>
         </div>
 
         {/* Stat 2: Terlambat */}
         <div
-          className={`flex items-center justify-between rounded-lg border p-4 transition-colors ${
-            summary.overdueCount > 0
-              ? 'border-danger/40 bg-danger/5'
-              : 'border-border bg-card'
+          className={`flex flex-col sm:flex-row sm:items-center sm:justify-between px-3.5 py-2.5 sm:px-5 sm:py-3.5 ${
+            summary.overdueCount > 0 ? 'bg-danger/10' : ''
           }`}
         >
-          <div>
-            <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+          <div className="flex w-full items-center justify-between sm:w-auto sm:flex-col sm:items-start min-w-0">
+            <h3 className="text-xs font-medium uppercase tracking-wider text-muted-foreground shrink-0">
               Tugas Terlambat
-            </p>
-            <div className="mt-1 flex items-baseline gap-2">
+            </h3>
+            <div className="flex items-baseline gap-1.5 sm:mt-1">
               <span
-                className={`text-2xl font-bold tracking-tight ${
-                  summary.overdueCount > 0 ? 'text-danger' : 'text-foreground'
+                className={`text-xl sm:text-2xl font-bold tracking-tight ${
+                  summary.overdueCount > 0 ? 'text-danger-foreground' : 'text-foreground'
                 }`}
               >
                 {summary.overdueCount}
@@ -371,7 +370,7 @@ export function DashboardContent({ user }: DashboardContentProps): React.JSX.Ele
               {summary.overdueCount > 0 ? (
                 <Link
                   href="/assignments"
-                  className="text-xs text-danger font-medium hover:underline"
+                  className="text-xs text-danger-foreground font-medium hover:underline"
                 >
                   Lihat daftar →
                 </Link>
@@ -379,257 +378,312 @@ export function DashboardContent({ user }: DashboardContentProps): React.JSX.Ele
                 <span className="text-xs text-muted-foreground">tenggat terlewat</span>
               )}
             </div>
-            <p className="mt-0.5 text-xs text-muted-foreground">
+            <p className="hidden sm:block mt-0.5 text-xs text-muted-foreground">
               {summary.overdueCount > 0 ? 'Perlu tindakan segera' : 'Semua deadline aman'}
             </p>
           </div>
           <div
-            className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${
+            className={`hidden sm:flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${
               summary.overdueCount > 0
-                ? 'bg-danger/20 text-danger'
+                ? 'bg-danger text-danger-foreground'
                 : 'bg-muted text-muted-foreground'
             }`}
           >
-            <AlertTriangle className="h-5 w-5" />
+            <AlertTriangle className="h-4.5 w-4.5" />
           </div>
         </div>
 
         {/* Stat 3: Selesai */}
-        <div className="flex items-center justify-between rounded-lg border border-border bg-card p-4 transition-colors">
-          <div>
-            <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between px-3.5 py-2.5 sm:px-5 sm:py-3.5">
+          <div className="flex w-full items-center justify-between sm:w-auto sm:flex-col sm:items-start min-w-0">
+            <h3 className="text-xs font-medium uppercase tracking-wider text-muted-foreground shrink-0">
               Tugas Selesai
-            </p>
-            <div className="mt-1 flex items-baseline gap-2">
-              <span className="text-2xl font-bold tracking-tight text-foreground">
+            </h3>
+            <div className="flex items-baseline gap-1.5 sm:mt-1">
+              <span className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">
                 {summary.completedCount}
               </span>
-              <span className="text-xs text-muted-foreground">
-                dari {summary.totalAssignments} ({summary.completionPercentage}%)
-              </span>
+              {summary.totalAssignments === 0 ? (
+                <span className="text-xs text-muted-foreground">Belum ada tugas</span>
+              ) : (
+                <span className="text-xs text-muted-foreground">
+                  dari {summary.totalAssignments} ({summary.completionPercentage}%)
+                </span>
+              )}
             </div>
-            <p className="mt-0.5 text-xs text-muted-foreground">
+            <p className="hidden sm:block mt-0.5 text-xs text-muted-foreground">
               Total semester berjalan
             </p>
           </div>
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-success/15 text-success">
-            <CheckCircle2 className="h-5 w-5" />
+          <div className="hidden sm:flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-success/20 text-success-foreground">
+            <CheckCircle2 className="h-4.5 w-4.5" />
           </div>
         </div>
       </div>
 
       {/* Tata Letak Konten: Desktop 2/3 Tugas + 1/3 Materi; Mobile Kolom Tunggal */}
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 sm:gap-6 lg:grid-cols-3">
         {/* Kolom Utama: Tugas (2/3 Lebar Desktop) */}
-        <div className="lg:col-span-2 space-y-6">
-          {/* Section: Tugas Hari Ini */}
-          <div className="rounded-xl border border-border bg-card p-5 shadow-xs">
-            <div className="flex items-center justify-between pb-3 border-b border-border">
-              <div className="flex items-center gap-2">
-                <Clock className="h-4 w-4 text-primary" />
-                <h2 className="text-base font-semibold text-foreground">
-                  Tugas Hari Ini
-                </h2>
-                <Badge variant="outline" className="text-xs ml-1">
-                  {summary.assignmentsToday.length}
-                </Badge>
+        <div className="lg:col-span-2 space-y-4 sm:space-y-6">
+          {summary.assignmentsToday.length === 0 && summary.assignmentsUpcoming.length === 0 ? (
+            /* Empty State Terpadu: Jika Hari Ini & 7 Hari Mendatang Sama-sama Kosong */
+            <div className="rounded-xl border border-border bg-card p-5 sm:p-6 shadow-xs">
+              <div className="flex items-center justify-between pb-3.5 border-b border-border">
+                <div className="flex items-center gap-2">
+                  <Clock className="h-4 w-4 text-primary" />
+                  <h2 className="text-base font-semibold text-foreground">
+                    Tugas Terdekat
+                  </h2>
+                </div>
+                <Button asChild variant="ghost" size="sm" className="h-8 px-2 text-xs">
+                  <Link href="/assignments" className="gap-1">
+                    <span>Semua Tugas</span>
+                    <ArrowRight className="h-3.5 w-3.5" />
+                  </Link>
+                </Button>
               </div>
-              <Button asChild variant="ghost" size="sm" className="h-8 px-2 text-xs">
-                <Link href="/assignments" className="gap-1">
-                  <span>Semua Tugas</span>
-                  <ArrowRight className="h-3.5 w-3.5" />
-                </Link>
-              </Button>
-            </div>
 
-            <div className="mt-3">
-              {summary.assignmentsToday.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-7 text-center text-muted-foreground">
-                  <CheckCircle2 className="h-7 w-7 text-emerald-500/80 mb-2" />
-                  <p className="text-sm font-medium text-foreground">
-                    Tidak ada tugas jatuh tempo hari ini
-                  </p>
-                  <p className="text-xs text-muted-foreground mt-0.5">
-                    Semua jadwal hari ini tuntas atau belum ada deadline mendesak.
-                  </p>
-                </div>
-              ) : (
-                <div className="divide-y divide-border/60">
-                  {summary.assignmentsToday.map((asg) => {
-                    const isPending = pendingTaskIds.has(asg.id);
-                    return (
-                      <div
-                        key={asg.id}
-                        className="py-3 first:pt-1 last:pb-1 flex items-start justify-between gap-3"
-                      >
-                        <div className="flex items-start gap-3 min-w-0">
-                          <div className="pt-0.5">
-                            <Checkbox
-                              id={`task-${asg.id}`}
-                              checked={asg.status === 'DONE'}
-                              disabled={isPending}
-                              onCheckedChange={() => handleToggleTask(asg)}
-                              aria-label={`Tandai tugas ${asg.title} sebagai ${
-                                asg.status === 'DONE' ? 'belum selesai' : 'selesai'
-                              }`}
-                            />
-                          </div>
-                          <div className="min-w-0">
-                            <label
-                              htmlFor={`task-${asg.id}`}
-                              className={`text-sm font-medium leading-snug cursor-pointer select-none block truncate ${
-                                asg.status === 'DONE'
-                                  ? 'line-through text-muted-foreground'
-                                  : 'text-foreground hover:text-primary transition-colors'
-                              }`}
-                            >
-                              {asg.title}
-                            </label>
-                            <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-muted-foreground">
-                              {asg.course && (
-                                <span className="font-medium text-foreground/80">
-                                  {asg.course.name}
-                                </span>
-                              )}
-                              <span>•</span>
-                              <span>{formatUserDateTime(asg.dueDate, timezone)}</span>
-                              {isPending && (
-                                <>
-                                  <span>•</span>
-                                  <span className="text-primary inline-flex items-center gap-1 text-[11px]">
-                                    <Loader2 className="h-3 w-3 animate-spin" />
-                                    Menyimpan...
-                                  </span>
-                                </>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-
-                        <Badge
-                          variant={
-                            asg.priority === 'HIGH'
-                              ? 'danger'
-                              : asg.priority === 'MEDIUM'
-                              ? 'default'
-                              : 'secondary'
-                          }
-                          className="shrink-0 text-xs py-0.5 px-2"
-                        >
-                          {PRIORITY_LABELS[asg.priority] || asg.priority}
-                        </Badge>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Section: Tugas Mendatang (7 Hari ke Depan) */}
-          <div className="rounded-xl border border-border bg-card p-5 shadow-xs">
-            <div className="flex items-center justify-between pb-3 border-b border-border">
-              <div className="flex items-center gap-2">
-                <Calendar className="h-4 w-4 text-sky-500" />
-                <h2 className="text-base font-semibold text-foreground">
-                  Tugas 7 Hari Mendatang
-                </h2>
-                <Badge variant="outline" className="text-xs ml-1">
-                  {summary.assignmentsUpcoming.length}
-                </Badge>
+              <div className="py-5 sm:py-6 flex flex-col items-center justify-center text-center">
+                {summary.totalAssignments === 0 ? (
+                  <>
+                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted text-muted-foreground mb-2">
+                      <ListTodo className="h-4 w-4" />
+                    </div>
+                    <p className="text-sm font-medium text-foreground">
+                      Belum ada tugas tercatat
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-0.5 max-w-sm">
+                      Catat tugas kuliah baru agar deadline dan prioritas belajar Anda tetap teratur.
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-success/20 text-success-foreground mb-2">
+                      <CheckCircle2 className="h-4 w-4" />
+                    </div>
+                    <p className="text-sm font-medium text-foreground">
+                      Tidak ada deadline dalam 7 hari ke depan
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-0.5 max-w-sm">
+                      Semua jadwal terdekat sudah tuntas atau belum ada deadline mendesak minggu ini.
+                    </p>
+                  </>
+                )}
               </div>
             </div>
-
-            <div className="mt-3">
-              {summary.assignmentsUpcoming.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-7 text-center text-muted-foreground">
-                  <Calendar className="h-7 w-7 text-sky-500/80 mb-2" />
-                  <p className="text-sm font-medium text-foreground">
-                    Tidak ada tugas dalam 7 hari mendatang
-                  </p>
-                  <p className="text-xs text-muted-foreground mt-0.5">
-                    Jadwal tugas Anda relatif lengang minggu ini.
-                  </p>
+          ) : (
+            /* Pengelompokan Ketika Ada Tugas */
+            <>
+              {/* Section: Tugas Hari Ini */}
+              <div className="rounded-xl border border-border bg-card p-5 sm:p-6 shadow-xs">
+                <div className="flex items-center justify-between pb-3.5 border-b border-border">
+                  <div className="flex items-center gap-2">
+                    <Clock className="h-4 w-4 text-primary" />
+                    <h2 className="text-base font-semibold text-foreground">
+                      Tugas Hari Ini
+                    </h2>
+                    <Badge variant="secondary" className="text-xs ml-1 font-medium">
+                      {summary.assignmentsToday.length}
+                    </Badge>
+                  </div>
+                  <Button asChild variant="ghost" size="sm" className="h-8 px-2 text-xs">
+                    <Link href="/assignments" className="gap-1">
+                      <span>Semua Tugas</span>
+                      <ArrowRight className="h-3.5 w-3.5" />
+                    </Link>
+                  </Button>
                 </div>
-              ) : (
-                <div className="divide-y divide-border/60">
-                  {summary.assignmentsUpcoming.map((asg) => {
-                    const isPending = pendingTaskIds.has(asg.id);
-                    return (
-                      <div
-                        key={asg.id}
-                        className="py-3 first:pt-1 last:pb-1 flex items-start justify-between gap-3"
-                      >
-                        <div className="flex items-start gap-3 min-w-0">
-                          <div className="pt-0.5">
-                            <Checkbox
-                              id={`task-${asg.id}`}
-                              checked={asg.status === 'DONE'}
-                              disabled={isPending}
-                              onCheckedChange={() => handleToggleTask(asg)}
-                              aria-label={`Tandai tugas ${asg.title} sebagai ${
-                                asg.status === 'DONE' ? 'belum selesai' : 'selesai'
-                              }`}
-                            />
-                          </div>
-                          <div className="min-w-0">
-                            <label
-                              htmlFor={`task-${asg.id}`}
-                              className={`text-sm font-medium leading-snug cursor-pointer select-none block truncate ${
-                                asg.status === 'DONE'
-                                  ? 'line-through text-muted-foreground'
-                                  : 'text-foreground hover:text-primary transition-colors'
-                              }`}
-                            >
-                              {asg.title}
-                            </label>
-                            <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-muted-foreground">
-                              {asg.course && (
-                                <span className="font-medium text-foreground/80">
-                                  {asg.course.name}
-                                </span>
-                              )}
-                              <span>•</span>
-                              <span>{formatUserDateTime(asg.dueDate, timezone)}</span>
-                              {isPending && (
-                                <>
+
+                <div className="mt-2">
+                  {summary.assignmentsToday.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center py-4 text-center text-muted-foreground">
+                      <CheckCircle2 className="h-5 w-5 text-success-foreground/70 mb-1" />
+                      <p className="text-sm font-medium text-foreground">
+                        Tidak ada tugas jatuh tempo hari ini
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        Semua jadwal hari ini tuntas atau belum ada deadline mendesak.
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="divide-y divide-border/60">
+                      {summary.assignmentsToday.map((asg) => {
+                        const isPending = pendingTaskIds.has(asg.id);
+                        return (
+                          <div
+                            key={asg.id}
+                            className="py-3.5 first:pt-2 last:pb-1 flex items-start justify-between gap-3"
+                          >
+                            <div className="flex items-start gap-3 min-w-0">
+                              <div className="pt-0.5">
+                                <Checkbox
+                                  id={`task-${asg.id}`}
+                                  checked={asg.status === 'DONE'}
+                                  disabled={isPending}
+                                  onCheckedChange={() => handleToggleTask(asg)}
+                                  aria-label={`Tandai tugas ${asg.title} sebagai ${
+                                    asg.status === 'DONE' ? 'belum selesai' : 'selesai'
+                                  }`}
+                                />
+                              </div>
+                              <div className="min-w-0">
+                                <label
+                                  htmlFor={`task-${asg.id}`}
+                                  className={`text-sm font-medium leading-snug cursor-pointer select-none block truncate ${
+                                    asg.status === 'DONE'
+                                      ? 'line-through text-muted-foreground'
+                                      : 'text-foreground hover:text-primary transition-colors'
+                                  }`}
+                                >
+                                  {asg.title}
+                                </label>
+                                <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-muted-foreground">
+                                  {asg.course && (
+                                    <span className="font-medium text-foreground/80">
+                                      {asg.course.name}
+                                    </span>
+                                  )}
                                   <span>•</span>
-                                  <span className="text-primary inline-flex items-center gap-1 text-[11px]">
-                                    <Loader2 className="h-3 w-3 animate-spin" />
-                                    Menyimpan...
-                                  </span>
-                                </>
-                              )}
+                                  <span>{formatUserDateTime(asg.dueDate, timezone)}</span>
+                                  {isPending && (
+                                    <>
+                                      <span>•</span>
+                                      <span className="text-primary inline-flex items-center gap-1 text-xs">
+                                        <Loader2 className="h-3 w-3 animate-spin" />
+                                        Menyimpan...
+                                      </span>
+                                    </>
+                                  )}
+                                </div>
+                              </div>
                             </div>
-                          </div>
-                        </div>
 
-                        <Badge
-                          variant={
-                            asg.priority === 'HIGH'
-                              ? 'danger'
-                              : asg.priority === 'MEDIUM'
-                              ? 'default'
-                              : 'secondary'
-                          }
-                          className="shrink-0 text-xs py-0.5 px-2"
-                        >
-                          {PRIORITY_LABELS[asg.priority] || asg.priority}
-                        </Badge>
-                      </div>
-                    );
-                  })}
+                            <Badge
+                              variant={
+                                asg.priority === 'HIGH'
+                                  ? 'danger'
+                                  : asg.priority === 'MEDIUM'
+                                  ? 'default'
+                                  : 'secondary'
+                              }
+                              className="shrink-0 text-xs py-0.5 px-2"
+                            >
+                              {PRIORITY_LABELS[asg.priority] || asg.priority}
+                            </Badge>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
-              )}
-            </div>
-          </div>
+              </div>
+
+              {/* Section: Tugas Mendatang (7 Hari ke Depan) */}
+              <div className="rounded-xl border border-border bg-card p-5 sm:p-6 shadow-xs">
+                <div className="flex items-center justify-between pb-3.5 border-b border-border">
+                  <div className="flex items-center gap-2">
+                    <Calendar className="h-4 w-4 text-primary" />
+                    <h2 className="text-base font-semibold text-foreground">
+                      Tugas 7 Hari Mendatang
+                    </h2>
+                    <Badge variant="secondary" className="text-xs ml-1 font-medium">
+                      {summary.assignmentsUpcoming.length}
+                    </Badge>
+                  </div>
+                </div>
+
+                <div className="mt-2">
+                  {summary.assignmentsUpcoming.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center py-4 text-center text-muted-foreground">
+                      <Calendar className="h-5 w-5 text-muted-foreground/60 mb-1" />
+                      <p className="text-sm font-medium text-foreground">
+                        Tidak ada tugas dalam 7 hari mendatang
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        Jadwal tugas Anda relatif lengang minggu ini.
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="divide-y divide-border/60">
+                      {summary.assignmentsUpcoming.map((asg) => {
+                        const isPending = pendingTaskIds.has(asg.id);
+                        return (
+                          <div
+                            key={asg.id}
+                            className="py-3.5 first:pt-2 last:pb-1 flex items-start justify-between gap-3"
+                          >
+                            <div className="flex items-start gap-3 min-w-0">
+                              <div className="pt-0.5">
+                                <Checkbox
+                                  id={`task-${asg.id}`}
+                                  checked={asg.status === 'DONE'}
+                                  disabled={isPending}
+                                  onCheckedChange={() => handleToggleTask(asg)}
+                                  aria-label={`Tandai tugas ${asg.title} sebagai ${
+                                    asg.status === 'DONE' ? 'belum selesai' : 'selesai'
+                                  }`}
+                                />
+                              </div>
+                              <div className="min-w-0">
+                                <label
+                                  htmlFor={`task-${asg.id}`}
+                                  className={`text-sm font-medium leading-snug cursor-pointer select-none block truncate ${
+                                    asg.status === 'DONE'
+                                      ? 'line-through text-muted-foreground'
+                                      : 'text-foreground hover:text-primary transition-colors'
+                                  }`}
+                                >
+                                  {asg.title}
+                                </label>
+                                <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-muted-foreground">
+                                  {asg.course && (
+                                    <span className="font-medium text-foreground/80">
+                                      {asg.course.name}
+                                    </span>
+                                  )}
+                                  <span>•</span>
+                                  <span>{formatUserDateTime(asg.dueDate, timezone)}</span>
+                                  {isPending && (
+                                    <>
+                                      <span>•</span>
+                                      <span className="text-primary inline-flex items-center gap-1 text-xs">
+                                        <Loader2 className="h-3 w-3 animate-spin" />
+                                        Menyimpan...
+                                      </span>
+                                    </>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+
+                            <Badge
+                              variant={
+                                asg.priority === 'HIGH'
+                                  ? 'danger'
+                                  : asg.priority === 'MEDIUM'
+                                  ? 'default'
+                                  : 'secondary'
+                              }
+                              className="shrink-0 text-xs py-0.5 px-2"
+                            >
+                              {PRIORITY_LABELS[asg.priority] || asg.priority}
+                            </Badge>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </>
+          )}
         </div>
 
         {/* Kolom Pendukung: Materi Terbaru (1/3 Lebar Desktop) */}
         <div className="space-y-6">
-          <div className="rounded-xl border border-border bg-card p-5 shadow-xs flex flex-col justify-between">
+          <div className="rounded-xl border border-border bg-card p-5 sm:p-6 shadow-xs flex flex-col justify-between">
             <div>
-              <div className="flex items-center justify-between pb-3 border-b border-border">
+              <div className="flex items-center justify-between pb-3.5 border-b border-border">
                 <div className="flex items-center gap-2">
                   <FileText className="h-4 w-4 text-primary" />
                   <h2 className="text-base font-semibold text-foreground">
@@ -638,32 +692,32 @@ export function DashboardContent({ user }: DashboardContentProps): React.JSX.Ele
                 </div>
                 <Button
                   variant="outline"
-                  size="sm"
+                  size="standard"
                   onClick={() => setIsUploadMaterialOpen(true)}
-                  className="h-8 gap-1.5 text-xs"
+                  className="gap-1.5"
                 >
-                  <Upload className="h-3.5 w-3.5" />
+                  <Upload className="h-4 w-4" />
                   <span>Unggah materi</span>
                 </Button>
               </div>
 
-              <div className="mt-3">
+              <div className="mt-2.5">
                 {!summary.recentMaterials || summary.recentMaterials.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center py-8 text-center text-muted-foreground">
-                    <FileText className="h-7 w-7 text-muted-foreground/60 mb-2" />
+                  <div className="flex flex-col items-center justify-center py-5 sm:py-6 text-center text-muted-foreground">
+                    <FileText className="h-5 w-5 text-muted-foreground/60 mb-1.5" />
                     <p className="text-sm font-medium text-foreground">
-                      Belum ada materi semester ini
+                       Belum ada materi semester ini
                     </p>
                     <p className="text-xs text-muted-foreground mt-0.5 max-w-xs">
                       Unggah berkas PDF kuliah untuk ekstraksi ringkasan, flashcard, dan kuis.
                     </p>
                     <Button
-                      size="sm"
+                      size="standard"
                       variant="outline"
                       onClick={() => setIsUploadMaterialOpen(true)}
-                      className="mt-4 gap-1.5 text-xs"
+                      className="mt-3 gap-1.5"
                     >
-                      <Upload className="h-3.5 w-3.5" />
+                      <Upload className="h-4 w-4" />
                       <span>Unggah Sekarang</span>
                     </Button>
                   </div>
@@ -672,9 +726,9 @@ export function DashboardContent({ user }: DashboardContentProps): React.JSX.Ele
                     {summary.recentMaterials.slice(0, 5).map((m) => (
                       <div
                         key={m.id}
-                        className="py-3 first:pt-1 last:pb-1 flex items-start justify-between gap-2"
+                        className="py-2.5 first:pt-1 last:pb-1 flex items-start justify-between gap-2.5"
                       >
-                        <div className="min-w-0 pr-1">
+                        <div className="min-w-0 flex-1 pr-1">
                           <Link
                             href={`/materials/${m.id}`}
                             className="text-sm font-medium text-foreground hover:text-primary transition-colors block truncate"
@@ -682,12 +736,16 @@ export function DashboardContent({ user }: DashboardContentProps): React.JSX.Ele
                           >
                             {m.title}
                           </Link>
-                          <div className="mt-1 flex items-center gap-2 text-xs text-muted-foreground">
-                            {m.course && <span className="truncate max-w-[130px]">{m.course.name}</span>}
-                            <span>•</span>
+                          <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-muted-foreground">
+                            {m.course && (
+                              <span className="truncate max-w-[120px] font-medium text-foreground/80">
+                                {m.course.name}
+                              </span>
+                            )}
+                            {m.course && <span>•</span>}
                             <span>{formatFileSize(m.bytes)}</span>
                           </div>
-                          <div className="mt-1.5">
+                          <div className="mt-1">
                             <MaterialStatusBadge status={m.status} />
                           </div>
                         </div>
@@ -706,8 +764,8 @@ export function DashboardContent({ user }: DashboardContentProps): React.JSX.Ele
             </div>
 
             {summary.recentMaterials && summary.recentMaterials.length > 0 && (
-              <div className="mt-4 pt-3 border-t border-border">
-                <Button asChild variant="ghost" size="sm" className="w-full justify-between text-xs px-2">
+              <div className="mt-3 pt-2.5 border-t border-border">
+                <Button asChild variant="ghost" size="sm" className="w-full justify-between text-xs px-2 h-8">
                   <Link href="/materials">
                     <span>Lihat Semua Materi</span>
                     <ArrowRight className="h-3.5 w-3.5" />

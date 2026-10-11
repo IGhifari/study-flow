@@ -347,7 +347,7 @@ export default function SettingsPage(): React.JSX.Element {
                 onValueChange={(val) => setTimezone(val)}
                 disabled={isProfileSubmitting}
               >
-                <SelectTrigger id="profile-timezone" className="h-10" aria-label="Pilih zona waktu akademik">
+                <SelectTrigger id="profile-timezone" className="h-9 text-sm" aria-label="Pilih zona waktu akademik">
                   <SelectValue placeholder="Pilih zona waktu" />
                 </SelectTrigger>
                 <SelectContent className="max-w-[calc(100vw-2rem)] sm:max-w-[420px]">
@@ -371,8 +371,9 @@ export default function SettingsPage(): React.JSX.Element {
             </span>
             <Button
               type="submit"
+              size="standard"
               disabled={isProfileSubmitting || !isProfileDirty}
-              className="gap-2 shrink-0"
+              className="gap-1.5 shrink-0"
             >
               {isProfileSubmitting ? (
                 <>
@@ -515,7 +516,8 @@ export default function SettingsPage(): React.JSX.Element {
               type="submit"
               disabled={isPasswordSubmitting || !currentPassword || !newPassword}
               variant="default"
-              className="gap-2"
+              size="standard"
+              className="gap-1.5"
             >
               <KeyRound className="h-4 w-4" />
               <span>Ganti Password</span>
@@ -637,10 +639,11 @@ export default function SettingsPage(): React.JSX.Element {
             </p>
           </div>
 
-          <DialogFooter className="pt-2">
+          <DialogFooter className="pt-2 flex flex-col-reverse sm:flex-row gap-2 sm:justify-end">
             <Button
               type="button"
               variant="outline"
+              size="standard"
               onClick={() => setIsPasswordConfirmOpen(false)}
               disabled={isPasswordSubmitting}
             >
@@ -649,12 +652,13 @@ export default function SettingsPage(): React.JSX.Element {
             <Button
               type="button"
               variant="default"
+              size="standard"
               onClick={executeChangePassword}
               disabled={isPasswordSubmitting}
             >
               {isPasswordSubmitting ? (
                 <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
                   Mengubah...
                 </>
               ) : (

@@ -60,6 +60,7 @@ redisdata/
 **/blob-report/
 .storage-e2e/
 test-results-e2e/
+**/screenshots/
 
 # TypeScript build cache
 *.tsbuildinfo

@@ -99,8 +99,9 @@ test.describe('StudyFlow End-to-End Suite', () => {
     await page.reload();
     await expect(page.locator('input[placeholder="Judul Catatan..."]')).toHaveValue('Catatan Tree dan Graph');
 
-    // 6. Logout & Akses Dicabut
-    await page.click('button:has-text("Keluar")');
+    // 6. Logout & Akses Dicabut (melalui Menu Akun Header)
+    await page.click('button[aria-label^="Menu akun untuk"]');
+    await page.click('[role="menuitem"]:has-text("Keluar")');
     await page.waitForURL('**/login', { timeout: 10000 });
 
     // 7. Verifikasi Protected Route Ditolak & Dialihkan ke Login

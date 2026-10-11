@@ -511,7 +511,7 @@ export default function CourseDetailPage(): React.JSX.Element {
               </p>
             </div>
             <Button
-              size="sm"
+              size="standard"
               onClick={() => {
                 setCreateAsgTitle('');
                 setCreateAsgDesc('');
@@ -543,12 +543,12 @@ export default function CourseDetailPage(): React.JSX.Element {
               </p>
               {!isArchived && (
                 <Button
-                  size="sm"
+                  size="standard"
                   variant="outline"
                   onClick={() => setIsCreateAsgOpen(true)}
                   className="mt-4 gap-1.5"
                 >
-                  <Plus className="h-3.5 w-3.5" />
+                  <Plus className="h-4 w-4" />
                   <span>Tambah tugas pertama</span>
                 </Button>
               )}
@@ -691,7 +691,7 @@ export default function CourseDetailPage(): React.JSX.Element {
               </p>
             </div>
             <Button
-              size="sm"
+              size="standard"
               onClick={() => {
                 setCreateNoteTitle('');
                 setCreateNoteContent('');
@@ -720,12 +720,12 @@ export default function CourseDetailPage(): React.JSX.Element {
               </p>
               {!isArchived && (
                 <Button
-                  size="sm"
+                  size="standard"
                   variant="outline"
                   onClick={() => setIsCreateNoteOpen(true)}
                   className="mt-4 gap-1.5"
                 >
-                  <Plus className="h-3.5 w-3.5" />
+                  <Plus className="h-4 w-4" />
                   <span>Buat catatan pertama</span>
                 </Button>
               )}
@@ -774,7 +774,7 @@ export default function CourseDetailPage(): React.JSX.Element {
               </p>
             </div>
             <Button
-              size="sm"
+              size="standard"
               onClick={() => setIsUploadOpen(true)}
               disabled={isArchived}
               className="gap-1.5 shrink-0"
@@ -798,12 +798,12 @@ export default function CourseDetailPage(): React.JSX.Element {
               </p>
               {!isArchived && (
                 <Button
-                  size="sm"
+                  size="standard"
                   variant="outline"
                   onClick={() => setIsUploadOpen(true)}
                   className="mt-4 gap-1.5"
                 >
-                  <FileUp className="h-3.5 w-3.5" />
+                  <FileUp className="h-4 w-4" />
                   <span>Unggah materi sekarang</span>
                 </Button>
               )}
@@ -1004,19 +1004,20 @@ export default function CourseDetailPage(): React.JSX.Element {
               />
             </div>
 
-            <DialogFooter className="pt-2">
+            <DialogFooter className="pt-2 flex flex-col-reverse sm:flex-row gap-2 sm:justify-end">
               <Button
                 type="button"
                 variant="outline"
+                size="standard"
                 onClick={() => setIsCreateAsgOpen(false)}
                 disabled={isSubmittingAsg}
               >
                 Batal
               </Button>
-              <Button type="submit" disabled={isSubmittingAsg}>
+              <Button type="submit" size="standard" disabled={isSubmittingAsg}>
                 {isSubmittingAsg ? (
                   <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
                     Menyimpan...
                   </>
                 ) : (
@@ -1069,19 +1070,20 @@ export default function CourseDetailPage(): React.JSX.Element {
               />
             </div>
 
-            <DialogFooter className="pt-2">
+            <DialogFooter className="pt-2 flex flex-col-reverse sm:flex-row gap-2 sm:justify-end">
               <Button
                 type="button"
                 variant="outline"
+                size="standard"
                 onClick={() => setIsCreateNoteOpen(false)}
                 disabled={isSubmittingNote}
               >
                 Batal
               </Button>
-              <Button type="submit" disabled={isSubmittingNote}>
+              <Button type="submit" size="standard" disabled={isSubmittingNote}>
                 {isSubmittingNote ? (
                   <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
                     Membuat...
                   </>
                 ) : (

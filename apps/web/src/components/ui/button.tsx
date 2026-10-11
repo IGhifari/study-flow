@@ -6,7 +6,7 @@ export interface ButtonProps
   extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   asChild?: boolean;
   variant?: 'default' | 'destructive' | 'outline' | 'secondary' | 'ghost' | 'link';
-  size?: 'default' | 'sm' | 'lg' | 'icon';
+  size?: 'default' | 'standard' | 'sm' | 'lg' | 'icon' | 'icon-sm';
 }
 
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
@@ -23,16 +23,18 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     };
 
     const sizeStyles = {
-      default: 'h-11 px-4 py-2 text-sm',
-      sm: 'h-9 rounded-md px-3 text-xs',
-      lg: 'h-12 rounded-lg px-8 text-base',
-      icon: 'h-11 w-11',
+      default: 'h-11 px-4 py-2 text-sm rounded-lg min-h-[44px]',
+      standard: 'h-9 px-3.5 py-1.5 text-sm rounded-lg min-h-[36px]',
+      sm: 'h-8 rounded-md px-2.5 py-1 text-xs min-h-[32px]',
+      lg: 'h-11 rounded-lg px-6 text-sm min-h-[44px]',
+      icon: 'h-9 w-9 rounded-lg p-0',
+      'icon-sm': 'h-8 w-8 rounded-md p-0',
     };
 
     return (
       <Comp
         className={cn(
-          'inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-lg font-medium transition-colors focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50',
+          'inline-flex items-center justify-center gap-1.5 whitespace-nowrap font-medium transition-colors focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 touch-manipulation',
           variantStyles[variant],
           sizeStyles[size],
           className

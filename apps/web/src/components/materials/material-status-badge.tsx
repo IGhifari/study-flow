@@ -61,8 +61,8 @@ export function MaterialStatusBadge({
     case 'READY':
       return (
         <Badge
-          variant="outline"
-          className={`gap-1.5 border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 ${className}`}
+          variant="success"
+          className={`gap-1.5 ${className}`}
         >
           <CheckCircle2 className="h-3.5 w-3.5" />
           <span>Siap dipelajari</span>
@@ -73,7 +73,7 @@ export function MaterialStatusBadge({
       return (
         <Badge
           variant="danger"
-          className={`gap-1.5 text-danger-foreground ${className}`}
+          className={`gap-1.5 ${className}`}
           title={errorMessage || errorCode || 'Gagal diproses'}
         >
           <AlertCircle className="h-3.5 w-3.5" />

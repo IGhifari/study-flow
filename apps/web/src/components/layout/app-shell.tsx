@@ -198,48 +198,6 @@ function SidebarNavContent({ user }: { user: UserProfile }): React.JSX.Element {
           </SidebarGroup>
         ))}
       </SidebarContent>
-
-      {/* Sidebar Footer: User Card & Logout */}
-      <SidebarFooter className="border-t border-sidebar-border p-3">
-        {!isCollapsed ? (
-          <div className="flex items-center gap-3 rounded-lg bg-sidebar-accent/50 p-2.5 shadow-xs">
-            <Avatar className="h-8 w-8 shrink-0">
-              <AvatarFallback className="bg-primary/10 text-primary font-bold text-xs">
-                {user.name.charAt(0).toUpperCase()}
-              </AvatarFallback>
-            </Avatar>
-            <div className="flex-1 min-w-0">
-              <p className="truncate text-xs font-semibold text-foreground leading-tight">
-                {user.name}
-              </p>
-              <p className="truncate text-[11px] text-muted-foreground leading-tight mt-0.5">
-                {user.email}
-              </p>
-            </div>
-          </div>
-        ) : (
-          <div className="flex justify-center py-1">
-            <Avatar className="h-8 w-8" title={`${user.name} (${user.email})`}>
-              <AvatarFallback className="bg-primary/10 text-primary font-bold text-xs">
-                {user.name.charAt(0).toUpperCase()}
-              </AvatarFallback>
-            </Avatar>
-          </div>
-        )}
-
-        <Button
-          variant="ghost"
-          onClick={handleLogout}
-          className={`w-full text-danger hover:bg-danger/10 hover:text-danger text-sm font-medium h-9 ${
-            isCollapsed ? 'justify-center px-0' : 'justify-start px-2.5'
-          }`}
-          title={isCollapsed ? 'Keluar' : undefined}
-          aria-label="Keluar dari akun"
-        >
-          <LogOut className="h-4 w-4 shrink-0" />
-          {!isCollapsed && <span className="ml-2">Keluar</span>}
-        </Button>
-      </SidebarFooter>
     </>
   );
 }
@@ -279,7 +237,7 @@ function HeaderBreadcrumbs(): React.JSX.Element {
   return (
     <Breadcrumb>
       <BreadcrumbList>
-        <BreadcrumbItem>
+        <BreadcrumbItem className="hidden sm:inline-flex">
           <BreadcrumbLink asChild>
             <Link href="/dashboard" className="text-muted-foreground hover:text-foreground">
               StudyFlow
@@ -290,13 +248,13 @@ function HeaderBreadcrumbs(): React.JSX.Element {
           const isLast = idx === items.length - 1;
           return (
             <React.Fragment key={idx}>
-              <BreadcrumbSeparator />
-              <BreadcrumbItem>
+              <BreadcrumbSeparator className={idx === 0 ? 'hidden sm:inline-flex' : undefined} />
+              <BreadcrumbItem className="truncate">
                 {isLast || !item.href ? (
-                  <BreadcrumbPage>{item.label}</BreadcrumbPage>
+                  <BreadcrumbPage className="truncate">{item.label}</BreadcrumbPage>
                 ) : (
                   <BreadcrumbLink asChild>
-                    <Link href={item.href} className="text-muted-foreground hover:text-foreground">
+                    <Link href={item.href} className="text-muted-foreground hover:text-foreground truncate">
                       {item.label}
                     </Link>
                   </BreadcrumbLink>
@@ -335,8 +293,8 @@ export function AppShell({ user, children }: AppShellProps): React.JSX.Element {
         {/* Main Content Area using shadcn SidebarInset */}
         <SidebarInset className="flex flex-col min-w-0">
           {/* Header (64px) per DESIGN.md section 7.1 */}
-          <header className="sticky top-0 z-20 flex h-16 shrink-0 items-center justify-between border-b border-border bg-background/95 px-4 backdrop-blur-xs sm:px-6">
-            <div className="flex items-center gap-3 min-w-0">
+          <header className="sticky top-0 z-20 flex h-16 shrink-0 items-center justify-between border-b border-border bg-background/95 px-3 backdrop-blur-xs sm:px-6">
+            <div className="flex items-center gap-2 sm:gap-3 min-w-0">
               <SidebarTrigger />
               <Separator orientation="vertical" className="h-4 shrink-0" />
               <div className="min-w-0 overflow-hidden">
@@ -345,7 +303,7 @@ export function AppShell({ user, children }: AppShellProps): React.JSX.Element {
             </div>
 
             {/* Right Header: ThemeToggle & User Account Menu */}
-            <div className="flex items-center gap-3 shrink-0">
+            <div className="flex items-center gap-2 sm:gap-3 shrink-0">
               <ThemeToggle />
               <Separator orientation="vertical" className="h-4" />
 
@@ -377,7 +335,7 @@ export function AppShell({ user, children }: AppShellProps): React.JSX.Element {
                     </Avatar>
                     <div className="flex-1 min-w-0">
                       <p className="truncate text-xs font-semibold text-foreground">{user.name}</p>
-                      <p className="truncate text-[11px] text-muted-foreground">{user.email}</p>
+                      <p className="truncate text-xs text-muted-foreground">{user.email}</p>
                     </div>
                   </div>
                   <DropdownMenuSeparator />
@@ -396,7 +354,7 @@ export function AppShell({ user, children }: AppShellProps): React.JSX.Element {
                   <DropdownMenuSeparator />
                   <DropdownMenuItem
                     onClick={handleLogout}
-                    className="cursor-pointer text-xs text-danger focus:bg-danger/10 focus:text-danger flex items-center gap-2"
+                    className="cursor-pointer text-xs text-destructive focus:bg-destructive/10 focus:text-destructive flex items-center gap-2"
                   >
                     <LogOut className="h-4 w-4" />
                     <span>Keluar</span>
@@ -407,7 +365,7 @@ export function AppShell({ user, children }: AppShellProps): React.JSX.Element {
           </header>
 
           {/* Main Dashboard Canvas - Max 1200px centered per DESIGN.md section 7.1 */}
-          <div className="flex-1 p-4 sm:p-6 lg:p-8">
+          <div className="flex-1 p-3.5 sm:p-6 lg:p-8">
             <div className="mx-auto max-w-[1200px]">{children}</div>
           </div>
         </SidebarInset>

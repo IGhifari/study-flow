@@ -70,9 +70,10 @@ export function DeleteNoteDialog({
           </Alert>
         )}
 
-        <DialogFooter className="pt-2">
+        <DialogFooter className="pt-2 flex flex-col-reverse sm:flex-row gap-2 sm:justify-end">
           <Button
             variant="outline"
+            size="standard"
             onClick={() => onOpenChange(false)}
             disabled={isSubmitting}
           >
@@ -80,12 +81,13 @@ export function DeleteNoteDialog({
           </Button>
           <Button
             variant="destructive"
+            size="standard"
             onClick={handleDelete}
             disabled={isSubmitting}
           >
             {isSubmitting ? (
               <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
                 Menghapus...
               </>
             ) : (

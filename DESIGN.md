@@ -52,57 +52,60 @@ AI hadir sebagai alat belajar pada materi. Tampilan tidak perlu didominasi simbo
 
 ### 4.1 Token inti
 
-Gunakan token semantik dari global CSS. Nilai hex di bawah adalah sumber palet; jangan menulis warna hardcoded di setiap komponen. Konversi ke OKLCH diperbolehkan selama hasil visual tetap setara.
+Arah visual baru StudyFlow adalah **ruang belajar yang tenang, rapi, mudah dibaca, dan terasa matang**. Kami menghindari kelebihan kartu, badge warna-warni, serta aksen berlebihan.
+
+- **Light Mode**: Palet bernuansa kertas bersih dan hangat (`#FAFAF9`), surface putih bersih (`#FFFFFF`), teks tinta charcoal gelap (`#18181B`), teks sekunder terukur (`#52525B`), pembatas netral tipis (`#E4E4E7`), aksen indigo terfokus (`#4F46E5`), dan active surface lembut (`#EEF2FF`).
+- **Dark Mode**: Charcoal netral bertingkat (`#09090B` background, `#18181B` surface), kontras tinggi tanpa rona layar biru jenuh, teks terang lembut (`#F4F4F5`), dan aksen indigo yang disesuaikan kontrasnya.
 
 | Token | Light | Dark | Penggunaan |
 | --- | --- | --- | --- |
-| `background` | `#F7F8FA` | `#111722` | Latar aplikasi |
-| `foreground` | `#172033` | `#E8EDF5` | Teks utama |
-| `card` | `#FFFFFF` | `#192231` | Panel, area baca, dialog |
-| `card-foreground` | `#172033` | `#E8EDF5` | Teks di panel |
-| `popover` | `#FFFFFF` | `#192231` | Menu dan popover |
-| `popover-foreground` | `#172033` | `#E8EDF5` | Isi popover |
-| `primary` | `#2457C5` | `#8AB4FF` | Aksi utama dan indikator fokus |
-| `primary-foreground` | `#FFFFFF` | `#101B2E` | Teks pada primary |
-| `primary-hover` | `#1D46A0` | `#A5C5FF` | Hover tombol primary |
-| `secondary` | `#EDF0F5` | `#253145` | Tombol pendukung berisi |
-| `secondary-foreground` | `#25334A` | `#DCE5F3` | Teks secondary |
-| `muted` | `#EDF0F5` | `#202B3D` | Skeleton dan area pendukung |
-| `muted-foreground` | `#586578` | `#A8B3C5` | Metadata dan helper text |
-| `accent` | `#EAF0FC` | `#223656` | Pilihan aktif dan hover menu |
-| `accent-foreground` | `#1D46A0` | `#BED4FF` | Teks pilihan aktif |
-| `border` | `#DFE3EA` | `#344155` | Separator dekoratif |
-| `input` | `#8290A3` | `#738196` | Batas kontrol form |
-| `ring` | `#2457C5` | `#8AB4FF` | Focus ring |
-| `destructive` | `#B4232C` | `#F58D98` | Aksi berbahaya |
-| `destructive-foreground` | `#FFFFFF` | `#281116` | Teks tombol destructive |
-| `sidebar` | `#F0F3F8` | `#151D2A` | Permukaan navigasi |
-| `sidebar-foreground` | `#25334A` | `#DCE5F3` | Teks navigasi |
+| `background` | `#FAFAF9` | `#09090B` | Latar aplikasi utama |
+| `foreground` | `#18181B` | `#F4F4F5` | Teks utama (>13:1 kontras) |
+| `card` | `#FFFFFF` | `#18181B` | Panel konten, area baca, dialog |
+| `card-foreground` | `#18181B` | `#F4F4F5` | Teks di panel |
+| `popover` | `#FFFFFF` | `#18181B` | Menu dan popover |
+| `popover-foreground` | `#18181B` | `#F4F4F5` | Isi menu dan popover |
+| `primary` | `#4F46E5` | `#6366F1` | Aksi utama dan indikator fokus |
+| `primary-foreground` | `#FFFFFF` | `#FFFFFF` | Teks pada tombol primary |
+| `primary-hover` | `#4338CA` | `#818CF8` | Hover tombol primary |
+| `secondary` | `#F4F4F5` | `#27272A` | Tombol pendukung & tag netral |
+| `secondary-foreground` | `#27272A` | `#E4E4E7` | Teks secondary |
+| `muted` | `#F4F4F5` | `#27272A` | Area latar pendukung, separator ringan |
+| `muted-foreground` | `#52525B` | `#A1A1AA` | Metadata dan keterangan (>5:1 kontras) |
+| `accent` | `#EEF2FF` | `#1E1B4B` | Pilihan aktif dan hover menu |
+| `accent-foreground` | `#4338CA` | `#E0E7FF` | Teks pilihan aktif |
+| `border` | `#E4E4E7` | `#27272A` | Batas panel dan pemisah baris |
+| `input` | `#D4D4D8` | `#3F3F46` | Batas kontrol formulir |
+| `ring` | `#4F46E5` | `#6366F1` | Ring fokus aksesibel |
+| `destructive` | `#DC2626` | `#EF4444` | Tombol aksi berbahaya |
+| `destructive-foreground` | `#FFFFFF` | `#FFFFFF` | Teks tombol destructive |
+| `sidebar` | `#F4F4F5` | `#121215` | Permukaan navigasi samping |
+| `sidebar-foreground` | `#18181B` | `#F4F4F5` | Teks navigasi |
+| `sidebar-border` | `#E4E4E7` | `#27272A` | Batas sidebar |
+| `sidebar-accent` | `#EEF2FF` | `#1E1B4B` | Item menu sidebar aktif |
+| `sidebar-accent-foreground` | `#4338CA` | `#E0E7FF` | Teks item aktif sidebar |
 
-Alias `sidebar-primary` dan foreground-nya ke pasangan primary; `sidebar-accent` ke accent; `sidebar-border` ke border; `sidebar-ring` ke ring. Definisikan alias pada kedua tema. Chart belum dibutuhkan MVP; jangan menambahkan visualisasi untuk memenuhi token chart bawaan.
+### 4.2 Warna status semantik
 
-### 4.2 Warna status
+Aturan ketat token status:
+- **Pemisahan Background dan Foreground**: Background status bersifat pastel lembut/tenang, sedangkan teks status menggunakan foreground yang pekat dengan kontras minimal 4.5:1.
+- **Larangan Teks Pucat**: Jangan pernah menggunakan warna background (misal hijau muda/merah muda) sebagai warna teks.
+- **Ikon dan Teks Berdampingan**: Status tidak boleh disampaikan hanya melalui warna saja.
 
-| Status | Light: surface / text | Dark: surface / text | Ikon dan label contoh |
+| Status | Light: surface / text | Dark: surface / text | Ikon & Label Contoh |
 | --- | --- | --- | --- |
-| Sukses | `#EAF7F0` / `#166044` | `#143629` / `#8AE0B5` | CheckCircle2 — “Selesai” |
-| Peringatan | `#FFF5DE` / `#875000` | `#3A2D14` / `#F5CD7B` | Clock3 — “Terlambat” |
-| Gagal | `#FDEEEE` / `#AE2929` | `#402125` / `#FFAAAA` | CircleAlert — “Gagal diproses” |
-| Informasi/proses | Pasangan accent | Pasangan accent | LoaderCircle/FileText + label tahap |
-| Netral | Pasangan muted | Pasangan muted | Clock3 — “Dalam antrean” |
-
-Gunakan token tambahan `success`, `success-foreground`, `warning`, `warning-foreground`, `danger`, dan `danger-foreground` untuk pasangan tersebut. `danger` adalah surface pesan error; `destructive` adalah fill tombol tindakan berbahaya.
-
-Warna status selalu disertai teks atau ikon. Prioritas tugas ditulis “Rendah”, “Sedang”, “Tinggi”; prioritas tinggi tidak otomatis berarti gagal. Warna merah digunakan untuk kegagalan dan aksi berbahaya, amber untuk deadline terlambat.
+| Sukses | `#ECFDF5` / `#065F46` | `#064E3B` / `#6EE7B7` | CheckCircle2 — “Selesai” (kontras >7:1) |
+| Peringatan | `#FFFBEB` / `#92400E` | `#78350F` / `#FCD34D` | Clock3 — “Terlambat” (kontras >7:1) |
+| Gagal | `#FEF2F2` / `#991B1B` | `#7F1D1D` / `#FCA5A5` | AlertCircle — “Gagal diproses” (kontras >7.5:1) |
+| Informasi | `#EEF2FF` / `#4338CA` | `#1E1B4B` / `#E0E7FF` | Loader2 — “Memproses” |
+| Netral | `#F4F4F5` / `#52525B` | `#27272A` / `#A1A1AA` | Clock — “Dalam antrean” |
 
 ### 4.3 Kontras dan penggunaan
 
-- Pemeriksaan sRGB awal: body light terhadap background 15,31:1; teks muted light di panel 5,92:1; tombol primary light 6,47:1; primary dark 8,25:1.
-- Batas input terhadap panel: light 3,25:1 dan dark 4,04:1. Separator `border` bukan satu-satunya penanda kontrol interaktif.
-- Angka tersebut hanya memeriksa pasangan dasar. Verifikasi ulang hover, opacity, selected, focus, error, dan hasil render nyata.
-- Teks normal menargetkan minimal 4,5:1; indikator dan batas kontrol yang diperlukan untuk mengenalinya menargetkan 3:1 terhadap warna sekitar.
-- Link dalam paragraf bergaris bawah. Teks warna primary tidak menggantikan link affordance.
-- Jangan menggunakan opacity rendah pada teks penting atau seluruh isi panel.
+- Teks biasa menargetkan minimal kontras 4.5:1 terhadap latar belakang sekitarnya.
+- Indikator kontrol, toggle, dan focus ring menargetkan minimal 3:1.
+- Hindari opacity rendah pada teks penting (`text-[10px]` atau `text-[11px]` dihapus untuk teks fungsional; gunakan minimal 12–14px).
+- Link dalam teks biasa bergaris bawah atau memiliki affordance visual yang jelas.
 
 ## 5. Tipografi
 
@@ -151,10 +154,10 @@ Permukaan utama dibedakan lewat background dan border. Panel konten tidak memerl
 
 - Sidebar expanded 240 px; collapsed sekitar 64 px, cukup untuk target ikon 44 px.
 - Gunakan komposisi shadcn `SidebarProvider`, `Sidebar`, `SidebarInset`, dan `SidebarTrigger` sesuai API yang terpasang. Bila menggunakan varian inset, tempatkan main content pada `SidebarInset`; hindari offset margin manual ganda.
-- Header konten sekitar 64 px berisi trigger, breadcrumb, dan kontrol tema. Profil berada di footer sidebar.
-- Header boleh sticky; konten dan anchor memiliki scroll offset agar tidak tertutup.
+- Header konten sekitar 64 px berisi trigger, breadcrumb, segmented theme toggle, dan dropdown menu akun terpadu (profil, pengaturan, dan keluar) yang selalu tersedia di desktop maupun mobile. Footer sidebar bersih tanpa duplikasi kartu identitas maupun tombol keluar ganda.
+- Header sticky dengan backdrop-blur halus; konten dan anchor memiliki scroll offset agar tidak tertutup.
 - Main content dashboard maksimal 1200 px dan rata tengah dalam area setelah sidebar. Halaman materi dua panel dapat memakai lebar hingga 1440 px.
-- Sidebar menampilkan StudyFlow, pilihan semester, navigasi, lalu akun/pengaturan. Pemilih semester bukan pemilih organisasi.
+- Sidebar menampilkan logo StudyFlow, selektor semester aktif, lalu kelompok navigasi Belajar, Perkuliahan, dan Pengaturan.
 
 ### 7.2 Hierarki navigasi MVP
 
@@ -229,15 +232,17 @@ Form create/edit yang validasinya gagal tetap menyimpan nilai input. Error muncu
 
 ### 9.3 Dashboard
 
-Urutan konten mengikuti kebutuhan harian:
+Urutan konten mengikuti kebutuhan harian dan prioritas tindakan belajar:
 
-1. Header “Dashboard”, semester aktif, tanggal dalam zona waktu profil, CTA “Tambah tugas”.
-2. Ringkasan angka kecil dalam satu baris: tugas hari ini, terlambat, dan selesai. Label rentang/filter selalu terlihat; tidak perlu tiga kartu besar.
-3. Area utama sekitar dua pertiga lebar berisi “Tugas terdekat”, dengan judul, mata kuliah, deadline, dan status.
-4. Kolom pendukung berisi “Materi terbaru” maksimal lima item dan aksi “Unggah materi”.
-5. Hasil kuis terbaru berada setelah konten prioritas. Gunakan daftar ringkas; chart belum diperlukan.
-
-Mobile mengikuti urutan header → ringkasan → tugas → materi → hasil kuis. Tidak boleh memindahkan daftar tugas ke bawah blok dekoratif.
+1. **Header ringkas**: Judul “Dashboard”, konteks semester aktif, tanggal hari ini beserta zona waktu profil (ditampilkan sekali), dan satu aksi utama “Tambah tugas”. Pada layar sempit (<640px), breadcrumb app shell menyembunyikan akar “StudyFlow” sehingga nama halaman aktif, pemilih tema, dan tombol profil tidak bertabrakan pada 375px.
+2. **Ringkasan statistik padat**: 
+   - **Desktop (>=640px)**: Satu baris strip terpadu 3 kolom berpemisah tipis dengan padding vertikal terukur: tugas hari ini (belum selesai & batas 23.59), terlambat (tautan langsung ke daftar bila ada), dan selesai. Ketika total tugas masih nol, tampilkan keterangan “Belum ada tugas” sebagai pengganti kalkulasi “0 dari 0 (0%)”.
+   - **Mobile (<640px)**: Tiga baris ringkas terpadu (label di kiri, angka dan keterangan singkat di kanan). Ikon dekoratif dan deskripsi tambahan disembunyikan agar konten tugas utama segera terlihat (*above the fold*).
+3. **Area utama tugas (2/3 lebar desktop)**:
+   - **Empty state terpadu**: Jika hari ini dan 7 hari mendatang sama-sama kosong, tampilkan satu panel terpadu ringkas tanpa tinggi minimum berlebihan. Bedakan status “Belum ada tugas tercatat” (total tugas semester = 0) dari “Tidak ada deadline dalam 7 hari ke depan” (semua deadline terdekat aman/tuntas).
+   - **Pengelompokan ketika ada tugas**: Pisahkan menjadi “Tugas Hari Ini” dan “Tugas 7 Hari Mendatang” menggunakan daftar berpemisah (`divide-y`), checkbox aksesibel keyboard, deadline jam/tanggal, dan badge prioritas (Tinggi/Sedang/Rendah). Empty state per kelompok tetap ringkas dengan ikon kecil dan satu kalimat keterangan.
+4. **Area pendamping materi (1/3 lebar desktop)**: “Materi terbaru” dibatasi maksimal 5 item dengan tombol “Unggah materi” di header panel dan tautan “Lihat semua materi” di footer. Jarak antarbaris dipadatkan, dan judul panjang terpotong dengan elipsis agar tidak mendorong tombol aksi “Buka” keluar panel.
+5. **Mobile**: Mengikuti tata letak satu kolom vertikal berdasarkan prioritas (Header ringkas → 3 baris statistik ringkas → Tugas terdekat → Materi terbaru). Jarak antarbagian dirapatkan secara proporsional.
 
 Jika belum ada semester, tampilkan satu empty state “Mulai dari semester pertamamu” dengan CTA “Tambah semester”. Setelah ada semester tetapi belum ada mata kuliah, CTA berubah menjadi “Tambah mata kuliah”. Jangan menampilkan semua empty state onboarding sekaligus.
 
@@ -262,13 +267,40 @@ Jika belum ada semester, tampilkan satu empty state “Mulai dari semester perta
 
 ### 9.6 Daftar dan upload materi
 
-- Tampilan utama berupa daftar file; kolom judul, mata kuliah, ukuran/halaman, waktu upload, dan status.
-- Dropzone hanya ada di dialog/area upload, bukan memenuhi dashboard.
-- Selalu sediakan tombol pilih file; drag-and-drop merupakan tambahan.
-- Copy batas: “PDF berbasis teks, maksimal 20 MB dan 100 halaman. PDF hasil scan belum didukung.” Ambil nilai dari konfigurasi bersama agar sesuai backend.
-- Form meminta mata kuliah dan judul yang dapat diisi dari nama file. File mulai diproses setelah pengguna menekan “Unggah materi”.
-- Persentase transfer ditampilkan hanya bila dapat diukur. Selesai transfer berubah menjadi label antrean/ekstraksi, bukan 100% belajar selesai.
-- Dialog menyampaikan “Setelah upload selesai, kamu boleh meninggalkan halaman. Pemrosesan tetap berjalan.” Upload yang belum selesai tidak diberi janji berjalan di background setelah tab ditutup.
+- **Header halaman**: Judul “Materi”, konteks semester aktif beserta jumlah berkas, dan satu aksi utama “Unggah materi” berukuran proporsional (`size="standard"`, tinggi 36 px / `h-9`). Hindari banner besar atau statistik dekoratif yang menggeser daftar.
+- **Toolbar pencarian dan filter**:
+  - Input pencarian judul materi (`h-9`), dropdown filter mata kuliah aktif (`h-9`), dan dropdown filter status pemrosesan (`h-9`).
+  - Pada mobile (<640px), kontrol tersusun responsif membungkus tanpa menyebabkan overflow horizontal.
+  - Sediakan tombol “Hapus filter” (`size="sm"`, `h-8`) ketika pencarian atau filter sedang aktif. Pencarian dan filter bekerja di tingkat server (*server-side query*).
+- **Daftar materi desktop (>=768px)**:
+  - Tabel terstruktur dengan judul materi sebagai informasi utama (teks tebal dengan tautan ke detail materi) dan nama berkas asli sebagai metadata sekunder di bawahnya.
+  - Nama panjang dibatasi dengan lebar maksimal aman dan atribut judul lengkap (`title`) agar tidak mendorong kolom aksi keluar layar.
+  - Kolom metadata: Mata kuliah, ukuran berkas (MB), jumlah halaman (`hal.`), waktu unggah (dengan zona waktu profil), dan status pemrosesan.
+  - Aksi utama berupa tombol “Buka” (`size="sm"`), dan aksi sekunder menggunakan dropdown menu terpadu (`MoreVertical`, `size="icon-sm"`, `h-8 w-8`) berisi opsi: Buka materi, Coba lagi pemrosesan (jika gagal), Unduh berkas asli (jika siap), dan Hapus materi (dengan dialog konfirmasi penghapusan permanen).
+- **Daftar materi mobile (<768px)**:
+  - Kartu/list berpemisah ringkas dengan hierarki yang sama: judul materi di baris pertama, badge status di sudut kanan atas, metadata berurutan di baris tengah, serta tombol “Buka Materi” (`size="sm"`) dan menu aksi sekunder di sudut kanan bawah. Hindari elemen interaktif bersarang (*nested links/buttons*).
+- **Badge status pemrosesan dokumen**:
+  - `READY`: Hijau success (“Siap dipelajari”).
+  - `PROCESSING`: Indigo info dengan spinner halus (“Membaca isi PDF…”), menandakan ekstraksi teks & halaman sedang berlangsung di antrean worker.
+  - `QUEUED`: Abu-abu netral dengan jam (“Dalam antrean”).
+  - `FAILED`: Merah danger dengan ikon peringatan dan penyebab kegagalan spesifik (misal: scan gambar tanpa teks, melebihi 100 hal., terenkripsi, melebihi 20 MB).
+  - Status pemrosesan dokumen dibedakan tegas dari status generasi AI (ringkasan/flashcard/kuis dihasilkan di dalam detail materi sesuai permintaan pengguna).
+- **Alur dan dialog unggah**:
+  - Format dan batasan: “PDF berbasis teks, maksimal 20 MB dan 100 halaman. PDF hasil scan belum didukung.” Nilai diselaraskan dengan konstanta konfigurasi `@studyflow/shared`.
+  - Dropzone memiliki tombol eksplisit “Pilih Berkas PDF” yang dapat diakses melalui keyboard di samping interaksi *drag-and-drop*.
+  - Menampilkan nama berkas terpilih, ukuran dalam MB, dan mata kuliah tujuan secara jelas sebelum dikirim.
+  - Membedakan proses pengunggahan dari proses ekstraksi:
+    - Selama transfer jaringan: Tampilkan persentase transfer riil dari proses unggah (`transferPercent%`), bukan progres buatan.
+    - Setelah unggah: Tampilkan status verifikasi dan penjadwalan ekstraksi di antrean worker.
+    - Salinan penjelas PRD: “Setelah upload selesai, kamu boleh meninggalkan halaman. Pemrosesan ekstraksi tetap berjalan di latar belakang.”
+  - Cegah submit berulang saat proses transfer atau finalisasi berlangsung.
+  - Jika terjadi kegagalan jaringan/server, pertahankan berkas dan isian form yang masih dapat digunakan, serta tampilkan pesan error yang jelas tanpa mereset pilihan pengguna secara sepihak.
+  - Dialog responsif dan nyaman digunakan pada layar 375px dengan tombol aksi proporsional: “Batal” (`variant="outline" size="standard"`) dan “Unggah Materi” (`variant="default" size="standard"`).
+- **Proporsi tombol di seluruh aplikasi**:
+  - Tombol CTA utama (Header, Form Submit, Empty State, dan Dialog Aksi): tinggi 36 px (`size="standard"`, `h-9`), padding horizontal 14 px (`px-3.5`), teks 14 px (`text-sm`), dan ikon 16 px (`h-4 w-4`). Diterapkan konsisten di Dashboard, Materi, Tugas Kuliah, Catatan Belajar, Mata Kuliah, Kelola Semester, Pengaturan, dan seluruh modal dialog.
+  - Tombol sekunder dalam toolbar/daftar: tinggi 32 px (`size="sm"`, `h-8`), padding horizontal 10–12 px, teks 12 px (`text-xs`), ikon 14 px.
+  - Tombol ikon saja: `size="icon"` (36 px / `h-9 w-9`) untuk kontrol toolbar independen, dan `size="icon-sm"` (32 px / `h-8 w-8`) untuk aksi per-baris tabel/kartu.
+  - Pada mobile, target sentuh dipertahankan nyaman minimal 40–44 px melalui bantuan area sentuh tak kasat mata (`after:absolute after:-inset-1 sm:after:hidden touch-manipulation`) tanpa memperbesar wujud visual tombol.
 
 ### 9.7 Detail materi — pusat pengalaman belajar
 

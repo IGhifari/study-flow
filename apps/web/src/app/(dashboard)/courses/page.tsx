@@ -189,7 +189,8 @@ export default function CoursesPage(): React.JSX.Element {
         <Button
           onClick={() => setIsCreateOpen(true)}
           disabled={nonArchivedSemesters.length === 0}
-          className="gap-2 shrink-0 self-start sm:self-auto"
+          size="standard"
+          className="gap-1.5 shrink-0 self-start sm:self-auto"
         >
           <Plus className="h-4 w-4" />
           <span>Tambah mata kuliah</span>
@@ -231,7 +232,7 @@ export default function CoursesPage(): React.JSX.Element {
               value={selectedSemesterId}
               onValueChange={(val) => setSelectedSemesterId(val)}
             >
-              <SelectTrigger className="h-10" aria-label="Filter berdasarkan semester">
+              <SelectTrigger className="h-9 text-sm" aria-label="Filter berdasarkan semester">
                 <SelectValue placeholder="Semua Semester" />
               </SelectTrigger>
               <SelectContent className="max-w-[calc(100vw-2rem)] sm:max-w-[320px]">
@@ -279,7 +280,7 @@ export default function CoursesPage(): React.JSX.Element {
             placeholder="Cari mata kuliah atau kode..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-9 h-10"
+            className="pl-9 h-9 text-sm"
             aria-label="Cari mata kuliah atau kode"
           />
         </div>
@@ -361,7 +362,8 @@ export default function CoursesPage(): React.JSX.Element {
               {nonArchivedSemesters.length > 0 && (
                 <Button
                   onClick={() => setIsCreateOpen(true)}
-                  className="mt-4 inline-flex items-center gap-2"
+                  size="standard"
+                  className="mt-4 inline-flex items-center gap-1.5"
                 >
                   <Plus className="h-4 w-4" />
                   <span>Tambah mata kuliah pertama</span>

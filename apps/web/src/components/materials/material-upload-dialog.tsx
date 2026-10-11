@@ -212,6 +212,7 @@ export function MaterialUploadDialog({
   };
 
   const isUploading = step === 'TRANSFERRING' || step === 'FINALIZING';
+  const selectedCourse = courses.find((c) => c.id === courseId);
 
   return (
     <Dialog
@@ -223,32 +224,39 @@ export function MaterialUploadDialog({
         }
       }}
     >
-      <DialogContent className="sm:max-w-[520px]">
+      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-[520px] p-5 sm:p-6">
         <form onSubmit={handleSubmit}>
           <DialogHeader>
-            <DialogTitle>Unggah Materi PDF</DialogTitle>
-            <DialogDescription>
+            <DialogTitle className="text-lg font-bold text-foreground">
+              Unggah Materi PDF
+            </DialogTitle>
+            <DialogDescription className="text-xs text-muted-foreground leading-relaxed mt-1">
               PDF berbasis teks, maksimal 20 MB dan 100 halaman. PDF hasil scan belum didukung.
             </DialogDescription>
           </DialogHeader>
 
           {errorMessage && (
-            <Alert variant="destructive" className="mt-3">
+            <Alert variant="destructive" className="mt-4">
               <AlertCircle className="h-4 w-4" />
-              <AlertDescription className="text-xs">{errorMessage}</AlertDescription>
+              <AlertDescription className="text-xs leading-relaxed">
+                {errorMessage}
+              </AlertDescription>
             </Alert>
           )}
 
           <div className="mt-4 space-y-4">
             {/* Pilihan Mata Kuliah */}
             <div className="space-y-1.5">
-              <Label htmlFor="upload-course">Mata Kuliah *</Label>
+              <Label htmlFor="upload-course" className="text-xs font-semibold text-foreground">
+                Mata Kuliah *
+              </Label>
               <NativeSelect
                 id="upload-course"
                 value={courseId}
                 onChange={(e) => setCourseId(e.target.value)}
                 disabled={isUploading || Boolean(initialCourseId)}
                 required
+                className="h-10 text-xs sm:text-sm"
               >
                 <option value="" disabled>
                   Pilih mata kuliah...
@@ -263,24 +271,29 @@ export function MaterialUploadDialog({
 
             {/* Judul Materi */}
             <div className="space-y-1.5">
-              <Label htmlFor="upload-title">Judul Materi</Label>
+              <Label htmlFor="upload-title" className="text-xs font-semibold text-foreground">
+                Judul Materi *
+              </Label>
               <Input
                 id="upload-title"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 placeholder="Contoh: Bab 1 - Pengantar Basis Data"
                 disabled={isUploading}
+                required
+                className="h-10 text-xs sm:text-sm"
               />
             </div>
 
             {/* Dropzone File */}
             <div className="space-y-1.5">
-              <Label>File PDF</Label>
+              <Label className="text-xs font-semibold text-foreground">
+                Berkas PDF *
+              </Label>
               <div
                 onDrop={handleDrop}
                 onDragOver={handleDragOver}
-                onClick={() => !isUploading && fileInputRef.current?.click()}
-                className={`flex flex-col items-center justify-center rounded-xl border-2 border-dashed p-6 text-center transition-colors cursor-pointer ${
+                className={`flex flex-col items-center justify-center rounded-xl border-2 border-dashed p-5 text-center transition-colors ${
                   file
                     ? 'border-primary/50 bg-primary/5'
                     : 'border-border hover:border-primary/40 bg-muted/20'
@@ -296,44 +309,62 @@ export function MaterialUploadDialog({
                 />
 
                 {file ? (
-                  <div className="flex flex-col items-center gap-2">
-                    <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                      <FileText className="h-6 w-6" />
+                  <div className="flex flex-col items-center gap-2 w-full">
+                    <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                      <FileText className="h-5 w-5" />
                     </div>
-                    <div className="text-center">
-                      <p className="text-sm font-semibold text-foreground truncate max-w-[280px]">
+                    <div className="text-center w-full min-w-0 px-2">
+                      <p className="text-sm font-semibold text-foreground truncate" title={file.name}>
                         {file.name}
                       </p>
-                      <p className="text-xs text-muted-foreground mt-0.5">
-                        {(file.size / (1024 * 1024)).toFixed(2)} MB
-                      </p>
+                      <div className="flex flex-wrap items-center justify-center gap-x-2 gap-y-0.5 text-xs text-muted-foreground mt-0.5">
+                        <span>{(file.size / (1024 * 1024)).toFixed(2)} MB</span>
+                        {selectedCourse && (
+                          <>
+                            <span>•</span>
+                            <span className="text-foreground/80 font-medium truncate max-w-[200px]">
+                              {selectedCourse.name}
+                            </span>
+                          </>
+                        )}
+                      </div>
                     </div>
                     <Button
                       type="button"
-                      variant="ghost"
+                      variant="outline"
                       size="sm"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setFile(null);
-                      }}
-                      className="text-xs text-danger hover:bg-danger/10 h-7"
+                      onClick={() => !isUploading && fileInputRef.current?.click()}
+                      className="mt-1 h-8 gap-1.5 text-xs"
+                      disabled={isUploading}
                     >
-                      Ganti file
+                      <Upload className="h-3.5 w-3.5" />
+                      <span>Ganti berkas PDF</span>
                     </Button>
                   </div>
                 ) : (
-                  <div className="flex flex-col items-center gap-2">
+                  <div className="flex flex-col items-center gap-2.5">
                     <div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted text-muted-foreground">
                       <Upload className="h-5 w-5" />
                     </div>
                     <div>
                       <p className="text-xs font-semibold text-foreground">
-                        Tarik & lepas file PDF ke sini, atau klik untuk memilih
+                        Tarik & lepas berkas PDF ke sini, atau klik untuk memilih
                       </p>
                       <p className="text-[11px] text-muted-foreground mt-0.5">
-                        Maksimal 20 MB (PDF berbasis teks)
+                        Maksimal 20 MB dan 100 halaman (PDF berbasis teks)
                       </p>
                     </div>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => !isUploading && fileInputRef.current?.click()}
+                      className="h-8 gap-1.5 text-xs"
+                      disabled={isUploading}
+                    >
+                      <Upload className="h-3.5 w-3.5" />
+                      <span>Pilih Berkas PDF</span>
+                    </Button>
                   </div>
                 )}
               </div>
@@ -341,15 +372,18 @@ export function MaterialUploadDialog({
 
             {/* Progres Transfer / Finalisasi */}
             {step === 'TRANSFERRING' && (
-              <div className="rounded-lg bg-muted/40 p-3 space-y-2">
+              <div className="rounded-lg border border-border bg-muted/40 p-3 space-y-2">
                 <div className="flex justify-between text-xs font-medium text-foreground">
-                  <span>Mengunggah file...</span>
+                  <span className="flex items-center gap-1.5">
+                    <Loader2 className="h-3.5 w-3.5 animate-spin text-primary" />
+                    <span>Mengunggah berkas ke penyimpanan...</span>
+                  </span>
                   <span>{transferPercent !== null ? `${transferPercent}%` : ''}</span>
                 </div>
                 <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
                   <div
                     className="h-full bg-primary transition-all duration-200"
-                    style={{ width: `${transferPercent ?? 10}%` }}
+                    style={{ width: `${Math.max(transferPercent ?? 10, 5)}%` }}
                   />
                 </div>
               </div>
@@ -358,14 +392,14 @@ export function MaterialUploadDialog({
             {step === 'FINALIZING' && (
               <div className="flex items-center gap-2 rounded-lg bg-primary/10 p-3 text-xs font-medium text-primary">
                 <Loader2 className="h-4 w-4 animate-spin shrink-0" />
-                <span>Memverifikasi file di storage dan menjadwalkan ekstraksi...</span>
+                <span>Memverifikasi berkas di penyimpanan dan menyiapkan antrean...</span>
               </div>
             )}
 
             {step === 'SUCCESS' && (
               <div className="flex items-center gap-2 rounded-lg bg-emerald-500/10 p-3 text-xs font-medium text-emerald-600 dark:text-emerald-400">
                 <CheckCircle2 className="h-4 w-4 shrink-0" />
-                <span>File berhasil diterima! Menyiapkan antrean pemrosesan...</span>
+                <span>File berhasil diterima! Menjadwalkan ekstraksi dokumen...</span>
               </div>
             )}
 
@@ -375,19 +409,26 @@ export function MaterialUploadDialog({
             </p>
           </div>
 
-          <DialogFooter className="mt-6">
+          <DialogFooter className="mt-6 flex flex-col-reverse sm:flex-row gap-2.5 sm:gap-2 sm:justify-end">
             <Button
               type="button"
               variant="outline"
+              size="standard"
               onClick={() => onOpenChange(false)}
               disabled={isUploading}
+              className="min-h-[44px] sm:min-h-[36px]"
             >
               Batal
             </Button>
-            <Button type="submit" disabled={isUploading || !file || !title.trim()}>
+            <Button
+              type="submit"
+              size="standard"
+              disabled={isUploading || !file || !title.trim() || !courseId}
+              className="min-h-[44px] sm:min-h-[36px]"
+            >
               {isUploading ? (
                 <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
                   Mengunggah...
                 </>
               ) : (

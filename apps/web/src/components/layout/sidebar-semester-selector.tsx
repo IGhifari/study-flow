@@ -132,8 +132,8 @@ export function SidebarSemesterSelector({
             <TooltipContent side="right" align="center">
               {activeSemester ? (
                 <div>
-                  <p className="font-semibold">{activeSemester.name}</p>
-                  <p className="text-[11px] text-muted-foreground">{activeSemester.academicYear}</p>
+                  <p className="font-semibold text-xs">{activeSemester.name}</p>
+                  <p className="text-xs text-muted-foreground">{activeSemester.academicYear}</p>
                 </div>
               ) : (
                 'Pilih Semester Aktif'
@@ -169,7 +169,7 @@ export function SidebarSemesterSelector({
                       <p className={`truncate text-xs ${sem.isActive ? 'font-semibold text-primary' : ''}`}>
                         {sem.name}
                       </p>
-                      <p className="truncate text-[11px] text-muted-foreground">
+                      <p className="truncate text-xs text-muted-foreground">
                         {sem.academicYear} {isArchived ? '(Arsip)' : ''}
                       </p>
                     </div>
@@ -199,7 +199,7 @@ export function SidebarSemesterSelector({
   return (
     <div className="px-3 py-2 border-b border-sidebar-border">
       <div className="flex items-center justify-between mb-1.5 px-0.5">
-        <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+        <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
           Semester Aktif
         </span>
         <Link

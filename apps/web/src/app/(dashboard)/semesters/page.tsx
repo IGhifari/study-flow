@@ -157,7 +157,8 @@ export default function SemestersPage(): React.JSX.Element {
             setActionError(null);
             setIsCreateOpen(true);
           }}
-          className="gap-2 shrink-0 self-start sm:self-auto"
+          size="standard"
+          className="gap-1.5 shrink-0 self-start sm:self-auto"
         >
           <Plus className="h-4 w-4" />
           <span>Tambah Semester</span>
@@ -218,7 +219,7 @@ export default function SemestersPage(): React.JSX.Element {
             placeholder="Cari nama atau tahun..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-9 h-10 text-sm"
+            className="pl-9 h-9 text-sm"
             aria-label="Cari semester"
           />
         </div>
@@ -294,7 +295,8 @@ export default function SemestersPage(): React.JSX.Element {
               </p>
               <Button
                 onClick={() => setIsCreateOpen(true)}
-                className="mt-4 inline-flex items-center gap-2"
+                size="standard"
+                className="mt-4 inline-flex items-center gap-1.5"
               >
                 <Plus className="h-4 w-4" />
                 <span>Tambah Semester Pertama</span>

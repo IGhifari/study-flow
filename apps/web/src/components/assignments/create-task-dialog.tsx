@@ -231,10 +231,11 @@ export function CreateTaskDialog({
             />
           </div>
 
-          <DialogFooter className="pt-2">
+          <DialogFooter className="pt-2 flex flex-col-reverse sm:flex-row gap-2 sm:justify-end">
             <Button
               type="button"
               variant="outline"
+              size="standard"
               onClick={() => onOpenChange(false)}
               disabled={isSubmitting}
             >
@@ -242,11 +243,12 @@ export function CreateTaskDialog({
             </Button>
             <Button
               type="submit"
+              size="standard"
               disabled={isSubmitting || activeCourses.length === 0}
             >
               {isSubmitting ? (
                 <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
                   Menyimpan...
                 </>
               ) : (

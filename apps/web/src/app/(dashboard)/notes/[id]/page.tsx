@@ -540,7 +540,8 @@ export default function NoteDetailPage(): React.JSX.Element {
           <Button
             onClick={() => handleSave()}
             disabled={saveStatus === 'SAVING' || isArchived}
-            className="h-9 px-4 gap-2"
+            size="standard"
+            className="gap-1.5"
           >
             {saveStatus === 'SAVING' ? (
               <Loader2 className="h-4 w-4 animate-spin" />

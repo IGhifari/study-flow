@@ -74,10 +74,11 @@ export function DeleteCourseDialog({
           Mata kuliah yang masih memiliki materi, tugas, atau catatan aktif tidak dapat dihapus. Anda dapat menggunakan opsi arsip jika perkuliahan telah selesai.
         </p>
 
-        <DialogFooter className="pt-2">
+        <DialogFooter className="pt-2 flex flex-col-reverse sm:flex-row gap-2 sm:justify-end">
           <Button
             type="button"
             variant="outline"
+            size="standard"
             onClick={() => onOpenChange(false)}
             disabled={isSubmitting}
           >
@@ -86,12 +87,13 @@ export function DeleteCourseDialog({
           <Button
             type="button"
             variant="destructive"
+            size="standard"
             onClick={handleDelete}
             disabled={isSubmitting}
           >
             {isSubmitting ? (
               <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
                 Menghapus...
               </>
             ) : (

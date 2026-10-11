@@ -242,7 +242,8 @@ export default function AssignmentsPage(): React.JSX.Element {
         <Button
           onClick={() => setIsCreateOpen(true)}
           disabled={activeCourses.length === 0}
-          className="gap-2 shrink-0 self-start sm:self-auto"
+          size="standard"
+          className="gap-1.5 shrink-0 self-start sm:self-auto"
         >
           <Plus className="h-4 w-4" />
           <span>Tambah tugas</span>
@@ -296,7 +297,7 @@ export default function AssignmentsPage(): React.JSX.Element {
                 placeholder="Cari judul tugas..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-9 h-11"
+                className="pl-9 h-9 text-sm"
               />
             </div>
 
@@ -308,7 +309,7 @@ export default function AssignmentsPage(): React.JSX.Element {
                   value={selectedCourseId}
                   onValueChange={(val) => setSelectedCourseId(val)}
                 >
-                  <SelectTrigger className="h-11">
+                  <SelectTrigger className="h-9 text-sm">
                     <SelectValue placeholder="Semua Mata Kuliah" />
                   </SelectTrigger>
                   <SelectContent className="max-w-[calc(100vw-2rem)] sm:max-w-[320px]">
@@ -328,7 +329,7 @@ export default function AssignmentsPage(): React.JSX.Element {
                   value={selectedStatus}
                   onValueChange={(val) => setSelectedStatus(val)}
                 >
-                  <SelectTrigger className="h-11">
+                  <SelectTrigger className="h-9 text-sm">
                     <SelectValue placeholder="Semua Status" />
                   </SelectTrigger>
                   <SelectContent className="max-w-[calc(100vw-2rem)] sm:max-w-[240px]">
@@ -346,7 +347,7 @@ export default function AssignmentsPage(): React.JSX.Element {
                   value={selectedPriority}
                   onValueChange={(val) => setSelectedPriority(val)}
                 >
-                  <SelectTrigger className="h-11">
+                  <SelectTrigger className="h-9 text-sm">
                     <SelectValue placeholder="Semua Prioritas" />
                   </SelectTrigger>
                   <SelectContent className="max-w-[calc(100vw-2rem)] sm:max-w-[220px]">
@@ -362,22 +363,22 @@ export default function AssignmentsPage(): React.JSX.Element {
               <div className="flex items-center gap-2">
                 <Button
                   variant={isOverdueOnly ? 'destructive' : 'outline'}
-                  size="sm"
+                  size="icon-sm"
                   onClick={() => setIsOverdueOnly(!isOverdueOnly)}
                   title={isOverdueOnly ? 'Tampilkan semua tenggat waktu' : 'Hanya tampilkan tugas terlambat'}
                   aria-label="Filter tugas terlambat"
-                  className="h-11 w-11 p-0 shrink-0"
+                  className="h-9 w-9 shrink-0"
                 >
                   <Clock className="h-4 w-4" />
                 </Button>
 
                 <Button
                   variant="outline"
-                  size="sm"
+                  size="icon-sm"
                   onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
                   title={`Urutkan deadline: ${sortOrder === 'asc' ? 'Terdekat dahulu' : 'Terjauh dahulu'}`}
                   aria-label={`Urutan deadline: ${sortOrder === 'asc' ? 'Terdekat' : 'Terjauh'}`}
-                  className="h-11 w-11 p-0 shrink-0"
+                  className="h-9 w-9 shrink-0"
                 >
                   <ArrowUpDown className="h-4 w-4" />
                 </Button>
@@ -389,7 +390,7 @@ export default function AssignmentsPage(): React.JSX.Element {
                   variant="ghost"
                   size="sm"
                   onClick={handleResetFilter}
-                  className="h-11 px-3 text-xs text-muted-foreground hover:text-foreground shrink-0 self-start sm:self-auto"
+                  className="h-9 px-2.5 text-xs text-muted-foreground hover:text-foreground shrink-0 self-start sm:self-auto"
                 >
                   Hapus filter
                 </Button>
@@ -452,6 +453,7 @@ export default function AssignmentsPage(): React.JSX.Element {
           {hasFilter ? (
             <Button
               variant="outline"
+              size="standard"
               onClick={handleResetFilter}
               className="mt-5"
             >
@@ -459,9 +461,10 @@ export default function AssignmentsPage(): React.JSX.Element {
             </Button>
           ) : (
             <Button
+              size="standard"
               onClick={() => setIsCreateOpen(true)}
               disabled={activeCourses.length === 0}
-              className="mt-5 gap-2"
+              className="mt-5 gap-1.5"
             >
               <Plus className="h-4 w-4" />
               <span>Tambah tugas pertama</span>
