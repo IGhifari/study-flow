@@ -42,14 +42,21 @@ export function EditTaskDialog({
   const [errorMsg, setErrorMsg] = React.useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
 
+  const activeAssignmentIdRef = React.useRef<string | null>(null);
+
   React.useEffect(() => {
     if (open && assignment) {
-      setErrorMsg(null);
-      setTitle(assignment.title);
-      setDescription(assignment.description || '');
-      setDueDate(toUserDateTimeInputValue(assignment.dueDate, timezone));
-      setPriority(assignment.priority);
-      setStatus(assignment.status);
+      if (activeAssignmentIdRef.current !== assignment.id) {
+        setErrorMsg(null);
+        setTitle(assignment.title);
+        setDescription(assignment.description || '');
+        setDueDate(toUserDateTimeInputValue(assignment.dueDate, timezone));
+        setPriority(assignment.priority);
+        setStatus(assignment.status);
+        activeAssignmentIdRef.current = assignment.id;
+      }
+    } else {
+      activeAssignmentIdRef.current = null;
     }
   }, [open, assignment, timezone]);
 
@@ -89,8 +96,8 @@ export function EditTaskDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px]">
-        <form onSubmit={handleSubmit} className="space-y-4">
+      <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
+        <form noValidate onSubmit={handleSubmit} className="space-y-4">
           <DialogHeader>
             <DialogTitle>Edit Tugas</DialogTitle>
             <DialogDescription>

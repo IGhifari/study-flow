@@ -11,24 +11,23 @@ import {
   Trash2,
   FileText,
   BookOpen,
-  Calendar,
   AlertCircle,
   Loader2,
   ExternalLink,
-  ChevronLeft,
   ChevronRight,
-  ZoomIn,
-  ZoomOut,
+  ChevronLeft,
   Copy,
   Check,
   RefreshCw,
   Sparkles,
-  Info,
   Layers,
   HelpCircle,
+  MoreVertical,
 } from 'lucide-react';
 import { MaterialFlashcardTab } from '@/components/materials/material-flashcard-tab';
 import { MaterialQuizTab } from '@/components/materials/material-quiz-tab';
+import { MaterialPdfViewer } from '@/components/materials/material-pdf-viewer';
+import { MaterialSummaryTab } from '@/components/materials/material-summary-tab';
 import {
   Material,
   MaterialPage,
@@ -60,6 +59,13 @@ import { Card } from '@/components/ui/card';
 import { MaterialStatusBadge } from '@/components/materials/material-status-badge';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+} from '@/components/ui/dropdown-menu';
+import {
   Dialog,
   DialogContent,
   DialogHeader,
@@ -87,6 +93,7 @@ export default function MaterialDetailPage(): React.JSX.Element {
   const [previewError, setPreviewError] = React.useState<string | null>(null);
   const [zoom, setZoom] = React.useState(100);
   const [currentPage, setCurrentPage] = React.useState(1);
+  const [highlightedPage, setHighlightedPage] = React.useState<number | null>(null);
   const [copiedPageIndex, setCopiedPageIndex] = React.useState<number | null>(null);
 
   // Extracted text page selection
@@ -236,7 +243,7 @@ export default function MaterialDetailPage(): React.JSX.Element {
     setActionError(null);
     try {
       const res = await getMaterialDownloadUrl(materialId);
-      window.open(res.downloadUrl, '_blank');
+      window.open(res.downloadUrl, '_blank', 'noopener,noreferrer');
     } catch (err: any) {
       setActionError(err.message || 'Gagal membuat tautan unduhan');
     }
@@ -244,7 +251,7 @@ export default function MaterialDetailPage(): React.JSX.Element {
 
   const handleOpenInNewTab = () => {
     if (previewUrl) {
-      window.open(previewUrl, '_blank');
+      window.open(previewUrl, '_blank', 'noopener,noreferrer');
     }
   };
 
@@ -294,7 +301,6 @@ export default function MaterialDetailPage(): React.JSX.Element {
       const res = await generateMaterialSummary(materialId, regenerate);
       setSummary(res.summary);
       setIsRegenerateConfirmOpen(false);
-      // Refresh summary & quota in background
       loadSummaryData(materialId);
     } catch (err: any) {
       if (err instanceof SummaryApiError) {
@@ -309,8 +315,14 @@ export default function MaterialDetailPage(): React.JSX.Element {
 
   const handleJumpToPdfPage = (pageNumber: number) => {
     setCurrentPage(pageNumber);
+    setHighlightedPage(pageNumber);
     setActiveTab('pdf');
-    window.scrollTo({ top: 250, behavior: 'smooth' });
+    setTimeout(() => {
+      const elem = document.getElementById('material-pdf-viewer-container');
+      if (elem) {
+        elem.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }, 80);
   };
 
   const handleCopySummary = () => {
@@ -366,7 +378,7 @@ export default function MaterialDetailPage(): React.JSX.Element {
     return (
       <div className="flex flex-col items-center justify-center py-24 text-muted-foreground">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        <p className="mt-3 text-sm">Memuat dokumen materi...</p>
+        <p className="mt-3 text-sm font-medium">Memuat materi kuliah...</p>
       </div>
     );
   }
@@ -374,20 +386,20 @@ export default function MaterialDetailPage(): React.JSX.Element {
   if (errorMessage || !material) {
     return (
       <div className="space-y-4">
-        <Button variant="ghost" asChild className="gap-2 text-sm w-fit">
+        <Button variant="ghost" size="standard" asChild className="gap-2 text-xs w-fit">
           <Link href="/materials">
             <ArrowLeft className="h-4 w-4" />
             <span>Kembali ke Materi</span>
           </Link>
         </Button>
 
-        <Card className="p-8 text-center bg-card">
-          <AlertCircle className="h-8 w-8 text-danger mx-auto" />
-          <h3 className="mt-2 text-base font-semibold text-foreground">Gagal Memuat Materi</h3>
-          <p className="mt-1 text-xs text-muted-foreground">
+        <Card className="p-8 sm:p-12 text-center bg-card border border-border shadow-xs">
+          <AlertCircle className="h-10 w-10 text-destructive mx-auto" />
+          <h3 className="mt-3 text-base font-semibold text-foreground">Gagal Memuat Materi</h3>
+          <p className="mt-1.5 text-xs sm:text-sm text-muted-foreground max-w-md mx-auto">
             {errorMessage || 'Materi tidak ditemukan atau telah dihapus.'}
           </p>
-          <Button asChild size="sm" className="mt-4">
+          <Button asChild size="standard" className="mt-5">
             <Link href="/materials">Kembali ke Daftar Materi</Link>
           </Button>
         </Card>
@@ -395,9 +407,8 @@ export default function MaterialDetailPage(): React.JSX.Element {
     );
   }
 
-  const sizeMb = (material.bytes / (1024 * 1024)).toFixed(2);
+  const sizeMb = (material.bytes / (1024 * 1024)).toFixed(1);
   const formattedCreatedAt = formatUserDateTime(material.createdAt, timezone);
-
   const extractedPages: MaterialPage[] = material.pages || [];
   const currentExtractedPage = extractedPages.find((p) => p.pageNumber === selectedTextPage);
 
@@ -407,54 +418,57 @@ export default function MaterialDetailPage(): React.JSX.Element {
     isGeneratingSummary;
 
   return (
-    <div className="space-y-6">
-      {/* Top Breadcrumb & Back */}
-      <div className="flex flex-wrap items-center justify-between gap-3">
+    <div className="space-y-5 sm:space-y-6">
+      {/* 1. Navigasi Kembali & Breadcrumb Ringkas */}
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border/60 pb-3">
         <div className="flex items-center gap-2">
-          <Button variant="ghost" size="sm" asChild className="h-8 px-2 gap-1.5 text-xs text-muted-foreground hover:text-foreground">
+          <Button
+            variant="ghost"
+            size="sm"
+            asChild
+            className="h-8 px-2 gap-1.5 text-xs text-muted-foreground hover:text-foreground"
+          >
             <Link href="/materials">
               <ArrowLeft className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">Kembali ke Daftar Materi</span>
-              <span className="sm:hidden">Kembali</span>
+              <span>Kembali ke Materi</span>
             </Link>
           </Button>
-          <span className="text-muted-foreground/40">•</span>
-          <nav aria-label="Breadcrumb" className="flex items-center gap-1.5 text-xs text-muted-foreground flex-wrap">
-            <Link href="/materials" className="hover:text-foreground transition-colors">
-              Materi
-            </Link>
-            <ChevronRight className="h-3 w-3 text-muted-foreground/50 shrink-0" />
-            {material.course && (
-              <>
-                <Link
-                  href={`/courses/${material.course.id}`}
-                  className="hover:text-foreground transition-colors max-w-[140px] truncate"
-                  title={material.course.name}
-                >
-                  {material.course.name}
-                </Link>
-                <ChevronRight className="h-3 w-3 text-muted-foreground/50 shrink-0" />
-              </>
-            )}
-            <span className="text-foreground font-medium max-w-[180px] sm:max-w-[240px] truncate" title={material.title}>
-              {material.title}
-            </span>
-          </nav>
+
+          {material.course && (
+            <>
+              <span className="text-muted-foreground/40">•</span>
+              <Link
+                href={`/courses/${material.course.id}`}
+                className="text-xs text-muted-foreground hover:text-foreground transition-colors max-w-[160px] truncate flex items-center gap-1 font-medium"
+                title={material.course.name}
+              >
+                <BookOpen className="h-3.5 w-3.5 shrink-0" />
+                <span className="truncate">{material.course.name}</span>
+              </Link>
+            </>
+          )}
         </div>
 
         <div className="flex items-center gap-2 shrink-0">
-          <MaterialStatusBadge status={material.status} />
+          <MaterialStatusBadge
+            status={material.status}
+            errorCode={material.errorCode}
+            errorMessage={material.errorMessage}
+          />
           {isArchived && (
-            <span className="rounded-full bg-warning/10 px-2.5 py-0.5 text-xs font-medium text-warning">
+            <span className="rounded-md bg-warning/10 px-2 py-0.5 text-xs font-medium text-warning">
               Arsip
             </span>
           )}
         </div>
       </div>
 
-      {/* Action Error Banner if any */}
+      {/* Action Error Banner */}
       {actionError && (
-        <div className="flex items-center justify-between rounded-lg border border-danger/30 bg-danger/5 p-3 text-xs text-danger">
+        <div
+          role="alert"
+          className="flex items-center justify-between rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-xs text-destructive"
+        >
           <div className="flex items-center gap-2">
             <AlertCircle className="h-4 w-4 shrink-0" />
             <span>{actionError}</span>
@@ -463,60 +477,58 @@ export default function MaterialDetailPage(): React.JSX.Element {
             variant="ghost"
             size="sm"
             onClick={() => setActionError(null)}
-            className="h-6 px-1.5 text-[11px] text-danger hover:bg-danger/10"
+            className="h-6 px-1.5 text-[11px] text-destructive hover:bg-destructive/10"
           >
             Tutup
           </Button>
         </div>
       )}
 
-      {/* Header Info */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between border-b border-border pb-5">
-        <div className="space-y-1.5 min-w-0 max-w-2xl">
-          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground break-words">
+      {/* 2. Header Detail Materi */}
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between border-b border-border pb-4 sm:pb-5">
+        <div className="space-y-1.5 min-w-0 flex-1 pr-0 sm:pr-4">
+          <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold tracking-tight text-foreground break-words">
             {material.title}
           </h1>
 
-          <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-            {material.course && (
-              <Link
-                href={`/courses/${material.course.id}`}
-                className="hover:text-primary transition-colors flex items-center gap-1 font-medium text-foreground"
-              >
-                <BookOpen className="h-3.5 w-3.5" />
-                <span>{material.course.name}</span>
-              </Link>
-            )}
-            <span>•</span>
-            <span className="truncate max-w-[200px]" title={material.originalFilename}>
+          <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 text-xs text-muted-foreground">
+            <span className="truncate max-w-[220px]" title={material.originalFilename}>
               {material.originalFilename}
             </span>
             <span>•</span>
             <span>{sizeMb} MB</span>
-            {material.pageCount && (
+            {material.pageCount ? (
               <>
                 <span>•</span>
-                <span>{material.pageCount} Halaman</span>
+                <span className="font-medium text-foreground">{material.pageCount} hal.</span>
               </>
-            )}
+            ) : null}
+            <span>•</span>
+            <span>{formattedCreatedAt}</span>
           </div>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2 shrink-0">
+        {/* Aksi Utama & Dropdown Aksi Sekunder */}
+        <div className="flex items-center gap-2 shrink-0 self-start sm:self-auto">
           {material.status === 'READY' && (
-            <Button variant="outline" size="sm" onClick={handleDownload} className="gap-1.5">
+            <Button
+              variant="outline"
+              size="standard"
+              onClick={handleDownload}
+              className="gap-1.5 text-xs"
+            >
               <Download className="h-4 w-4" />
-              <span>Unduh File</span>
+              <span>Unduh Berkas</span>
             </Button>
           )}
 
           {material.status === 'FAILED' && (
             <Button
               variant="outline"
-              size="sm"
+              size="standard"
               onClick={handleRetry}
               disabled={isRetrying || isArchived}
-              className="gap-1.5"
+              className="gap-1.5 text-xs"
             >
               {isRetrying ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
@@ -527,71 +539,117 @@ export default function MaterialDetailPage(): React.JSX.Element {
             </Button>
           )}
 
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setIsEditOpen(true)}
-            disabled={isArchived}
-            className="gap-1.5"
-          >
-            <Pencil className="h-3.5 w-3.5" />
-            <span>Edit Judul</span>
-          </Button>
+          {/* Menu Dropdown Aksi Sekunder */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                className="h-9 w-9 text-muted-foreground hover:text-foreground"
+                aria-label="Pilihan aksi materi lainnya"
+              >
+                <MoreVertical className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-52">
+              <DropdownMenuItem
+                onClick={() => setIsEditOpen(true)}
+                disabled={isArchived}
+                className="cursor-pointer text-xs"
+              >
+                <Pencil className="mr-2 h-3.5 w-3.5" />
+                <span>Edit Judul Materi</span>
+              </DropdownMenuItem>
 
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setIsDeleteOpen(true)}
-            disabled={isArchived}
-            className="gap-1.5 text-danger hover:bg-danger/10"
-          >
-            <Trash2 className="h-4 w-4" />
-            <span>Hapus</span>
-          </Button>
+              {material.status === 'READY' && (
+                <>
+                  <DropdownMenuItem
+                    onClick={handleOpenInNewTab}
+                    className="cursor-pointer text-xs"
+                  >
+                    <ExternalLink className="mr-2 h-3.5 w-3.5" />
+                    <span>Buka di Tab Baru</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={handleRefreshSignedUrl}
+                    className="cursor-pointer text-xs"
+                  >
+                    <RefreshCw className="mr-2 h-3.5 w-3.5" />
+                    <span>Perbarui Tautan Unduh</span>
+                  </DropdownMenuItem>
+                </>
+              )}
+
+              <DropdownMenuSeparator />
+
+              <DropdownMenuItem
+                onClick={() => setIsDeleteOpen(true)}
+                disabled={isArchived}
+                className="cursor-pointer text-xs text-destructive focus:bg-destructive/10 focus:text-destructive"
+              >
+                <Trash2 className="mr-2 h-3.5 w-3.5" />
+                <span>Hapus Materi</span>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
 
-      {/* Main Content Area */}
+      {/* 3. Status Khusus Dokumen Antrean / Pemrosesan */}
       {material.status === 'PROCESSING' || material.status === 'QUEUED' ? (
-        <Card className="p-12 text-center bg-card">
-          <Loader2 className="h-10 w-10 animate-spin text-primary mx-auto" />
+        <Card className="p-10 sm:p-14 text-center bg-card border border-border shadow-xs">
+          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary">
+            <Loader2 className="h-6 w-6 animate-spin" />
+          </div>
           <h3 className="mt-4 text-base font-semibold text-foreground">
-            {material.status === 'QUEUED' ? 'Menunggu antrean pemrosesan' : 'Membaca dan mengekstrak isi PDF...'}
+            {material.status === 'QUEUED'
+              ? 'Menunggu antrean pemrosesan'
+              : 'Membaca dan mengekstrak isi PDF...'}
           </h3>
-          <p className="mt-1 text-xs text-muted-foreground max-w-md mx-auto">
-            Dokumen sedang dianalisis dan diekstrak halamannya di worker background. Halaman akan otomatis
-            diperbarui begitu proses selesai.
+          <p className="mt-1.5 text-xs sm:text-sm text-muted-foreground max-w-md mx-auto leading-relaxed">
+            Dokumen sedang dianalisis dan diekstrak teks halamannya di worker background. Halaman akan otomatis diperbarui begitu proses selesai.
           </p>
         </Card>
       ) : material.status === 'FAILED' ? (
-        <Card className="border-danger/30 bg-danger/5 p-8 text-center">
-          <AlertCircle className="h-10 w-10 text-danger mx-auto" />
-          <h3 className="mt-3 text-base font-semibold text-danger">Gagal Memproses Dokumen</h3>
-          <p className="mt-1 text-xs text-muted-foreground max-w-md mx-auto">
+        <Card className="border-destructive/30 bg-destructive/5 p-8 sm:p-10 text-center shadow-xs">
+          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-destructive/10 text-destructive">
+            <AlertCircle className="h-6 w-6" />
+          </div>
+          <h3 className="mt-3 text-base font-semibold text-destructive">Gagal Memproses Dokumen</h3>
+          <p className="mt-1.5 text-xs sm:text-sm text-muted-foreground max-w-md mx-auto leading-relaxed">
             {material.errorMessage ||
-              'Terjadi kendala saat membaca file PDF. Pastikan file tidak diproteksi kata sandi dan berisi teks yang valid.'}
+              'Terjadi kendala saat membaca berkas PDF. Pastikan file berbasis teks yang valid dan tidak diproteksi password.'}
           </p>
-          <div className="mt-4 flex justify-center gap-2">
-            <Button variant="outline" size="sm" onClick={handleRetry} disabled={isRetrying}>
-              <RotateCcw className="mr-1.5 h-3.5 w-3.5" />
-              Coba Lagi
+          <div className="mt-5 flex justify-center gap-2">
+            <Button
+              variant="outline"
+              size="standard"
+              onClick={handleRetry}
+              disabled={isRetrying || isArchived}
+              className="gap-1.5 text-xs"
+            >
+              <RotateCcw className="h-3.5 w-3.5" />
+              <span>Coba Lagi</span>
             </Button>
-            <Button size="sm" asChild>
+            <Button variant="default" size="standard" asChild className="text-xs">
               <Link href="/materials">Kembali ke Daftar</Link>
             </Button>
           </div>
         </Card>
       ) : material.status === 'READY' ? (
+        /* 4. Tab Navigasi Konten Utama */
         <Tabs
           value={activeTab}
-          onValueChange={(val) => setActiveTab(val as 'pdf' | 'summary' | 'flashcards' | 'quiz' | 'text')}
+          onValueChange={(val) =>
+            setActiveTab(val as 'pdf' | 'summary' | 'flashcards' | 'quiz' | 'text')
+          }
           className="space-y-4"
         >
-          {/* Navigation View Tabs */}
+          {/* List Tab Navigasi */}
           <TabsList className="w-full justify-start h-auto p-1 bg-muted/40 border border-border rounded-xl overflow-x-auto flex-nowrap gap-1">
             <TabsTrigger
               value="pdf"
-              className="gap-2 text-xs shrink-0 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-xs"
+              className="gap-2 text-xs shrink-0 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-xs min-h-[36px]"
             >
               <FileText className="h-4 w-4" />
               <span>Dokumen PDF</span>
@@ -599,9 +657,9 @@ export default function MaterialDetailPage(): React.JSX.Element {
 
             <TabsTrigger
               value="summary"
-              className="gap-2 text-xs shrink-0 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-xs"
+              className="gap-2 text-xs shrink-0 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-xs min-h-[36px]"
             >
-              <Sparkles className="h-4 w-4 text-amber-500" />
+              <Sparkles className="h-4 w-4 text-primary" />
               <span>Ringkasan AI</span>
               {summary?.status === 'READY' && (
                 <span className="ml-1 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 px-1.5 py-0.2 text-[10px] font-semibold">
@@ -615,7 +673,7 @@ export default function MaterialDetailPage(): React.JSX.Element {
 
             <TabsTrigger
               value="flashcards"
-              className="gap-2 text-xs shrink-0 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-xs"
+              className="gap-2 text-xs shrink-0 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-xs min-h-[36px]"
             >
               <Layers className="h-4 w-4 text-primary" />
               <span>Flashcards</span>
@@ -623,7 +681,7 @@ export default function MaterialDetailPage(): React.JSX.Element {
 
             <TabsTrigger
               value="quiz"
-              className="gap-2 text-xs shrink-0 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-xs"
+              className="gap-2 text-xs shrink-0 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-xs min-h-[36px]"
             >
               <HelpCircle className="h-4 w-4 text-primary" />
               <span>Kuis</span>
@@ -631,10 +689,10 @@ export default function MaterialDetailPage(): React.JSX.Element {
 
             <TabsTrigger
               value="text"
-              className="gap-2 text-xs shrink-0 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-xs"
+              className="gap-2 text-xs shrink-0 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-xs min-h-[36px]"
             >
               <BookOpen className="h-4 w-4" />
-              <span>Teks Hasil Ekstraksi</span>
+              <span>Teks Ekstraksi</span>
               {extractedPages.length > 0 && (
                 <span className="ml-1 rounded-full bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground">
                   {extractedPages.length} hal
@@ -643,667 +701,177 @@ export default function MaterialDetailPage(): React.JSX.Element {
             </TabsTrigger>
           </TabsList>
 
-          {/* TAB 1: Dokumen PDF */}
-          <TabsContent value="pdf" className="mt-0 space-y-3">
-              {previewError ? (
-                <Card className="border-warning/30 bg-warning/5 p-6 text-center">
-                  <AlertCircle className="h-8 w-8 text-warning mx-auto" />
-                  <h4 className="mt-2 text-sm font-semibold text-foreground">
-                    Pratinjau PDF tidak dapat dimuat
-                  </h4>
-                  <p className="mt-1 text-xs text-muted-foreground max-w-md mx-auto">
-                    {previewError}
-                  </p>
-                  <div className="mt-4 flex justify-center gap-2">
-                    <Button variant="outline" size="sm" onClick={handleRefreshSignedUrl}>
-                      <RefreshCw className="mr-1.5 h-3.5 w-3.5" />
-                      Coba Muat Ulang
-                    </Button>
-                    <Button size="sm" onClick={handleDownload}>
-                      <Download className="mr-1.5 h-3.5 w-3.5" />
-                      Unduh Langsung
-                    </Button>
-                  </div>
-                </Card>
-              ) : previewUrl ? (
-                <Card className="overflow-hidden border border-border bg-card">
-                  {/* Interactive Toolbar */}
-                  <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border bg-muted/40 px-3 py-2 text-xs">
-                    {/* Left: Page Navigator */}
-                    <div className="flex items-center gap-1.5">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        disabled={currentPage <= 1}
-                        onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                        className="h-7 w-7 p-0"
-                        title="Halaman Sebelumnya"
-                        aria-label="Halaman Sebelumnya"
-                      >
-                        <ChevronLeft className="h-4 w-4" />
-                      </Button>
-
-                      <div className="flex items-center gap-1 text-xs text-muted-foreground font-medium px-1">
-                        <span>Hal</span>
-                        <input
-                          type="number"
-                          min={1}
-                          max={totalPages}
-                          value={currentPage}
-                          onChange={(e) => {
-                            const val = parseInt(e.target.value, 10);
-                            if (!isNaN(val) && val >= 1 && val <= totalPages) {
-                              setCurrentPage(val);
-                            }
-                          }}
-                          className="w-12 h-6 text-center border border-border rounded bg-background text-foreground text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-primary"
-                          aria-label="Nomor Halaman PDF"
-                        />
-                        <span>/ {totalPages}</span>
-                      </div>
-
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        disabled={currentPage >= totalPages}
-                        onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-                        className="h-7 w-7 p-0"
-                        title="Halaman Selanjutnya"
-                        aria-label="Halaman Selanjutnya"
-                      >
-                        <ChevronRight className="h-4 w-4" />
-                      </Button>
-                    </div>
-
-                    {/* Center: Zoom Controls */}
-                    <div className="flex items-center gap-1">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setZoom((z) => Math.max(50, z - 10))}
-                        className="h-7 w-7 p-0"
-                        title="Perkecil (Zoom Out)"
-                        aria-label="Perkecil Zoom"
-                      >
-                        <ZoomOut className="h-3.5 w-3.5" />
-                      </Button>
-                      <button
-                        type="button"
-                        onClick={() => setZoom(100)}
-                        className="text-muted-foreground hover:text-foreground text-xs w-12 text-center font-medium focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-primary rounded"
-                        title="Reset ke 100%"
-                        aria-label="Reset zoom ke 100%"
-                      >
-                        {zoom}%
-                      </button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setZoom((z) => Math.min(200, z + 10))}
-                        className="h-7 w-7 p-0"
-                        title="Perbesar (Zoom In)"
-                        aria-label="Perbesar Zoom"
-                      >
-                        <ZoomIn className="h-3.5 w-3.5" />
-                      </Button>
-                    </div>
-
-                    {/* Right: Quick actions */}
-                    <div className="flex items-center gap-1.5 ml-auto">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={handleRefreshSignedUrl}
-                        className="h-7 px-2 text-xs gap-1 text-muted-foreground hover:text-foreground"
-                        title="Perbarui Tautan yang Kedaluwarsa"
-                        aria-label="Perbarui tautan dokumen"
-                      >
-                        <RefreshCw className="h-3 w-3" />
-                        <span className="hidden sm:inline">Perbarui Tautan</span>
-                      </Button>
-
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={handleOpenInNewTab}
-                        className="h-7 px-2 text-xs gap-1"
-                        title="Buka di Tab Baru"
-                        aria-label="Buka dokumen di tab baru"
-                      >
-                        <ExternalLink className="h-3 w-3" />
-                        <span className="hidden sm:inline">Tab Baru</span>
-                      </Button>
-
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={handleDownload}
-                        className="h-7 px-2 text-xs gap-1"
-                      >
-                        <Download className="h-3 w-3" />
-                        <span>Unduh</span>
-                      </Button>
-                    </div>
-                  </div>
-
-                  {/* PDF Viewer Frame */}
-                  <div className="relative h-[650px] sm:h-[800px] w-full bg-muted/10">
-                    {isPreviewLoading && (
-                      <div className="absolute inset-0 flex items-center justify-center bg-background/50 z-10">
-                        <Loader2 className="h-6 w-6 animate-spin text-primary" />
-                      </div>
-                    )}
-                    <iframe
-                      key={`${previewUrl}-${currentPage}-${zoom}`}
-                      src={`${previewUrl}#page=${currentPage}&zoom=${zoom}`}
-                      className="h-full w-full border-none"
-                      title={material.title}
-                    />
-                  </div>
-
-                  {/* Footnote */}
-                  <div className="border-t border-border bg-muted/20 px-3 py-2 text-[11px] text-muted-foreground flex items-center justify-between">
-                    <span>
-                      Pratinjau PDF interaktif resmi. Tautan unduhan dibuat secara privat dan aman.
-                    </span>
-                    <button
-                      onClick={handleOpenInNewTab}
-                      className="text-primary hover:underline font-medium text-[11px] ml-2 shrink-0"
-                    >
-                      Buka Layar Penuh
-                    </button>
-                  </div>
-                </Card>
-              ) : (
-                <Card className="p-8 text-center bg-card">
-                  <FileText className="h-8 w-8 text-muted-foreground mx-auto" />
-                  <h4 className="mt-2 text-sm font-semibold text-foreground">
-                    Pratinjau sedang dipersiapkan
-                  </h4>
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    Klik tombol di bawah untuk meminta tautan pratinjau dokumen.
-                  </p>
-                  <Button size="sm" onClick={handleRefreshSignedUrl} className="mt-3">
-                    <RefreshCw className="mr-1.5 h-3.5 w-3.5" />
-                    Muat Pratinjau
-                  </Button>
-                </Card>
-              )}
+          {/* TAB 1: Pembaca PDF Interaktif */}
+          <TabsContent value="pdf" className="mt-0" id="material-pdf-viewer-container">
+            <MaterialPdfViewer
+              materialTitle={material.title}
+              previewUrl={previewUrl}
+              totalPages={totalPages}
+              currentPage={currentPage}
+              onPageChange={(pg) => {
+                setCurrentPage(pg);
+                setHighlightedPage(null);
+              }}
+              zoom={zoom}
+              onZoomChange={setZoom}
+              isLoading={isPreviewLoading}
+              error={previewError}
+              onRefreshSignedUrl={handleRefreshSignedUrl}
+              onDownload={handleDownload}
+              highlightedPage={highlightedPage}
+            />
           </TabsContent>
 
           {/* TAB 2: Ringkasan AI */}
-          <TabsContent value="summary" className="mt-0 space-y-4">
-              {/* Disclaimer Alert */}
-              <div className="flex items-start gap-3 rounded-lg border border-amber-500/30 bg-amber-500/5 p-3.5 text-xs text-foreground">
-                <Info className="h-4 w-4 shrink-0 text-amber-500 mt-0.5" />
-                <div className="space-y-0.5">
-                  <p className="font-semibold text-amber-600 dark:text-amber-400">
-                    Informasi Kecerdasan Buatan
-                  </p>
-                  <p className="text-muted-foreground leading-relaxed">
-                    Ringkasan dihasilkan oleh AI sebagai asisten belajar pribadi. Selalu verifikasi fakta dan konsep penting dengan membaca dokumen perkuliahan asli melalui referensi halaman di bawah.
-                  </p>
-                </div>
-              </div>
-
-              {/* Error Alert if any */}
-              {summaryError && (
-                <div className="flex items-center gap-2 rounded-lg border border-danger/30 bg-danger/5 p-3 text-xs text-danger">
-                  <AlertCircle className="h-4 w-4 shrink-0" />
-                  <span>{summaryError}</span>
-                </div>
-              )}
-
-              {/* State 1: Active In-Progress / Processing */}
-              {isAiWorking ? (
-                <Card className="p-12 text-center bg-card">
-                  <div className="relative mx-auto w-12 h-12 flex items-center justify-center">
-                    <Loader2 className="h-10 w-10 animate-spin text-primary" />
-                    <Sparkles className="h-4 w-4 text-amber-500 absolute" />
-                  </div>
-                  <h3 className="mt-4 text-base font-semibold text-foreground">
-                    Menyusun Ringkasan AI...
-                  </h3>
-                  <p className="mt-1 text-xs text-muted-foreground max-w-md mx-auto">
-                    Model AI sedang membaca seluruh teks dokumen materi dan mengekstrak konsep kunci, bagian terstruktur, serta istilah penting.
-                  </p>
-                  <div className="mt-4 inline-flex items-center gap-1.5 rounded-full bg-muted px-3 py-1 text-[11px] text-muted-foreground font-medium">
-                    <span className="h-2 w-2 rounded-full bg-primary animate-pulse" />
-                    <span>Memproses di background worker BullMQ</span>
-                  </div>
-                </Card>
-              ) : summary?.status === 'READY' ? (
-                /* State 2: Ready Summary */
-                <div className="space-y-5">
-                  {/* Summary Header & Actions */}
-                  <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border bg-card p-3 sm:p-4">
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-2">
-                        <Sparkles className="h-4 w-4 text-amber-500" />
-                        <h2 className="text-base font-bold text-foreground">
-                          {summary.title || 'Ringkasan Materi'}
-                        </h2>
-                      </div>
-                      <div className="flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
-                        <span>Model: {summary.model}</span>
-                        <span>•</span>
-                        <span>{summary.sourcePageCount} halaman dianalisis</span>
-                        {quota && (
-                          <>
-                            <span>•</span>
-                            <span className="text-primary font-medium">
-                              Sisa kuota harian: {quota.dailyRemaining}/{quota.dailyLimit}
-                            </span>
-                          </>
-                        )}
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={handleCopySummary}
-                        className="gap-1.5 text-xs h-8"
-                      >
-                        {copiedSummary ? (
-                          <>
-                            <Check className="h-3.5 w-3.5 text-success" />
-                            <span>Tersalin</span>
-                          </>
-                        ) : (
-                          <>
-                            <Copy className="h-3.5 w-3.5" />
-                            <span>Salin Ringkasan</span>
-                          </>
-                        )}
-                      </Button>
-
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setIsRegenerateConfirmOpen(true)}
-                        disabled={isArchived || Boolean(quota && quota.dailyRemaining <= 0)}
-                        className="gap-1.5 text-xs h-8 text-primary hover:text-primary"
-                      >
-                        <RefreshCw className="h-3.5 w-3.5" />
-                        <span>Regenerasi</span>
-                      </Button>
-                    </div>
-                  </div>
-
-                  {/* Overview Card */}
-                  {summary.overview && (
-                    <Card className="p-5 sm:p-6 bg-card space-y-2 border border-border">
-                      <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
-                        Ringkasan Utama
-                      </h3>
-                      <p className="text-sm leading-relaxed text-foreground whitespace-pre-line">
-                        {summary.overview}
-                      </p>
-                    </Card>
-                  )}
-
-                  {/* Konsep Kunci */}
-                  {summary.keyConcepts && (summary.keyConcepts as KeyConcept[]).length > 0 && (
-                    <div className="space-y-3">
-                      <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
-                        Konsep Kunci
-                      </h3>
-                      <div className="grid gap-3 sm:grid-cols-2">
-                        {(summary.keyConcepts as KeyConcept[]).map((concept, idx) => (
-                          <Card
-                            key={idx}
-                            className="p-4 bg-card border border-border flex flex-col justify-between gap-3 hover:border-primary/40 transition-colors"
-                          >
-                            <div className="space-y-1.5">
-                              <h4 className="font-semibold text-sm text-foreground">
-                                {concept.concept}
-                              </h4>
-                              <p className="text-xs leading-relaxed text-muted-foreground">
-                                {concept.explanation}
-                              </p>
-                            </div>
-
-                            {concept.pageReferences && concept.pageReferences.length > 0 && (
-                              <div className="flex flex-wrap items-center gap-1.5 pt-2 border-t border-border/50 text-[11px]">
-                                <span className="text-muted-foreground">Sumber:</span>
-                                {concept.pageReferences.map((pg) => (
-                                  <button
-                                    key={pg}
-                                    onClick={() => handleJumpToPdfPage(pg)}
-                                    className="inline-flex items-center gap-0.5 rounded bg-primary/10 hover:bg-primary/20 text-primary font-medium px-1.5 py-0.5 transition-colors cursor-pointer"
-                                    title={`Buka halaman ${pg} di PDF`}
-                                  >
-                                    <span>Hal {pg}</span>
-                                    <ChevronRight className="h-3 w-3" />
-                                  </button>
-                                ))}
-                              </div>
-                            )}
-                          </Card>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Bagian Materi */}
-                  {summary.sections && (summary.sections as SummarySection[]).length > 0 && (
-                    <div className="space-y-3">
-                      <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
-                        Struktur & Bagian Materi
-                      </h3>
-                      <div className="space-y-3">
-                        {(summary.sections as SummarySection[]).map((sec, idx) => (
-                          <Card key={idx} className="p-4 sm:p-5 bg-card border border-border space-y-2">
-                            <div className="flex flex-wrap items-center justify-between gap-2">
-                              <h4 className="font-semibold text-sm text-foreground">
-                                {sec.heading}
-                              </h4>
-                              {sec.pageReferences && sec.pageReferences.length > 0 && (
-                                <div className="flex flex-wrap items-center gap-1">
-                                  {sec.pageReferences.map((pg) => (
-                                    <button
-                                      key={pg}
-                                      onClick={() => handleJumpToPdfPage(pg)}
-                                      className="inline-flex items-center gap-0.5 rounded bg-muted hover:bg-muted/80 text-muted-foreground hover:text-foreground font-medium text-[11px] px-1.5 py-0.5 transition-colors cursor-pointer"
-                                      title={`Lihat Halaman ${pg}`}
-                                    >
-                                      <span>Hal {pg}</span>
-                                    </button>
-                                  ))}
-                                </div>
-                              )}
-                            </div>
-                            <p className="text-xs sm:text-sm leading-relaxed text-muted-foreground whitespace-pre-line">
-                              {sec.content}
-                            </p>
-                          </Card>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Istilah Penting */}
-                  {summary.keyTerms && (summary.keyTerms as KeyTerm[]).length > 0 && (
-                    <div className="space-y-3">
-                      <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
-                        Istilah & Glosarium Penting
-                      </h3>
-                      <div className="grid gap-2.5 sm:grid-cols-2">
-                        {(summary.keyTerms as KeyTerm[]).map((term, idx) => (
-                          <div
-                            key={idx}
-                            className="rounded-lg border border-border bg-card p-3 space-y-1 hover:border-primary/40 transition-colors"
-                          >
-                            <div className="flex items-center justify-between gap-2">
-                              <span className="font-semibold text-xs text-foreground font-mono">
-                                {term.term}
-                              </span>
-                              {term.pageReferences && term.pageReferences.length > 0 && (
-                                <div className="flex items-center gap-1">
-                                  {term.pageReferences.map((pg) => (
-                                    <button
-                                      key={pg}
-                                      onClick={() => handleJumpToPdfPage(pg)}
-                                      className="text-[10px] text-primary hover:underline font-medium"
-                                    >
-                                      Hal {pg}
-                                    </button>
-                                  ))}
-                                </div>
-                              )}
-                            </div>
-                            <p className="text-xs text-muted-foreground leading-relaxed">
-                              {term.definition}
-                            </p>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Limitations if any */}
-                  {summary.limitations && (
-                    <div className="rounded-lg border border-border bg-muted/30 p-3.5 text-xs text-muted-foreground space-y-1">
-                      <span className="font-semibold text-foreground">Catatan / Batasan:</span>
-                      <p>{summary.limitations}</p>
-                    </div>
-                  )}
-                </div>
-              ) : summary?.status === 'FAILED' ? (
-                /* State 3: Failed Generation */
-                <Card className="border-danger/30 bg-danger/5 p-8 text-center space-y-3">
-                  <AlertCircle className="h-10 w-10 text-danger mx-auto" />
-                  <h3 className="text-base font-semibold text-danger">Gagal Membuat Ringkasan AI</h3>
-                  <p className="text-xs text-muted-foreground max-w-md mx-auto">
-                    {summary.errorMessage ||
-                      'Terjadi kesalahan saat memproses ringkasan dengan AI. Kuota harian Anda aman dan tidak terpotong untuk kegagalan sistem.'}
-                  </p>
-                  <div className="pt-2 flex justify-center gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleTriggerSummary(false)}
-                      disabled={isGeneratingSummary || Boolean(quota && quota.dailyRemaining <= 0)}
-                      className="gap-1.5"
-                    >
-                      <RotateCcw className="h-3.5 w-3.5" />
-                      <span>Coba Lagi</span>
-                    </Button>
-                  </div>
-                </Card>
-              ) : (
-                /* State 4: Uncreated / Initial state */
-                <Card className="p-8 sm:p-12 text-center bg-card border border-dashed border-border space-y-4">
-                  <div className="mx-auto w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-primary">
-                    <Sparkles className="h-6 w-6 text-amber-500" />
-                  </div>
-
-                  <div className="space-y-1 max-w-md mx-auto">
-                    <h3 className="text-base font-semibold text-foreground">
-                      Ringkas Dokumen Ini dengan AI
-                    </h3>
-                    <p className="text-xs text-muted-foreground leading-relaxed">
-                      Dapatkan ringkasan terstruktur otomatis: konsep kunci, intisari bab perkuliahan, dan daftar istilah penting yang dapat diklik langsung menuju nomor halaman PDF aslinya.
-                    </p>
-                  </div>
-
-                  {quota && (
-                    <div className="inline-flex items-center gap-1.5 rounded-full bg-muted/60 px-3 py-1 text-xs text-muted-foreground font-medium">
-                      <span>Kuota Tersedia:</span>
-                      <span className="text-foreground font-bold">
-                        {quota.dailyRemaining} / {quota.dailyLimit}
-                      </span>
-                      <span>ringkasan hari ini</span>
-                    </div>
-                  )}
-
-                  <div className="pt-2">
-                    <Button
-                      size="default"
-                      onClick={() => handleTriggerSummary(false)}
-                      disabled={
-                        isGeneratingSummary ||
-                        isArchived ||
-                        Boolean(quota && quota.dailyRemaining <= 0)
-                      }
-                      className="gap-2 shadow-sm font-semibold"
-                    >
-                      {isGeneratingSummary ? (
-                        <>
-                          <Loader2 className="h-4 w-4 animate-spin" />
-                          <span>Memulai Antrean...</span>
-                        </>
-                      ) : (
-                        <>
-                          <Sparkles className="h-4 w-4 text-amber-300" />
-                          <span>Buat Ringkasan AI Sekarang</span>
-                        </>
-                      )}
-                    </Button>
-                  </div>
-
-                  {isArchived && (
-                    <p className="text-[11px] text-warning">
-                      Mata kuliah atau semester ini telah diarsipkan. Ringkasan baru tidak dapat dibuat.
-                    </p>
-                  )}
-
-                  {quota && quota.dailyRemaining <= 0 && (
-                    <p className="text-[11px] text-danger">
-                      Batas kuota harian Anda telah habis (20 ringkasan/hari). Kuota akan direset pada 00:00 UTC.
-                    </p>
-                  )}
-                </Card>
-              )}
+          <TabsContent value="summary" className="mt-0">
+            <MaterialSummaryTab
+              summary={summary}
+              quota={quota}
+              isGenerating={isGeneratingSummary}
+              error={summaryError}
+              isArchived={isArchived}
+              onGenerate={(regen) => handleTriggerSummary(Boolean(regen))}
+              onOpenRegenerateDialog={() => setIsRegenerateConfirmOpen(true)}
+              onJumpToPage={handleJumpToPdfPage}
+              onCopySummary={handleCopySummary}
+              copiedSummary={copiedSummary}
+            />
           </TabsContent>
 
           {/* TAB 3: Teks Hasil Ekstraksi */}
           <TabsContent value="text" className="mt-0 space-y-4">
-              {extractedPages.length === 0 ? (
-                <Card className="p-8 text-center bg-card">
-                  <BookOpen className="h-8 w-8 text-muted-foreground mx-auto" />
-                  <h4 className="mt-2 text-sm font-semibold text-foreground">
-                    Teks belum diekstrak atau tidak tersedia
-                  </h4>
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    Dokumen ini mungkin berupa file tanpa lapisan teks atau pemrosesan ekstraksi belum selesai.
-                  </p>
-                </Card>
-              ) : (
-                <Card className="border border-border p-4 sm:p-6 space-y-4 bg-card">
-                  {/* Extracted Page Stepper & Meta */}
-                  <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border pb-3">
-                    <div className="flex items-center gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        disabled={selectedTextPage <= 1}
-                        onClick={() => setSelectedTextPage((p) => Math.max(1, p - 1))}
-                        className="h-8 w-8 p-0"
-                        title="Halaman Sebelumnya"
-                        aria-label="Halaman Sebelumnya"
-                      >
-                        <ChevronLeft className="h-4 w-4" />
-                      </Button>
+            {extractedPages.length === 0 ? (
+              <Card className="p-8 text-center bg-card border border-border shadow-xs">
+                <BookOpen className="h-8 w-8 text-muted-foreground mx-auto" />
+                <h4 className="mt-2 text-sm font-semibold text-foreground">
+                  Teks belum diekstrak atau tidak tersedia
+                </h4>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Dokumen ini mungkin berupa file tanpa lapisan teks atau pemrosesan ekstraksi belum selesai.
+                </p>
+              </Card>
+            ) : (
+              <Card className="border border-border p-4 sm:p-6 space-y-4 bg-card shadow-xs">
+                {/* Stepper Halaman Teks */}
+                <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border pb-3">
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="icon-sm"
+                      disabled={selectedTextPage <= 1}
+                      onClick={() => setSelectedTextPage((p) => Math.max(1, p - 1))}
+                      className="h-8 w-8 p-0"
+                      title="Halaman Sebelumnya"
+                      aria-label="Halaman Sebelumnya"
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                    </Button>
 
-                      <select
-                        value={selectedTextPage}
-                        onChange={(e) => setSelectedTextPage(parseInt(e.target.value, 10))}
-                        className="h-8 rounded border border-border bg-background px-2 text-xs font-semibold text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
-                        aria-label="Pilih nomor halaman teks"
-                      >
-                        {extractedPages.map((p) => (
-                          <option key={p.pageNumber} value={p.pageNumber}>
-                            Halaman {p.pageNumber} ({p.characterCount} karakter)
-                          </option>
-                        ))}
-                      </select>
+                    <select
+                      value={selectedTextPage}
+                      onChange={(e) => setSelectedTextPage(parseInt(e.target.value, 10))}
+                      className="h-8 rounded-lg border border-input bg-background px-2 text-xs font-semibold text-foreground focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-primary"
+                      aria-label="Pilih nomor halaman teks"
+                    >
+                      {extractedPages.map((p) => (
+                        <option key={p.pageNumber} value={p.pageNumber}>
+                          Halaman {p.pageNumber} ({p.characterCount} karakter)
+                        </option>
+                      ))}
+                    </select>
 
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        disabled={selectedTextPage >= extractedPages.length}
-                        onClick={() => setSelectedTextPage((p) => Math.min(extractedPages.length, p + 1))}
-                        className="h-8 w-8 p-0"
-                        title="Halaman Selanjutnya"
-                        aria-label="Halaman Selanjutnya"
-                      >
-                        <ChevronRight className="h-4 w-4" />
-                      </Button>
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs text-muted-foreground font-medium">
-                        {currentExtractedPage?.characterCount || 0} Karakter
-                      </span>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() =>
-                          handleCopyText(
-                            currentExtractedPage?.pageNumber || 1,
-                            currentExtractedPage?.extractedText || ''
-                          )
-                        }
-                        className="h-8 gap-1.5 text-xs"
-                      >
-                        {copiedPageIndex === currentExtractedPage?.pageNumber ? (
-                          <>
-                            <Check className="h-3.5 w-3.5 text-success" />
-                            <span>Tersalin</span>
-                          </>
-                        ) : (
-                          <>
-                            <Copy className="h-3.5 w-3.5" />
-                            <span>Salin Teks</span>
-                          </>
-                        )}
-                      </Button>
-                    </div>
+                    <Button
+                      variant="outline"
+                      size="icon-sm"
+                      disabled={selectedTextPage >= extractedPages.length}
+                      onClick={() => setSelectedTextPage((p) => Math.min(extractedPages.length, p + 1))}
+                      className="h-8 w-8 p-0"
+                      title="Halaman Selanjutnya"
+                      aria-label="Halaman Selanjutnya"
+                    >
+                      <ChevronRight className="h-4 w-4" />
+                    </Button>
                   </div>
 
-                  {/* Empty text warning on mixed documents */}
-                  {currentExtractedPage && currentExtractedPage.characterCount < 5 && (
-                    <div className="rounded border border-warning/30 bg-warning/5 px-3 py-2 text-xs text-warning flex items-center gap-2">
-                      <AlertCircle className="h-4 w-4 shrink-0" />
-                      <span>
-                        Halaman ini tidak mengandung teks terdeteksi. Kemungkinan halaman hanya berisi gambar, scan, atau diagram.
-                      </span>
-                    </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-muted-foreground font-medium">
+                      {currentExtractedPage?.characterCount || 0} Karakter
+                    </span>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() =>
+                        handleCopyText(
+                          currentExtractedPage?.pageNumber || 1,
+                          currentExtractedPage?.extractedText || ''
+                        )
+                      }
+                      className="h-8 gap-1.5 text-xs"
+                    >
+                      {copiedPageIndex === currentExtractedPage?.pageNumber ? (
+                        <>
+                          <Check className="h-3.5 w-3.5 text-emerald-600" />
+                          <span>Tersalin</span>
+                        </>
+                      ) : (
+                        <>
+                          <Copy className="h-3.5 w-3.5" />
+                          <span>Salin Teks</span>
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Teks Isi */}
+                <div className="rounded-lg border border-border bg-muted/20 p-4 font-mono text-xs leading-relaxed text-foreground whitespace-pre-wrap select-text max-h-[600px] overflow-y-auto">
+                  {currentExtractedPage?.extractedText || (
+                    <span className="text-muted-foreground italic">
+                      Tidak ada teks pada halaman ini.
+                    </span>
                   )}
-
-                  {/* Text Content Display */}
-                  <div className="rounded-lg border border-border bg-muted/20 p-4 font-mono text-xs leading-relaxed text-foreground whitespace-pre-wrap select-text max-h-[600px] overflow-y-auto">
-                    {currentExtractedPage?.extractedText || (
-                      <span className="text-muted-foreground italic">Tidak ada teks pada halaman ini.</span>
-                    )}
-                  </div>
-                </Card>
-              )}
+                </div>
+              </Card>
+            )}
           </TabsContent>
 
           {/* TAB 4: Flashcards */}
-          <TabsContent value="flashcards" className="mt-0">
+          <TabsContent value="flashcards" forceMount className="mt-0">
             <MaterialFlashcardTab
               materialId={material.id}
               isArchived={isArchived}
-              onNavigateToPage={(pageNum) => {
-                setCurrentPage(pageNum);
-                setActiveTab('pdf');
-              }}
+              onNavigateToPage={handleJumpToPdfPage}
             />
           </TabsContent>
 
           {/* TAB 5: Kuis */}
-          <TabsContent value="quiz" className="mt-0">
+          <TabsContent value="quiz" forceMount className="mt-0">
             <MaterialQuizTab
               materialId={material.id}
               isArchived={isArchived}
-              onNavigateToPage={(pageNum) => {
-                setCurrentPage(pageNum);
-                setActiveTab('pdf');
-              }}
+              onNavigateToPage={handleJumpToPdfPage}
             />
           </TabsContent>
         </Tabs>
       ) : null}
 
-      {/* Regenerate Confirmation Dialog */}
+      {/* Dialog Konfirmasi Regenerasi Ringkasan */}
       <Dialog open={isRegenerateConfirmOpen} onOpenChange={setIsRegenerateConfirmOpen}>
-        <DialogContent>
+        <DialogContent className="sm:max-w-[420px] p-5 sm:p-6">
           <DialogHeader>
-            <DialogTitle>Regenerasi Ringkasan AI</DialogTitle>
-            <DialogDescription>
-              Apakah Anda yakin ingin membuat ulang ringkasan ini? Proses ini akan menggunakan 1 kuota harian Anda ({quota?.dailyRemaining ?? 0} tersisa). Ringkasan saat ini akan tetap dipertahankan sampai generasi baru selesai.
+            <DialogTitle className="text-base font-bold text-foreground">
+              Regenerasi Ringkasan AI
+            </DialogTitle>
+            <DialogDescription className="text-xs text-muted-foreground leading-relaxed mt-1.5">
+              Apakah kamu ingin membuat ulang ringkasan ini? Tindakan ini akan memakai 1 kuota harian ({quota?.dailyRemaining ?? 0} tersisa). Ringkasan saat ini tetap disimpan sampai proses selesai.
             </DialogDescription>
           </DialogHeader>
 
-          <DialogFooter className="mt-4">
+          <DialogFooter className="mt-5 flex flex-col-reverse sm:flex-row gap-2 sm:justify-end">
             <Button
               type="button"
               variant="outline"
+              size="standard"
               onClick={() => setIsRegenerateConfirmOpen(false)}
               disabled={isGeneratingSummary}
             >
@@ -1311,6 +879,7 @@ export default function MaterialDetailPage(): React.JSX.Element {
             </Button>
             <Button
               type="button"
+              size="standard"
               onClick={() => handleTriggerSummary(true)}
               disabled={isGeneratingSummary}
               className="gap-2"
@@ -1322,7 +891,7 @@ export default function MaterialDetailPage(): React.JSX.Element {
                 </>
               ) : (
                 <>
-                  <Sparkles className="h-4 w-4 text-amber-300" />
+                  <Sparkles className="h-4 w-4" />
                   <span>Ya, Regenerasi</span>
                 </>
               )}
@@ -1331,7 +900,7 @@ export default function MaterialDetailPage(): React.JSX.Element {
         </DialogContent>
       </Dialog>
 
-      {/* Edit Title Dialog */}
+      {/* Dialog Edit Judul Materi */}
       <Dialog
         open={isEditOpen}
         onOpenChange={(open) => {
@@ -1339,77 +908,117 @@ export default function MaterialDetailPage(): React.JSX.Element {
           if (open) setEditError(null);
         }}
       >
-        <DialogContent>
+        <DialogContent className="sm:max-w-[420px] p-5 sm:p-6">
           <form onSubmit={handleUpdateTitle}>
             <DialogHeader>
-              <DialogTitle>Edit Judul Materi</DialogTitle>
-              <DialogDescription>Perbarui judul dokumen materi perkuliahan ini.</DialogDescription>
+              <DialogTitle className="text-base font-bold text-foreground">
+                Edit Judul Materi
+              </DialogTitle>
+              <DialogDescription className="text-xs text-muted-foreground leading-relaxed mt-1">
+                Perbarui judul dokumen materi perkuliahan ini.
+              </DialogDescription>
             </DialogHeader>
 
             {editError && (
-              <div className="mt-3 flex items-center gap-2 rounded-lg border border-danger/30 bg-danger/5 p-3 text-xs text-danger">
+              <div
+                role="alert"
+                className="mt-3 flex items-center gap-2 rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-xs text-destructive"
+              >
                 <AlertCircle className="h-4 w-4 shrink-0" />
                 <span>{editError}</span>
               </div>
             )}
 
-            <div className="mt-4 space-y-2">
-              <Label htmlFor="edit-title">Judul Dokumen</Label>
+            <div className="mt-4 space-y-1.5">
+              <Label htmlFor="edit-title" className="text-xs font-semibold text-foreground">
+                Judul Dokumen *
+              </Label>
               <Input
                 id="edit-title"
                 value={editTitle}
                 onChange={(e) => setEditTitle(e.target.value)}
                 disabled={isSubmittingEdit}
+                required
+                className="h-9 text-xs sm:text-sm"
               />
             </div>
 
-            <DialogFooter className="mt-6">
+            <DialogFooter className="mt-5 flex flex-col-reverse sm:flex-row gap-2 sm:justify-end">
               <Button
                 type="button"
                 variant="outline"
+                size="standard"
                 onClick={() => setIsEditOpen(false)}
                 disabled={isSubmittingEdit}
               >
                 Batal
               </Button>
-              <Button type="submit" disabled={isSubmittingEdit || !editTitle.trim()}>
-                {isSubmittingEdit ? 'Menyimpan...' : 'Simpan'}
+              <Button
+                type="submit"
+                size="standard"
+                disabled={isSubmittingEdit || !editTitle.trim()}
+              >
+                {isSubmittingEdit ? (
+                  <>
+                    <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
+                    Menyimpan...
+                  </>
+                ) : (
+                  'Simpan Perubahan'
+                )}
               </Button>
             </DialogFooter>
           </form>
         </DialogContent>
       </Dialog>
 
-      {/* Delete Confirmation Dialog */}
+      {/* Dialog Konfirmasi Hapus Materi */}
       <Dialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
-        <DialogContent>
+        <DialogContent className="sm:max-w-[420px] p-5 sm:p-6">
           <DialogHeader>
-            <DialogTitle>Hapus Materi</DialogTitle>
-            <DialogDescription>
-              Hapus &quot;{material.title}&quot;? File dan data pemrosesan dokumen terkait akan dihapus.
-              Catatan manual tetap disimpan.
+            <DialogTitle className="text-base font-bold text-foreground">
+              Hapus Materi Kuliah?
+            </DialogTitle>
+            <DialogDescription className="text-xs text-muted-foreground leading-relaxed mt-1.5">
+              Materi <span className="font-semibold text-foreground">&ldquo;{material.title}&rdquo;</span>{' '}
+              beserta seluruh berkas, ringkasan AI, flashcard, dan kuis terkait akan dihapus permanen. Catatan manual tetap disimpan.
             </DialogDescription>
           </DialogHeader>
 
           {deleteError && (
-            <div className="mt-2 text-xs text-danger font-medium">{deleteError}</div>
+            <div
+              role="alert"
+              className="mt-3 rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-xs text-destructive font-medium"
+            >
+              {deleteError}
+            </div>
           )}
 
-          <DialogFooter className="mt-6">
+          <DialogFooter className="mt-5 flex flex-col-reverse sm:flex-row gap-2 sm:justify-end">
             <Button
+              type="button"
               variant="outline"
+              size="standard"
               onClick={() => setIsDeleteOpen(false)}
               disabled={isSubmittingDelete}
             >
               Batal
             </Button>
             <Button
-              variant="default"
+              type="button"
+              variant="destructive"
+              size="standard"
               onClick={handleDelete}
               disabled={isSubmittingDelete}
-              className="bg-danger hover:bg-danger/90 text-white"
             >
-              {isSubmittingDelete ? 'Menghapus...' : 'Hapus Materi'}
+              {isSubmittingDelete ? (
+                <>
+                  <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
+                  Menghapus...
+                </>
+              ) : (
+                'Hapus Materi'
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>

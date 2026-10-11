@@ -136,7 +136,7 @@ test.describe('StudyFlow End-to-End Suite', () => {
     await page.fill('#upload-title', 'Buku Ajar Kecerdasan Buatan');
 
     const fileChooserPromise = page.waitForEvent('filechooser');
-    await page.locator('text=klik untuk memilih').click();
+    await page.click('button:has-text("Pilih Berkas PDF")');
     const fileChooser = await fileChooserPromise;
     await fileChooser.setFiles(path.resolve('apps/web/e2e/fixtures/sample.pdf'));
 
@@ -426,7 +426,7 @@ test.describe('StudyFlow End-to-End Suite', () => {
 
     // 9. Verifikasi Filter Dropdown Radix di Halaman Materi (Buka/Tutup & Opsi)
     await page.goto('/materials');
-    await expect(page.locator('h1:has-text("Materi PDF")')).toBeVisible();
+    await expect(page.locator('h1').getByText('Materi')).toBeVisible();
     const courseSelectTrigger = page.locator('button[role="combobox"]').first();
     await expect(courseSelectTrigger).toBeVisible();
     await courseSelectTrigger.click();

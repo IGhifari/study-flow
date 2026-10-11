@@ -257,13 +257,43 @@ Jika belum ada semester, tampilkan satu empty state “Mulai dari semester perta
 
 ### 9.5 Tugas
 
-- Toolbar: pencarian judul, filter mata kuliah/status/prioritas, urutan deadline, dan “Tambah tugas”.
-- Desktop: table dengan judul, mata kuliah, deadline, prioritas, status, dan menu aksi.
-- Mobile: list dengan judul di baris pertama, metadata di bawah, dan kontrol status yang tetap mudah disentuh. Semua informasi penting dari tabel tetap tersedia.
-- Deadline menampilkan tanggal/jam konkret; label seperti “Besok” hanya pelengkap. Zona waktu terlihat dalam form dan informasi deadline.
-- Tugas terlambat memakai ikon jam dan teks “Terlambat”; tugas selesai tidak mewarisi warna peringatan.
-- Form: judul, mata kuliah, deskripsi opsional, deadline, prioritas, status. Jika hanya memilih tanggal, jelaskan waktu default 23.59 sesuai PRD.
-- Filter aktif dapat direset melalui “Hapus filter”. Hasil kosong akibat filter berbeda dari belum punya tugas.
+- **Header halaman dan konteks semester**:
+  - Judul “Tugas”, konteks semester aktif (misal: “Semester Ganjil 2024/2025”), jumlah tugas terdaftar, dan satu CTA utama “Tambah tugas” (`size="standard"`, tinggi 36 px / `h-9`).
+  - Jika belum ada mata kuliah aktif di semester berjalan, tampilkan banner peringatan ramah yang mengarahkan pengguna untuk membuat mata kuliah terlebih dahulu.
+- **Toolbar pencarian dan filter terpadu**:
+  - Input pencarian judul tugas (`h-9`), dropdown filter mata kuliah aktif (`h-9`), dropdown filter status (`h-9`), dan dropdown filter prioritas (`h-9`).
+  - Kontrol urutan deadline (`ArrowUpDown`, `size="icon-sm"`, `h-9 w-9`) dan toggle filter tugas terlambat (`Clock`, `size="icon-sm"`, `h-9 w-9`).
+  - Sediakan tombol “Hapus filter” ketika ada kriteria pencarian/filter aktif. Pencarian dan filter bekerja di tingkat server (*server-side query*).
+  - Pada layar sempit (<768px/640px), kontrol tersusun rapi membungkus (*flex-wrap*) tanpa menyebabkan *horizontal overflow*.
+- **Daftar tugas desktop (>=768px)**:
+  - Tabel terstruktur dengan kolom: Status (checkbox aksesibel), Judul Tugas (judul utama tebal berpembalut teks aman *break-words* beserta deskripsi ringkas opsional), Mata Kuliah (nama mata kuliah dengan ikon buku), Tenggat Waktu (tanggal & jam lokal dengan zona waktu profil pengguna), Prioritas (Badge semantik: Tinggi, Sedang, Rendah), dan Aksi.
+  - Pembedaan status waktu & penyelesaian menggunakan **kombinasi teks eksplisit dan indikator visual semantik** (bukan warna semata):
+    - *Terlambat*: Badge/penanda merah dengan ikon `AlertTriangle` dan teks “Terlambat”.
+    - *Hari ini*: Badge/penanda amber dengan ikon `Clock` dan teks “Hari ini”.
+    - *Mendatang*: Badge/penanda netral dengan ikon `Calendar` dan teks “Mendatang”.
+    - *Selesai*: Checkbox tercentang, judul dicoret halus, badge/penanda emerald dengan ikon `CheckCircle2` dan teks “Selesai” beserta tanggal penyelesaian.
+  - Aksi baris dikelompokkan dalam menu dropdown terpadu (`MoreVertical`, `size="icon-sm"`, `h-8 w-8`) berisi opsi: “Edit tugas” (`Pencil`) dan “Hapus tugas” (`Trash2`, teks merah destruktif). Kolom aksi memiliki lebar tetap (*fixed*) sehingga judul panjang tidak mendorong aksi keluar layar.
+- **Daftar tugas mobile (<768px)**:
+  - Kartu daftar berpemisah ringkas dengan hierarki yang sama: Checkbox status di kiri atas, judul tugas tebal dengan badge prioritas di kanan atas, baris mata kuliah dan deskripsi di tengah, serta baris bawah berisi tenggat waktu berpenanda status (teks + ikon) dan menu dropdown aksi tiga titik (`MoreVertical`).
+  - Menu aksi memiliki area sentuh minimal 44×44 px (`after:absolute after:-inset-1 sm:after:hidden touch-manipulation`) untuk kenyamanan penggunaan layar sentuh.
+- **Interaksi checkbox status & ketahanan jaringan**:
+  - Checkbox memiliki label aksesibel (`aria-label`) yang dinamis sesuai status saat ini.
+  - Mendukung pembaruan optimistik (*optimistic update*). Jika request server gagal, status otomatis dipulihkan (*rollback*) ke kondisi tersimpan dan menampilkan pesan error yang jelas.
+  - Selama proses pembaruan berlangsung, kontrol dinonaktifkan dengan indikator spinner halus untuk mencegah *double click* atau pengiriman request ganda.
+- **Dialog tambah dan edit tugas**:
+  - Urutan field terstruktur: Judul Tugas * (min 2, max 200 karakter), Mata Kuliah * (pilihan mata kuliah aktif), Tenggat Waktu * (tanggal dan jam dengan keterangan zona waktu profil pengguna yang ringkas), Prioritas & Status (grid 2 kolom), serta Deskripsi/Catatan (opsional).
+  - Jika submit gagal akibat validasi server atau kendala jaringan, isian form pengguna tetap dipertahankan (*input retention*) dan pesan error ditampilkan di bagian atas form.
+  - Tombol simpan dinonaktifkan selama proses pengiriman dengan label loading yang jelas (“Menyimpan…” / “Memperbarui…”).
+  - Dialog mendukung *scrolling* vertikal yang nyaman pada layar ponsel (`max-h-[90vh] overflow-y-auto`) dengan tombol Batal dan Simpan selalu dapat dijangkau.
+- **Dialog hapus tugas**:
+  - Konfirmasi destruktif menyebutkan judul tugas yang akan dihapus secara spesifik dan menjelaskan konsekuensi penghapusan permanen.
+  - Tombol “Batal” (`variant="outline" size="standard"`) dan “Hapus Tugas” (`variant="destructive" size="standard"`).
+  - Jika penghapusan gagal di server, dialog tetap terbuka menampilkan pesan kesalahan tanpa merusak alur pengguna.
+- **Penanganan state halaman**:
+  - *Loading*: Skeleton terstruktur untuk tabel desktop dan kartu mobile.
+  - *Gagal memuat*: Peringatan ramah dengan tombol “Coba Lagi” (`RefreshCw`).
+  - *Belum ada tugas (Onboarding)*: Tampilan tenang berikon `ListTodo`, penjelasan manfaat pencatatan tugas, dan tombol “Tambah tugas”.
+  - *Filter tanpa hasil*: Pesan spesifik bahwa tidak ada tugas yang cocok dengan kriteria pencarian/filter aktif, disertai tombol “Hapus filter”.
 
 ### 9.6 Daftar dan upload materi
 
@@ -304,39 +334,72 @@ Jika belum ada semester, tampilkan satu empty state “Mulai dari semester perta
 
 ### 9.7 Detail materi — pusat pengalaman belajar
 
-- Header: breadcrumb, judul lengkap, mata kuliah, status, dan menu download/hapus.
-- Pada viewport lebar, kiri sekitar 55% untuk preview PDF, kanan 45% untuk tab “Ringkasan”, “Flashcard”, “Kuis”. Tetap jaga lebar baris teks; hindari panel sangat sempit.
-- Di bawah 1280 px gunakan pilihan utama “Dokumen” dan “Belajar”; panel belajar memuat tab ringkasan/flashcard/kuis. Pertahankan tab serta posisi sumber saat berpindah.
-- Preview menyediakan halaman sebelumnya/berikutnya, nomor halaman, zoom, dan download. Jangan mengandalkan gestur pinch sebagai satu-satunya kontrol.
-- PDF boleh memerlukan scroll lokal pada zoom tinggi; halaman aplikasi dan toolbar tetap reflow.
-- Saat preview tidak didukung/gagal, tampilkan “Pratinjau belum tersedia” dan aksi download terotorisasi. Ringkasan yang tersedia tetap dapat digunakan.
-- Ringkasan ditata seperti catatan: gambaran umum, konsep, istilah, dengan rujukan halaman berupa link kecil yang jelas.
-- Klik “Hal. 4” membuka halaman PDF tersebut. Pada mobile, pindahkan ke mode dokumen dan sediakan “Kembali ke ringkasan”; jangan membuka tab baru tanpa kebutuhan.
-- Jelaskan sekali bahwa rujukan memakai urutan halaman PDF. Jangan mengklaim label halaman tercetak selalu sama.
-- Ringkasan belum dibuat: tampilkan manfaat singkat, keterangan kuota, dan “Buat ringkasan”. Hindari panel kosong tanpa aksi.
-- Sebelum penggunaan AI pertama, jelaskan pengiriman teks materi ke provider sesuai PRD. Tindakan lanjut harus eksplisit dan informatif.
-- Regenerasi ada di aksi sekunder. Copy menjelaskan penggunaan kuota dan bahwa hasil lama tetap tersedia bila proses baru gagal.
+- **Header detail materi**:
+  - Tombol kembali ke daftar materi (“Kembali ke Materi”, `size="sm"`), judul materi sebagai heading utama (`h1`) dengan `break-words` agar judul panjang tidak mendorong tombol keluar layar, dan link konteks mata kuliah.
+  - Status pemrosesan dokumen semantik (`MaterialStatusBadge`) dan penanda arsip jika mata kuliah/semester diarsipkan.
+  - Metadata ringkas dalam satu baris fleksibel: nama berkas asli, ukuran file dalam MB, jumlah halaman, dan waktu unggah dalam zona waktu profil pengguna.
+  - Aksi utama: Tombol “Unduh Berkas” (jika dokumen `READY`, `size="standard"`, `h-9`) atau “Coba Lagi” (jika `FAILED`, `size="standard"`).
+  - Aksi sekunder dikelompokkan dalam menu dropdown terpadu (`MoreVertical`, `size="icon-sm"`, `h-9 w-9`) berisi opsi: Edit Judul Materi, Buka di Tab Baru, Perbarui Tautan Unduh, dan Hapus Materi (dengan dialog konfirmasi destruktif permanen).
+- **Navigasi konten**:
+  - Menggunakan `Tabs` shadcn/ui terstruktur: Dokumen PDF (`FileText`), Ringkasan AI (`Sparkles`), Flashcard (`Layers`), Kuis (`HelpCircle`), dan Teks Ekstraksi (`BookOpen`).
+  - `TabsList` mendukung keyboard (Arrow navigation) dan responsif pada mobile dengan *horizontal scroll* (`overflow-x-auto flex-nowrap`) tanpa teks terpotong.
+  - Pergantian tab mempertahankan status dan input pengguna (tidak mereset progres kuis yang sedang dikerjakan atau memicu pembuatan AI otomatis).
+- **Pembaca PDF**:
+  - Ruang baca utama yang lapang (`h-[620px]` di mobile hingga `h-[860px]` di desktop) dengan pembatas tipis netral.
+  - Toolbar interaktif responsif yang membungkus rapi pada layar sempit:
+    - Navigasi halaman: Tombol halaman sebelumnya (`ChevronLeft`), input nomor halaman langsung, indikator total halaman, dan tombol halaman selanjutnya (`ChevronRight`).
+    - Kontrol pembesaran: Tombol perkecil (`ZoomOut`), persentase zoom (klik untuk reset ke 100%), dan perbesar (`ZoomIn`).
+    - Quick actions: Perbarui tautan (jika sesi signed URL kedaluwarsa), Buka di Tab Baru, dan Unduh.
+  - Penanganan status yang jelas:
+    - *Loading*: Spinner transparan di dalam frame pembaca.
+    - *Gagal memuat*: Peringatan ramah dengan opsi “Muat Ulang Tautan” dan “Unduh Berkas Langsung”.
+    - *Antrean/Ekstraksi*: Kartu tenang dengan penjelasan bahwa dokumen sedang dianalisis di antrean background worker.
+- **Tab Ringkasan AI**:
+  - Mengadopsi hierarki membaca seperti buku/catatan akademik bersih dengan lebar baris terukur (`max-w-3xl`):
+    - Hindari membungkus setiap paragraf dalam kartu terpisah dengan border tebal.
+    - *Ringkasan Utama*: Paragraf pembuka mengalir yang jelas.
+    - *Konsep Kunci*: Daftar terstruktur berpemisah tipis (`divide-y`) dengan nama konsep tebal, penjelasan ringkas, dan tombol rujukan halaman interaktif.
+    - *Struktur & Bagian Materi*: Sub-heading terstruktur dengan nomor halaman sumber dan isi materi.
+    - *Istilah Penting*: Glosarium dengan font monospace, definisi, dan nomor halaman.
+  - Referensi halaman tampil sebagai tombol ringkas (misal: “Hal. 4”) yang saat diklik langsung membuka tab Dokumen PDF, melompat ke halaman tersebut, dan menggulir ke viewport PDF dengan banner konfirmasi halaman sumber.
+  - Pembedaan status generasi AI:
+    - *Belum dibuat*: Kartu ajakan belajar dengan kuota harian tersisa dan tombol “Buat Ringkasan Sekarang” (`size="standard"`).
+    - *Sedang diproses*: Indikator antrean AI tanpa persentase/countdown palsu; tombol dinonaktifkan untuk mencegah submit ganda.
+    - *Berhasil*: Teks utuh dengan tombol “Salin Teks” dan “Regenerasi” (dengan dialog konfirmasi kuota).
+    - *Gagal*: Penjelasan aman dengan tombol “Coba Buat Lagi” tanpa mengurangi kuota harian.
+    - Jika pembaharuan data sementara gagal, hasil ringkasan lama yang masih valid tetap dipertahankan.
 
-### 9.8 Flashcard
+### 9.8 Flashcard — kartu belajar interaktif
 
-- Setup: pilihan 5/10/20 kartu, nilai awal 10, lalu “Buat flashcard”. Jelaskan bila jumlah aktual lebih sedikit karena materi terbatas.
-- Mode belajar maksimal sekitar 720 px, dengan nama materi dan “Kartu 3 dari 10”.
-- Pertanyaan dan jawaban dibaca di area stabil; jawaban dibuka dengan “Tampilkan jawaban”. Tidak wajib memakai animasi flip 3D.
-- Setelah jawaban terbuka, tampilkan “Perlu diulang” dan “Sudah paham”, kemudian navigasi sebelumnya/berikutnya.
-- Tombol penilaian tidak aktif sebelum jawaban dilihat. Kartu dapat dilewati dengan navigasi; jangan memaksa penilaian palsu.
-- Penanda pemahaman dilabeli sebagai penilaian pribadi. Akhir sesi menampilkan jumlah yang ditandai, bukan klaim penguasaan materi.
+- **Setup dialog**:
+  - Pilihan jumlah kartu: 5, 10, atau 20 kartu (default 10) dalam tombol grid yang nyaman (`size="standard"`).
+  - Penjelasan kuota AI dan rujukan nomor halaman dokumen PDF.
+- **Mode belajar (Deck Player)**:
+  - Lebar kartu terukur `max-w-2xl mx-auto` untuk fokus belajar tanpa distraksi.
+  - Bar status atas: Nomor kartu aktif (“Kartu 3 dari 10”), indikator penilaian pribadi (“X Paham • Y Perlu Diulang”), serta tombol rujukan halaman (“Lihat Hal. X”) yang melompat ke pembaca PDF.
+  - Kartu belajar stabil: Pertanyaan di sisi depan dan jawaban di sisi belakang.
+  - Aksesibilitas membalik kartu: Mendukung klik langsung pada kartu, tombol keyboard Spasi / Enter, serta tombol eksplisit “Tampilkan Jawaban” / “Sembunyikan Jawaban” di bawah kartu.
+  - Hindari animasi flip 3D berlebihan; hormati preferensi sistem `motion-reduce:transition-none` dengan transisi warna halus.
+  - Jawaban panjang dan multi-paragraf dapat dibaca tuntas melalui area gulir internal kartu (`max-h-[360px] overflow-y-auto`) tanpa terpotong (*no clipping*).
+  - Penandaan pemahaman: Tombol “Perlu Diulang” (amber) dan “Sudah Paham” (emerald) dengan ukuran sentuh minimal 44×44 px pada mobile.
+  - Navigasi stepper: Tombol “Sebelumnya” dan “Selanjutnya” dengan indikator posisi kartu di tengah.
 
-### 9.9 Kuis dan hasil
+### 9.9 Kuis dan hasil evaluasi
 
-- Setup: 5/10 soal, nilai awal 5, informasi “Tanpa batas waktu”, dan “Buat kuis”.
-- Sebelum mulai, tampilkan jumlah soal dan nama materi. Mode pengerjaan menggunakan lebar baca sekitar 760 px.
-- Satu soal dominan per tampilan, empat opsi berupa radio dengan seluruh label dapat diklik. Ada navigasi soal dan indikator yang sudah dijawab tanpa membocorkan benar/salah.
-- Skor, jawaban benar, dan pembahasan hanya tampil setelah submit berhasil di backend.
-- Jika ada soal kosong, tampilkan konfirmasi jumlah soal yang belum dijawab sebelum “Kumpulkan jawaban”.
-- Bila submit gagal, pertahankan jawaban dan izinkan retry. Jangan menunjukkan hasil sukses sebelum respons server.
-- Tampilkan peringatan sebelum meninggalkan attempt yang belum disubmit bila jawaban belum tersimpan. Jangan menjanjikan autosave/resume sebelum didukung backend.
-- Hasil: skor, jumlah benar/total, dan waktu submit; berikutnya daftar pembahasan dengan pilihan pengguna, kunci, dan sumber.
-- “Kerjakan lagi” memakai kuis yang sama tanpa biaya AI baru. “Buat kuis baru” adalah aksi terpisah dengan penjelasan kuota.
+- **Tiga tahap tampilan**:
+  1. *Sebelum mulai*: Kartu pengantar kuis dengan judul materi, jumlah soal pilihan ganda, dan tombol CTA utama “Mulai Kerjakan Kuis”.
+  2. *Pengerjaan kuis*: Lebar terukur `max-w-2xl mx-auto`. Soal aktif dominan dengan indikator progres soal terjawab riil (“3 / 5 Terjawab”) dan status penyimpanan draft server (“Menyimpan jawaban...”, “Tersimpan”, atau “Gagal simpan (Coba lagi)”).
+     - Pilihan jawaban menggunakan semantik radio lengkap (`role="radiogroup"`, `role="radio"`, `aria-checked`), seluruh baris dapat diklik, dan huruf pilihan (A, B, C, D) di dalam lingkaran semantik indigo saat dipilih.
+     - Kisi navigasi nomor soal di bagian bawah untuk melompat antarsoal dengan indikator status: aktif (fokus ring), sudah dijawab (emerald), dan belum dijawab (muted).
+     - Retensi jawaban: Tab Kuis dipertahankan aktif di latar belakang (`forceMount`) sehingga perpindahan antar-tab tidak menghilangkan jawaban yang sedang dipilih.
+     - Modal konfirmasi submit: Menjelaskan jumlah soal yang belum dijawab jika ada (“Perhatian: Terdapat X soal yang belum Anda jawab”) dan menonaktifkan submit ganda.
+     - Kunci jawaban dan pembahasan tidak pernah dibocorkan sebelum submit berhasil.
+  3. *Hasil kuis*:
+     - Banner skor besar (0–100) dan rasio benar/total (“X / Y Jawaban Benar”).
+     - Tombol “Ulangi Kuis” (memulai attempt baru dari kuis yang sama) dan “Kembali ke Beranda Kuis”.
+     - Daftar pembahasan terstruktur: Setiap soal dilengkapi status Benar/Salah menggunakan teks dan ikon (`CheckCircle2` hijau untuk Benar, `XCircle` merah untuk Salah).
+     - Pembedaan jawaban: Kunci jawaban ditandai badge teks & ikon “Kunci Jawaban”, pilihan salah pengguna ditandai “Pilihan Anda (Salah)”, dan pilihan benar pengguna ditandai “Pilihan Anda (Benar)”.
+     - Pembahasan akademik dilengkapi tombol “Buka Referensi Halaman X” yang melompat langsung ke halaman pembaca PDF.
 
 ### 9.10 Catatan
 

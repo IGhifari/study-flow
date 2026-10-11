@@ -59,7 +59,7 @@ export function DeleteTaskDialog({
           <DialogTitle>Hapus Tugas</DialogTitle>
           <DialogDescription>
             Apakah Anda yakin ingin menghapus tugas{' '}
-            <strong className="text-foreground">{assignment?.title}</strong>? Tindakan ini tidak dapat dibatalkan.
+            <strong className="text-foreground break-words">{assignment?.title}</strong>? Tindakan ini tidak dapat dibatalkan dan tugas akan dihapus secara permanen.
           </DialogDescription>
         </DialogHeader>
 

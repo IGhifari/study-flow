@@ -13,11 +13,10 @@ import {
   AlertCircle,
   Loader2,
   Award,
+  Check,
 } from 'lucide-react';
 import {
   Quiz,
-  ClientQuizQuestion,
-  CompletedQuizQuestion,
   QuizAttemptResponse,
   StartQuizAttemptResponse,
 } from '@studyflow/shared';
@@ -27,7 +26,6 @@ import {
   startQuizAttempt,
   saveQuizDraftAnswers,
   submitQuizAttempt,
-  getQuizAttemptResult,
 } from '@/lib/learning-client';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -56,22 +54,26 @@ export function MaterialQuizTab({
   const [isLoading, setIsLoading] = React.useState(true);
   const [errorMessage, setErrorMessage] = React.useState<string | null>(null);
 
-  // Generate Dialog
+  // Dialog konfigurasi pembuatan kuis baru
   const [isGenerateDialogOpen, setIsGenerateDialogOpen] = React.useState(false);
   const [targetCount, setTargetCount] = React.useState<5 | 10>(5);
   const [isSubmittingGen, setIsSubmittingGen] = React.useState(false);
 
-  // Active Attempt State
+  // Status pengerjaan kuis yang sedang aktif (Active Attempt)
   const [activeAttempt, setActiveAttempt] = React.useState<StartQuizAttemptResponse | null>(null);
   const [userAnswers, setUserAnswers] = React.useState<Record<string, number>>({});
   const [currentQuestionIndex, setCurrentQuestionIndex] = React.useState(0);
   const [isStartingAttempt, setIsStartingAttempt] = React.useState(false);
   const [isSubmittingAttempt, setIsSubmittingAttempt] = React.useState(false);
 
-  // Submit confirmation dialog
+  // Status penyimpanan draft jawaban (idle, saving, saved, error)
+  const [draftSaveStatus, setDraftSaveStatus] = React.useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
+  const [draftSaveError, setDraftSaveError] = React.useState<string | null>(null);
+
+  // Dialog konfirmasi submit kuis
   const [isSubmitConfirmOpen, setIsSubmitConfirmOpen] = React.useState(false);
 
-  // Finished Attempt Review State
+  // Hasil pengerjaan kuis yang sudah dinilai (Completed Attempt Review)
   const [completedAttempt, setCompletedAttempt] = React.useState<QuizAttemptResponse | null>(null);
 
   const loadQuizzes = React.useCallback(async () => {
@@ -89,6 +91,7 @@ export function MaterialQuizTab({
       }
     } catch (err: any) {
       console.error('Failed to load quizzes:', err);
+      // Jangan hapus daftar kuis yang sudah ada jika hanya terjadi kegagalan refresh sementara
       setErrorMessage(err.message || 'Gagal memuat kuis');
     } finally {
       setIsLoading(false);
@@ -99,7 +102,7 @@ export function MaterialQuizTab({
     loadQuizzes();
   }, [loadQuizzes]);
 
-  // Polling for QUEUED or PROCESSING quizzes
+  // Polling untuk status job AI background (QUEUED atau PROCESSING)
   React.useEffect(() => {
     const hasActiveJob = quizzes.some(
       (q) => q.status === 'QUEUED' || q.status === 'PROCESSING'
@@ -143,12 +146,29 @@ export function MaterialQuizTab({
     try {
       const attemptRes = await startQuizAttempt(quizId);
       setActiveAttempt(attemptRes);
+      // Restore jawaban yang sudah tersimpan sebelumnya jika ada
       setUserAnswers(attemptRes.existingAnswers || {});
       setCurrentQuestionIndex(0);
+      setDraftSaveStatus(attemptRes.existingAnswers && Object.keys(attemptRes.existingAnswers).length > 0 ? 'saved' : 'idle');
     } catch (err: any) {
       setErrorMessage(err.message || 'Gagal memulai kuis');
     } finally {
       setIsStartingAttempt(false);
+    }
+  };
+
+  const persistDraftAnswer = async (attemptId: string, questionId: string, optionIndex: number) => {
+    setDraftSaveStatus('saving');
+    setDraftSaveError(null);
+    try {
+      await saveQuizDraftAnswers(attemptId, [
+        { questionId, selectedIndex: optionIndex },
+      ]);
+      setDraftSaveStatus('saved');
+    } catch (err: any) {
+      console.error('Failed to save draft answer:', err);
+      setDraftSaveStatus('error');
+      setDraftSaveError(err.message || 'Gagal menyimpan draft jawaban ke server.');
     }
   };
 
@@ -157,12 +177,17 @@ export function MaterialQuizTab({
       ...prev,
       [questionId]: optionIndex,
     }));
+
     if (activeAttempt) {
-      saveQuizDraftAnswers(activeAttempt.attemptId, [
-        { questionId, selectedIndex: optionIndex },
-      ]).catch((err) => {
-        console.error('Failed to save draft answer:', err);
-      });
+      persistDraftAnswer(activeAttempt.attemptId, questionId, optionIndex);
+    }
+  };
+
+  const handleRetrySaveDraft = () => {
+    if (!activeAttempt) return;
+    const currentQId = activeAttempt.questions[currentQuestionIndex]?.id;
+    if (currentQId && userAnswers[currentQId] !== undefined) {
+      persistDraftAnswer(activeAttempt.attemptId, currentQId, userAnswers[currentQId]);
     }
   };
 
@@ -181,7 +206,8 @@ export function MaterialQuizTab({
       setActiveAttempt(null);
       setIsSubmitConfirmOpen(false);
     } catch (err: any) {
-      setErrorMessage(err.message || 'Gagal mengirimkan jawaban kuis');
+      // Pertahankan seluruh jawaban pengguna saat submit gagal
+      setErrorMessage(err.message || 'Gagal mengirimkan jawaban kuis. Silakan coba kirim ulang.');
     } finally {
       setIsSubmittingAttempt(false);
     }
@@ -189,9 +215,9 @@ export function MaterialQuizTab({
 
   if (isLoading) {
     return (
-      <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
+      <div className="flex flex-col items-center justify-center py-20 text-muted-foreground">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        <p className="mt-3 text-sm">Memuat kuis materi...</p>
+        <p className="mt-3 text-sm font-medium">Memuat kuis materi...</p>
       </div>
     );
   }
@@ -202,15 +228,15 @@ export function MaterialQuizTab({
 
   return (
     <div className="space-y-6">
-      {/* Header & Quiz Selector / Action */}
+      {/* 1. Header Toolbar Kuis */}
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border pb-4">
         <div className="space-y-1">
           <div className="flex items-center gap-2">
             <HelpCircle className="h-5 w-5 text-primary" />
             <h2 className="text-base font-bold text-foreground">Kuis Pemahaman Materi</h2>
           </div>
-          <p className="text-xs text-muted-foreground">
-            Uji sejauh mana Anda memahami materi dengan soal pilihan ganda otomatis dan pembahasan berbasis halaman dokumen.
+          <p className="text-xs text-muted-foreground leading-relaxed">
+            Uji kesiapan dan pemahaman konsep dengan soal pilihan ganda otomatis dan pembahasan berbasis rujukan dokumen PDF.
           </p>
         </div>
 
@@ -224,7 +250,8 @@ export function MaterialQuizTab({
                   setSelectedQuiz(found);
                 }
               }}
-              className="h-8 rounded-md border border-border bg-background px-2.5 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+              className="h-9 rounded-lg border border-border bg-background px-3 text-xs font-medium text-foreground focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-primary"
+              aria-label="Pilih set kuis"
             >
               {quizzes.map((q) => (
                 <option key={q.id} value={q.id}>
@@ -236,12 +263,12 @@ export function MaterialQuizTab({
 
           {!activeAttempt && (
             <Button
-              size="sm"
+              size="standard"
               onClick={() => setIsGenerateDialogOpen(true)}
               disabled={isArchived}
-              className="gap-1.5 text-xs h-8"
+              className="gap-1.5 text-xs h-9"
             >
-              <Sparkles className="h-3.5 w-3.5 text-amber-300" />
+              <Sparkles className="h-3.5 w-3.5" />
               <span>Buat Kuis Baru</span>
             </Button>
           )}
@@ -249,108 +276,131 @@ export function MaterialQuizTab({
       </div>
 
       {errorMessage && (
-        <div className="flex items-center gap-2 rounded-lg border border-danger/30 bg-danger/5 p-3 text-xs text-danger">
+        <div
+          role="alert"
+          className="flex items-center gap-2 rounded-lg border border-destructive/30 bg-destructive/10 p-3.5 text-xs text-destructive"
+        >
           <AlertCircle className="h-4 w-4 shrink-0" />
           <span>{errorMessage}</span>
         </div>
       )}
 
-      {/* Case 1: Empty state (No quizzes yet) */}
+      {/* Case 1: Belum Ada Kuis (Empty State) */}
       {quizzes.length === 0 ? (
-        <Card className="p-12 text-center bg-card">
-          <HelpCircle className="h-10 w-10 text-muted-foreground mx-auto" />
-          <h3 className="mt-3 text-base font-semibold text-foreground">Belum Ada Kuis</h3>
-          <p className="mt-1 text-xs text-muted-foreground max-w-md mx-auto">
-            Hasilkan kuis pilihan ganda dari isi materi perkuliahan untuk menguji kesiapan ujian dan pemahaman Anda.
+        <Card className="p-10 sm:p-14 text-center bg-card border-dashed border-border shadow-xs">
+          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary">
+            <HelpCircle className="h-6 w-6" />
+          </div>
+          <h3 className="mt-4 text-base font-semibold text-foreground">Belum Ada Kuis</h3>
+          <p className="mt-1.5 text-xs sm:text-sm text-muted-foreground max-w-md mx-auto leading-relaxed">
+            Hasilkan kuis pilihan ganda dari isi materi perkuliahan untuk menguji pemahaman konsep dan kesiapan ujian secara mandiri.
           </p>
           <Button
-            size="sm"
+            size="standard"
             onClick={() => setIsGenerateDialogOpen(true)}
             disabled={isArchived}
-            className="mt-4 gap-2"
+            className="mt-5 gap-2 text-xs"
           >
-            <Sparkles className="h-4 w-4 text-amber-300" />
+            <Sparkles className="h-4 w-4" />
             <span>Buat Kuis Sekarang</span>
           </Button>
         </Card>
       ) : selectedQuiz?.status === 'QUEUED' || selectedQuiz?.status === 'PROCESSING' ? (
-        /* Case 2: In-Progress Generation */
-        <Card className="p-12 text-center bg-card">
-          <Loader2 className="h-10 w-10 animate-spin text-primary mx-auto" />
+        /* Case 2: Dalam Proses Generasi AI */
+        <Card className="p-10 sm:p-14 text-center bg-card border border-border shadow-xs">
+          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary">
+            <Loader2 className="h-6 w-6 animate-spin" />
+          </div>
           <h3 className="mt-4 text-base font-semibold text-foreground">Menyusun Soal Kuis AI...</h3>
-          <p className="mt-1 text-xs text-muted-foreground max-w-md mx-auto">
-            AI sedang menganalisis isi materi dan merancang pertanyaan pilihan ganda yang mendalam lengkap dengan pembahasan.
+          <p className="mt-1.5 text-xs sm:text-sm text-muted-foreground max-w-md mx-auto leading-relaxed">
+            AI sedang menganalisis isi materi perkuliahan dan merancang soal pilihan ganda yang mendalam lengkap dengan rujukan pembahasan.
           </p>
-          <div className="mt-4 inline-flex items-center gap-1.5 rounded-full bg-muted px-3 py-1 text-[11px] text-muted-foreground font-medium">
+          <div className="mt-4 inline-flex items-center gap-2 rounded-full border border-border bg-muted/40 px-3.5 py-1 text-xs text-muted-foreground">
             <span className="h-2 w-2 rounded-full bg-primary animate-pulse" />
-            <span>Memproses di background worker</span>
+            <span>Memproses di antrean background worker</span>
           </div>
         </Card>
       ) : completedAttempt ? (
-        /* Case 3: Completed Attempt Score & Review */
+        /* Case 3: Hasil Kuis & Review Pembahasan */
         <div className="space-y-6 max-w-2xl mx-auto">
-          {/* Result Card Banner */}
-          <Card className="p-6 text-center border-primary/20 bg-primary/5">
-            <Award className="h-12 w-12 text-amber-500 mx-auto" />
-            <h3 className="mt-2 text-lg font-bold text-foreground">Hasil Pengerjaan Kuis</h3>
-            <div className="mt-3 flex items-center justify-center gap-6">
+          {/* Banner Nilai & Hasil */}
+          <Card className="p-6 sm:p-8 text-center border-border bg-card shadow-xs">
+            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary">
+              <Award className="h-6 w-6" />
+            </div>
+            <h3 className="mt-3 text-lg font-bold text-foreground">Hasil Pengerjaan Kuis</h3>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Evaluasi jawaban dihitung otomatis oleh sistem pada server.
+            </p>
+
+            <div className="mt-5 flex items-center justify-center gap-8 py-3 px-6 rounded-xl bg-muted/30 border border-border w-fit mx-auto">
               <div>
-                <span className="text-3xl font-black text-primary">
+                <span className="text-3xl font-extrabold text-primary">
                   {completedAttempt.score}
                 </span>
-                <span className="block text-xs text-muted-foreground mt-0.5">Nilai (0-100)</span>
+                <span className="block text-[11px] font-medium text-muted-foreground mt-0.5">
+                  Nilai (0-100)
+                </span>
               </div>
               <div className="h-8 w-px bg-border" />
               <div>
                 <span className="text-2xl font-bold text-foreground">
                   {completedAttempt.correctAnswersCount} / {completedAttempt.totalQuestions}
                 </span>
-                <span className="block text-xs text-muted-foreground mt-0.5">Jawaban Benar</span>
+                <span className="block text-[11px] font-medium text-muted-foreground mt-0.5">
+                  Jawaban Benar
+                </span>
               </div>
             </div>
 
-            <div className="mt-6 flex justify-center gap-3">
+            <div className="mt-6 flex flex-wrap justify-center gap-3">
               <Button
-                size="sm"
+                size="standard"
                 variant="outline"
                 onClick={() => {
                   setCompletedAttempt(null);
                   if (selectedQuiz) handleStartAttempt(selectedQuiz.id);
                 }}
                 disabled={isArchived}
-                className="gap-1.5 text-xs"
+                className="gap-2 text-xs min-h-[44px] sm:min-h-[36px]"
               >
-                <RotateCcw className="h-3.5 w-3.5" />
+                <RotateCcw className="h-4 w-4" />
                 <span>Ulangi Kuis</span>
               </Button>
               <Button
-                size="sm"
+                size="standard"
                 variant="ghost"
                 onClick={() => setCompletedAttempt(null)}
-                className="text-xs"
+                className="text-xs min-h-[44px] sm:min-h-[36px]"
               >
                 Kembali ke Beranda Kuis
               </Button>
             </div>
           </Card>
 
-          {/* Question Review List */}
+          {/* Daftar Review Pembahasan & Referensi */}
           <div className="space-y-4">
-            <h4 className="text-sm font-bold text-foreground">Pembahasan & Referensi Materi</h4>
+            <div className="border-b border-border pb-2">
+              <h4 className="text-sm font-bold text-foreground">Pembahasan & Referensi Materi</h4>
+              <p className="text-xs text-muted-foreground">
+                Tinjau kunci jawaban, pilihan yang Anda buat, dan rujukan halaman PDF asli.
+              </p>
+            </div>
+
             {completedAttempt.questions.map((q, idx) => {
               const isCorrect = q.isCorrect;
               return (
                 <Card
                   key={q.id}
-                  className={`p-5 border transition-all ${
+                  className={`p-5 sm:p-6 border shadow-xs transition-colors ${
                     isCorrect
                       ? 'border-emerald-500/30 bg-emerald-500/5'
-                      : 'border-danger/30 bg-danger/5'
+                      : 'border-destructive/30 bg-destructive/5'
                   }`}
                 >
                   <div className="flex items-start justify-between gap-3">
-                    <div className="flex items-center gap-2">
-                      <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-muted text-[11px] font-bold text-foreground">
+                    <div className="flex items-start gap-2.5">
+                      <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-muted text-[11px] font-bold text-foreground mt-0.5">
                         {idx + 1}
                       </span>
                       <p className="text-xs sm:text-sm font-semibold text-foreground leading-snug">
@@ -358,70 +408,88 @@ export function MaterialQuizTab({
                       </p>
                     </div>
                     {isCorrect ? (
-                      <span className="shrink-0 flex items-center gap-1 text-[11px] font-bold text-emerald-600 dark:text-emerald-400">
-                        <CheckCircle2 className="h-4 w-4" /> Benar
+                      <span className="shrink-0 flex items-center gap-1.5 text-xs font-semibold text-emerald-600 dark:text-emerald-400">
+                        <CheckCircle2 className="h-4 w-4" />
+                        <span>Benar</span>
                       </span>
                     ) : (
-                      <span className="shrink-0 flex items-center gap-1 text-[11px] font-bold text-danger">
-                        <XCircle className="h-4 w-4" /> Salah
+                      <span className="shrink-0 flex items-center gap-1.5 text-xs font-semibold text-destructive">
+                        <XCircle className="h-4 w-4" />
+                        <span>Salah</span>
                       </span>
                     )}
                   </div>
 
-                  {/* Options List */}
-                  <div className="mt-3 space-y-2">
+                  {/* Daftar Opsi Jawaban */}
+                  <div className="mt-4 space-y-2">
                     {q.options.map((opt, optIdx) => {
                       const isOptionCorrect = optIdx === q.correctIndex;
                       const isUserChoice = optIdx === q.userSelectedIndex;
 
                       let optClass = 'border-border bg-card text-foreground';
-                      if (isOptionCorrect) {
-                        optClass = 'border-emerald-500/60 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 font-medium';
+                      let statusBadge = null;
+
+                      if (isOptionCorrect && isUserChoice) {
+                        optClass = 'border-emerald-500/60 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 font-semibold';
+                        statusBadge = (
+                          <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
+                            <CheckCircle2 className="h-3.5 w-3.5" />
+                            <span>Pilihan Anda (Benar)</span>
+                          </span>
+                        );
+                      } else if (isOptionCorrect) {
+                        optClass = 'border-emerald-500/60 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 font-semibold';
+                        statusBadge = (
+                          <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
+                            <CheckCircle2 className="h-3.5 w-3.5" />
+                            <span>Kunci Jawaban</span>
+                          </span>
+                        );
                       } else if (isUserChoice && !isCorrect) {
-                        optClass = 'border-danger/60 bg-danger/10 text-danger font-medium';
+                        optClass = 'border-destructive/60 bg-destructive/10 text-destructive font-semibold';
+                        statusBadge = (
+                          <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-destructive">
+                            <XCircle className="h-3.5 w-3.5" />
+                            <span>Pilihan Anda (Salah)</span>
+                          </span>
+                        );
                       }
 
                       return (
                         <div
                           key={optIdx}
-                          className={`flex items-center justify-between rounded-md border px-3 py-2 text-xs ${optClass}`}
+                          className={`flex items-center justify-between rounded-lg border px-3.5 py-2.5 text-xs sm:text-sm ${optClass}`}
                         >
-                          <div className="flex items-center gap-2">
-                            <span className="font-mono text-[11px] text-muted-foreground">
+                          <div className="flex items-center gap-2.5">
+                            <span className="font-mono text-xs text-muted-foreground font-bold">
                               {String.fromCharCode(65 + optIdx)}.
                             </span>
-                            <span>{opt}</span>
+                            <span className="break-words">{opt}</span>
                           </div>
-                          {isOptionCorrect && (
-                            <span className="text-[10px] font-semibold text-emerald-600 dark:text-emerald-400">
-                              Kunci Jawaban
-                            </span>
-                          )}
-                          {isUserChoice && !isOptionCorrect && (
-                            <span className="text-[10px] font-semibold text-danger">
-                              Pilihan Anda
-                            </span>
-                          )}
+                          {statusBadge && <div className="ml-2 shrink-0">{statusBadge}</div>}
                         </div>
                       );
                     })}
                   </div>
 
-                  {/* Explanation & PDF Reference */}
-                  <div className="mt-3 rounded border border-border/80 bg-background/60 p-3 text-xs space-y-1.5">
-                    <p className="font-semibold text-foreground text-[11px]">Pembahasan:</p>
-                    <p className="text-muted-foreground leading-relaxed text-[11px]">
+                  {/* Kotak Pembahasan & Rujukan Halaman PDF */}
+                  <div className="mt-4 rounded-lg border border-border bg-background/80 p-3.5 text-xs space-y-2">
+                    <p className="font-semibold text-foreground text-xs">Pembahasan:</p>
+                    <p className="text-muted-foreground leading-relaxed text-xs">
                       {q.explanation}
                     </p>
                     {q.pageReferences && q.pageReferences.length > 0 && onNavigateToPage && (
-                      <button
-                        type="button"
-                        onClick={() => onNavigateToPage(q.pageReferences[0])}
-                        className="hover:text-primary transition-colors flex items-center gap-1 text-primary underline underline-offset-2 text-[11px] pt-1"
-                      >
-                        <FileText className="h-3 w-3" />
-                        <span>Buka Referensi Halaman {q.pageReferences.join(', ')}</span>
-                      </button>
+                      <div className="pt-1">
+                        <button
+                          type="button"
+                          onClick={() => onNavigateToPage(q.pageReferences[0])}
+                          className="hover:text-primary transition-colors inline-flex items-center gap-1 text-primary underline underline-offset-2 text-xs font-semibold"
+                          title={`Buka halaman ${q.pageReferences.join(', ')} di pembaca PDF`}
+                        >
+                          <FileText className="h-3.5 w-3.5" />
+                          <span>Buka Referensi Halaman {q.pageReferences.join(', ')}</span>
+                        </button>
+                      </div>
                     )}
                   </div>
                 </Card>
@@ -430,33 +498,78 @@ export function MaterialQuizTab({
           </div>
         </div>
       ) : activeAttempt ? (
-        /* Case 4: Live Quiz Attempt Runner */
-        <div className="space-y-6 max-w-2xl mx-auto">
-          {/* Progress Indicator */}
-          <div className="flex items-center justify-between text-xs text-muted-foreground">
-            <span className="font-medium text-foreground">
+        /* Case 4: Runner Pengerjaan Kuis Aktif (Active Attempt) */
+        <div className="space-y-5 max-w-2xl mx-auto">
+          {/* Header Progres Soal & Status Draft */}
+          <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground px-1">
+            <span className="font-semibold text-foreground">
               Soal {currentQuestionIndex + 1} dari {activeAttempt.questions.length}
             </span>
-            <span className="text-primary font-medium">
-              {answeredCount} / {activeAttempt.questions.length} Terjawab
-            </span>
+
+            <div className="flex items-center gap-3">
+              {draftSaveStatus === 'saving' ? (
+                <span className="inline-flex items-center gap-1.5 text-muted-foreground text-[11px]">
+                  <Loader2 className="h-3 w-3 animate-spin text-primary" />
+                  <span>Menyimpan jawaban...</span>
+                </span>
+              ) : draftSaveStatus === 'saved' ? (
+                <span className="inline-flex items-center gap-1 text-emerald-600 dark:text-emerald-400 text-[11px] font-medium">
+                  <Check className="h-3 w-3" />
+                  <span>Tersimpan</span>
+                </span>
+              ) : draftSaveStatus === 'error' ? (
+                <button
+                  type="button"
+                  onClick={handleRetrySaveDraft}
+                  className="inline-flex items-center gap-1 text-destructive text-[11px] font-semibold hover:underline"
+                  title="Klik untuk mencoba simpan kembali"
+                >
+                  <AlertCircle className="h-3 w-3" />
+                  <span>Gagal simpan (Coba lagi)</span>
+                </button>
+              ) : null}
+
+              <span className="text-primary font-bold">
+                {answeredCount} / {activeAttempt.questions.length} Terjawab
+              </span>
+            </div>
           </div>
 
-          {/* Progress bar line */}
+          {/* Garis Bar Progres */}
           <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden">
             <div
-              className="h-full bg-primary transition-all duration-300"
+              className="h-full bg-primary transition-all duration-200"
               style={{
                 width: `${((currentQuestionIndex + 1) / activeAttempt.questions.length) * 100}%`,
               }}
             />
           </div>
 
-          {/* Question Card */}
+          {draftSaveError && (
+            <div
+              role="alert"
+              className="flex items-center justify-between gap-2 rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-xs text-destructive"
+            >
+              <div className="flex items-center gap-2">
+                <AlertCircle className="h-4 w-4 shrink-0" />
+                <span>{draftSaveError}</span>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleRetrySaveDraft}
+                className="h-7 text-xs px-2 shrink-0"
+              >
+                Coba Lagi
+              </Button>
+            </div>
+          )}
+
+          {/* Kartu Pertanyaan Aktif */}
           {activeAttempt.questions[currentQuestionIndex] && (
-            <Card className="p-6 space-y-5 bg-card">
+            <Card className="p-6 sm:p-7 space-y-5 bg-card border-border shadow-xs">
               <div className="flex items-start gap-3">
-                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">
+                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary mt-0.5">
                   {currentQuestionIndex + 1}
                 </span>
                 <p className="text-sm sm:text-base font-semibold text-foreground leading-relaxed">
@@ -464,8 +577,12 @@ export function MaterialQuizTab({
                 </p>
               </div>
 
-              {/* Options Radio List */}
-              <div className="space-y-2.5 pt-2">
+              {/* Daftar Pilihan Radio Semantik */}
+              <div
+                role="radiogroup"
+                aria-label={`Pilihan jawaban untuk soal ${currentQuestionIndex + 1}`}
+                className="space-y-2.5 pt-1"
+              >
                 {activeAttempt.questions[currentQuestionIndex].options.map((option, optIdx) => {
                   const currentQId = activeAttempt.questions[currentQuestionIndex].id;
                   const isSelected = userAnswers[currentQId] === optIdx;
@@ -474,36 +591,45 @@ export function MaterialQuizTab({
                     <button
                       key={optIdx}
                       type="button"
+                      role="radio"
+                      aria-checked={isSelected}
+                      tabIndex={0}
                       onClick={() => handleSelectOption(currentQId, optIdx)}
-                      className={`w-full flex items-center gap-3 rounded-lg border p-3.5 text-left text-xs sm:text-sm transition-all ${
+                      onKeyDown={(e) => {
+                        if (e.key === ' ' || e.key === 'Enter') {
+                          e.preventDefault();
+                          handleSelectOption(currentQId, optIdx);
+                        }
+                      }}
+                      className={`w-full flex items-center gap-3.5 rounded-xl border p-3.5 sm:p-4 text-left text-xs sm:text-sm transition-all cursor-pointer min-h-[44px] ${
                         isSelected
-                          ? 'border-primary bg-primary/10 text-foreground font-medium ring-1 ring-primary'
+                          ? 'border-primary bg-primary/10 text-foreground font-semibold ring-1 ring-primary shadow-xs'
                           : 'border-border bg-card text-foreground hover:bg-muted/40'
                       }`}
                     >
                       <span
-                        className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border text-xs font-bold ${
+                        className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full border text-xs font-bold transition-colors ${
                           isSelected
-                            ? 'border-primary bg-primary text-white'
-                            : 'border-border text-muted-foreground'
+                            ? 'border-primary bg-primary text-primary-foreground'
+                            : 'border-border text-muted-foreground bg-muted/30'
                         }`}
                       >
                         {String.fromCharCode(65 + optIdx)}
                       </span>
-                      <span>{option}</span>
+                      <span className="break-words flex-1 leading-relaxed">{option}</span>
                     </button>
                   );
                 })}
               </div>
 
-              {/* Bottom question actions */}
-              <div className="flex items-center justify-between pt-4 border-t border-border">
+              {/* Navigasi Soal Bawah */}
+              <div className="flex items-center justify-between pt-5 border-t border-border">
                 <Button
                   variant="ghost"
-                  size="sm"
+                  size="standard"
                   onClick={() => setCurrentQuestionIndex((i) => Math.max(0, i - 1))}
                   disabled={currentQuestionIndex === 0}
-                  className="gap-1 text-xs"
+                  className="gap-1.5 text-xs min-h-[44px] sm:min-h-[36px]"
                 >
                   <ChevronLeft className="h-4 w-4" />
                   <span>Sebelumnya</span>
@@ -511,18 +637,18 @@ export function MaterialQuizTab({
 
                 {currentQuestionIndex < activeAttempt.questions.length - 1 ? (
                   <Button
-                    size="sm"
+                    size="standard"
                     onClick={() => setCurrentQuestionIndex((i) => i + 1)}
-                    className="gap-1 text-xs"
+                    className="gap-1.5 text-xs min-h-[44px] sm:min-h-[36px]"
                   >
                     <span>Selanjutnya</span>
                     <ChevronRight className="h-4 w-4" />
                   </Button>
                 ) : (
                   <Button
-                    size="sm"
+                    size="standard"
                     onClick={() => setIsSubmitConfirmOpen(true)}
-                    className="gap-1.5 text-xs bg-emerald-600 hover:bg-emerald-700 text-white"
+                    className="gap-1.5 text-xs bg-emerald-600 hover:bg-emerald-700 text-white min-h-[44px] sm:min-h-[36px]"
                   >
                     <CheckCircle2 className="h-4 w-4" />
                     <span>Selesai & Kumpulkan</span>
@@ -532,7 +658,7 @@ export function MaterialQuizTab({
             </Card>
           )}
 
-          {/* Question Grid jump navigation */}
+          {/* Kisi Lompat Nomor Soal (Grid Indicator) */}
           <div className="flex flex-wrap items-center justify-center gap-2 pt-2">
             {activeAttempt.questions.map((q, idx) => {
               const isAnswered = userAnswers[q.id] !== undefined;
@@ -543,13 +669,14 @@ export function MaterialQuizTab({
                   key={q.id}
                   type="button"
                   onClick={() => setCurrentQuestionIndex(idx)}
-                  className={`h-7 w-7 rounded text-xs font-semibold transition-all ${
+                  className={`h-8 w-8 rounded-lg text-xs font-bold transition-all cursor-pointer min-h-[36px] min-w-[36px] flex items-center justify-center ${
                     isCurrent
-                      ? 'bg-primary text-primary-foreground ring-2 ring-primary ring-offset-1'
+                      ? 'bg-primary text-primary-foreground ring-2 ring-primary ring-offset-2 ring-offset-background'
                       : isAnswered
-                      ? 'bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-500/40'
+                      ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/40 hover:bg-emerald-500/25'
                       : 'bg-muted text-muted-foreground hover:bg-muted/80'
                   }`}
+                  title={`Buka soal ${idx + 1}${isAnswered ? ' (Sudah dijawab)' : ' (Belum dijawab)'}`}
                 >
                   {idx + 1}
                 </button>
@@ -558,9 +685,11 @@ export function MaterialQuizTab({
           </div>
         </div>
       ) : selectedQuiz ? (
-        /* Case 5: Quiz Landing Screen */
-        <Card className="p-8 text-center bg-card max-w-xl mx-auto space-y-4">
-          <HelpCircle className="h-10 w-10 text-primary mx-auto" />
+        /* Case 5: Halaman Pengantar Kuis (Landing Screen) */
+        <Card className="p-8 sm:p-12 text-center bg-card max-w-xl mx-auto space-y-4 border-border shadow-xs">
+          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary">
+            <HelpCircle className="h-6 w-6" />
+          </div>
           <div>
             <h3 className="text-lg font-bold text-foreground">{selectedQuiz.title}</h3>
             <p className="mt-1 text-xs text-muted-foreground">
@@ -569,58 +698,62 @@ export function MaterialQuizTab({
           </div>
 
           <p className="text-xs text-muted-foreground leading-relaxed max-w-md mx-auto">
-            Jawab soal pilihan ganda satu per satu. Anda dapat meninjau kembali jawaban sebelum mengumpulkan ke sistem untuk mendapatkan nilai instan.
+            Jawab soal pilihan ganda satu per satu. Jawaban sementara tersimpan otomatis di server sehingga Anda dapat melanjutkan kapan saja sebelum mengumpulkan.
           </p>
 
-          <Button
-            size="sm"
-            onClick={() => handleStartAttempt(selectedQuiz.id)}
-            disabled={isStartingAttempt || isArchived}
-            className="gap-2 px-6"
-          >
-            {isStartingAttempt ? (
-              <>
-                <Loader2 className="h-4 w-4 animate-spin" />
-                <span>Mempersiapkan Soal...</span>
-              </>
-            ) : (
-              <>
+          <div className="pt-2">
+            <Button
+              size="standard"
+              onClick={() => handleStartAttempt(selectedQuiz.id)}
+              disabled={isStartingAttempt || isArchived}
+              className="gap-2 px-6 text-xs h-10"
+            >
+              {isStartingAttempt ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <span>Mempersiapkan Soal...</span>
+                </>
+              ) : (
                 <span>Mulai Kerjakan Kuis</span>
-              </>
-            )}
-          </Button>
+              )}
+            </Button>
+          </div>
         </Card>
       ) : null}
 
-      {/* Submit Confirmation Dialog */}
+      {/* Dialog Konfirmasi Submit Kuis */}
       <Dialog open={isSubmitConfirmOpen} onOpenChange={setIsSubmitConfirmOpen}>
-        <DialogContent>
+        <DialogContent className="sm:max-w-[420px] p-5 sm:p-6">
           <DialogHeader>
-            <DialogTitle>Kumpulkan Jawaban Kuis?</DialogTitle>
-            <DialogDescription>
+            <DialogTitle className="text-base font-bold text-foreground">
+              Kumpulkan Jawaban Kuis?
+            </DialogTitle>
+            <DialogDescription className="text-xs text-muted-foreground leading-relaxed mt-1">
               {unansweredCount > 0 ? (
-                <span className="text-warning font-semibold">
+                <span className="text-amber-600 dark:text-amber-400 font-semibold block">
                   Perhatian: Terdapat {unansweredCount} soal yang belum Anda jawab.
                 </span>
               ) : (
-                'Seluruh pertanyaan telah Anda jawab.'
+                <span>Seluruh pertanyaan telah Anda jawab.</span>
               )}
             </DialogDescription>
           </DialogHeader>
 
           <p className="text-xs text-muted-foreground py-2 leading-relaxed">
-            Apakah Anda yakin ingin menyelesaikan kuis ini sekarang? Nilai dan pembahasan akan langsung dihitung oleh sistem.
+            Apakah Anda yakin ingin menyelesaikan kuis ini sekarang? Nilai akhir dan pembahasan rujukan materi akan langsung dievaluasi oleh sistem.
           </p>
 
-          <DialogFooter>
+          <DialogFooter className="flex flex-col-reverse sm:flex-row gap-2 sm:justify-end">
             <Button
               variant="outline"
+              size="standard"
               onClick={() => setIsSubmitConfirmOpen(false)}
               disabled={isSubmittingAttempt}
             >
               Periksa Kembali
             </Button>
             <Button
+              size="standard"
               onClick={handleConfirmSubmit}
               disabled={isSubmittingAttempt}
               className="gap-2 bg-emerald-600 hover:bg-emerald-700 text-white"
@@ -638,17 +771,19 @@ export function MaterialQuizTab({
         </DialogContent>
       </Dialog>
 
-      {/* Generation Setup Dialog */}
+      {/* Dialog Konfigurasi Pembuatan Kuis AI */}
       <Dialog open={isGenerateDialogOpen} onOpenChange={setIsGenerateDialogOpen}>
-        <DialogContent>
+        <DialogContent className="sm:max-w-[420px] p-5 sm:p-6">
           <DialogHeader>
-            <DialogTitle>Buat Kuis dengan AI</DialogTitle>
-            <DialogDescription>
-              Pilih jumlah soal yang ingin dibuat dari materi perkuliahan ini.
+            <DialogTitle className="text-base font-bold text-foreground">
+              Buat Kuis dengan AI
+            </DialogTitle>
+            <DialogDescription className="text-xs text-muted-foreground leading-relaxed mt-1">
+              Pilih jumlah soal pilihan ganda yang ingin dibuat dari materi perkuliahan ini.
             </DialogDescription>
           </DialogHeader>
 
-          <div className="py-4 space-y-4">
+          <div className="py-4 space-y-3">
             <label className="text-xs font-semibold text-foreground">Jumlah Soal</label>
             <div className="grid grid-cols-2 gap-3">
               {[5, 10].map((count) => (
@@ -656,13 +791,13 @@ export function MaterialQuizTab({
                   key={count}
                   type="button"
                   onClick={() => setTargetCount(count as 5 | 10)}
-                  className={`rounded-lg border p-4 text-center transition-all ${
+                  className={`rounded-xl border p-3.5 text-center transition-all cursor-pointer ${
                     targetCount === count
-                      ? 'border-primary bg-primary/10 text-primary font-bold'
-                      : 'border-border bg-card text-foreground hover:bg-muted/50'
+                      ? 'border-primary bg-primary/10 text-primary font-bold shadow-xs'
+                      : 'border-border bg-card text-foreground hover:bg-muted/40'
                   }`}
                 >
-                  <span className="text-lg">{count}</span>
+                  <span className="text-base sm:text-lg">{count}</span>
                   <span className="block text-[11px] font-normal text-muted-foreground mt-0.5">
                     Soal Pilihan Ganda
                   </span>
@@ -670,20 +805,22 @@ export function MaterialQuizTab({
               ))}
             </div>
 
-            <p className="text-[11px] text-muted-foreground leading-relaxed">
-              Membuat kuis menggunakan kuota AI harian Anda. Soal dirancang dengan 4 pilihan jawaban dan dilengkapi pembahasan rujukan dokumen PDF.
+            <p className="text-[11px] text-muted-foreground leading-relaxed pt-1">
+              Pembuatan kuis menggunakan kuota AI harian Anda. Setiap soal memiliki 4 opsi jawaban dan dilengkapi rujukan pembahasan ke dokumen PDF asli.
             </p>
           </div>
 
-          <DialogFooter>
+          <DialogFooter className="flex flex-col-reverse sm:flex-row gap-2 sm:justify-end">
             <Button
               variant="outline"
+              size="standard"
               onClick={() => setIsGenerateDialogOpen(false)}
               disabled={isSubmittingGen}
             >
               Batal
             </Button>
             <Button
+              size="standard"
               onClick={handleRequestGeneration}
               disabled={isSubmittingGen}
               className="gap-2"
@@ -695,7 +832,7 @@ export function MaterialQuizTab({
                 </>
               ) : (
                 <>
-                  <Sparkles className="h-4 w-4 text-amber-300" />
+                  <Sparkles className="h-4 w-4" />
                   <span>Mulai Pembuatan</span>
                 </>
               )}

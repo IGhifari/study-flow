@@ -124,10 +124,12 @@ export function TabsTrigger({
 
 export interface TabsContentProps extends React.HTMLAttributes<HTMLDivElement> {
   value: string;
+  forceMount?: boolean;
 }
 
 export function TabsContent({
   value,
+  forceMount,
   className,
   children,
   ...props
@@ -137,7 +139,8 @@ export function TabsContent({
     throw new Error('TabsContent must be used within Tabs');
   }
 
-  if (context.value !== value) {
+  const isSelected = context.value === value;
+  if (!isSelected && !forceMount) {
     return null;
   }
 
@@ -145,8 +148,10 @@ export function TabsContent({
     <div
       role="tabpanel"
       tabIndex={0}
+      hidden={!isSelected}
       className={cn(
         'mt-2 ring-offset-background focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
+        !isSelected && 'hidden',
         className
       )}
       {...props}

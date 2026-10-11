@@ -11,23 +11,29 @@ import {
   Clock,
   AlertCircle,
   AlertTriangle,
+  CheckCircle2,
+  Calendar,
   Pencil,
   Trash2,
-  Calendar,
+  MoreVertical,
+  RotateCcw,
   RefreshCw,
   Loader2,
 } from 'lucide-react';
 import {
   Assignment,
   Course,
+  Semester,
   UserProfile,
   formatUserDateTime,
+  getUserTodayRange,
 } from '@studyflow/shared';
 import {
   listAssignments,
   updateAssignment,
 } from '@/lib/assignment-client';
 import { listCourses } from '@/lib/course-client';
+import { listSemesters } from '@/lib/semester-client';
 import { getProfile } from '@/lib/auth-client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -43,13 +49,66 @@ import {
   SelectContent,
   SelectItem,
 } from '@/components/ui/select';
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+} from '@/components/ui/dropdown-menu';
 import { CreateTaskDialog } from '@/components/assignments/create-task-dialog';
 import { EditTaskDialog } from '@/components/assignments/edit-task-dialog';
 import { DeleteTaskDialog } from '@/components/assignments/delete-task-dialog';
 
+function getDeadlineStatusInfo(asg: Assignment, timezone: string) {
+  if (asg.status === 'DONE') {
+    return {
+      type: 'DONE' as const,
+      label: 'Selesai',
+      icon: CheckCircle2,
+      badgeClass:
+        'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20',
+    };
+  }
+
+  if (asg.isOverdue) {
+    return {
+      type: 'OVERDUE' as const,
+      label: 'Terlambat',
+      icon: AlertTriangle,
+      badgeClass:
+        'bg-destructive/10 text-destructive border border-destructive/20 font-semibold',
+    };
+  }
+
+  try {
+    const { startOfToday, endOfToday } = getUserTodayRange(new Date(), timezone);
+    const dueTime = new Date(asg.dueDate).getTime();
+    if (dueTime >= startOfToday.getTime() && dueTime <= endOfToday.getTime()) {
+      return {
+        type: 'TODAY' as const,
+        label: 'Hari ini',
+        icon: Clock,
+        badgeClass:
+          'bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/20 font-medium',
+      };
+    }
+  } catch {
+    // fallback if calculation fails
+  }
+
+  return {
+    type: 'UPCOMING' as const,
+    label: 'Mendatang',
+    icon: Calendar,
+    badgeClass: 'bg-muted/80 text-muted-foreground border border-border',
+  };
+}
+
 export default function AssignmentsPage(): React.JSX.Element {
   const [assignments, setAssignments] = React.useState<Assignment[]>([]);
   const [courses, setCourses] = React.useState<Course[]>([]);
+  const [activeSemester, setActiveSemester] = React.useState<Semester | null>(null);
   const [userProfile, setUserProfile] = React.useState<UserProfile | null>(null);
 
   // Filters
@@ -76,18 +135,20 @@ export default function AssignmentsPage(): React.JSX.Element {
   // Request race condition prevention
   const fetchRequestIdRef = React.useRef(0);
 
-  // Load initial metadata: Profile & Courses
+  // Load initial metadata: Profile, Courses & Semester
   React.useEffect(() => {
     let isMounted = true;
     async function loadMeta() {
       try {
-        const [profile, courseRes] = await Promise.all([
+        const [profile, courseRes, semesterRes] = await Promise.all([
           getProfile().catch(() => null),
           listCourses().catch(() => ({ courses: [] })),
+          listSemesters().catch(() => ({ semesters: [], activeSemester: null, activeSemesterId: null })),
         ]);
         if (!isMounted) return;
         if (profile) setUserProfile(profile);
         setCourses(courseRes.courses);
+        if (semesterRes?.activeSemester) setActiveSemester(semesterRes.activeSemester);
       } catch (err) {
         console.error('Failed to load metadata:', err);
       }
@@ -126,7 +187,7 @@ export default function AssignmentsPage(): React.JSX.Element {
         }
       } catch (err: any) {
         if (currentRequestId === fetchRequestIdRef.current) {
-          setErrorMsg(err.message || 'Gagal memuat tugas kuliah.');
+          setErrorMsg(err.message || 'Gagal memuat daftar tugas kuliah.');
         }
       } finally {
         if (currentRequestId === fetchRequestIdRef.current && !silent) {
@@ -152,6 +213,7 @@ export default function AssignmentsPage(): React.JSX.Element {
   React.useEffect(() => {
     const handleSemesterChange = () => {
       listCourses().then((res) => setCourses(res.courses)).catch(() => {});
+      listSemesters().then((res) => setActiveSemester(res.activeSemester)).catch(() => {});
       fetchAssignmentsList(true);
     };
     window.addEventListener('studyflow:semester-changed', handleSemesterChange);
@@ -161,13 +223,13 @@ export default function AssignmentsPage(): React.JSX.Element {
     };
   }, [fetchAssignmentsList]);
 
-  // Checkbox Toggle Status
+  // Checkbox Toggle Status with optimistic rollback
   const handleToggleStatus = async (asg: Assignment) => {
     const isDone = asg.status === 'DONE';
     const nextStatus = isDone ? 'TODO' : 'DONE';
     setActionError(null);
 
-    // Mark task as pending
+    // Prevent double clicking
     setPendingTaskIds((prev) => new Set(prev).add(asg.id));
 
     // Optimistically update UI
@@ -185,7 +247,7 @@ export default function AssignmentsPage(): React.JSX.Element {
 
     try {
       await updateAssignment(asg.id, { status: nextStatus });
-      // Silent refetch to sync server state without full page spinner
+      // Silent refetch to sync server state
       await fetchAssignmentsList(true);
     } catch (err: any) {
       // Revert optimistic update on error
@@ -226,17 +288,26 @@ export default function AssignmentsPage(): React.JSX.Element {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* 1. Header Halaman */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-border pb-5">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-b border-border pb-3.5 sm:pb-5">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl flex items-center gap-2.5">
-            <ListTodo className="h-7 w-7 text-primary" aria-hidden="true" />
-            Tugas Kuliah
+          <h1 className="text-xl font-bold tracking-tight text-foreground sm:text-3xl">
+            Tugas
           </h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Kelola daftar tugas dengan prioritas, tenggat waktu, dan status pengerjaan.
-          </p>
+          <div className="mt-0.5 sm:mt-1 flex flex-wrap items-center gap-x-2.5 gap-y-1 text-xs sm:text-sm text-muted-foreground">
+            {activeSemester ? (
+              <>
+                <span className="font-medium text-foreground">
+                  {activeSemester.name.toLowerCase().includes(activeSemester.academicYear.toLowerCase())
+                    ? activeSemester.name
+                    : `${activeSemester.name} (${activeSemester.academicYear})`}
+                </span>
+                <span>•</span>
+              </>
+            ) : null}
+            <span>{assignments.length} tugas terdaftar</span>
+          </div>
         </div>
 
         <Button
@@ -257,7 +328,7 @@ export default function AssignmentsPage(): React.JSX.Element {
           <AlertTitle>Belum ada mata kuliah aktif</AlertTitle>
           <AlertDescription className="mt-1 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <span>
-              Anda perlu menambahkan mata kuliah aktif terlebih dahulu sebelum dapat mencatat tugas.
+              Anda perlu menambahkan mata kuliah aktif terlebih dahulu sebelum dapat mencatat tugas kuliah.
             </span>
             <Button asChild variant="outline" size="sm" className="w-fit">
               <Link href="/courses">Kelola Mata Kuliah &rarr;</Link>
@@ -270,7 +341,7 @@ export default function AssignmentsPage(): React.JSX.Element {
       {actionError && (
         <Alert variant="destructive">
           <AlertCircle className="h-5 w-5" />
-          <AlertTitle>Aksi tugas gagal</AlertTitle>
+          <AlertTitle>Aksi tugas belum berhasil</AlertTitle>
           <AlertDescription className="mt-1 flex items-center justify-between gap-3">
             <span>{actionError}</span>
             <Button
@@ -285,31 +356,45 @@ export default function AssignmentsPage(): React.JSX.Element {
         </Alert>
       )}
 
-      {/* 2. Pencarian dan Filter Toolbar */}
+      {/* 2. Pencarian dan Filter Toolbar Terpadu */}
       <Card className="border border-border shadow-xs">
-        <CardContent className="p-4">
-          <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-            {/* Input Pencarian */}
-            <div className="relative flex-1">
-              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                type="text"
-                placeholder="Cari judul tugas..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-9 h-9 text-sm"
-              />
+        <CardContent className="p-3.5 sm:p-4">
+          <div className="flex flex-col gap-3">
+            {/* Baris 1: Pencarian & Reset */}
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5">
+              <div className="relative flex-1">
+                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  type="text"
+                  placeholder="Cari judul tugas..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-9 h-9 text-sm"
+                />
+              </div>
+
+              {hasFilter && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleResetFilter}
+                  className="h-9 px-2.5 text-xs text-muted-foreground hover:text-foreground shrink-0 self-start sm:self-auto"
+                >
+                  <RotateCcw className="h-3.5 w-3.5 mr-1.5" />
+                  <span>Hapus filter</span>
+                </Button>
+              )}
             </div>
 
-            {/* Kontrol Filter & Urutan */}
-            <div className="flex flex-col sm:flex-row sm:items-center gap-2.5 flex-wrap">
+            {/* Baris 2: Dropdown Filter & Toggles */}
+            <div className="flex flex-wrap items-center gap-2">
               {/* Filter Mata Kuliah */}
               <div className="w-full sm:w-[200px]">
                 <Select
                   value={selectedCourseId}
                   onValueChange={(val) => setSelectedCourseId(val)}
                 >
-                  <SelectTrigger className="h-9 text-sm">
+                  <SelectTrigger className="h-9 text-xs sm:text-sm">
                     <SelectValue placeholder="Semua Mata Kuliah" />
                   </SelectTrigger>
                   <SelectContent className="max-w-[calc(100vw-2rem)] sm:max-w-[320px]">
@@ -324,15 +409,15 @@ export default function AssignmentsPage(): React.JSX.Element {
               </div>
 
               {/* Filter Status */}
-              <div className="w-full sm:w-[170px]">
+              <div className="w-[calc(50%-0.25rem)] sm:w-[160px]">
                 <Select
                   value={selectedStatus}
                   onValueChange={(val) => setSelectedStatus(val)}
                 >
-                  <SelectTrigger className="h-9 text-sm">
+                  <SelectTrigger className="h-9 text-xs sm:text-sm">
                     <SelectValue placeholder="Semua Status" />
                   </SelectTrigger>
-                  <SelectContent className="max-w-[calc(100vw-2rem)] sm:max-w-[240px]">
+                  <SelectContent className="max-w-[calc(100vw-2rem)] sm:max-w-[220px]">
                     <SelectItem value="ALL">Semua Status</SelectItem>
                     <SelectItem value="TODO">Belum Dikerjakan</SelectItem>
                     <SelectItem value="IN_PROGRESS">Sedang Dikerjakan</SelectItem>
@@ -342,15 +427,15 @@ export default function AssignmentsPage(): React.JSX.Element {
               </div>
 
               {/* Filter Prioritas */}
-              <div className="w-full sm:w-[170px]">
+              <div className="w-[calc(50%-0.25rem)] sm:w-[150px]">
                 <Select
                   value={selectedPriority}
                   onValueChange={(val) => setSelectedPriority(val)}
                 >
-                  <SelectTrigger className="h-9 text-sm">
+                  <SelectTrigger className="h-9 text-xs sm:text-sm">
                     <SelectValue placeholder="Semua Prioritas" />
                   </SelectTrigger>
-                  <SelectContent className="max-w-[calc(100vw-2rem)] sm:max-w-[220px]">
+                  <SelectContent className="max-w-[calc(100vw-2rem)] sm:max-w-[200px]">
                     <SelectItem value="ALL">Semua Prioritas</SelectItem>
                     <SelectItem value="HIGH">Tinggi</SelectItem>
                     <SelectItem value="MEDIUM">Sedang</SelectItem>
@@ -359,15 +444,15 @@ export default function AssignmentsPage(): React.JSX.Element {
                 </Select>
               </div>
 
-              {/* Toggle Overdue & Sort */}
-              <div className="flex items-center gap-2">
+              {/* Toggle Overdue & Sort Order */}
+              <div className="flex items-center gap-1.5 ml-auto sm:ml-0">
                 <Button
                   variant={isOverdueOnly ? 'destructive' : 'outline'}
                   size="icon-sm"
                   onClick={() => setIsOverdueOnly(!isOverdueOnly)}
                   title={isOverdueOnly ? 'Tampilkan semua tenggat waktu' : 'Hanya tampilkan tugas terlambat'}
                   aria-label="Filter tugas terlambat"
-                  className="h-9 w-9 shrink-0"
+                  className="h-9 w-9 shrink-0 relative after:absolute after:-inset-1 sm:after:hidden touch-manipulation"
                 >
                   <Clock className="h-4 w-4" />
                 </Button>
@@ -377,24 +462,12 @@ export default function AssignmentsPage(): React.JSX.Element {
                   size="icon-sm"
                   onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
                   title={`Urutkan deadline: ${sortOrder === 'asc' ? 'Terdekat dahulu' : 'Terjauh dahulu'}`}
-                  aria-label={`Urutan deadline: ${sortOrder === 'asc' ? 'Terdekat' : 'Terjauh'}`}
-                  className="h-9 w-9 shrink-0"
+                  aria-label={`Urutan deadline: ${sortOrder === 'asc' ? 'Terdekat dahulu' : 'Terjauh dahulu'}`}
+                  className="h-9 w-9 shrink-0 relative after:absolute after:-inset-1 sm:after:hidden touch-manipulation"
                 >
                   <ArrowUpDown className="h-4 w-4" />
                 </Button>
               </div>
-
-              {/* Reset Filter Button */}
-              {hasFilter && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={handleResetFilter}
-                  className="h-9 px-2.5 text-xs text-muted-foreground hover:text-foreground shrink-0 self-start sm:self-auto"
-                >
-                  Hapus filter
-                </Button>
-              )}
             </div>
           </div>
         </CardContent>
@@ -427,7 +500,7 @@ export default function AssignmentsPage(): React.JSX.Element {
             <span>{errorMsg}</span>
             <Button
               variant="outline"
-              size="sm"
+              size="standard"
               onClick={() => fetchAssignmentsList()}
               className="gap-1.5 w-fit"
             >
@@ -438,9 +511,9 @@ export default function AssignmentsPage(): React.JSX.Element {
         </Alert>
       ) : assignments.length === 0 ? (
         /* Empty State */
-        <div className="rounded-xl border border-dashed border-border bg-card/40 p-10 sm:p-14 text-center">
-          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary mb-3">
-            <ListTodo className="h-6 w-6" />
+        <div className="rounded-xl border border-dashed border-border bg-card/40 p-8 sm:p-12 text-center">
+          <div className="mx-auto flex h-11 w-11 items-center justify-center rounded-full bg-primary/10 text-primary mb-3">
+            <ListTodo className="h-5 w-5" />
           </div>
           <h3 className="text-base font-semibold text-foreground">
             {hasFilter ? 'Tidak ada tugas yang cocok' : 'Belum ada tugas kuliah'}
@@ -455,7 +528,7 @@ export default function AssignmentsPage(): React.JSX.Element {
               variant="outline"
               size="standard"
               onClick={handleResetFilter}
-              className="mt-5"
+              className="mt-4"
             >
               Hapus filter
             </Button>
@@ -464,10 +537,10 @@ export default function AssignmentsPage(): React.JSX.Element {
               size="standard"
               onClick={() => setIsCreateOpen(true)}
               disabled={activeCourses.length === 0}
-              className="mt-5 gap-1.5"
+              className="mt-4 gap-1.5"
             >
               <Plus className="h-4 w-4" />
-              <span>Tambah tugas pertama</span>
+              <span>Tambah tugas</span>
             </Button>
           )}
         </div>
@@ -495,7 +568,7 @@ export default function AssignmentsPage(): React.JSX.Element {
                     <th scope="col" className="px-4 py-3.5">
                       Prioritas
                     </th>
-                    <th scope="col" className="px-4 py-3.5 text-right">
+                    <th scope="col" className="px-4 py-3.5 text-right w-14">
                       Aksi
                     </th>
                   </tr>
@@ -507,6 +580,8 @@ export default function AssignmentsPage(): React.JSX.Element {
                       asg.course?.archivedAt || asg.course?.semester?.archivedAt
                     );
                     const isPending = pendingTaskIds.has(asg.id);
+                    const deadlineInfo = getDeadlineStatusInfo(asg, timezone);
+                    const DeadlineIcon = deadlineInfo.icon;
 
                     return (
                       <tr
@@ -516,7 +591,7 @@ export default function AssignmentsPage(): React.JSX.Element {
                         }`}
                       >
                         {/* Status Checkbox */}
-                        <td className="px-4 py-3.5 text-center">
+                        <td className="px-4 py-3.5 text-center align-top pt-4">
                           <div className="flex items-center justify-center">
                             {isPending ? (
                               <Loader2 className="h-4 w-4 animate-spin text-primary" />
@@ -537,10 +612,10 @@ export default function AssignmentsPage(): React.JSX.Element {
                         </td>
 
                         {/* Judul Tugas & Deskripsi */}
-                        <td className="px-4 py-3.5">
-                          <div className="flex flex-col">
+                        <td className="px-4 py-3.5 align-top">
+                          <div className="flex flex-col min-w-0 max-w-[360px]">
                             <span
-                              className={`font-medium text-sm ${
+                              className={`font-medium text-sm break-words ${
                                 isDone
                                   ? 'line-through text-muted-foreground'
                                   : 'text-foreground'
@@ -549,7 +624,7 @@ export default function AssignmentsPage(): React.JSX.Element {
                               {asg.title}
                             </span>
                             {asg.description && (
-                              <p className="mt-0.5 text-xs text-muted-foreground line-clamp-1">
+                              <p className="mt-0.5 text-xs text-muted-foreground line-clamp-2 break-words">
                                 {asg.description}
                               </p>
                             )}
@@ -557,7 +632,7 @@ export default function AssignmentsPage(): React.JSX.Element {
                         </td>
 
                         {/* Mata Kuliah */}
-                        <td className="px-4 py-3.5 whitespace-nowrap">
+                        <td className="px-4 py-3.5 align-top whitespace-nowrap">
                           {asg.course ? (
                             <div className="flex items-center gap-1.5">
                               <Link
@@ -566,7 +641,7 @@ export default function AssignmentsPage(): React.JSX.Element {
                                 title={asg.course.name}
                               >
                                 <BookOpen className="h-3.5 w-3.5 shrink-0" />
-                                <span className="truncate max-w-[200px]">
+                                <span className="truncate max-w-[180px]">
                                   {asg.course.name}
                                 </span>
                               </Link>
@@ -584,20 +659,22 @@ export default function AssignmentsPage(): React.JSX.Element {
                           )}
                         </td>
 
-                        {/* Tenggat Waktu & Overdue Label */}
-                        <td className="px-4 py-3.5 whitespace-nowrap">
-                          <div className="flex flex-col">
+                        {/* Tenggat Waktu & Penanda Status */}
+                        <td className="px-4 py-3.5 align-top whitespace-nowrap">
+                          <div className="flex flex-col gap-1">
                             <span className="text-xs text-foreground font-medium">
                               {formatUserDateTime(asg.dueDate, timezone)}
                             </span>
-                            {asg.isOverdue && !isDone && (
-                              <div className="flex items-center gap-1 text-xs font-semibold text-danger mt-0.5">
-                                <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
-                                <span>Terlambat</span>
-                              </div>
-                            )}
+                            <div className="flex items-center gap-1.5">
+                              <span
+                                className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[11px] ${deadlineInfo.badgeClass}`}
+                              >
+                                <DeadlineIcon className="h-3 w-3 shrink-0" />
+                                <span>{deadlineInfo.label}</span>
+                              </span>
+                            </div>
                             {isDone && asg.completedAt && (
-                              <span className="text-[11px] text-muted-foreground mt-0.5">
+                              <span className="text-[11px] text-muted-foreground">
                                 Selesai: {formatUserDateTime(asg.completedAt, timezone)}
                               </span>
                             )}
@@ -605,7 +682,7 @@ export default function AssignmentsPage(): React.JSX.Element {
                         </td>
 
                         {/* Prioritas */}
-                        <td className="px-4 py-3.5 whitespace-nowrap">
+                        <td className="px-4 py-3.5 align-top whitespace-nowrap">
                           <Badge
                             variant={
                               asg.priority === 'HIGH'
@@ -624,40 +701,40 @@ export default function AssignmentsPage(): React.JSX.Element {
                           </Badge>
                         </td>
 
-                        {/* Aksi Edit & Hapus */}
-                        <td className="px-4 py-3.5 text-right whitespace-nowrap">
-                          <div className="flex items-center justify-end gap-1">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => setEditingAssignment(asg)}
-                              disabled={isArchived}
-                              title={
-                                isArchived
-                                  ? 'Mata kuliah diarsipkan (hanya-baca)'
-                                  : 'Edit tugas'
-                              }
-                              aria-label={`Edit tugas "${asg.title}"`}
-                              className="h-8 w-8 p-0"
-                            >
-                              <Pencil className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => setDeletingAssignment(asg)}
-                              disabled={isArchived}
-                              title={
-                                isArchived
-                                  ? 'Mata kuliah diarsipkan (hanya-baca)'
-                                  : 'Hapus tugas'
-                              }
-                              aria-label={`Hapus tugas "${asg.title}"`}
-                              className="h-8 w-8 p-0 text-muted-foreground hover:text-danger hover:bg-danger/10"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
+                        {/* Aksi Dropdown */}
+                        <td className="px-4 py-3.5 align-top text-right whitespace-nowrap">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon-sm"
+                                className="h-8 w-8 relative after:absolute after:-inset-1 sm:after:hidden touch-manipulation text-muted-foreground hover:text-foreground"
+                                aria-label={`Menu aksi untuk tugas "${asg.title}"`}
+                                disabled={isArchived}
+                              >
+                                <MoreVertical className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="w-40">
+                              <DropdownMenuItem
+                                onClick={() => setEditingAssignment(asg)}
+                                disabled={isArchived}
+                                className="cursor-pointer"
+                              >
+                                <Pencil className="h-4 w-4 mr-2" />
+                                <span>Edit tugas</span>
+                              </DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem
+                                onClick={() => setDeletingAssignment(asg)}
+                                disabled={isArchived}
+                                className="cursor-pointer text-destructive focus:text-destructive focus:bg-destructive/10"
+                              >
+                                <Trash2 className="h-4 w-4 mr-2" />
+                                <span>Hapus tugas</span>
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                         </td>
                       </tr>
                     );
@@ -675,11 +752,13 @@ export default function AssignmentsPage(): React.JSX.Element {
                 asg.course?.archivedAt || asg.course?.semester?.archivedAt
               );
               const isPending = pendingTaskIds.has(asg.id);
+              const deadlineInfo = getDeadlineStatusInfo(asg, timezone);
+              const DeadlineIcon = deadlineInfo.icon;
 
               return (
                 <Card
                   key={asg.id}
-                  className={`p-4 transition-colors ${
+                  className={`p-3.5 transition-colors ${
                     isDone ? 'bg-muted/20 opacity-80' : ''
                   }`}
                 >
@@ -707,7 +786,7 @@ export default function AssignmentsPage(): React.JSX.Element {
                       {/* Title & Priority Badge */}
                       <div className="flex items-start justify-between gap-2">
                         <h4
-                          className={`text-sm font-semibold leading-snug ${
+                          className={`text-sm font-semibold leading-snug break-words flex-1 min-w-0 ${
                             isDone
                               ? 'line-through text-muted-foreground'
                               : 'text-foreground'
@@ -743,46 +822,56 @@ export default function AssignmentsPage(): React.JSX.Element {
 
                       {/* Description */}
                       {asg.description && (
-                        <p className="mt-1 text-xs text-muted-foreground line-clamp-2">
+                        <p className="mt-1 text-xs text-muted-foreground line-clamp-2 break-words">
                           {asg.description}
                         </p>
                       )}
 
                       {/* Card Footer: Due Date & Actions */}
-                      <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-border pt-2.5">
-                        <div className="flex items-center gap-1.5 text-xs text-foreground font-medium">
+                      <div className="mt-3 flex items-center justify-between gap-2 border-t border-border pt-2.5">
+                        <div className="flex flex-wrap items-center gap-1.5 text-xs text-foreground font-medium">
                           <Calendar className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
                           <span>{formatUserDateTime(asg.dueDate, timezone)}</span>
-                          {asg.isOverdue && !isDone && (
-                            <span className="flex items-center gap-0.5 text-xs font-bold text-danger ml-1">
-                              <AlertTriangle className="h-3 w-3 shrink-0" />
-                              Terlambat
-                            </span>
-                          )}
+                          <span
+                            className={`inline-flex items-center gap-1 px-1.5 py-0.2 rounded text-[10px] ${deadlineInfo.badgeClass}`}
+                          >
+                            <DeadlineIcon className="h-2.5 w-2.5 shrink-0" />
+                            <span>{deadlineInfo.label}</span>
+                          </span>
                         </div>
 
-                        <div className="flex items-center gap-1">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => setEditingAssignment(asg)}
-                            disabled={isArchived}
-                            aria-label={`Edit tugas "${asg.title}"`}
-                            className="h-8 w-8 p-0"
-                          >
-                            <Pencil className="h-3.5 w-3.5" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => setDeletingAssignment(asg)}
-                            disabled={isArchived}
-                            aria-label={`Hapus tugas "${asg.title}"`}
-                            className="h-8 w-8 p-0 text-muted-foreground hover:text-danger hover:bg-danger/10"
-                          >
-                            <Trash2 className="h-3.5 w-3.5" />
-                          </Button>
-                        </div>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon-sm"
+                              className="h-8 w-8 relative after:absolute after:-inset-1 sm:after:hidden touch-manipulation text-muted-foreground hover:text-foreground shrink-0"
+                              aria-label={`Menu aksi untuk tugas "${asg.title}"`}
+                              disabled={isArchived}
+                            >
+                              <MoreVertical className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="w-40">
+                            <DropdownMenuItem
+                              onClick={() => setEditingAssignment(asg)}
+                              disabled={isArchived}
+                              className="cursor-pointer"
+                            >
+                              <Pencil className="h-4 w-4 mr-2" />
+                              <span>Edit tugas</span>
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem
+                              onClick={() => setDeletingAssignment(asg)}
+                              disabled={isArchived}
+                              className="cursor-pointer text-destructive focus:text-destructive focus:bg-destructive/10"
+                            >
+                              <Trash2 className="h-4 w-4 mr-2" />
+                              <span>Hapus tugas</span>
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </div>
                     </div>
                   </div>

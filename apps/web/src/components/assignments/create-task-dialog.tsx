@@ -59,8 +59,10 @@ export function CreateTaskDialog({
     [courses]
   );
 
+  const wasOpenRef = React.useRef(false);
+
   React.useEffect(() => {
-    if (open) {
+    if (open && !wasOpenRef.current) {
       setErrorMsg(null);
       setTitle('');
       setDescription('');
@@ -76,6 +78,7 @@ export function CreateTaskDialog({
         setCourseId('');
       }
     }
+    wasOpenRef.current = open;
   }, [open, initialCourseId, activeCourses]);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -118,8 +121,8 @@ export function CreateTaskDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px]">
-        <form onSubmit={handleSubmit} className="space-y-4">
+      <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
+        <form noValidate onSubmit={handleSubmit} className="space-y-4">
           <DialogHeader>
             <DialogTitle>Tambah Tugas Baru</DialogTitle>
             <DialogDescription>
