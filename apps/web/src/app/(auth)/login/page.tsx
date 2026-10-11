@@ -64,7 +64,7 @@ function LoginForm(): React.JSX.Element {
           Masuk ke StudyFlow
         </CardTitle>
         <CardDescription className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
-          Masukkan email dan password untuk melanjutkan kegiatan belajarmu.
+          Masukkan email dan password untuk melanjutkan kegiatan belajar Anda.
         </CardDescription>
       </CardHeader>
 
@@ -72,30 +72,28 @@ function LoginForm(): React.JSX.Element {
         <CardContent className="space-y-4 pt-0">
           {/* Registration Success Banner */}
           {isRegisteredSuccess && (
-            <Alert className="border-emerald-500/30 bg-emerald-500/10 text-emerald-800 dark:text-emerald-300 [&>svg]:text-emerald-600 dark:[&>svg]:text-emerald-400">
-              <CheckCircle2 className="h-4 w-4" />
-              <AlertTitle className="text-sm font-semibold text-emerald-900 dark:text-emerald-200">
-                Pendaftaran Berhasil
-              </AlertTitle>
-              <AlertDescription className="text-xs text-emerald-700 dark:text-emerald-300">
-                Akun berhasil dibuat. Silakan masuk menggunakan akun barumu.
+            <Alert className="border-emerald-500/40 bg-emerald-50/50 dark:bg-emerald-950/20 text-emerald-900 dark:text-emerald-300">
+              <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+              <AlertTitle className="text-sm font-semibold">Pendaftaran Berhasil</AlertTitle>
+              <AlertDescription className="text-xs">
+                Akun berhasil dibuat. Silakan masuk menggunakan akun baru Anda.
               </AlertDescription>
             </Alert>
           )}
 
           {/* Server Error Alert */}
           {serverError && (
-            <Alert variant="destructive">
+            <Alert variant="destructive" role="alert" aria-live="polite">
               <AlertCircle className="h-4 w-4" />
               <AlertTitle className="text-sm font-semibold">Gagal Masuk</AlertTitle>
-              <AlertDescription className="text-xs">{serverError}</AlertDescription>
+              <AlertDescription className="text-xs break-words">{serverError}</AlertDescription>
             </Alert>
           )}
 
           {/* Email Field */}
           <div className="space-y-2">
             <Label htmlFor="email" className="text-xs font-semibold text-foreground">
-              Email
+              Alamat Email
             </Label>
             <Input
               id="email"
@@ -103,19 +101,19 @@ function LoginForm(): React.JSX.Element {
               autoComplete="email"
               placeholder="nama@kampus.ac.id"
               disabled={isSubmitting}
-              aria-invalid={!!errors.email}
+              aria-invalid={Boolean(errors.email)}
               aria-describedby={errors.email ? 'email-error' : undefined}
               className="h-10 text-sm"
               {...register('email')}
             />
             {errors.email && (
-              <p id="email-error" className="text-xs font-medium text-danger-foreground">
+              <p id="email-error" className="text-xs font-medium text-destructive">
                 {errors.email.message}
               </p>
             )}
           </div>
 
-          {/* Password Field with Toggle */}
+          {/* Password Field with Accessible Toggle */}
           <div className="space-y-2">
             <Label htmlFor="password" className="text-xs font-semibold text-foreground">
               Password
@@ -125,20 +123,19 @@ function LoginForm(): React.JSX.Element {
                 id="password"
                 type={showPassword ? 'text' : 'password'}
                 autoComplete="current-password"
-                placeholder="Password akun"
+                placeholder="Masukkan password akun"
                 disabled={isSubmitting}
-                className="h-10 pr-10 text-sm"
-                aria-invalid={!!errors.password}
+                className="h-10 pr-11 text-sm"
+                aria-invalid={Boolean(errors.password)}
                 aria-describedby={errors.password ? 'password-error' : undefined}
                 {...register('password')}
               />
               <button
                 type="button"
                 onClick={() => setShowPassword((prev) => !prev)}
-                className="absolute right-1 top-1/2 -translate-y-1/2 flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring"
+                className="absolute right-1 top-1/2 -translate-y-1/2 z-10 flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:text-foreground after:absolute after:-inset-2 sm:after:hidden touch-manipulation focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring"
                 aria-label={showPassword ? 'Sembunyikan password' : 'Tampilkan password'}
                 title={showPassword ? 'Sembunyikan password' : 'Tampilkan password'}
-                tabIndex={0}
               >
                 {showPassword ? (
                   <EyeOff className="h-4 w-4" aria-hidden="true" />
@@ -148,7 +145,7 @@ function LoginForm(): React.JSX.Element {
               </button>
             </div>
             {errors.password && (
-              <p id="password-error" className="text-xs font-medium text-danger-foreground">
+              <p id="password-error" className="text-xs font-medium text-destructive">
                 {errors.password.message}
               </p>
             )}
@@ -158,12 +155,12 @@ function LoginForm(): React.JSX.Element {
         <CardFooter className="flex flex-col space-y-4 pt-2">
           <Button
             type="submit"
-            className="w-full font-semibold"
+            className="w-full h-10 font-semibold gap-2"
             disabled={isSubmitting}
           >
             {isSubmitting ? (
               <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />
+                <Loader2 className="h-4 w-4 animate-spin shrink-0" aria-hidden="true" />
                 <span>Memproses...</span>
               </>
             ) : (
@@ -195,7 +192,7 @@ export default function LoginPage(): React.JSX.Element {
         <Card className="w-full">
           <CardHeader className="space-y-1">
             <CardTitle className="text-2xl">Masuk ke StudyFlow</CardTitle>
-            <CardDescription>Memuat halaman login...</CardDescription>
+            <CardDescription>Memuat formulir masuk...</CardDescription>
           </CardHeader>
           <CardContent className="h-48 flex items-center justify-center">
             <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />

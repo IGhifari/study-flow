@@ -44,9 +44,9 @@ export default defineConfig({
   reporter: 'list',
   use: {
     baseURL: `http://localhost:${TEST_WEB_PORT}`,
-    trace: 'on-first-retry',
-    screenshot: 'only-on-failure',
-    video: 'retain-on-failure',
+    trace: process.env.PW_NO_CAPTURE === '1' ? 'off' : 'on-first-retry',
+    screenshot: process.env.PW_NO_CAPTURE === '1' ? 'off' : 'only-on-failure',
+    video: process.env.PW_NO_CAPTURE === '1' ? 'off' : 'retain-on-failure',
   },
   projects: [
     {

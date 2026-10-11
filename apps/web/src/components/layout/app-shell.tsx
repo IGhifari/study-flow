@@ -270,6 +270,25 @@ function HeaderBreadcrumbs(): React.JSX.Element {
 
 export function AppShell({ user, children }: AppShellProps): React.JSX.Element {
   const router = useRouter();
+  const [currentUser, setCurrentUser] = React.useState<UserProfile>(user);
+
+  React.useEffect(() => {
+    setCurrentUser(user);
+  }, [user]);
+
+  React.useEffect(() => {
+    const handleProfileUpdated = (event: Event) => {
+      const customEvent = event as CustomEvent<UserProfile>;
+      if (customEvent.detail) {
+        setCurrentUser(customEvent.detail);
+      }
+    };
+
+    window.addEventListener('studyflow:profile-updated', handleProfileUpdated);
+    return () => {
+      window.removeEventListener('studyflow:profile-updated', handleProfileUpdated);
+    };
+  }, []);
 
   const handleLogout = async () => {
     try {
@@ -286,7 +305,7 @@ export function AppShell({ user, children }: AppShellProps): React.JSX.Element {
       <div className="flex min-h-screen w-full bg-background text-foreground">
         {/* shadcn Sidebar with accessible drawer for <1024px & collapsible permanent sidebar for >=1024px */}
         <Sidebar collapsible="icon" variant="sidebar">
-          <SidebarNavContent user={user} />
+          <SidebarNavContent user={currentUser} />
           <SidebarRail />
         </Sidebar>
 
@@ -311,16 +330,16 @@ export function AppShell({ user, children }: AppShellProps): React.JSX.Element {
                 <DropdownMenuTrigger asChild>
                   <button
                     type="button"
-                    aria-label={`Menu akun untuk ${user.name}`}
+                    aria-label={`Menu akun untuk ${currentUser.name}`}
                     className="flex items-center gap-2 rounded-full p-1 text-sm font-medium transition-colors hover:bg-muted focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring"
                   >
                     <Avatar className="h-8 w-8">
                       <AvatarFallback className="bg-primary/10 text-primary font-bold text-xs">
-                        {user.name.charAt(0).toUpperCase()}
+                        {currentUser.name.charAt(0).toUpperCase()}
                       </AvatarFallback>
                     </Avatar>
                     <span className="hidden md:inline-block max-w-[120px] truncate text-xs font-semibold text-foreground">
-                      {user.name}
+                      {currentUser.name}
                     </span>
                     <ChevronDown className="hidden md:inline-block h-3.5 w-3.5 text-muted-foreground opacity-70" />
                   </button>
@@ -330,12 +349,12 @@ export function AppShell({ user, children }: AppShellProps): React.JSX.Element {
                   <div className="flex items-center gap-2.5 p-2">
                     <Avatar className="h-9 w-9 shrink-0">
                       <AvatarFallback className="bg-primary/10 text-primary font-bold text-sm">
-                        {user.name.charAt(0).toUpperCase()}
+                        {currentUser.name.charAt(0).toUpperCase()}
                       </AvatarFallback>
                     </Avatar>
                     <div className="flex-1 min-w-0">
-                      <p className="truncate text-xs font-semibold text-foreground">{user.name}</p>
-                      <p className="truncate text-xs text-muted-foreground">{user.email}</p>
+                      <p className="truncate text-xs font-semibold text-foreground">{currentUser.name}</p>
+                      <p className="truncate text-xs text-muted-foreground">{currentUser.email}</p>
                     </div>
                   </div>
                   <DropdownMenuSeparator />

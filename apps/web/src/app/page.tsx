@@ -1,199 +1,360 @@
 import Link from 'next/link';
+import { getServerSessionUser } from '@/lib/auth-server';
 import { ThemeToggle } from '@/components/theme-toggle';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
   BookOpen,
-  CheckCircle2,
+  CalendarRange,
+  ListTodo,
   FileText,
   Layers,
-  Server,
-  Database,
-  Cpu,
-  ShieldCheck,
   ArrowRight,
-  LogIn,
+  Info,
+  Sparkles,
 } from 'lucide-react';
 
-export default function HomePage(): React.JSX.Element {
-  return (
-    <div className="flex min-h-screen flex-col">
-      {/* Top Navigation Bar */}
-      <header className="sticky top-0 z-40 border-b border-border bg-card/95 backdrop-blur-xs">
-        <div className="mx-auto flex h-16 max-w-5xl items-center justify-between px-4 sm:px-6">
-          <div className="flex items-center gap-2.5">
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-xs">
-              <BookOpen className="h-5 w-5" aria-hidden="true" />
-            </div>
-            <div>
-              <span className="text-lg font-semibold tracking-tight text-foreground">
-                StudyFlow
-              </span>
-            </div>
-          </div>
+export default async function HomePage(): Promise<React.JSX.Element> {
+  const user = await getServerSessionUser();
 
-          <div className="flex items-center gap-3">
+  return (
+    <div className="flex min-h-screen flex-col bg-background text-foreground overflow-x-clip">
+      {/* 1. Top Navigation Bar */}
+      <header className="sticky top-0 z-40 border-b border-border bg-background/95 backdrop-blur-xs">
+        <div className="mx-auto flex h-16 max-w-5xl items-center justify-between px-3.5 sm:px-6">
+          {/* Logo & Brand */}
+          <Link
+            href="/"
+            className="flex items-center gap-2 sm:gap-2.5 shrink-0 transition-opacity hover:opacity-90"
+            aria-label="Kembali ke beranda StudyFlow"
+          >
+            <div className="flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-xs">
+              <BookOpen className="h-4 w-4 sm:h-5 sm:w-5" aria-hidden="true" />
+            </div>
+            <span className="text-base sm:text-lg font-bold tracking-tight text-foreground">
+              StudyFlow
+            </span>
+          </Link>
+
+          {/* Section Anchors & Theme / Auth Actions */}
+          <div className="flex items-center gap-1.5 sm:gap-3">
+            <nav className="hidden md:flex items-center gap-5 text-sm font-medium text-muted-foreground mr-2">
+              <Link href="#fitur" className="hover:text-foreground transition-colors">
+                Fitur
+              </Link>
+              <Link href="#cara-kerja" className="hover:text-foreground transition-colors">
+                Cara Kerja
+              </Link>
+            </nav>
+
             <ThemeToggle />
-            <Link href="/login">
-              <Button variant="ghost" size="sm">
-                Masuk
-              </Button>
-            </Link>
-            <Link href="/register">
-              <Button size="sm">
-                Daftar
-              </Button>
-            </Link>
+
+            {user ? (
+              <Link href="/dashboard">
+                <Button size="sm" className="h-8 px-2.5 sm:h-9 sm:px-3.5 text-xs sm:text-sm gap-1.5 font-semibold">
+                  <span>Dashboard</span>
+                  <ArrowRight className="h-3.5 w-3.5 sm:h-4 sm:w-4" aria-hidden="true" />
+                </Button>
+              </Link>
+            ) : (
+              <div className="flex items-center gap-1 sm:gap-2">
+                <Link href="/login">
+                  <Button variant="ghost" size="sm" className="h-8 px-2 sm:h-9 sm:px-3 text-xs sm:text-sm">
+                    Masuk
+                  </Button>
+                </Link>
+                <Link href="/register">
+                  <Button size="sm" className="h-8 px-2.5 sm:h-9 sm:px-3.5 text-xs sm:text-sm font-semibold">
+                    Daftar
+                  </Button>
+                </Link>
+              </div>
+            )}
           </div>
         </div>
       </header>
 
-      {/* Main Content Area */}
+      {/* 2. Main Content */}
       <main className="flex-1">
-        <div className="mx-auto max-w-5xl px-4 py-12 sm:px-6 sm:py-16">
-          {/* Milestone & Product Intro */}
-          <div className="max-w-2xl">
-            <div className="mb-4 inline-flex items-center gap-2">
-              <Badge variant="outline" className="gap-1.5 py-1 text-xs font-medium">
-                <span className="inline-block h-2 w-2 rounded-full bg-emerald-500" />
-                Milestone 2 — Authentication & Shell UI
-              </Badge>
-            </div>
+        <div className="mx-auto max-w-5xl px-4 sm:px-6">
+          {/* Hero Section */}
+          <section className="py-14 sm:py-20 lg:py-24 border-b border-border/60">
+            <div className="max-w-3xl">
+              <h1 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl lg:text-5xl leading-tight sm:leading-tight">
+                Materi, tugas, dan catatan kuliah lebih teratur.
+              </h1>
 
-            <h1 className="text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
-              Atur perkuliahanmu dan pelajari materi sendiri dalam satu tempat.
-            </h1>
+              <p className="mt-5 text-base sm:text-lg text-muted-foreground leading-relaxed max-w-2xl">
+                StudyFlow adalah ruang belajar pribadi mahasiswa untuk mengelola semester,
+                memantau tenggat tugas, merapikan catatan, dan memahami materi kuliah PDF
+                dengan bantuan ringkasan, flashcard, serta kuis yang merujuk langsung ke dokumen sumber.
+              </p>
 
-            <p className="mt-4 text-base leading-relaxed text-muted-foreground sm:text-lg">
-              StudyFlow adalah platform belajar pribadi untuk mahasiswa yang menggabungkan
-              pengelolaan mata kuliah, tugas, catatan, dan materi PDF dengan bantuan ringkasan,
-              flashcard, dan kuis yang merujuk langsung ke sumber dokumen.
-            </p>
-
-            {/* Action CTAs */}
-            <div className="mt-8 flex flex-wrap items-center gap-3">
-              <Link href="/register">
-                <Button size="lg" className="gap-2 font-semibold">
-                  <span>Mulai Belajar Sekarang</span>
-                  <ArrowRight className="h-4 w-4" />
-                </Button>
-              </Link>
-              <Link href="/login">
-                <Button size="lg" variant="outline" className="gap-2">
-                  <LogIn className="h-4 w-4" />
-                  <span>Sudah Punya Akun? Masuk</span>
-                </Button>
-              </Link>
-            </div>
-          </div>
-
-          {/* Architecture & Capabilities Overview */}
-          <div className="mt-14 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {/* Core Capability 1 */}
-            <div className="rounded-xl border border-border bg-card p-6 shadow-xs transition-colors">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-accent text-accent-foreground">
-                <Layers className="h-5 w-5" aria-hidden="true" />
+              {/* Action CTAs */}
+              <div className="mt-8 flex flex-wrap items-center gap-3">
+                {user ? (
+                  <>
+                    <Link href="/dashboard">
+                      <Button size="lg" className="h-11 px-5 gap-2 font-semibold">
+                        <span>Buka Dashboard Belajar</span>
+                        <ArrowRight className="h-4 w-4" aria-hidden="true" />
+                      </Button>
+                    </Link>
+                    <Link href="#fitur">
+                      <Button size="lg" variant="outline" className="h-11 px-5">
+                        Jelajahi Fitur
+                      </Button>
+                    </Link>
+                  </>
+                ) : (
+                  <>
+                    <Link href="/register">
+                      <Button size="lg" className="h-11 px-5 gap-2 font-semibold">
+                        <span>Mulai Belajar Sekarang</span>
+                        <ArrowRight className="h-4 w-4" aria-hidden="true" />
+                      </Button>
+                    </Link>
+                    <Link href="#cara-kerja">
+                      <Button size="lg" variant="outline" className="h-11 px-5">
+                        Lihat Cara Kerja
+                      </Button>
+                    </Link>
+                  </>
+                )}
               </div>
-              <h2 className="mt-4 text-base font-semibold text-card-foreground">
-                Organisasi Perkuliahan
+            </div>
+          </section>
+
+          {/* Section: Fitur Inti */}
+          <section id="fitur" className="py-14 sm:py-20 border-b border-border/60 scroll-mt-20">
+            <div className="max-w-2xl">
+              <h2 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
+                Fitur Nyata untuk Kebutuhan Kuliah Sehari-hari
               </h2>
-              <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-                Pemisahan data per semester, pengelolaan mata kuliah, pemantauan deadline tugas,
-                serta catatan materi terintegrasi dalam ruang pribadi yang terisolasi.
+              <p className="mt-3 text-sm sm:text-base text-muted-foreground leading-relaxed">
+                Dirancang khusus untuk mendukung proses belajar mandiri mahasiswa, tanpa kerumitan menu atau fitur yang berlebihan.
               </p>
             </div>
 
-            {/* Core Capability 2 */}
-            <div className="rounded-xl border border-border bg-card p-6 shadow-xs transition-colors">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-accent text-accent-foreground">
-                <FileText className="h-5 w-5" aria-hidden="true" />
-              </div>
-              <h2 className="mt-4 text-base font-semibold text-card-foreground">
-                Pembelajaran Berbasis Sumber
-              </h2>
-              <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-                Unggah materi PDF kuliah dan hasilkan ringkasan, set flashcard, serta kuis latihan
-                yang selalu menyertakan rujukan halaman asli dokumen.
-              </p>
-            </div>
-
-            {/* Core Capability 3 */}
-            <div className="rounded-xl border border-border bg-card p-6 shadow-xs transition-colors">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-accent text-accent-foreground">
-                <ShieldCheck className="h-5 w-5" aria-hidden="true" />
-              </div>
-              <h2 className="mt-4 text-base font-semibold text-card-foreground">
-                Autentikasi & Privasi Penuh
-              </h2>
-              <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-                Sesi aman berbasis JWT berumur pendek dan cookie HttpOnly yang dirotasi secara atomik,
-                menjamin isolasi data akademik per pengguna.
-              </p>
-            </div>
-          </div>
-
-          {/* Foundation & Milestone Status Section */}
-          <div className="mt-12 rounded-xl border border-border bg-card p-6 sm:p-8">
-            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <h2 className="text-lg font-semibold text-card-foreground">
-                  Status Sistem & Progres Milestone
-                </h2>
-                <p className="text-sm text-muted-foreground">
-                  Milestone 2 aktif: Sistem akun, autentikasi sesi, profil, dan app shell siap digunakan.
+            <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+              {/* Fitur 1: Semester & Mata Kuliah */}
+              <div className="rounded-xl border border-border bg-card p-6 shadow-xs">
+                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                  <CalendarRange className="h-5 w-5" aria-hidden="true" />
+                </div>
+                <h3 className="mt-4 text-base font-semibold text-foreground">
+                  Semester & Mata Kuliah
+                </h3>
+                <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+                  Pisahkan perkuliahan aktif dari semester yang telah selesai. Kelompokkan mata kuliah dengan dosen pengampu, jadwal, dan arsip materi terkait secara terpusat.
                 </p>
               </div>
-              <div className="flex items-center gap-1.5 self-start text-xs font-medium text-emerald-600 dark:text-emerald-400">
-                <CheckCircle2 className="h-4 w-4" />
-                <span>Autentikasi Aktif</span>
+
+              {/* Fitur 2: Tugas Kuliah */}
+              <div className="rounded-xl border border-border bg-card p-6 shadow-xs">
+                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                  <ListTodo className="h-5 w-5" aria-hidden="true" />
+                </div>
+                <h3 className="mt-4 text-base font-semibold text-foreground">
+                  Pemantauan Tugas
+                </h3>
+                <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+                  Pantau batas pengumpulan tugas dengan penanda status terlambat, hari ini, dan mendatang sesuai zona waktu lokal Anda. Dilengkapi tingkat prioritas tugas.
+                </p>
+              </div>
+
+              {/* Fitur 3: Catatan Belajar */}
+              <div className="rounded-xl border border-border bg-card p-6 shadow-xs">
+                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                  <FileText className="h-5 w-5" aria-hidden="true" />
+                </div>
+                <h3 className="mt-4 text-base font-semibold text-foreground">
+                  Catatan Kuliah Markdown
+                </h3>
+                <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+                  Tulis catatan belajar bebas gangguan menggunakan format Markdown yang ringan. Tautkan catatan ke mata kuliah atau dokumen materi terkait.
+                </p>
+              </div>
+
+              {/* Fitur 4: Pembaca PDF Terpadu */}
+              <div className="rounded-xl border border-border bg-card p-6 shadow-xs">
+                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                  <BookOpen className="h-5 w-5" aria-hidden="true" />
+                </div>
+                <h3 className="mt-4 text-base font-semibold text-foreground">
+                  Materi PDF & Rujukan Halaman
+                </h3>
+                <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+                  Unggah file PDF materi perkuliahan dalam ruang baca yang nyaman. Seluruh hasil belajar AI terhubung langsung dengan nomor halaman dokumen sumber.
+                </p>
+              </div>
+
+              {/* Fitur 5: Ringkasan AI */}
+              <div className="rounded-xl border border-border bg-card p-6 shadow-xs">
+                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                  <Sparkles className="h-5 w-5" aria-hidden="true" />
+                </div>
+                <h3 className="mt-4 text-base font-semibold text-foreground">
+                  Ringkasan Konsep Kunci
+                </h3>
+                <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+                  Uraikan materi kuliah yang panjang menjadi poin-poin konsep penting, glosarium istilah, dan struktur bab yang mudah dipahami.
+                </p>
+              </div>
+
+              {/* Fitur 6: Flashcard & Kuis */}
+              <div className="rounded-xl border border-border bg-card p-6 shadow-xs">
+                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                  <Layers className="h-5 w-5" aria-hidden="true" />
+                </div>
+                <h3 className="mt-4 text-base font-semibold text-foreground">
+                  Flashcard & Kuis Latihan
+                </h3>
+                <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+                  Latih daya ingat konsep dengan kartu belajar interaktif, dan evaluasi pemahaman melalui kuis pilihan ganda dengan pembahasan kunci jawaban.
+                </p>
               </div>
             </div>
+          </section>
 
-            <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-              <div className="flex items-start gap-3 rounded-lg border border-border/80 bg-background/50 p-4">
-                <Server className="mt-0.5 h-5 w-5 text-primary" aria-hidden="true" />
-                <div>
-                  <div className="text-sm font-medium text-foreground">Next.js BFF Adapter</div>
-                  <div className="text-xs text-muted-foreground">/api/auth/* (Port 3000)</div>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-3 rounded-lg border border-border/80 bg-background/50 p-4">
-                <Server className="mt-0.5 h-5 w-5 text-primary" aria-hidden="true" />
-                <div>
-                  <div className="text-sm font-medium text-foreground">Express Auth REST API</div>
-                  <div className="text-xs text-muted-foreground">apps/api (Port 4000)</div>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-3 rounded-lg border border-border/80 bg-background/50 p-4">
-                <Database className="mt-0.5 h-5 w-5 text-primary" aria-hidden="true" />
-                <div>
-                  <div className="text-sm font-medium text-foreground">PostgreSQL & Prisma</div>
-                  <div className="text-xs text-muted-foreground">User & RefreshSession</div>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-3 rounded-lg border border-border/80 bg-background/50 p-4">
-                <Cpu className="mt-0.5 h-5 w-5 text-primary" aria-hidden="true" />
-                <div>
-                  <div className="text-sm font-medium text-foreground">BullMQ & Redis</div>
-                  <div className="text-xs text-muted-foreground">Queue & Background Tasks</div>
-                </div>
-              </div>
+          {/* Section: Cara Kerja */}
+          <section id="cara-kerja" className="py-14 sm:py-20 border-b border-border/60 scroll-mt-20">
+            <div className="max-w-2xl">
+              <h2 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
+                Alur Belajar Sederhana & Terarah
+              </h2>
+              <p className="mt-3 text-sm sm:text-base text-muted-foreground leading-relaxed">
+                Tiga tahapan teratur untuk menata perkuliahan dan memaksimalkan pemahaman materi Anda.
+              </p>
             </div>
 
-            <div className="mt-6 border-t border-border pt-4 text-xs text-muted-foreground">
-              Tahap berikutnya: <strong className="text-foreground font-semibold">Milestone 3 — Semester & Course Management</strong>.
+            <div className="mt-10 grid gap-8 md:grid-cols-3">
+              {/* Langkah 1 */}
+              <div className="space-y-3">
+                <div className="text-3xl font-extrabold tracking-tight text-primary font-mono">
+                  01
+                </div>
+                <h3 className="text-lg font-semibold text-foreground">
+                  Atur Semester & Kuliah
+                </h3>
+                <p className="text-sm leading-relaxed text-muted-foreground">
+                  Tentukan semester aktif dan masukkan daftar mata kuliah yang sedang Anda tempuh, lengkap dengan kode kelas dan jadwal kuliah.
+                </p>
+              </div>
+
+              {/* Langkah 2 */}
+              <div className="space-y-3">
+                <div className="text-3xl font-extrabold tracking-tight text-primary font-mono">
+                  02
+                </div>
+                <h3 className="text-lg font-semibold text-foreground">
+                  Unggah Dokumen & Tugas
+                </h3>
+                <p className="text-sm leading-relaxed text-muted-foreground">
+                  Unggah berkas slide kuliah atau modul PDF berbasis teks, serta catat tugas-tugas perkuliahan dengan batas waktu pengumpulan.
+                </p>
+              </div>
+
+              {/* Langkah 3 */}
+              <div className="space-y-3">
+                <div className="text-3xl font-extrabold tracking-tight text-primary font-mono">
+                  03
+                </div>
+                <h3 className="text-lg font-semibold text-foreground">
+                  Pelajari & Evaluasi Diri
+                </h3>
+                <p className="text-sm leading-relaxed text-muted-foreground">
+                  Baca materi sambil meninjau ringkasan konsep, latih hafalan lewat flashcard, dan uji kesiapan ujian dengan kuis mandiri.
+                </p>
+              </div>
             </div>
-          </div>
+          </section>
+
+          {/* Transparansi AI Card */}
+          <section className="py-10">
+            <div className="rounded-xl border border-border bg-muted/20 p-5 sm:p-6 flex items-start gap-3.5">
+              <Info className="h-5 w-5 text-primary shrink-0 mt-0.5" aria-hidden="true" />
+              <div className="space-y-1 text-sm leading-relaxed text-muted-foreground">
+                <p className="font-semibold text-foreground">
+                  Prinsip Pembelajaran Berbasis Sumber Dokumen
+                </p>
+                <p>
+                  Ringkasan materi, set flashcard, dan latihan kuis dihasilkan oleh kecerdasan buatan untuk membantu proses belajar mandiri.
+                  Seluruh hasil latihan menyertakan referensi nomor halaman dokumen, sehingga mahasiswa didorong untuk selalu memeriksa dan memverifikasi kebenaran konsep langsung dari dokumen materi kuliah aslinya.
+                </p>
+              </div>
+            </div>
+          </section>
+
+          {/* Bottom CTA */}
+          <section className="py-14 sm:py-20 text-center border-t border-border/60">
+            <div className="mx-auto max-w-2xl space-y-4">
+              <h2 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
+                Mulai Rapikan Perkuliahan Anda
+              </h2>
+              <p className="text-sm sm:text-base text-muted-foreground leading-relaxed">
+                Ruang belajar pribadi yang terisolasi, aman, dan dirancang khusus untuk kenyamanan membaca dalam jangka panjang.
+              </p>
+              <div className="pt-3 flex flex-wrap justify-center items-center gap-3">
+                {user ? (
+                  <Link href="/dashboard">
+                    <Button size="lg" className="h-11 px-6 font-semibold gap-2">
+                      <span>Masuk ke Dashboard Belajar</span>
+                      <ArrowRight className="h-4 w-4" aria-hidden="true" />
+                    </Button>
+                  </Link>
+                ) : (
+                  <>
+                    <Link href="/register">
+                      <Button size="lg" className="h-11 px-6 font-semibold gap-2">
+                        <span>Daftar Akun StudyFlow</span>
+                        <ArrowRight className="h-4 w-4" aria-hidden="true" />
+                      </Button>
+                    </Link>
+                    <Link href="/login">
+                      <Button size="lg" variant="outline" className="h-11 px-6 font-medium">
+                        Masuk ke Akun
+                      </Button>
+                    </Link>
+                  </>
+                )}
+              </div>
+            </div>
+          </section>
         </div>
       </main>
 
-      {/* Minimal Accessible Footer */}
-      <footer className="border-t border-border bg-card py-6 text-center text-xs text-muted-foreground">
-        <div className="mx-auto max-w-5xl px-4 sm:px-6">
-          <p>StudyFlow &copy; 2026. Platform Belajar Pribadi Mahasiswa.</p>
+      {/* 3. Footer */}
+      <footer className="border-t border-border bg-card py-8 text-xs text-muted-foreground">
+        <div className="mx-auto max-w-5xl px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <p>
+            StudyFlow &copy; 2026. Platform Belajar Pribadi Mahasiswa.
+          </p>
+
+          <nav className="flex flex-wrap items-center gap-4 sm:gap-6 font-medium" aria-label="Navigasi footer">
+            <Link href="/" className="hover:text-foreground transition-colors">
+              Beranda
+            </Link>
+            <Link href="#fitur" className="hover:text-foreground transition-colors">
+              Fitur
+            </Link>
+            <Link href="#cara-kerja" className="hover:text-foreground transition-colors">
+              Cara Kerja
+            </Link>
+            {user ? (
+              <Link href="/dashboard" className="text-primary hover:underline">
+                Dashboard
+              </Link>
+            ) : (
+              <>
+                <Link href="/login" className="hover:text-foreground transition-colors">
+                  Masuk
+                </Link>
+                <Link href="/register" className="hover:text-foreground transition-colors">
+                  Daftar
+                </Link>
+              </>
+            )}
+          </nav>
         </div>
       </footer>
     </div>

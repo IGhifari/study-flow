@@ -213,22 +213,48 @@ Form create/edit yang validasinya gagal tetap menyimpan nilai input. Error muncu
 
 ## 9. Rancangan halaman
 
-### 9.1 Landing page
+### 9.1 Landing page (Halaman Publik)
 
-- Navbar: logo/wordmark, link “Fitur” dan “Cara kerja”, tema, “Masuk”, serta “Mulai belajar” jika registrasi aktif.
-- Hero dua kolom desktop: judul “Materi rapi. Belajar lebih terarah.”, deskripsi singkat, CTA, dan preview produk yang menggambarkan aplikasi sebenarnya. Mobile menjadi satu kolom.
-- Preview boleh memakai contoh statis berlabel “Contoh tampilan”; jangan membuat kontrol palsu tampak dapat digunakan.
-- Section berikutnya: kelola kuliah, pelajari PDF, latihan; diikuti penjelasan tiga langkah dan CTA penutup.
-- Tidak ada pricing, logo kampus, testimoni, angka pengguna, atau janji peningkatan nilai tanpa dasar.
-- Ketika beta terbatas belum membuka registrasi, CTA diarahkan ke akses yang benar-benar tersedia dan copy menjelaskan status beta. Jangan membuat waitlist baru tanpa scope PRD.
+- **Navbar publik**:
+  - Logo `BookOpen` berlatar primer dan wordmark `StudyFlow` (link ke `/`), tautan navigasi section seperlunya (`#fitur` dan `#cara-kerja`), pemilih mode tema (`ThemeToggle`), serta tombol Masuk & Daftar.
+  - Jika pengguna sudah memiliki sesi login aktif, tombol Masuk/Daftar otomatis digantikan oleh tombol “Dashboard” (`/dashboard`).
+  - Responsif tanpa tumpang tindih pada viewport mobile (<640px / 375px) maupun desktop.
+- **Hero section**:
+  - Satu `<h1>` yang jelas: “Materi, tugas, dan catatan kuliah lebih teratur.”
+  - Deskripsi bahasa sederhana: ruang belajar pribadi mahasiswa untuk mengelola semester, tenggat tugas, catatan belajar, dan memahami materi kuliah PDF dengan bantuan AI yang merujuk dokumen sumber.
+  - CTA utama menuju pendaftaran (`/register`, `size="lg"`, `h-11`) atau Dashboard (`/dashboard`) bila sudah login. CTA sekunder menuju alur cara kerja (`#cara-kerja`) atau Masuk (`/login`).
+  - Menghindari jargon arsitektur (BFF, port, database model, dsb), klaim berlebihan, dekorasi besar, animasi berat, maupun ilustrasi rekaan.
+- **Fitur inti nyata**:
+  - Tampilan ringkas fitur yang didukung aplikasi: Semester & Mata Kuliah, Pemantauan Tugas (status terlambat/hari ini/mendatang), Catatan Kuliah Markdown, Pembaca Materi PDF, Ringkasan Konsep AI, serta Flashcard & Kuis Latihan.
+  - Disusun menggunakan grid terstruktur dengan tipografi bersih dan pemisah netral tipis.
+- **Alur belajar 3 langkah**:
+  - Penjelasan alur sederhana bernomor: 01 Atur Semester & Kuliah → 02 Unggah Dokumen & Tugas → 03 Pelajari & Evaluasi Diri.
+- **Prinsip transparansi AI**:
+  - Kartu catatan edukatif yang jujur: menjelaskan bahwa ringkasan, flashcard, dan kuis adalah alat bantu belajar yang merujuk nomor halaman dokumen asli, sehingga mahasiswa didorong selalu memverifikasi konsep pada dokumen sumbernya.
+  - Tidak menjanjikan AI selalu akurat, tidak menjanjikan kuota tanpa batas atau layanan gratis selamanya tanpa dasar produk.
+  - Tanpa testimoni rekaan, angka pengguna fiktif, logo mitra palsu, maupun pricing dummy.
+- **Footer ringkas**:
+  - Hak cipta produk StudyFlow dan tautan navigasi internal nyata (Beranda, Fitur, Cara Kerja, Masuk, Daftar / Dashboard). Bebas dari tautan kebijakan atau bantuan palsu yang berujung 404.
 
 ### 9.2 Login dan register
 
-- Form terpusat maksimal 420 px; heading singkat, label jelas, dan link perpindahan login/register.
-- Desktop boleh memakai panel samping sederhana dengan manfaat produk; mobile fokus pada form.
-- Field password memiliki toggle berlabel “Tampilkan password”/“Sembunyikan password”.
-- Jelaskan panjang password sesuai validasi; pesan login gagal tetap umum.
-- Tautan lupa password hanya tampil setelah flow reset benar-benar tersedia sesuai PRD.
+- **Layout & identitas visual**:
+  - Form terpusat maksimal 420 px (`max-w-[420px] mx-auto`); header auth menyajikan identitas konsisten dengan app shell (logo `BookOpen` berlatar primer, wordmark StudyFlow, dan `ThemeToggle`).
+  - Menghindari panel dekoratif besar, ilustrasi mengambang, statistik palsu, atau jargon teknis.
+  - Judul yang jelas (“Masuk ke StudyFlow” / “Daftar Akun StudyFlow”), deskripsi singkat pembimbing, dan satu CTA utama yang menonjol.
+- **Form controls & aksesibilitas**:
+  - Label permanen pada setiap field (`Label htmlFor`), error field diumumkan dekat kontrol menggunakan `aria-invalid` dan `aria-describedby` (`text-destructive text-xs`).
+  - Alert error umum dari server menggunakan semantik `role="alert"` dan `aria-live="polite"` dengan teks pembungkus aman (`break-words`).
+  - Banner sukses pendaftaran (`registered=true`) menggunakan border emerald pastel dan ikon `CheckCircle2` hijau.
+  - Dukungan penuh autofill dan password manager: `autoComplete="name"`, `autoComplete="email"`, `autoComplete="current-password"`, dan `autoComplete="new-password"`.
+  - Formulir dapat dikirim dengan menekan tombol `Enter` pada field mana pun.
+- **Toggle password aksesibel**:
+  - Setiap field password dilengkapi tombol toggle `Eye` / `EyeOff` bersemantik `type="button"`, `aria-label` eksplisit (“Tampilkan password” / “Sembunyikan password”), dan target sentuh minimal 44×44 px pada mobile (`after:absolute after:-inset-2 sm:after:hidden touch-manipulation`).
+- **Kestabilan layout & ketahanan formulir**:
+  - Tombol CTA submit (`h-10 w-full font-semibold`) mempertahankan dimensi saat beralih ke state pending/loading (`Loader2` spinner halus + “Memproses…”), tanpa layout shift.
+  - Retensi input non-sensitif: nama dan alamat email tetap dipertahankan 100% utuh di dalam form ketika submit gagal, sehingga pengguna tidak perlu mengetik ulang dari awal.
+  - Tautan perpindahan antar halaman Login dan Register selalu mempertahankan parameter `returnUrl` (jika ada).
+  - Tidak menampilkan fitur yang belum didukung backend seperti OAuth sosial, lupa password mandiri, atau verifikasi email.
 
 ### 9.3 Dashboard
 
@@ -500,13 +526,33 @@ Jika belum ada semester, tampilkan satu empty state “Mulai dari semester perta
   - *Belum ada catatan (Onboarding)*: Tampilan tenang berikon `FileText`, penjelasan manfaat catatan belajar, dan tombol “Buat catatan”.
   - *Filter tanpa hasil*: Pesan spesifik bahwa tidak ada catatan yang cocok dengan kriteria filter, disertai tombol “Hapus filter”.
 
-### 9.11 Pengaturan
+### 9.11 Pengaturan Akun
 
-- Section berurutan: profil, zona waktu, tampilan, keamanan, penggunaan.
-- Tema menyediakan “Sistem”, “Terang”, “Gelap”, konsisten dengan kontrol di header. Kunjungan pertama mengikuti sistem.
-- Kuota menunjukkan nilai terpakai/total dan waktu reset lokal. Contoh angka dalam desain harus dilabeli contoh; production memakai data API.
-- Kapasitas storage dan kuota generasi AI ditampilkan terpisah. Batas biaya operasional internal tidak ditampilkan sebagai saldo pengguna.
-- Ganti password menjelaskan bahwa sesi lama akan diakhiri sesuai PRD.
+- **Struktur halaman & layout**:
+  - Lebar form terfokus `max-w-3xl` yang nyaman dibaca dan dioperasikan pada layar laptop maupun ponsel.
+  - Header halaman: Judul “Pengaturan Akun” berikon `Settings` dan deskripsi singkat fungsi halaman.
+  - Pengelompokan bagian berbasis kartu bersih terpisah: Profil Pengguna, Tampilan & Tema, Keamanan Akun (Ganti Password), serta Penyimpanan & Kuota.
+- **Profil pengguna & zona waktu**:
+  - *Email*: Ditampilkan sebagai informasi akun permanen (`readOnly`, `disabled`, font mono netral). Tidak menyiratkan status verifikasi karena backend belum memiliki verifikasi email mandiri.
+  - *Nama Lengkap*: Input teks wajib (min 2, max 100 karakter).
+  - *Zona Waktu Akademik*: Pemilih format IANA standar (`RadixSelect`) dilengkapi penjelasan pengaruhnya terhadap konversi tanggal tugas, deadline, dan waktu update catatan.
+  - *Pemisahan Form*: Form profil mandiri dengan tombol aksi “Simpan Profil” (`size="standard"`, `h-9`). Tombol hanya aktif ketika data telah berubah (`isProfileDirty`).
+  - *Retensi Input saat Gagal*: Jika server mengembalikan kegagalan (HTTP 500 / validasi), nilai isian yang diketik pengguna tetap 100% utuh tanpa reset ke data lama, dan error ditampilkan via alert destruktif.
+  - *Sinkronisasi Header*: Saat pembaruan profil berhasil, sistem memancarkan custom event `studyflow:profile-updated` sehingga nama pengguna dan avatar inisial pada header shell langsung tersinkronisasi tanpa menunggu reload halaman.
+- **Tampilan & tema**:
+  - Preferensi tema antarmuka (Sistem, Terang, Gelap) diselaraskan langsung dengan kontrol `ThemeToggle`.
+- **Keamanan akun (Ganti password)**:
+  - Form independen dengan 3 field terstruktur: Password Saat Ini (`current-password`), Password Baru (`new-password`), dan Konfirmasi Password Baru (`new-password`).
+  - Setiap field dilengkapi tombol toggle `Eye` / `EyeOff` aksesibel bersemantik `type="button"` dan touch target mobile 44×44 px.
+  - Persyaratan validasi sesuai skema backend: Password saat ini wajib diisi; Password baru minimal 12 karakter dan harus berbeda dari password saat ini; Konfirmasi password harus cocok.
+  - Banner peringatan menjelaskan konsekuensi pencabutan seluruh sesi aktif di perangkat lain.
+  - Pencegahan submit ganda dengan status loading (`Loader2` + “Mengubah password…”).
+  - Pesan error server ditampilkan secara inline tanpa menutup form.
+  - Pengosongan field password setelah operasi berhasil dan redirect otomatis ke halaman login.
+  - Menjaga kerahasiaan: Password tidak pernah disimpan di `localStorage`, session, console log, atau laporan.
+- **Penyimpanan & kuota upload**:
+  - Menampilkan kapasitas penyimpanan aktual via API `getStorageUsage()` dengan progress bar proporsional (MB terpakai / total batas).
+  - Menampilkan kuota upload harian dan waktu reset otomatis (00:00 UTC) serta batasan file PDF (maks 20 MB, 100 halaman, teks murni).
 
 ## 10. Status async dan pemulihan
 

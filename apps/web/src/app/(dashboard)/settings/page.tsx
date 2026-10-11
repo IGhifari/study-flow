@@ -16,14 +16,11 @@ import {
   FileUp,
   Info,
   Clock,
-  ShieldCheck,
-  AlertTriangle,
 } from 'lucide-react';
 import {
   UpdateProfileInput,
   UpdateProfileInputSchema,
   ChangePasswordInput,
-  ChangePasswordInputSchema,
   formatFileSize,
   StorageUsageResponse,
   UserProfile,
@@ -34,7 +31,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Separator } from '@/components/ui/separator';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
@@ -52,14 +49,6 @@ import {
   SelectItem,
   SelectValue,
 } from '@/components/ui/select';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-} from '@/components/ui/dialog';
 import { ThemeToggle } from '@/components/theme-toggle';
 
 const TIMEZONE_OPTIONS = [
@@ -87,9 +76,10 @@ export default function SettingsPage(): React.JSX.Element {
   // Password State
   const [currentPassword, setCurrentPassword] = React.useState('');
   const [newPassword, setNewPassword] = React.useState('');
+  const [confirmPassword, setConfirmPassword] = React.useState('');
   const [showCurrentPassword, setShowCurrentPassword] = React.useState(false);
   const [showNewPassword, setShowNewPassword] = React.useState(false);
-  const [isPasswordConfirmOpen, setIsPasswordConfirmOpen] = React.useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = React.useState(false);
   const [isPasswordSubmitting, setIsPasswordSubmitting] = React.useState(false);
   const [passwordSuccess, setPasswordSuccess] = React.useState<string | null>(null);
   const [passwordError, setPasswordError] = React.useState<string | null>(null);
@@ -133,7 +123,7 @@ export default function SettingsPage(): React.JSX.Element {
     };
   }, []);
 
-  // Dirty State Detection
+  // Dirty State Detection for Profile
   const isProfileDirty = React.useMemo(() => {
     if (!currentUser) return false;
     return name.trim() !== currentUser.name || timezone !== currentUser.timezone;
@@ -169,6 +159,8 @@ export default function SettingsPage(): React.JSX.Element {
       setName(updated.name);
       setTimezone(updated.timezone);
       setProfileSuccess('Profil dan zona waktu berhasil diperbarui.');
+
+      // Sinkronkan nama/avatar header aplikasi secara instan
       if (typeof window !== 'undefined') {
         window.dispatchEvent(
           new CustomEvent('studyflow:profile-updated', { detail: updated })
@@ -176,38 +168,45 @@ export default function SettingsPage(): React.JSX.Element {
       }
       router.refresh();
     } catch (err: any) {
+      // Pertahankan input pengguna saat request gagal
       setProfileError(err.message || 'Gagal memperbarui profil.');
     } finally {
       setIsProfileSubmitting(false);
     }
   };
 
-  // Pre-validate password before opening confirmation dialog
-  const handleOpenPasswordConfirm = (e: React.FormEvent) => {
+  // Password Submit Handler
+  const handlePasswordSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setPasswordError(null);
     setPasswordSuccess(null);
 
-    const parseResult = ChangePasswordInputSchema.safeParse({
-      currentPassword,
-      newPassword,
-    });
-
-    if (!parseResult.success) {
-      const firstError = parseResult.error.issues[0]?.message || 'Input password tidak valid';
-      setPasswordError(firstError);
+    if (!currentPassword) {
+      setPasswordError('Password saat ini wajib diisi.');
       return;
     }
 
-    setIsPasswordConfirmOpen(true);
-  };
+    if (newPassword.length < 12) {
+      setPasswordError('Password baru minimal 12 karakter.');
+      return;
+    }
 
-  // Password Submit Handler
-  const executeChangePassword = async () => {
+    if (newPassword.length > 128) {
+      setPasswordError('Password baru maksimal 128 karakter.');
+      return;
+    }
+
+    if (currentPassword === newPassword) {
+      setPasswordError('Password baru harus berbeda dari password saat ini.');
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      setPasswordError('Konfirmasi password baru tidak cocok.');
+      return;
+    }
+
     setIsPasswordSubmitting(true);
-    setPasswordError(null);
-    setPasswordSuccess(null);
-
     try {
       const payload: ChangePasswordInput = {
         currentPassword,
@@ -215,17 +214,17 @@ export default function SettingsPage(): React.JSX.Element {
       };
 
       const msg = await apiChangePassword(payload);
-      setIsPasswordConfirmOpen(false);
       setCurrentPassword('');
       setNewPassword('');
-      setPasswordSuccess(msg || 'Password berhasil diubah.');
+      setConfirmPassword('');
+      setPasswordSuccess(msg || 'Password berhasil diubah. Seluruh sesi lain telah dicabut.');
 
-      // Sesi login lama dicabut oleh backend, redirect ke halaman login
+      // Alihkan ke login setelah sesi dicabut oleh backend
       setTimeout(() => {
         router.push('/login');
       }, 1500);
     } catch (err: any) {
-      setIsPasswordConfirmOpen(false);
+      // Jangan menutup form dan tampilkan pesan kesalahan aktual
       setPasswordError(err.message || 'Gagal mengganti password. Periksa password saat ini.');
     } finally {
       setIsPasswordSubmitting(false);
@@ -234,7 +233,7 @@ export default function SettingsPage(): React.JSX.Element {
 
   if (initialLoading) {
     return (
-      <div className="space-y-6">
+      <div className="space-y-6 max-w-3xl">
         <div>
           <Skeleton className="h-8 w-48" />
           <Skeleton className="mt-2 h-4 w-96" />
@@ -249,19 +248,19 @@ export default function SettingsPage(): React.JSX.Element {
   }
 
   return (
-    <div className="space-y-6 max-w-4xl">
+    <div className="space-y-6 max-w-3xl">
       {/* 1. Header Halaman */}
       <div className="border-b border-border pb-5">
         <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl flex items-center gap-2.5">
           <Settings className="h-7 w-7 text-primary" aria-hidden="true" />
-          Pengaturan
+          Pengaturan Akun
         </h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Kelola preferensi akun, zona waktu akademik, tampilan antarmuka, dan keamanan akun Anda.
+          Kelola profil pengguna, zona waktu akademik, preferensi tampilan, dan keamanan akun Anda.
         </p>
       </div>
 
-      {/* 2. Section: Profil & Zona Waktu */}
+      {/* 2. Section: Profil Pengguna & Zona Waktu */}
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
@@ -275,7 +274,7 @@ export default function SettingsPage(): React.JSX.Element {
               </Badge>
             )}
           </div>
-          <CardTitle className="text-lg">Informasi Akun & Zona Waktu</CardTitle>
+          <CardTitle className="text-lg">Informasi Profil & Zona Waktu</CardTitle>
           <CardDescription>
             Nama tampilan dan zona waktu yang digunakan untuk menyelaraskan jadwal, deadline tugas, dan kalender belajar.
           </CardDescription>
@@ -291,7 +290,7 @@ export default function SettingsPage(): React.JSX.Element {
             )}
 
             {profileError && (
-              <Alert variant="destructive">
+              <Alert variant="destructive" role="alert">
                 <AlertCircle className="h-4 w-4" />
                 <AlertDescription>{profileError}</AlertDescription>
               </Alert>
@@ -299,17 +298,14 @@ export default function SettingsPage(): React.JSX.Element {
 
             {/* Email (Read-Only) */}
             <div className="space-y-1.5">
-              <div className="flex items-center justify-between">
-                <Label htmlFor="profile-email">Alamat Email</Label>
-                <span className="text-[11px] text-muted-foreground flex items-center gap-1">
-                  <ShieldCheck className="h-3 w-3 text-primary" /> Akun Terverifikasi
-                </span>
-              </div>
+              <Label htmlFor="profile-email">Email</Label>
               <Input
                 id="profile-email"
                 value={currentUser?.email || ''}
                 disabled
-                className="bg-muted/40 cursor-not-allowed opacity-80"
+                readOnly
+                aria-readonly="true"
+                className="bg-muted/50 cursor-not-allowed text-muted-foreground font-mono text-sm"
               />
               <p className="text-xs text-muted-foreground">
                 Email terikat permanen dengan akun StudyFlow Anda dan tidak dapat diubah.
@@ -321,7 +317,7 @@ export default function SettingsPage(): React.JSX.Element {
             {/* Nama Lengkap */}
             <div className="space-y-1.5">
               <Label htmlFor="profile-name">
-                Nama Lengkap <span className="text-danger">*</span>
+                Nama Lengkap <span className="text-destructive">*</span>
               </Label>
               <Input
                 id="profile-name"
@@ -329,9 +325,11 @@ export default function SettingsPage(): React.JSX.Element {
                 onChange={(e) => setName(e.target.value)}
                 disabled={isProfileSubmitting}
                 placeholder="Nama lengkap Anda"
+                autoComplete="name"
+                required
               />
               <p className="text-xs text-muted-foreground">
-                Nama ini ditampilkan pada salam dashboard, materi, dan interaksi sistem.
+                Nama ini ditampilkan pada header aplikasi, salam dashboard, dan catatan belajar.
               </p>
             </div>
 
@@ -413,7 +411,7 @@ export default function SettingsPage(): React.JSX.Element {
         </CardContent>
       </Card>
 
-      {/* 4. Section: Keamanan Akun */}
+      {/* 4. Section: Keamanan Akun (Ganti Password) */}
       <Card>
         <CardHeader>
           <div className="flex items-center gap-2 text-primary font-semibold text-sm">
@@ -426,7 +424,7 @@ export default function SettingsPage(): React.JSX.Element {
           </CardDescription>
         </CardHeader>
 
-        <form onSubmit={handleOpenPasswordConfirm} noValidate>
+        <form onSubmit={handlePasswordSubmit} noValidate>
           <CardContent className="space-y-4">
             {passwordSuccess && (
               <Alert variant="default" className="border-emerald-500/40 bg-emerald-50/50 dark:bg-emerald-950/20 text-emerald-900 dark:text-emerald-300">
@@ -438,7 +436,7 @@ export default function SettingsPage(): React.JSX.Element {
             )}
 
             {passwordError && (
-              <Alert variant="destructive">
+              <Alert variant="destructive" role="alert">
                 <AlertCircle className="h-4 w-4" />
                 <AlertDescription>{passwordError}</AlertDescription>
               </Alert>
@@ -449,14 +447,14 @@ export default function SettingsPage(): React.JSX.Element {
                 <Info className="h-3.5 w-3.5" /> Konsekuensi Penggantian Password:
               </p>
               <p>
-                Mengganti password akan mencabut seluruh sesi login aktif di semua perangkat lain. Anda akan dialihkan ke halaman login setelah berhasil.
+                Mengganti password akan mencabut seluruh sesi login aktif di semua perangkat. Anda akan diminta masuk kembali dengan password baru.
               </p>
             </div>
 
             {/* Current Password */}
             <div className="space-y-1.5">
               <Label htmlFor="currentPassword">
-                Password Saat Ini <span className="text-danger">*</span>
+                Password Saat Ini <span className="text-destructive">*</span>
               </Label>
               <div className="relative">
                 <Input
@@ -468,12 +466,13 @@ export default function SettingsPage(): React.JSX.Element {
                   onChange={(e) => setCurrentPassword(e.target.value)}
                   disabled={isPasswordSubmitting}
                   className="pr-12"
+                  required
                 />
                 <button
                   type="button"
                   onClick={() => setShowCurrentPassword((prev) => !prev)}
-                  className="absolute right-1 top-1 flex h-9 w-9 items-center justify-center rounded-md text-muted-foreground hover:text-foreground"
-                  aria-label={showCurrentPassword ? 'Sembunyikan password' : 'Tampilkan password'}
+                  className="absolute right-1 top-1/2 -translate-y-1/2 z-10 flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:text-foreground after:absolute after:-inset-2 sm:after:hidden touch-manipulation focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring"
+                  aria-label={showCurrentPassword ? 'Sembunyikan password saat ini' : 'Tampilkan password saat ini'}
                 >
                   {showCurrentPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>
@@ -483,7 +482,7 @@ export default function SettingsPage(): React.JSX.Element {
             {/* New Password */}
             <div className="space-y-1.5">
               <Label htmlFor="newPassword">
-                Password Baru <span className="text-danger">*</span>
+                Password Baru <span className="text-destructive">*</span>
               </Label>
               <div className="relative">
                 <Input
@@ -495,18 +494,50 @@ export default function SettingsPage(): React.JSX.Element {
                   onChange={(e) => setNewPassword(e.target.value)}
                   disabled={isPasswordSubmitting}
                   className="pr-12"
+                  required
                 />
                 <button
                   type="button"
                   onClick={() => setShowNewPassword((prev) => !prev)}
-                  className="absolute right-1 top-1 flex h-9 w-9 items-center justify-center rounded-md text-muted-foreground hover:text-foreground"
-                  aria-label={showNewPassword ? 'Sembunyikan password' : 'Tampilkan password'}
+                  className="absolute right-1 top-1/2 -translate-y-1/2 z-10 flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:text-foreground after:absolute after:-inset-2 sm:after:hidden touch-manipulation focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring"
+                  aria-label={showNewPassword ? 'Sembunyikan password baru' : 'Tampilkan password baru'}
                 >
                   {showNewPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>
               </div>
               <p className="text-xs text-muted-foreground">
-                Gunakan minimal 12 karakter (kombinasi huruf, angka, atau simbol).
+                Gunakan minimal 12 karakter. Password baru harus berbeda dari password saat ini.
+              </p>
+            </div>
+
+            {/* Confirm New Password */}
+            <div className="space-y-1.5">
+              <Label htmlFor="confirmPassword">
+                Konfirmasi Password Baru <span className="text-destructive">*</span>
+              </Label>
+              <div className="relative">
+                <Input
+                  id="confirmPassword"
+                  type={showConfirmPassword ? 'text' : 'password'}
+                  autoComplete="new-password"
+                  placeholder="Ketik ulang password baru"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  disabled={isPasswordSubmitting}
+                  className="pr-12"
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPassword((prev) => !prev)}
+                  className="absolute right-1 top-1/2 -translate-y-1/2 z-10 flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:text-foreground after:absolute after:-inset-2 sm:after:hidden touch-manipulation focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring"
+                  aria-label={showConfirmPassword ? 'Sembunyikan konfirmasi password baru' : 'Tampilkan konfirmasi password baru'}
+                >
+                  {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Pastikan konfirmasi password sama dengan password baru di atas.
               </p>
             </div>
           </CardContent>
@@ -514,13 +545,22 @@ export default function SettingsPage(): React.JSX.Element {
           <CardFooter className="border-t border-border pt-4">
             <Button
               type="submit"
-              disabled={isPasswordSubmitting || !currentPassword || !newPassword}
+              disabled={isPasswordSubmitting || !currentPassword || !newPassword || !confirmPassword}
               variant="default"
               size="standard"
               className="gap-1.5"
             >
-              <KeyRound className="h-4 w-4" />
-              <span>Ganti Password</span>
+              {isPasswordSubmitting ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <span>Mengubah password...</span>
+                </>
+              ) : (
+                <>
+                  <KeyRound className="h-4 w-4" />
+                  <span>Ganti Password</span>
+                </>
+              )}
             </Button>
           </CardFooter>
         </form>
@@ -533,9 +573,9 @@ export default function SettingsPage(): React.JSX.Element {
             <HardDrive className="h-4 w-4" />
             <span>Penyimpanan & Kuota</span>
           </div>
-          <CardTitle className="text-lg">Kapasitas Ruang & Upload Harian</CardTitle>
+          <CardTitle className="text-lg">Kapasitas Ruang & Batas Upload</CardTitle>
           <CardDescription>
-            Informasi kapasitas ruang penyimpanan materi PDF dan batasan upload harian akun Anda.
+            Informasi kapasitas ruang penyimpanan materi PDF dan batasan upload akun Anda.
           </CardDescription>
         </CardHeader>
 
@@ -558,9 +598,9 @@ export default function SettingsPage(): React.JSX.Element {
                   <div
                     className={`h-full transition-all ${
                       storageUsage.percentage >= 90
-                        ? 'bg-danger'
+                        ? 'bg-destructive'
                         : storageUsage.percentage >= 70
-                        ? 'bg-warning'
+                        ? 'bg-amber-500'
                         : 'bg-primary'
                     }`}
                     style={{ width: `${Math.min(100, storageUsage.percentage)}%` }}
@@ -578,7 +618,7 @@ export default function SettingsPage(): React.JSX.Element {
                   <p className="text-lg font-bold text-foreground">
                     {storageUsage.dailyUploadsCount} / {storageUsage.dailyUploadsLimit} file
                   </p>
-                  <p className="text-[11px] text-muted-foreground">
+                  <p className="text-xs text-muted-foreground">
                     Sisa kuota: {Math.max(0, storageUsage.dailyUploadsLimit - storageUsage.dailyUploadsCount)} upload hari ini.
                   </p>
                 </div>
@@ -591,7 +631,7 @@ export default function SettingsPage(): React.JSX.Element {
                   <p className="text-sm font-semibold text-foreground">
                     Pukul 00:00 UTC
                   </p>
-                  <p className="text-[11px] text-muted-foreground">
+                  <p className="text-xs text-muted-foreground">
                     Reset otomatis setiap tengah malam UTC.
                   </p>
                 </div>
@@ -600,7 +640,7 @@ export default function SettingsPage(): React.JSX.Element {
               {/* PDF Document Limits */}
               <div className="rounded-lg border border-border/70 bg-muted/10 p-3 text-xs text-muted-foreground space-y-1">
                 <p className="font-semibold text-foreground">Ketentuan File PDF:</p>
-                <ul className="list-disc list-inside space-y-0.5 text-[11px]">
+                <ul className="list-disc list-inside space-y-0.5 text-xs">
                   <li>Maksimal ukuran 20 MB per file PDF berbasis teks.</li>
                   <li>Maksimal 100 halaman per dokumen.</li>
                   <li>PDF hasil pemindaian gambar murni (scanned) belum didukung pada versi ini.</li>
@@ -612,62 +652,6 @@ export default function SettingsPage(): React.JSX.Element {
           )}
         </CardContent>
       </Card>
-
-      {/* Dialog Konfirmasi Penggantian Password */}
-      <Dialog open={isPasswordConfirmOpen} onOpenChange={setIsPasswordConfirmOpen}>
-        <DialogContent className="sm:max-w-[420px]">
-          <DialogHeader>
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400">
-                <AlertTriangle className="h-5 w-5" />
-              </div>
-              <div>
-                <DialogTitle>Konfirmasi Ganti Password</DialogTitle>
-                <DialogDescription className="mt-0.5">
-                  Tindakan ini memerlukan login ulang.
-                </DialogDescription>
-              </div>
-            </div>
-          </DialogHeader>
-
-          <div className="space-y-2 text-sm text-muted-foreground">
-            <p>
-              Apakah Anda yakin ingin memperbarui password akun?
-            </p>
-            <p className="text-xs bg-muted/60 p-2.5 rounded-lg border border-border">
-              Setelah password diperbarui, seluruh sesi login di perangkat lain akan dicabut secara otomatis. Anda akan diminta untuk masuk kembali dengan password baru.
-            </p>
-          </div>
-
-          <DialogFooter className="pt-2 flex flex-col-reverse sm:flex-row gap-2 sm:justify-end">
-            <Button
-              type="button"
-              variant="outline"
-              size="standard"
-              onClick={() => setIsPasswordConfirmOpen(false)}
-              disabled={isPasswordSubmitting}
-            >
-              Batal
-            </Button>
-            <Button
-              type="button"
-              variant="default"
-              size="standard"
-              onClick={executeChangePassword}
-              disabled={isPasswordSubmitting}
-            >
-              {isPasswordSubmitting ? (
-                <>
-                  <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
-                  Mengubah...
-                </>
-              ) : (
-                'Ya, Ganti Password'
-              )}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }

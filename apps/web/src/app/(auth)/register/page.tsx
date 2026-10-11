@@ -23,10 +23,10 @@ import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { Separator } from '@/components/ui/separator';
 
 const COMMON_TIMEZONES = [
-  { value: 'Asia/Jakarta', label: 'WIB — Asia/Jakarta (UTC+7)' },
-  { value: 'Asia/Makassar', label: 'WITA — Asia/Makassar (UTC+8)' },
-  { value: 'Asia/Jayapura', label: 'WIT — Asia/Jayapura (UTC+9)' },
-  { value: 'UTC', label: 'UTC — Universal Time' },
+  { value: 'Asia/Jakarta', label: 'WIB — Asia/Jakarta (UTC+7, Indonesia Barat)' },
+  { value: 'Asia/Makassar', label: 'WITA — Asia/Makassar (UTC+8, Indonesia Tengah)' },
+  { value: 'Asia/Jayapura', label: 'WIT — Asia/Jayapura (UTC+9, Indonesia Timur)' },
+  { value: 'UTC', label: 'UTC — Universal Time Coordinated' },
 ];
 
 function RegisterForm(): React.JSX.Element {
@@ -73,7 +73,7 @@ function RegisterForm(): React.JSX.Element {
           Daftar Akun StudyFlow
         </CardTitle>
         <CardDescription className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
-          Mulai atur kegiatan perkuliahan dan pelajari materi kuliahmu dalam satu tempat.
+          Mulai atur kegiatan perkuliahan dan pelajari materi kuliah Anda dalam satu tempat.
         </CardDescription>
       </CardHeader>
 
@@ -81,10 +81,10 @@ function RegisterForm(): React.JSX.Element {
         <CardContent className="space-y-4 pt-0">
           {/* Server Error Alert */}
           {serverError && (
-            <Alert variant="destructive">
+            <Alert variant="destructive" role="alert" aria-live="polite">
               <AlertCircle className="h-4 w-4" />
               <AlertTitle className="text-sm font-semibold">Pendaftaran Gagal</AlertTitle>
-              <AlertDescription className="text-xs">{serverError}</AlertDescription>
+              <AlertDescription className="text-xs break-words">{serverError}</AlertDescription>
             </Alert>
           )}
 
@@ -97,15 +97,15 @@ function RegisterForm(): React.JSX.Element {
               id="name"
               type="text"
               autoComplete="name"
-              placeholder="Contoh: Bima Khadafi"
+              placeholder="Nama lengkap Anda"
               disabled={isSubmitting}
-              aria-invalid={!!errors.name}
+              aria-invalid={Boolean(errors.name)}
               aria-describedby={errors.name ? 'name-error' : undefined}
               className="h-10 text-sm"
               {...register('name')}
             />
             {errors.name && (
-              <p id="name-error" className="text-xs font-medium text-danger-foreground">
+              <p id="name-error" className="text-xs font-medium text-destructive">
                 {errors.name.message}
               </p>
             )}
@@ -114,7 +114,7 @@ function RegisterForm(): React.JSX.Element {
           {/* Email Field */}
           <div className="space-y-2">
             <Label htmlFor="email" className="text-xs font-semibold text-foreground">
-              Email
+              Alamat Email
             </Label>
             <Input
               id="email"
@@ -122,13 +122,13 @@ function RegisterForm(): React.JSX.Element {
               autoComplete="email"
               placeholder="nama@kampus.ac.id"
               disabled={isSubmitting}
-              aria-invalid={!!errors.email}
+              aria-invalid={Boolean(errors.email)}
               aria-describedby={errors.email ? 'email-error' : undefined}
               className="h-10 text-sm"
               {...register('email')}
             />
             {errors.email && (
-              <p id="email-error" className="text-xs font-medium text-danger-foreground">
+              <p id="email-error" className="text-xs font-medium text-destructive">
                 {errors.email.message}
               </p>
             )}
@@ -146,18 +146,17 @@ function RegisterForm(): React.JSX.Element {
                 autoComplete="new-password"
                 placeholder="Minimal 12 karakter"
                 disabled={isSubmitting}
-                className="h-10 pr-10 text-sm"
-                aria-invalid={!!errors.password}
-                aria-describedby="password-hint password-error"
+                className="h-10 pr-11 text-sm"
+                aria-invalid={Boolean(errors.password)}
+                aria-describedby={errors.password ? 'password-hint password-error' : 'password-hint'}
                 {...register('password')}
               />
               <button
                 type="button"
                 onClick={() => setShowPassword((prev) => !prev)}
-                className="absolute right-1 top-1/2 -translate-y-1/2 flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring"
+                className="absolute right-1 top-1/2 -translate-y-1/2 z-10 flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:text-foreground after:absolute after:-inset-2 sm:after:hidden touch-manipulation focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring"
                 aria-label={showPassword ? 'Sembunyikan password' : 'Tampilkan password'}
                 title={showPassword ? 'Sembunyikan password' : 'Tampilkan password'}
-                tabIndex={0}
               >
                 {showPassword ? (
                   <EyeOff className="h-4 w-4" aria-hidden="true" />
@@ -167,10 +166,10 @@ function RegisterForm(): React.JSX.Element {
               </button>
             </div>
             <p id="password-hint" className="text-xs text-muted-foreground">
-              Minimal 12 karakter. Disarankan menggunakan passphrase yang mudah diingat.
+              Minimal 12 karakter. Disarankan menggunakan kombinasi kata sandi yang mudah diingat.
             </p>
             {errors.password && (
-              <p id="password-error" className="text-xs font-medium text-danger-foreground">
+              <p id="password-error" className="text-xs font-medium text-destructive">
                 {errors.password.message}
               </p>
             )}
@@ -179,12 +178,12 @@ function RegisterForm(): React.JSX.Element {
           {/* Timezone Selector */}
           <div className="space-y-2">
             <Label htmlFor="timezone" className="text-xs font-semibold text-foreground">
-              Zona Waktu
+              Zona Waktu Akademik
             </Label>
             <select
               id="timezone"
               disabled={isSubmitting}
-              className="flex h-10 w-full rounded-md border border-input bg-card px-3 py-2 text-sm text-foreground transition-colors focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring focus-visible:border-primary disabled:cursor-not-allowed disabled:opacity-50"
+              className="flex h-10 w-full rounded-md border border-input bg-card px-3 py-2 text-sm text-foreground transition-colors focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
               {...register('timezone')}
             >
               {COMMON_TIMEZONES.map((tz) => (
@@ -193,11 +192,11 @@ function RegisterForm(): React.JSX.Element {
                 </option>
               ))}
             </select>
-            <p className="text-[11px] text-muted-foreground">
-              Digunakan untuk menyesuaikan jadwal kuliah dan tenggat tugas.
+            <p className="text-xs text-muted-foreground">
+              Digunakan untuk menyesuaikan kalender jadwal kuliah dan tenggat tugas Anda.
             </p>
             {errors.timezone && (
-              <p className="text-xs font-medium text-danger-foreground">
+              <p className="text-xs font-medium text-destructive">
                 {errors.timezone.message}
               </p>
             )}
@@ -207,12 +206,12 @@ function RegisterForm(): React.JSX.Element {
         <CardFooter className="flex flex-col space-y-4 pt-2">
           <Button
             type="submit"
-            className="w-full font-semibold"
+            className="w-full h-10 font-semibold gap-2"
             disabled={isSubmitting}
           >
             {isSubmitting ? (
               <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />
+                <Loader2 className="h-4 w-4 animate-spin shrink-0" aria-hidden="true" />
                 <span>Memproses...</span>
               </>
             ) : (
@@ -244,7 +243,7 @@ export default function RegisterPage(): React.JSX.Element {
         <Card className="w-full">
           <CardHeader className="space-y-1">
             <CardTitle className="text-2xl">Daftar Akun StudyFlow</CardTitle>
-            <CardDescription>Memuat halaman pendaftaran...</CardDescription>
+            <CardDescription>Memuat formulir pendaftaran...</CardDescription>
           </CardHeader>
           <CardContent className="h-48 flex items-center justify-center">
             <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
