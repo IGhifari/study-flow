@@ -34,6 +34,7 @@ model User {
   flashcardSets   FlashcardSet[]
   quizzes         Quiz[]
   quizAttempts    QuizAttempt[]
+  schedules       CourseSchedule[]
 
   @@map("users")
 }
@@ -78,6 +79,7 @@ model Course {
   assignments Assignment[]
   notes       Note[]
   materials   Material[]
+  schedules   CourseSchedule[]
 
   // Target for composite FK from Assignment, Note & Material
   @@unique([id, userId])
@@ -487,5 +489,25 @@ model QuizAttemptAnswer {
 
   @@unique([attemptId, questionId])
   @@map("quiz_attempt_answers")
+}
+
+// Milestone: Class Schedules (Jadwal Kuliah Mingguan)
+model CourseSchedule {
+  id        String   @id @default(cuid())
+  userId    String   @map("user_id")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  courseId  String   @map("course_id")
+  course    Course   @relation(fields: [courseId, userId], references: [id, userId], onDelete: Cascade)
+  dayOfWeek Int      @map("day_of_week") // 1 = Senin, 2 = Selasa, 3 = Rabu, 4 = Kamis, 5 = Jumat, 6 = Sabtu, 7 = Minggu
+  startTime String   @map("start_time") // Format "HH:mm" (24 jam)
+  endTime   String   @map("end_time")   // Format "HH:mm" (24 jam)
+  room      String?
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([courseId, dayOfWeek, startTime, endTime])
+  @@index([userId, dayOfWeek, startTime])
+  @@index([courseId])
+  @@map("course_schedules")
 }
 

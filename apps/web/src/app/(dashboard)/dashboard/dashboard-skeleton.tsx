@@ -90,6 +90,33 @@ export function DashboardSkeleton(): React.JSX.Element {
 
         {/* Right Column (1 col) */}
         <div className="space-y-6">
+          {/* Today Schedule Skeleton */}
+          <div className="rounded-xl border border-border bg-card p-5 sm:p-6 shadow-xs space-y-4">
+            <div className="flex items-center justify-between pb-3.5 border-b border-border">
+              <Skeleton className="h-5 w-32" />
+              <Skeleton className="h-4 w-20" />
+            </div>
+            <div className="space-y-2.5">
+              <div className="rounded-lg border border-border/70 p-3 bg-muted/20 space-y-2">
+                <div className="flex items-center justify-between">
+                  <Skeleton className="h-4 w-28" />
+                  <Skeleton className="h-5 w-16 rounded-md" />
+                </div>
+                <Skeleton className="h-4 w-40" />
+                <Skeleton className="h-3 w-24" />
+              </div>
+              <div className="rounded-lg border border-border/70 p-3 bg-muted/20 space-y-2">
+                <div className="flex items-center justify-between">
+                  <Skeleton className="h-4 w-28" />
+                  <Skeleton className="h-5 w-16 rounded-md" />
+                </div>
+                <Skeleton className="h-4 w-36" />
+                <Skeleton className="h-3 w-20" />
+              </div>
+            </div>
+          </div>
+
+          {/* Recent Materials Skeleton */}
           <div className="rounded-xl border border-border bg-card p-5 sm:p-6 shadow-xs space-y-4">
             <div className="flex items-center justify-between pb-3.5 border-b border-border">
               <Skeleton className="h-5 w-28" />

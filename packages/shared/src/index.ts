@@ -9,6 +9,7 @@ export * from './contracts/dashboard.js';
 export * from './contracts/material.js';
 export * from './contracts/summary.js';
 export * from './contracts/learning.js';
+export * from './contracts/schedule.js';
 export * from './utils/timezone.js';
 export * from './utils/format.js';
 export * from './constants/index.js';

@@ -74,10 +74,17 @@ test.describe('Dashboard Visual Inspection & Polish Screenshots', () => {
       await page.waitForTimeout(250);
     };
 
+    const takeScreenshot = async (options: { path: string; fullPage?: boolean }) => {
+      if (process.env.PW_NO_CAPTURE === '1') {
+        return;
+      }
+      await page.screenshot(options);
+    };
+
     // Screenshot Empty State Desktop (1440x900) Light
     await page.setViewportSize({ width: 1440, height: 900 });
     await setTheme('light');
-    await page.screenshot({
+    await takeScreenshot({
       path: path.join(screenshotsDir, 'dashboard-empty-desktop-light.png'),
       fullPage: true,
     });
@@ -121,14 +128,14 @@ test.describe('Dashboard Visual Inspection & Polish Screenshots', () => {
     // Desktop Light (1440x900)
     await page.setViewportSize({ width: 1440, height: 900 });
     await setTheme('light');
-    await page.screenshot({
+    await takeScreenshot({
       path: path.join(screenshotsDir, 'dashboard-desktop-light.png'),
       fullPage: true,
     });
 
     // Desktop Dark (1440x900)
     await setTheme('dark');
-    await page.screenshot({
+    await takeScreenshot({
       path: path.join(screenshotsDir, 'dashboard-desktop-dark.png'),
       fullPage: true,
     });
@@ -136,7 +143,7 @@ test.describe('Dashboard Visual Inspection & Polish Screenshots', () => {
     // Tablet Light (768x1024)
     await page.setViewportSize({ width: 768, height: 1024 });
     await setTheme('light');
-    await page.screenshot({
+    await takeScreenshot({
       path: path.join(screenshotsDir, 'dashboard-tablet-light.png'),
       fullPage: true,
     });
@@ -144,14 +151,14 @@ test.describe('Dashboard Visual Inspection & Polish Screenshots', () => {
     // Mobile Light (375x812)
     await page.setViewportSize({ width: 375, height: 812 });
     await setTheme('light');
-    await page.screenshot({
+    await takeScreenshot({
       path: path.join(screenshotsDir, 'dashboard-mobile-light.png'),
       fullPage: true,
     });
 
     // Mobile Dark (375x812)
     await setTheme('dark');
-    await page.screenshot({
+    await takeScreenshot({
       path: path.join(screenshotsDir, 'dashboard-mobile-dark.png'),
       fullPage: true,
     });

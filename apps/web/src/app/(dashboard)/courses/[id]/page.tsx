@@ -6,8 +6,10 @@ import { useParams, useRouter } from 'next/navigation';
 import {
   ArrowLeft,
   CalendarRange,
+  CalendarClock,
   User,
   Clock,
+  MapPin,
   Archive,
   RotateCcw,
   Pencil,
@@ -31,6 +33,9 @@ import {
   formatFileSize,
   formatUserDateTime,
   UserProfile,
+  CourseSchedule,
+  CourseScheduleConflict,
+  getDayNameId,
 } from '@studyflow/shared';
 import {
   getCourse,
@@ -47,6 +52,10 @@ import {
   createNote,
 } from '@/lib/note-client';
 import { listMaterials } from '@/lib/material-client';
+import { listSchedules } from '@/lib/schedule-client';
+import { CreateScheduleDialog } from '@/components/schedules/create-schedule-dialog';
+import { EditScheduleDialog } from '@/components/schedules/edit-schedule-dialog';
+import { DeleteScheduleDialog } from '@/components/schedules/delete-schedule-dialog';
 import { MaterialUploadDialog } from '@/components/materials/material-upload-dialog';
 import { MaterialStatusBadge } from '@/components/materials/material-status-badge';
 import { getProfile } from '@/lib/auth-client';
@@ -97,6 +106,16 @@ export default function CourseDetailPage(): React.JSX.Element {
   const [materials, setMaterials] = React.useState<MaterialListItem[]>([]);
   const [isMaterialsLoading, setIsMaterialsLoading] = React.useState(false);
   const [isUploadOpen, setIsUploadOpen] = React.useState(false);
+
+  // Course Schedules state
+  const [schedules, setSchedules] = React.useState<CourseSchedule[]>([]);
+  const [isSchedulesLoading, setIsSchedulesLoading] = React.useState(false);
+  const [scheduleConflictBanner, setScheduleConflictBanner] = React.useState<string | null>(null);
+  const [isCreateScheduleOpen, setIsCreateScheduleOpen] = React.useState(false);
+  const [editingSchedule, setEditingSchedule] = React.useState<CourseSchedule | null>(null);
+  const [isEditScheduleOpen, setIsEditScheduleOpen] = React.useState(false);
+  const [deletingSchedule, setDeletingSchedule] = React.useState<CourseSchedule | null>(null);
+  const [isDeleteScheduleOpen, setIsDeleteScheduleOpen] = React.useState(false);
 
   // Dialogs
   const [isEditOpen, setIsEditOpen] = React.useState(false);
@@ -177,12 +196,63 @@ export default function CourseDetailPage(): React.JSX.Element {
     }
   }, [courseId]);
 
+  const fetchSchedulesData = React.useCallback(async () => {
+    if (!courseId) return;
+    setIsSchedulesLoading(true);
+    try {
+      const res = await listSchedules({ courseId });
+      setSchedules(res.schedules);
+    } catch (err) {
+      console.error('Failed to load schedules:', err);
+    } finally {
+      setIsSchedulesLoading(false);
+    }
+  }, [courseId]);
+
   React.useEffect(() => {
     fetchCourseData();
     fetchAssignmentsData();
     fetchNotesData();
     fetchMaterialsData();
-  }, [fetchCourseData, fetchAssignmentsData, fetchNotesData, fetchMaterialsData]);
+    fetchSchedulesData();
+  }, [fetchCourseData, fetchAssignmentsData, fetchNotesData, fetchMaterialsData, fetchSchedulesData]);
+
+  const handleScheduleCreated = (
+    _newSched: CourseSchedule,
+    hasConflict: boolean,
+    conflicts?: CourseScheduleConflict[]
+  ) => {
+    if (hasConflict && conflicts && conflicts.length > 0) {
+      const conflictNames = conflicts.map((c) => `${c.courseName} (${c.startTime}–${c.endTime})`).join(', ');
+      setScheduleConflictBanner(
+        `Jadwal disimpan, namun bertabrakan waktu dengan: ${conflictNames}`
+      );
+    } else {
+      setScheduleConflictBanner(null);
+    }
+    fetchSchedulesData();
+  };
+
+  const handleScheduleUpdated = (
+    _updatedSched: CourseSchedule,
+    hasConflict: boolean,
+    conflicts?: CourseScheduleConflict[]
+  ) => {
+    if (hasConflict && conflicts && conflicts.length > 0) {
+      const conflictNames = conflicts.map((c) => `${c.courseName} (${c.startTime}–${c.endTime})`).join(', ');
+      setScheduleConflictBanner(
+        `Jadwal diperbarui, namun bertabrakan waktu dengan: ${conflictNames}`
+      );
+    } else {
+      setScheduleConflictBanner(null);
+    }
+    fetchSchedulesData();
+  };
+
+  const handleScheduleDeleted = () => {
+    setScheduleConflictBanner(null);
+    fetchSchedulesData();
+  };
 
   const isArchived = Boolean(course?.archivedAt || course?.semester?.archivedAt);
 
@@ -488,7 +558,162 @@ export default function CourseDetailPage(): React.JSX.Element {
         )}
       </div>
 
-      {/* 3. Tabs Navigation Berbasis WAI-ARIA & Keyboard Navigation */}
+      {/* 3. Jadwal Perkuliahan Terstruktur */}
+      <div className="rounded-xl border border-border bg-card p-5 sm:p-6 shadow-xs space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div>
+            <div className="flex items-center gap-2">
+              <CalendarClock className="h-5 w-5 text-primary shrink-0" />
+              <h2 className="text-base font-semibold text-foreground">Jadwal Perkuliahan</h2>
+            </div>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Sesi kelas mingguan terstruktur untuk mata kuliah ini.
+            </p>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <Button variant="outline" size="sm" asChild className="h-8 gap-1.5 text-xs">
+              <Link href={`/schedule?courseId=${course.id}&semesterId=${course.semesterId}`}>
+                <ExternalLink className="h-3.5 w-3.5" />
+                <span>Buka di Jadwal Mingguan</span>
+              </Link>
+            </Button>
+            {!isArchived && (
+              <Button
+                size="sm"
+                onClick={() => setIsCreateScheduleOpen(true)}
+                className="h-8 gap-1.5 text-xs"
+              >
+                <Plus className="h-3.5 w-3.5" />
+                <span>Tambah jadwal</span>
+              </Button>
+            )}
+          </div>
+        </div>
+
+        {/* Status Banner Konflik */}
+        {scheduleConflictBanner && (
+          <Alert variant="warning">
+            <AlertTriangle className="h-4 w-4" />
+            <AlertDescription>{scheduleConflictBanner}</AlertDescription>
+          </Alert>
+        )}
+
+        {isSchedulesLoading ? (
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            <Skeleton className="h-24 w-full rounded-lg" />
+            <Skeleton className="h-24 w-full rounded-lg" />
+          </div>
+        ) : schedules.length === 0 ? (
+          <div className="rounded-lg border border-dashed border-border bg-card/40 p-6 text-center">
+            <CalendarClock className="h-7 w-7 text-muted-foreground mx-auto" aria-hidden="true" />
+            <p className="mt-2 text-sm font-medium text-foreground">Belum ada sesi jadwal perkuliahan</p>
+            <p className="mt-1 text-xs text-muted-foreground max-w-sm mx-auto">
+              Tambahkan sesi mingguan (hari, rentang jam, dan ruangan) untuk mata kuliah ini.
+            </p>
+            {!isArchived && (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setIsCreateScheduleOpen(true)}
+                className="mt-3 gap-1.5 text-xs"
+              >
+                <Plus className="h-3.5 w-3.5" />
+                <span>Tambah jadwal pertama</span>
+              </Button>
+            )}
+          </div>
+        ) : (
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {schedules.map((sched) => {
+              const dayName = getDayNameId(sched.dayOfWeek);
+              return (
+                <div
+                  key={sched.id}
+                  className={`flex flex-col justify-between rounded-lg border p-3.5 transition-all ${
+                    sched.hasConflict
+                      ? 'border-amber-300 dark:border-amber-800 bg-amber-500/5'
+                      : 'border-border bg-muted/20 hover:bg-muted/40'
+                  }`}
+                >
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="font-semibold text-sm text-foreground">
+                        {dayName}
+                      </span>
+                      {sched.hasConflict && (
+                        <Badge variant="warning" className="gap-1 text-[11px] py-0 px-1.5">
+                          <AlertTriangle className="h-3 w-3" />
+                          <span>Konflik waktu</span>
+                        </Badge>
+                      )}
+                    </div>
+
+                    <div className="flex items-center gap-1.5 text-xs font-mono font-medium text-foreground">
+                      <Clock className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                      <span>{sched.startTime} – {sched.endTime}</span>
+                    </div>
+
+                    {sched.room ? (
+                      <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                        <MapPin className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                        <span className="font-medium text-foreground truncate">{sched.room}</span>
+                      </div>
+                    ) : (
+                      <p className="text-xs text-muted-foreground italic">
+                        Ruangan belum ditentukan
+                      </p>
+                    )}
+
+                    {sched.hasConflict && sched.conflicts && sched.conflicts.length > 0 && (
+                      <div className="mt-1 rounded border border-amber-200 dark:border-amber-900/60 bg-amber-50/50 dark:bg-amber-950/30 p-2 text-[11px] text-amber-800 dark:text-amber-300">
+                        <p className="font-medium">Bertabrakan dengan:</p>
+                        <ul className="mt-0.5 list-disc list-inside space-y-0.5">
+                          {sched.conflicts.map((c) => (
+                            <li key={c.id}>
+                              {c.courseName} ({c.startTime}–{c.endTime})
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
+
+                  {!isArchived && (
+                    <div className="mt-3 flex items-center justify-end gap-1.5 border-t border-border/50 pt-2">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          setEditingSchedule(sched);
+                          setIsEditScheduleOpen(true);
+                        }}
+                        className="h-7 px-2 text-xs gap-1"
+                      >
+                        <Pencil className="h-3 w-3" />
+                        <span>Edit</span>
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          setDeletingSchedule(sched);
+                          setIsDeleteScheduleOpen(true);
+                        }}
+                        className="h-7 px-2 text-xs gap-1 text-danger hover:bg-danger/10"
+                      >
+                        <Trash2 className="h-3 w-3" />
+                        <span>Hapus</span>
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* 4. Tabs Navigation Berbasis WAI-ARIA & Keyboard Navigation */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
         <TabsList className="w-full justify-start overflow-x-auto">
           <TabsTrigger value="assignments" className="gap-2">
@@ -1098,6 +1323,39 @@ export default function CourseDetailPage(): React.JSX.Element {
           </form>
         </DialogContent>
       </Dialog>
+
+      {/* Modal Tambah Jadwal untuk Mata Kuliah ini */}
+      {course && (
+        <CreateScheduleDialog
+          open={isCreateScheduleOpen}
+          onOpenChange={setIsCreateScheduleOpen}
+          courses={[course]}
+          preselectedCourseId={course.id}
+          onSuccess={handleScheduleCreated}
+        />
+      )}
+
+      {/* Modal Edit Jadwal */}
+      <EditScheduleDialog
+        open={isEditScheduleOpen}
+        onOpenChange={(open) => {
+          setIsEditScheduleOpen(open);
+          if (!open) setEditingSchedule(null);
+        }}
+        schedule={editingSchedule}
+        onSuccess={handleScheduleUpdated}
+      />
+
+      {/* Modal Hapus Jadwal */}
+      <DeleteScheduleDialog
+        open={isDeleteScheduleOpen}
+        onOpenChange={(open) => {
+          setIsDeleteScheduleOpen(open);
+          if (!open) setDeletingSchedule(null);
+        }}
+        schedule={deletingSchedule}
+        onSuccess={handleScheduleDeleted}
+      />
     </div>
   );
 }

@@ -29,6 +29,8 @@ import { MaterialUploadDialog } from '@/components/materials/material-upload-dia
 import { CreateTaskDialog } from '@/components/assignments/create-task-dialog';
 import { getDashboardSummary } from '@/lib/dashboard-client';
 import { updateAssignment } from '@/lib/assignment-client';
+import { getProfile } from '@/lib/auth-client';
+import { TodayScheduleWidget } from '@/components/dashboard/today-schedule-widget';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -47,6 +49,7 @@ const PRIORITY_LABELS: Record<string, string> = {
 };
 
 export function DashboardContent({ user }: DashboardContentProps): React.JSX.Element {
+  const [currentUser, setCurrentUser] = React.useState<UserProfile>(user);
   const [summary, setSummary] = React.useState<DashboardSummary | null>(null);
   const [initialLoading, setInitialLoading] = React.useState(true);
   const [isRefreshing, setIsRefreshing] = React.useState(false);
@@ -63,7 +66,7 @@ export function DashboardContent({ user }: DashboardContentProps): React.JSX.Ele
   // Race condition tracker for semester fetches
   const fetchRequestIdRef = React.useRef(0);
 
-  const timezone = user.timezone || 'Asia/Jakarta';
+  const timezone = currentUser.timezone || 'Asia/Jakarta';
 
   // Format today's date in user's profile timezone
   const todayFormatted = React.useMemo(() => {
@@ -118,9 +121,20 @@ export function DashboardContent({ user }: DashboardContentProps): React.JSX.Ele
       loadSummary(true);
     };
 
+    const handleProfileUpdate = () => {
+      getProfile()
+        .then((p) => {
+          if (p) setCurrentUser(p);
+        })
+        .catch(console.error);
+      loadSummary(true);
+    };
+
     window.addEventListener('studyflow:semester-changed', handleSemesterChange);
+    window.addEventListener('studyflow:profile-updated', handleProfileUpdate);
     return () => {
       window.removeEventListener('studyflow:semester-changed', handleSemesterChange);
+      window.removeEventListener('studyflow:profile-updated', handleProfileUpdate);
     };
   }, [loadSummary]);
 
@@ -679,8 +693,14 @@ export function DashboardContent({ user }: DashboardContentProps): React.JSX.Ele
           )}
         </div>
 
-        {/* Kolom Pendukung: Materi Terbaru (1/3 Lebar Desktop) */}
+        {/* Kolom Pendukung: Jadwal Hari Ini & Materi Terbaru (1/3 Lebar Desktop) */}
         <div className="space-y-6">
+          <TodayScheduleWidget
+            activeSemesterId={summary.activeSemester.id}
+            activeSemesterName={summary.activeSemester.name}
+            timezone={timezone}
+          />
+
           <div className="rounded-xl border border-border bg-card p-5 sm:p-6 shadow-xs flex flex-col justify-between">
             <div>
               <div className="flex items-center justify-between pb-3.5 border-b border-border">

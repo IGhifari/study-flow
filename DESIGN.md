@@ -267,8 +267,23 @@ Urutan konten mengikuti kebutuhan harian dan prioritas tindakan belajar:
 3. **Area utama tugas (2/3 lebar desktop)**:
    - **Empty state terpadu**: Jika hari ini dan 7 hari mendatang sama-sama kosong, tampilkan satu panel terpadu ringkas tanpa tinggi minimum berlebihan. Bedakan status “Belum ada tugas tercatat” (total tugas semester = 0) dari “Tidak ada deadline dalam 7 hari ke depan” (semua deadline terdekat aman/tuntas).
    - **Pengelompokan ketika ada tugas**: Pisahkan menjadi “Tugas Hari Ini” dan “Tugas 7 Hari Mendatang” menggunakan daftar berpemisah (`divide-y`), checkbox aksesibel keyboard, deadline jam/tanggal, dan badge prioritas (Tinggi/Sedang/Rendah). Empty state per kelompok tetap ringkas dengan ikon kecil dan satu kalimat keterangan.
-4. **Area pendamping materi (1/3 lebar desktop)**: “Materi terbaru” dibatasi maksimal 5 item dengan tombol “Unggah materi” di header panel dan tautan “Lihat semua materi” di footer. Jarak antarbaris dipadatkan, dan judul panjang terpotong dengan elipsis agar tidak mendorong tombol aksi “Buka” keluar panel.
-5. **Mobile**: Mengikuti tata letak satu kolom vertikal berdasarkan prioritas (Header ringkas → 3 baris statistik ringkas → Tugas terdekat → Materi terbaru). Jarak antarbagian dirapatkan secara proporsional.
+4. **Area pendamping jadwal & materi (1/3 lebar desktop)**:
+   - **Widget Jadwal Hari Ini**: Diletakkan di atas “Materi terbaru” pada kolom kanan desktop (atau setelah daftar tugas pada mobile).
+     - Menampilkan sesi perkuliahan aktif hari ini berdasarkan zona waktu profil pengguna (`user.timezone`), terurut berdasarkan jam mulai.
+     - Setiap item sesi menyajikan: rentang jam lokal (`HH:mm`), nama mata kuliah (tautan langsung ke detail mata kuliah), kode mata kuliah, dan nama ruangan bila diisi.
+     - Status waktu per sesi dihitung secara lokal setiap menit (`setInterval`, tanpa request API berkala):
+       - *Akan datang*: Waktu sekarang < jam mulai sesi.
+       - *Berlangsung*: Jam mulai <= waktu sekarang < jam selesai sesi.
+       - *Selesai*: Waktu sekarang >= jam selesai sesi (ditegaskan bahwa status ini bukan bukti kehadiran fisik pengguna).
+     - Pembedaan status waktu menggunakan teks semantik dan ikon/badge aksesibel (tidak mengandalkan warna semata).
+     - Peringatan benturan waktu (*Schedule Conflict*) tetap ditampilkan jelas jika ada sesi bertabrakan waktu.
+     - Pergantian hari menurut zona waktu pengguna (`dateKey` berubah) secara otomatis memicu pemuatan ulang jadwal hari baru.
+     - Sinkronisasi fokus & visibilitas tab (`visibilitychange` & `focus`) agar status waktu selalu mutakhir saat tab kembali aktif.
+     - Sinkronisasi semester aktif via custom event `studyflow:semester-changed` dan perubahan profil/zona waktu via `studyflow:profile-updated` dengan proteksi *race condition*.
+     - Penanganan state terisolasi: skeleton loading, belum ada semester aktif, “Tidak ada kelas hari ini”, serta error state mandiri dengan tombol “Coba lagi” tanpa mengganggu widget tugas atau materi dashboard.
+     - Header kartu menyediakan tautan “Lihat jadwal” menuju `/schedule`.
+   - **Materi terbaru**: Dibatasi maksimal 5 item dengan tombol “Unggah materi” di header panel dan tautan “Lihat semua materi” di footer. Jarak antarbaris dipadatkan, dan judul panjang terpotong dengan elipsis agar tidak mendorong tombol aksi “Buka” keluar panel.
+5. **Mobile**: Mengikuti tata letak satu kolom vertikal berdasarkan prioritas (Header ringkas → 3 baris statistik ringkas → Tugas terdekat → Jadwal hari ini → Materi terbaru). Jarak antarbagian dirapatkan secara proporsional.
 
 Jika belum ada semester, tampilkan satu empty state “Mulai dari semester pertamamu” dengan CTA “Tambah semester”. Setelah ada semester tetapi belum ada mata kuliah, CTA berubah menjadi “Tambah mata kuliah”. Jangan menampilkan semua empty state onboarding sekaligus.
 
@@ -552,7 +567,34 @@ Jika belum ada semester, tampilkan satu empty state “Mulai dari semester perta
   - Menjaga kerahasiaan: Password tidak pernah disimpan di `localStorage`, session, console log, atau laporan.
 - **Penyimpanan & kuota upload**:
   - Menampilkan kapasitas penyimpanan aktual via API `getStorageUsage()` dengan progress bar proporsional (MB terpakai / total batas).
-  - Menampilkan kuota upload harian dan waktu reset otomatis (00:00 UTC) serta batasan file PDF (maks 20 MB, 100 halaman, teks murni).
+### 9.12 Jadwal Kuliah (/schedule) dan Integrasi Detail Mata Kuliah
+
+- **Header halaman dan konteks semester**:
+  - Judul “Jadwal Kuliah” berikon `CalendarClock`, konteks semester aktif, keterangan zona waktu profil pengguna, dan satu CTA utama “Tambah jadwal” (`size="standard"`, tinggi 36 px / `h-9`).
+  - Responsif terhadap pergantian semester aktif via custom event `studyflow:semester-changed` tanpa menimpa data baru dengan respons balasan request lama (*race condition guard*).
+- **Toolbar filter mata kuliah**:
+  - Dropdown filter mata kuliah aktif di semester berjalan (`h-9`) dan tombol “Reset filter” saat filter spesifik aktif.
+- **Tampilan Desktop (Weekly Grid)**:
+  - Tata letak 7 kolom mingguan (Senin hingga Minggu) yang bersih, tenang, dan terstruktur tanpa dependensi kalender luar atau *drag-and-drop*.
+  - Sesi perkuliahan terurut jam mulai, menampilkan rentang waktu lokal (`HH:mm`), nama mata kuliah, kode, ruangan jika terisi, dan menu aksi Edit/Hapus.
+  - Sesi yang bertabrakan waktu tetap dapat diakses dan terbaca penuh berdampingan.
+- **Tampilan Mobile (Daily Agenda)**:
+  - Pemilih hari (Senin s/d Minggu) dengan target sentuh nyaman (tinggi minimal 44 px, `touch-manipulation`).
+  - Default hari aktif otomatis ditentukan berdasarkan zona waktu pengguna (`Intl.DateTimeFormat` timezone), bukan waktu mesin browser mentah.
+  - Tampilan daftar sesi terurut dengan status empty state khusus hari tersebut tanpa ada elemen yang meluap (*no horizontal overflow*).
+- **Deteksi konflik waktu (Schedule Conflict)**:
+  - Sesi bertabrakan waktu tetap disimpan di backend (non-blocking).
+  - Tampilan antarmuka menyajikan indikator peringatan semantik dengan teks dan ikon (`AlertTriangle`, badge amber) serta nama mata kuliah dan rentang jam benturan.
+  - Peringatan konflik tetap terlihat pada sesi aktif meskipun sesi lawan sedang tersembunyi oleh filter mata kuliah.
+- **Integrasi Detail Mata Kuliah (/courses/[id])**:
+  - Bagian mandiri “Jadwal Perkuliahan” di atas tab navigasi menampilkan sesi terstruktur terurut hari dan jam.
+  - Tombol aksi “Tambah jadwal” otomatis mengunci mata kuliah tujuan (`preselectedCourseId`).
+  - Tautan navigasi “Buka di Jadwal Mingguan” meneruskan parameter `courseId` dan `semesterId` agar sinkron dengan konteks semester mata kuliah.
+  - Menghormati aturan arsip: mata kuliah atau semester yang diarsipkan berstatus hanya-baca (tombol tambah/edit/hapus dinonaktifkan/disembunyikan).
+- **Dialog Tambah, Edit, dan Hapus Jadwal**:
+  - Formulir responsif yang dapat digulir nyaman pada layar ponsel pendek (`max-h-[90vh] overflow-y-auto`).
+  - *Retensi Input*: Isian formulir tidak hilang saat request gagal (HTTP 500 atau validasi server).
+  - *Dialog Hapus*: Konfirmasi deskriptif menyebutkan nama mata kuliah, hari perkuliahan, dan rentang jam secara spesifik sebelum tindakan dijalankan.
 
 ## 10. Status async dan pemulihan
 
@@ -694,3 +736,4 @@ Palet, layout, ukuran, dan microcopy adalah keputusan desain StudyFlow. Dokument
 | Versi | Tanggal | Perubahan |
 | --- | --- | --- |
 | 1.0 | 3 Oktober 2026 | Arah visual awal, token light/dark, shell responsif, rancangan seluruh halaman MVP, state AI, dan checklist implementasi |
+| 1.1 | 11 Oktober 2026 | Penambahan panduan desain antarmuka Jadwal Kuliah mingguan desktop, agenda mobile, dan integrasi Detail Mata Kuliah |

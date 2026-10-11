@@ -19,7 +19,9 @@
     "/health": {
       "get": {
         "summary": "Pemeriksaan liveness service API",
-        "tags": ["System"],
+        "tags": [
+          "System"
+        ],
         "responses": {
           "200": {
             "description": "API aktif dan melayani permintaan",
@@ -28,12 +30,29 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "status": { "type": "string", "example": "ok" },
-                    "timestamp": { "type": "string", "format": "date-time" },
-                    "uptime": { "type": "number" },
-                    "service": { "type": "string", "example": "studyflow-api" },
-                    "version": { "type": "string", "example": "0.1.0" },
-                    "environment": { "type": "string", "example": "development" }
+                    "status": {
+                      "type": "string",
+                      "example": "ok"
+                    },
+                    "timestamp": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "uptime": {
+                      "type": "number"
+                    },
+                    "service": {
+                      "type": "string",
+                      "example": "studyflow-api"
+                    },
+                    "version": {
+                      "type": "string",
+                      "example": "0.1.0"
+                    },
+                    "environment": {
+                      "type": "string",
+                      "example": "development"
+                    }
                   }
                 }
               }
@@ -45,7 +64,9 @@
     "/ready": {
       "get": {
         "summary": "Pemeriksaan readiness dependensi (PostgreSQL & Redis)",
-        "tags": ["System"],
+        "tags": [
+          "System"
+        ],
         "responses": {
           "200": {
             "description": "Seluruh dependensi database dan cache siap",
@@ -54,24 +75,49 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "status": { "type": "string", "example": "ok" },
-                    "timestamp": { "type": "string", "format": "date-time" },
-                    "service": { "type": "string", "example": "studyflow-api" },
+                    "status": {
+                      "type": "string",
+                      "example": "ok"
+                    },
+                    "timestamp": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "service": {
+                      "type": "string",
+                      "example": "studyflow-api"
+                    },
                     "dependencies": {
                       "type": "object",
                       "properties": {
                         "database": {
                           "type": "object",
                           "properties": {
-                            "status": { "type": "string", "enum": ["up", "down"] },
-                            "latencyMs": { "type": "number" }
+                            "status": {
+                              "type": "string",
+                              "enum": [
+                                "up",
+                                "down"
+                              ]
+                            },
+                            "latencyMs": {
+                              "type": "number"
+                            }
                           }
                         },
                         "redis": {
                           "type": "object",
                           "properties": {
-                            "status": { "type": "string", "enum": ["up", "down"] },
-                            "latencyMs": { "type": "number" }
+                            "status": {
+                              "type": "string",
+                              "enum": [
+                                "up",
+                                "down"
+                              ]
+                            },
+                            "latencyMs": {
+                              "type": "number"
+                            }
                           }
                         }
                       }
@@ -90,19 +136,39 @@
     "/api/auth/register": {
       "post": {
         "summary": "Pendaftaran akun pengguna baru",
-        "tags": ["Authentication"],
+        "tags": [
+          "Authentication"
+        ],
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
               "schema": {
                 "type": "object",
-                "required": ["name", "email", "password"],
+                "required": [
+                  "name",
+                  "email",
+                  "password"
+                ],
                 "properties": {
-                  "name": { "type": "string", "minLength": 2, "maxLength": 100 },
-                  "email": { "type": "string", "format": "email" },
-                  "password": { "type": "string", "minLength": 12, "maxLength": 128 },
-                  "timezone": { "type": "string", "default": "Asia/Jakarta" }
+                  "name": {
+                    "type": "string",
+                    "minLength": 2,
+                    "maxLength": 100
+                  },
+                  "email": {
+                    "type": "string",
+                    "format": "email"
+                  },
+                  "password": {
+                    "type": "string",
+                    "minLength": 12,
+                    "maxLength": 128
+                  },
+                  "timezone": {
+                    "type": "string",
+                    "default": "Asia/Jakarta"
+                  }
                 }
               }
             }
@@ -116,32 +182,50 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "message": { "type": "string" },
-                    "user": { "$ref": "#/components/schemas/UserProfile" }
+                    "message": {
+                      "type": "string"
+                    },
+                    "user": {
+                      "$ref": "#/components/schemas/UserProfile"
+                    }
                   }
                 }
               }
             }
           },
-          "400": { "description": "Validasi gagal" },
-          "409": { "description": "Email sudah terdaftar" }
+          "400": {
+            "description": "Validasi gagal"
+          },
+          "409": {
+            "description": "Email sudah terdaftar"
+          }
         }
       }
     },
     "/api/auth/login": {
       "post": {
         "summary": "Masuk ke akun (membuat sesi baru)",
-        "tags": ["Authentication"],
+        "tags": [
+          "Authentication"
+        ],
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
               "schema": {
                 "type": "object",
-                "required": ["email", "password"],
+                "required": [
+                  "email",
+                  "password"
+                ],
                 "properties": {
-                  "email": { "type": "string", "format": "email" },
-                  "password": { "type": "string" }
+                  "email": {
+                    "type": "string",
+                    "format": "email"
+                  },
+                  "password": {
+                    "type": "string"
+                  }
                 }
               }
             }
@@ -152,7 +236,9 @@
             "description": "Login berhasil, cookie HttpOnly disematkan",
             "headers": {
               "Set-Cookie": {
-                "schema": { "type": "string" },
+                "schema": {
+                  "type": "string"
+                },
                 "description": "Mengatur cookie studyflow_access_token dan studyflow_refresh_token"
               }
             },
@@ -161,22 +247,32 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "message": { "type": "string" },
-                    "user": { "$ref": "#/components/schemas/UserProfile" },
-                    "accessToken": { "type": "string" }
+                    "message": {
+                      "type": "string"
+                    },
+                    "user": {
+                      "$ref": "#/components/schemas/UserProfile"
+                    },
+                    "accessToken": {
+                      "type": "string"
+                    }
                   }
                 }
               }
             }
           },
-          "401": { "description": "Email atau password tidak sesuai" }
+          "401": {
+            "description": "Email atau password tidak sesuai"
+          }
         }
       }
     },
     "/api/auth/refresh": {
       "post": {
         "summary": "Rotasi atomik refresh token dan penerbitan access token baru",
-        "tags": ["Authentication"],
+        "tags": [
+          "Authentication"
+        ],
         "responses": {
           "200": {
             "description": "Token berhasil dirotasi",
@@ -185,28 +281,40 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "message": { "type": "string" },
-                    "user": { "$ref": "#/components/schemas/UserProfile" },
-                    "accessToken": { "type": "string" }
+                    "message": {
+                      "type": "string"
+                    },
+                    "user": {
+                      "$ref": "#/components/schemas/UserProfile"
+                    },
+                    "accessToken": {
+                      "type": "string"
+                    }
                   }
                 }
               }
             }
           },
-          "401": { "description": "Token tidak valid, kedaluwarsa, atau terdeteksi replay" }
+          "401": {
+            "description": "Token tidak valid, kedaluwarsa, atau terdeteksi replay"
+          }
         }
       }
     },
     "/api/auth/logout": {
       "post": {
         "summary": "Mencabut sesi aktif di server dan membersihkan cookie browser",
-        "tags": ["Authentication"],
+        "tags": [
+          "Authentication"
+        ],
         "responses": {
           "200": {
             "description": "Berhasil logout",
             "headers": {
               "Set-Cookie": {
-                "schema": { "type": "string" },
+                "schema": {
+                  "type": "string"
+                },
                 "description": "Menghapus cookie studyflow_access_token dan studyflow_refresh_token"
               }
             }
@@ -217,8 +325,17 @@
     "/api/auth/me": {
       "get": {
         "summary": "Mendapatkan profil pengguna yang sedang login",
-        "tags": ["Authentication"],
-        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "tags": [
+          "Authentication"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
         "responses": {
           "200": {
             "content": {
@@ -226,19 +343,32 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "user": { "$ref": "#/components/schemas/UserProfile" }
+                    "user": {
+                      "$ref": "#/components/schemas/UserProfile"
+                    }
                   }
                 }
               }
             }
           },
-          "401": { "description": "Tidak terautentikasi" }
+          "401": {
+            "description": "Tidak terautentikasi"
+          }
         }
       },
       "patch": {
         "summary": "Memperbarui nama dan zona waktu pengguna",
-        "tags": ["Authentication"],
-        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "tags": [
+          "Authentication"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
         "requestBody": {
           "required": true,
           "content": {
@@ -246,8 +376,14 @@
               "schema": {
                 "type": "object",
                 "properties": {
-                  "name": { "type": "string", "minLength": 2, "maxLength": 100 },
-                  "timezone": { "type": "string" }
+                  "name": {
+                    "type": "string",
+                    "minLength": 2,
+                    "maxLength": 100
+                  },
+                  "timezone": {
+                    "type": "string"
+                  }
                 }
               }
             }
@@ -260,56 +396,105 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "message": { "type": "string" },
-                    "user": { "$ref": "#/components/schemas/UserProfile" }
+                    "message": {
+                      "type": "string"
+                    },
+                    "user": {
+                      "$ref": "#/components/schemas/UserProfile"
+                    }
                   }
                 }
               }
             }
           },
-          "400": { "description": "Data tidak valid" },
-          "401": { "description": "Tidak terautentikasi" }
+          "400": {
+            "description": "Data tidak valid"
+          },
+          "401": {
+            "description": "Tidak terautentikasi"
+          }
         }
       }
     },
     "/api/auth/change-password": {
       "post": {
         "summary": "Mengganti password akun dan mencabut seluruh sesi lama",
-        "tags": ["Authentication"],
-        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "tags": [
+          "Authentication"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
               "schema": {
                 "type": "object",
-                "required": ["currentPassword", "newPassword"],
+                "required": [
+                  "currentPassword",
+                  "newPassword"
+                ],
                 "properties": {
-                  "currentPassword": { "type": "string" },
-                  "newPassword": { "type": "string", "minLength": 12, "maxLength": 128 }
+                  "currentPassword": {
+                    "type": "string"
+                  },
+                  "newPassword": {
+                    "type": "string",
+                    "minLength": 12,
+                    "maxLength": 128
+                  }
                 }
               }
             }
           }
         },
         "responses": {
-          "200": { "description": "Password berhasil diganti, seluruh sesi dicabut" },
-          "400": { "description": "Password saat ini salah atau password baru tidak memenuhi syarat" },
-          "401": { "description": "Tidak terautentikasi" }
+          "200": {
+            "description": "Password berhasil diganti, seluruh sesi dicabut"
+          },
+          "400": {
+            "description": "Password saat ini salah atau password baru tidak memenuhi syarat"
+          },
+          "401": {
+            "description": "Tidak terautentikasi"
+          }
         }
       }
     },
     "/api/semesters": {
       "get": {
         "summary": "Mendapatkan daftar semester pengguna",
-        "tags": ["Semesters"],
-        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "tags": [
+          "Semesters"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
         "parameters": [
           {
             "name": "status",
             "in": "query",
             "required": false,
-            "schema": { "type": "string", "enum": ["all", "active", "archived"], "default": "all" }
+            "schema": {
+              "type": "string",
+              "enum": [
+                "all",
+                "active",
+                "archived"
+              ],
+              "default": "all"
+            }
           }
         ],
         "responses": {
@@ -322,12 +507,18 @@
                   "properties": {
                     "semesters": {
                       "type": "array",
-                      "items": { "$ref": "#/components/schemas/Semester" }
+                      "items": {
+                        "$ref": "#/components/schemas/Semester"
+                      }
                     },
                     "activeSemester": {
                       "anyOf": [
-                        { "$ref": "#/components/schemas/Semester" },
-                        { "type": "null" }
+                        {
+                          "$ref": "#/components/schemas/Semester"
+                        },
+                        {
+                          "type": "null"
+                        }
                       ]
                     }
                   }
@@ -335,18 +526,31 @@
               }
             }
           },
-          "401": { "description": "Tidak terautentikasi" }
+          "401": {
+            "description": "Tidak terautentikasi"
+          }
         }
       },
       "post": {
         "summary": "Membuat semester baru",
-        "tags": ["Semesters"],
-        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "tags": [
+          "Semesters"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
-              "schema": { "$ref": "#/components/schemas/CreateSemesterInput" }
+              "schema": {
+                "$ref": "#/components/schemas/CreateSemesterInput"
+              }
             }
           }
         },
@@ -358,25 +562,49 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "message": { "type": "string" },
-                    "semester": { "$ref": "#/components/schemas/Semester" }
+                    "message": {
+                      "type": "string"
+                    },
+                    "semester": {
+                      "$ref": "#/components/schemas/Semester"
+                    }
                   }
                 }
               }
             }
           },
-          "400": { "description": "Input tidak valid" },
-          "401": { "description": "Tidak terautentikasi" }
+          "400": {
+            "description": "Input tidak valid"
+          },
+          "401": {
+            "description": "Tidak terautentikasi"
+          }
         }
       }
     },
     "/api/semesters/{id}": {
       "get": {
         "summary": "Mendapatkan detail semester",
-        "tags": ["Semesters"],
-        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "tags": [
+          "Semesters"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
         "parameters": [
-          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
         ],
         "responses": {
           "200": {
@@ -386,27 +614,49 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "semester": { "$ref": "#/components/schemas/Semester" }
+                    "semester": {
+                      "$ref": "#/components/schemas/Semester"
+                    }
                   }
                 }
               }
             }
           },
-          "404": { "description": "Semester tidak ditemukan" }
+          "404": {
+            "description": "Semester tidak ditemukan"
+          }
         }
       },
       "patch": {
         "summary": "Memperbarui nama dan tahun ajaran semester",
-        "tags": ["Semesters"],
-        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "tags": [
+          "Semesters"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
         "parameters": [
-          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
         ],
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
-              "schema": { "$ref": "#/components/schemas/UpdateSemesterInput" }
+              "schema": {
+                "$ref": "#/components/schemas/UpdateSemesterInput"
+              }
             }
           }
         },
@@ -418,83 +668,202 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "message": { "type": "string" },
-                    "semester": { "$ref": "#/components/schemas/Semester" }
+                    "message": {
+                      "type": "string"
+                    },
+                    "semester": {
+                      "$ref": "#/components/schemas/Semester"
+                    }
                   }
                 }
               }
             }
           },
-          "400": { "description": "Input tidak valid" },
-          "404": { "description": "Semester tidak ditemukan" }
+          "400": {
+            "description": "Input tidak valid"
+          },
+          "404": {
+            "description": "Semester tidak ditemukan"
+          }
         }
       },
       "delete": {
         "summary": "Menghapus semester",
-        "tags": ["Semesters"],
-        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "tags": [
+          "Semesters"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
         "parameters": [
-          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
         ],
         "responses": {
-          "200": { "description": "Semester berhasil dihapus" },
-          "409": { "description": "Semester memiliki mata kuliah dan tidak dapat dihapus" },
-          "404": { "description": "Semester tidak ditemukan" }
+          "200": {
+            "description": "Semester berhasil dihapus"
+          },
+          "404": {
+            "description": "Semester tidak ditemukan"
+          },
+          "409": {
+            "description": "Semester memiliki mata kuliah dan tidak dapat dihapus"
+          }
         }
       }
     },
     "/api/semesters/{id}/activate": {
       "post": {
         "summary": "Mengaktifkan semester",
-        "tags": ["Semesters"],
-        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "tags": [
+          "Semesters"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
         "parameters": [
-          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
         ],
         "responses": {
-          "200": { "description": "Semester berhasil diaktifkan" },
-          "400": { "description": "Semester terarsip tidak dapat diaktifkan" },
-          "404": { "description": "Semester tidak ditemukan" }
+          "200": {
+            "description": "Semester berhasil diaktifkan"
+          },
+          "400": {
+            "description": "Semester terarsip tidak dapat diaktifkan"
+          },
+          "404": {
+            "description": "Semester tidak ditemukan"
+          }
         }
       }
     },
     "/api/semesters/{id}/archive": {
       "post": {
         "summary": "Mengarsipkan semester",
-        "tags": ["Semesters"],
-        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "tags": [
+          "Semesters"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
         "parameters": [
-          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
         ],
         "responses": {
-          "200": { "description": "Semester berhasil diarsipkan" },
-          "404": { "description": "Semester tidak ditemukan" }
+          "200": {
+            "description": "Semester berhasil diarsipkan"
+          },
+          "404": {
+            "description": "Semester tidak ditemukan"
+          }
         }
       }
     },
     "/api/semesters/{id}/unarchive": {
       "post": {
         "summary": "Memulihkan semester dari arsip",
-        "tags": ["Semesters"],
-        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "tags": [
+          "Semesters"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
         "parameters": [
-          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
         ],
         "responses": {
-          "200": { "description": "Semester berhasil dipulihkan" },
-          "404": { "description": "Semester tidak ditemukan" }
+          "200": {
+            "description": "Semester berhasil dipulihkan"
+          },
+          "404": {
+            "description": "Semester tidak ditemukan"
+          }
         }
       }
     },
     "/api/courses": {
       "get": {
         "summary": "Mendapatkan daftar mata kuliah",
-        "tags": ["Courses"],
-        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "tags": [
+          "Courses"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
         "parameters": [
-          { "name": "semesterId", "in": "query", "schema": { "type": "string" } },
-          { "name": "isArchived", "in": "query", "schema": { "type": "boolean" } },
-          { "name": "search", "in": "query", "schema": { "type": "string" } }
+          {
+            "name": "semesterId",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "isArchived",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
         ],
         "responses": {
           "200": {
@@ -506,7 +875,9 @@
                   "properties": {
                     "courses": {
                       "type": "array",
-                      "items": { "$ref": "#/components/schemas/Course" }
+                      "items": {
+                        "$ref": "#/components/schemas/Course"
+                      }
                     }
                   }
                 }
@@ -517,13 +888,24 @@
       },
       "post": {
         "summary": "Membuat mata kuliah baru",
-        "tags": ["Courses"],
-        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "tags": [
+          "Courses"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
-              "schema": { "$ref": "#/components/schemas/CreateCourseInput" }
+              "schema": {
+                "$ref": "#/components/schemas/CreateCourseInput"
+              }
             }
           }
         },
@@ -535,25 +917,49 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "message": { "type": "string" },
-                    "course": { "$ref": "#/components/schemas/Course" }
+                    "message": {
+                      "type": "string"
+                    },
+                    "course": {
+                      "$ref": "#/components/schemas/Course"
+                    }
                   }
                 }
               }
             }
           },
-          "400": { "description": "Semester diarsipkan atau input tidak valid" },
-          "404": { "description": "Semester tidak ditemukan" }
+          "400": {
+            "description": "Semester diarsipkan atau input tidak valid"
+          },
+          "404": {
+            "description": "Semester tidak ditemukan"
+          }
         }
       }
     },
     "/api/courses/{id}": {
       "get": {
         "summary": "Mendapatkan detail mata kuliah",
-        "tags": ["Courses"],
-        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "tags": [
+          "Courses"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
         "parameters": [
-          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
         ],
         "responses": {
           "200": {
@@ -563,27 +969,49 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "course": { "$ref": "#/components/schemas/Course" }
+                    "course": {
+                      "$ref": "#/components/schemas/Course"
+                    }
                   }
                 }
               }
             }
           },
-          "404": { "description": "Mata kuliah tidak ditemukan" }
+          "404": {
+            "description": "Mata kuliah tidak ditemukan"
+          }
         }
       },
       "patch": {
         "summary": "Memperbarui detail mata kuliah",
-        "tags": ["Courses"],
-        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "tags": [
+          "Courses"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
         "parameters": [
-          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
         ],
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
-              "schema": { "$ref": "#/components/schemas/UpdateCourseInput" }
+              "schema": {
+                "$ref": "#/components/schemas/UpdateCourseInput"
+              }
             }
           }
         },
@@ -595,67 +1023,144 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "message": { "type": "string" },
-                    "course": { "$ref": "#/components/schemas/Course" }
+                    "message": {
+                      "type": "string"
+                    },
+                    "course": {
+                      "$ref": "#/components/schemas/Course"
+                    }
                   }
                 }
               }
             }
           },
-          "404": { "description": "Mata kuliah tidak ditemukan" }
+          "404": {
+            "description": "Mata kuliah tidak ditemukan"
+          }
         }
       },
       "delete": {
         "summary": "Menghapus mata kuliah",
-        "tags": ["Courses"],
-        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "tags": [
+          "Courses"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
         "parameters": [
-          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
         ],
         "responses": {
-          "200": { "description": "Mata kuliah berhasil dihapus" },
-          "404": { "description": "Mata kuliah tidak ditemukan" }
+          "200": {
+            "description": "Mata kuliah berhasil dihapus"
+          },
+          "404": {
+            "description": "Mata kuliah tidak ditemukan"
+          }
         }
       }
     },
     "/api/courses/{id}/archive": {
       "post": {
         "summary": "Mengarsipkan mata kuliah",
-        "tags": ["Courses"],
-        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "tags": [
+          "Courses"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
         "parameters": [
-          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
         ],
         "responses": {
-          "200": { "description": "Mata kuliah berhasil diarsipkan" },
-          "404": { "description": "Mata kuliah tidak ditemukan" }
+          "200": {
+            "description": "Mata kuliah berhasil diarsipkan"
+          },
+          "404": {
+            "description": "Mata kuliah tidak ditemukan"
+          }
         }
       }
     },
     "/api/courses/{id}/unarchive": {
       "post": {
         "summary": "Memulihkan mata kuliah dari arsip",
-        "tags": ["Courses"],
-        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "tags": [
+          "Courses"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
         "parameters": [
-          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
         ],
         "responses": {
-          "200": { "description": "Mata kuliah berhasil dipulihkan" },
-          "404": { "description": "Mata kuliah tidak ditemukan" }
+          "200": {
+            "description": "Mata kuliah berhasil dipulihkan"
+          },
+          "404": {
+            "description": "Mata kuliah tidak ditemukan"
+          }
         }
       }
     },
     "/api/materials/initiate-upload": {
       "post": {
         "summary": "Memulai inisiasi upload PDF materi",
-        "tags": ["Materials"],
-        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "tags": [
+          "Materials"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
-              "schema": { "$ref": "#/components/schemas/InitiateUploadInput" }
+              "schema": {
+                "$ref": "#/components/schemas/InitiateUploadInput"
+              }
             }
           }
         },
@@ -664,26 +1169,45 @@
             "description": "Upload terinisiasi, mengembalikan signed upload URL",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/InitiateUploadResponse" }
+                "schema": {
+                  "$ref": "#/components/schemas/InitiateUploadResponse"
+                }
               }
             }
           },
-          "400": { "description": "Validasi gagal atau ukuran melebihi batas" },
-          "403": { "description": "Mata kuliah diarsipkan" },
-          "429": { "description": "Batas kuota harian tercapai" }
+          "400": {
+            "description": "Validasi gagal atau ukuran melebihi batas"
+          },
+          "403": {
+            "description": "Mata kuliah diarsipkan"
+          },
+          "429": {
+            "description": "Batas kuota harian tercapai"
+          }
         }
       }
     },
     "/api/materials/finalize-upload": {
       "post": {
         "summary": "Memfinalisasi upload dan menjadwalkan ekstraksi dokumen",
-        "tags": ["Materials"],
-        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "tags": [
+          "Materials"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
-              "schema": { "$ref": "#/components/schemas/FinalizeUploadInput" }
+              "schema": {
+                "$ref": "#/components/schemas/FinalizeUploadInput"
+              }
             }
           }
         },
@@ -692,26 +1216,77 @@
             "description": "Upload diverifikasi, ekstraksi dijadwalkan secara asinkron",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/FinalizeUploadResponse" }
+                "schema": {
+                  "$ref": "#/components/schemas/FinalizeUploadResponse"
+                }
               }
             }
           },
-          "400": { "description": "File belum ditemukan di storage" }
+          "400": {
+            "description": "File belum ditemukan di storage"
+          }
         }
       }
     },
     "/api/materials": {
       "get": {
         "summary": "Mendapatkan daftar materi kuliah",
-        "tags": ["Materials"],
-        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "tags": [
+          "Materials"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
         "parameters": [
-          { "name": "courseId", "in": "query", "schema": { "type": "string" } },
-          { "name": "semesterId", "in": "query", "schema": { "type": "string" } },
-          { "name": "status", "in": "query", "schema": { "type": "string" } },
-          { "name": "search", "in": "query", "schema": { "type": "string" } },
-          { "name": "page", "in": "query", "schema": { "type": "integer", "default": 1 } },
-          { "name": "limit", "in": "query", "schema": { "type": "integer", "default": 20 } }
+          {
+            "name": "courseId",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "semesterId",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 1
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 20
+            }
+          }
         ],
         "responses": {
           "200": {
@@ -723,14 +1298,25 @@
     "/api/materials/usage": {
       "get": {
         "summary": "Mendapatkan pemakaian storage dan kuota upload pengguna",
-        "tags": ["Materials"],
-        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "tags": [
+          "Materials"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
         "responses": {
           "200": {
             "description": "Informasi kuota penyimpanan dan hitungan upload harian",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/StorageUsageResponse" }
+                "schema": {
+                  "$ref": "#/components/schemas/StorageUsageResponse"
+                }
               }
             }
           }
@@ -740,8 +1326,18 @@
     "/api/materials/usage/ai": {
       "get": {
         "summary": "Mendapatkan status kuota harian dan batas concurrent ringkasan AI",
-        "tags": ["Materials", "AI Summaries"],
-        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "tags": [
+          "Materials",
+          "AI Summaries"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
         "responses": {
           "200": {
             "description": "Informasi kuota pembuatan ringkasan AI",
@@ -750,7 +1346,9 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "quota": { "$ref": "#/components/schemas/AiQuotaStatus" }
+                    "quota": {
+                      "$ref": "#/components/schemas/AiQuotaStatus"
+                    }
                   }
                 }
               }
@@ -762,10 +1360,26 @@
     "/api/materials/jobs/{jobId}": {
       "get": {
         "summary": "Mengecek status pemrosesan pekerjaan asinkron",
-        "tags": ["Materials"],
-        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "tags": [
+          "Materials"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
         "parameters": [
-          { "name": "jobId", "in": "path", "required": true, "schema": { "type": "string" } }
+          {
+            "name": "jobId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
         ],
         "responses": {
           "200": {
@@ -777,71 +1391,171 @@
     "/api/materials/{id}": {
       "get": {
         "summary": "Mendapatkan detail materi beserta halaman teks",
-        "tags": ["Materials"],
-        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "tags": [
+          "Materials"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
         "parameters": [
-          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
         ],
         "responses": {
-          "200": { "description": "Detail materi" },
-          "404": { "description": "Materi tidak ditemukan" }
+          "200": {
+            "description": "Detail materi"
+          },
+          "404": {
+            "description": "Materi tidak ditemukan"
+          }
         }
       },
       "patch": {
         "summary": "Memperbarui judul materi",
-        "tags": ["Materials"],
-        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "tags": [
+          "Materials"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
         "parameters": [
-          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
         ],
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
-              "schema": { "$ref": "#/components/schemas/UpdateMaterialInput" }
+              "schema": {
+                "$ref": "#/components/schemas/UpdateMaterialInput"
+              }
             }
           }
         },
         "responses": {
-          "200": { "description": "Judul materi berhasil diperbarui" },
-          "404": { "description": "Materi tidak ditemukan" }
+          "200": {
+            "description": "Judul materi berhasil diperbarui"
+          },
+          "404": {
+            "description": "Materi tidak ditemukan"
+          }
         }
       },
       "delete": {
         "summary": "Menghapus materi dan membersihkan file storage",
-        "tags": ["Materials"],
-        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "tags": [
+          "Materials"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
         "parameters": [
-          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
         ],
         "responses": {
-          "200": { "description": "Materi berhasil dihapus" },
-          "404": { "description": "Materi tidak ditemukan" }
+          "200": {
+            "description": "Materi berhasil dihapus"
+          },
+          "404": {
+            "description": "Materi tidak ditemukan"
+          }
         }
       }
     },
     "/api/materials/{id}/retry": {
       "post": {
         "summary": "Mengulang pemrosesan ekstraksi dokumen yang gagal",
-        "tags": ["Materials"],
-        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "tags": [
+          "Materials"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
         "parameters": [
-          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
         ],
         "responses": {
-          "200": { "description": "Pemrosesan ulang dijadwalkan" },
-          "400": { "description": "Materi tidak dalam status FAILED" },
-          "404": { "description": "Materi tidak ditemukan" }
+          "200": {
+            "description": "Pemrosesan ulang dijadwalkan"
+          },
+          "400": {
+            "description": "Materi tidak dalam status FAILED"
+          },
+          "404": {
+            "description": "Materi tidak ditemukan"
+          }
         }
       }
     },
     "/api/materials/{id}/download": {
       "get": {
         "summary": "Menerbitkan signed URL sementara untuk pratinjau / download PDF",
-        "tags": ["Materials"],
-        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "tags": [
+          "Materials"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
         "parameters": [
-          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
         ],
         "responses": {
           "200": {
@@ -851,50 +1565,99 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "downloadUrl": { "type": "string" },
-                    "expiresInSeconds": { "type": "integer" },
-                    "expiresAt": { "type": "string", "format": "date-time" }
+                    "downloadUrl": {
+                      "type": "string"
+                    },
+                    "expiresInSeconds": {
+                      "type": "integer"
+                    },
+                    "expiresAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    }
                   }
                 }
               }
             }
           },
-          "404": { "description": "Materi tidak ditemukan" }
+          "404": {
+            "description": "Materi tidak ditemukan"
+          }
         }
       }
     },
     "/api/materials/{id}/summary": {
       "get": {
         "summary": "Mendapatkan ringkasan AI dan status kuota untuk materi",
-        "tags": ["Materials", "AI Summaries"],
-        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "tags": [
+          "Materials",
+          "AI Summaries"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
         "parameters": [
-          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
         ],
         "responses": {
           "200": {
             "description": "Ringkasan AI dan status kuota",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/SummaryResponse" }
+                "schema": {
+                  "$ref": "#/components/schemas/SummaryResponse"
+                }
               }
             }
           },
-          "404": { "description": "Materi tidak ditemukan" }
+          "404": {
+            "description": "Materi tidak ditemukan"
+          }
         }
       },
       "post": {
         "summary": "Meminta generasi atau regenerasi ringkasan materi dengan AI",
-        "tags": ["Materials", "AI Summaries"],
-        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "tags": [
+          "Materials",
+          "AI Summaries"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
         "parameters": [
-          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
         ],
         "requestBody": {
           "required": false,
           "content": {
             "application/json": {
-              "schema": { "$ref": "#/components/schemas/GenerateSummaryInput" }
+              "schema": {
+                "$ref": "#/components/schemas/GenerateSummaryInput"
+              }
             }
           }
         },
@@ -903,24 +1666,51 @@
             "description": "Permintaan diterima dan dijadwalkan di antrean worker",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/GenerateSummaryResponse" }
+                "schema": {
+                  "$ref": "#/components/schemas/GenerateSummaryResponse"
+                }
               }
             }
           },
-          "400": { "description": "Materi belum READY atau teks tidak memadai" },
-          "403": { "description": "Akses materi ditolak" },
-          "404": { "description": "Materi tidak ditemukan" },
-          "429": { "description": "Batas kuota harian atau concurrent job terlampaui" }
+          "400": {
+            "description": "Materi belum READY atau teks tidak memadai"
+          },
+          "403": {
+            "description": "Akses materi ditolak"
+          },
+          "404": {
+            "description": "Materi tidak ditemukan"
+          },
+          "429": {
+            "description": "Batas kuota harian atau concurrent job terlampaui"
+          }
         }
       }
     },
     "/api/materials/{id}/flashcard-sets": {
       "get": {
         "summary": "Mendapatkan daftar flashcard set untuk materi",
-        "tags": ["Materials", "Flashcards"],
-        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "tags": [
+          "Materials",
+          "Flashcards"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
         "parameters": [
-          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
         ],
         "responses": {
           "200": {
@@ -930,28 +1720,56 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "sets": { "type": "array", "items": { "$ref": "#/components/schemas/FlashcardSet" } }
+                    "sets": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/FlashcardSet"
+                      }
+                    }
                   }
                 }
               }
             }
           },
-          "403": { "description": "Akses materi ditolak" },
-          "404": { "description": "Materi tidak ditemukan" }
+          "403": {
+            "description": "Akses materi ditolak"
+          },
+          "404": {
+            "description": "Materi tidak ditemukan"
+          }
         }
       },
       "post": {
         "summary": "Meminta generasi set flashcard dari materi dengan AI",
-        "tags": ["Materials", "Flashcards"],
-        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "tags": [
+          "Materials",
+          "Flashcards"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
         "parameters": [
-          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
         ],
         "requestBody": {
           "required": false,
           "content": {
             "application/json": {
-              "schema": { "$ref": "#/components/schemas/GenerateFlashcardsInput" }
+              "schema": {
+                "$ref": "#/components/schemas/GenerateFlashcardsInput"
+              }
             }
           }
         },
@@ -963,33 +1781,63 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "setId": { "type": "string" },
-                    "jobId": { "type": "string" },
-                    "message": { "type": "string" }
+                    "setId": {
+                      "type": "string"
+                    },
+                    "jobId": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
                   }
                 }
               }
             }
           },
-          "400": { "description": "Validasi gagal atau materi belum READY" },
-          "403": { "description": "Akses ditolak" },
-          "429": { "description": "Kuota AI terlampaui" }
+          "400": {
+            "description": "Validasi gagal atau materi belum READY"
+          },
+          "403": {
+            "description": "Akses ditolak"
+          },
+          "429": {
+            "description": "Kuota AI terlampaui"
+          }
         }
       }
     },
     "/api/flashcards/{id}": {
       "patch": {
         "summary": "Memperbarui status pemahaman kartu flashcard",
-        "tags": ["Flashcards"],
-        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "tags": [
+          "Flashcards"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
         "parameters": [
-          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
         ],
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
-              "schema": { "$ref": "#/components/schemas/UpdateFlashcardMasteryInput" }
+              "schema": {
+                "$ref": "#/components/schemas/UpdateFlashcardMasteryInput"
+              }
             }
           }
         },
@@ -998,23 +1846,48 @@
             "description": "Status pemahaman kartu berhasil diperbarui",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/Flashcard" }
+                "schema": {
+                  "$ref": "#/components/schemas/Flashcard"
+                }
               }
             }
           },
-          "400": { "description": "Status tidak valid" },
-          "403": { "description": "Akses kartu ditolak" },
-          "404": { "description": "Kartu tidak ditemukan" }
+          "400": {
+            "description": "Status tidak valid"
+          },
+          "403": {
+            "description": "Akses kartu ditolak"
+          },
+          "404": {
+            "description": "Kartu tidak ditemukan"
+          }
         }
       }
     },
     "/api/materials/{id}/quizzes": {
       "get": {
         "summary": "Mendapatkan daftar kuis untuk materi",
-        "tags": ["Materials", "Quizzes"],
-        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "tags": [
+          "Materials",
+          "Quizzes"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
         "parameters": [
-          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
         ],
         "responses": {
           "200": {
@@ -1024,28 +1897,56 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "quizzes": { "type": "array", "items": { "$ref": "#/components/schemas/Quiz" } }
+                    "quizzes": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Quiz"
+                      }
+                    }
                   }
                 }
               }
             }
           },
-          "403": { "description": "Akses materi ditolak" },
-          "404": { "description": "Materi tidak ditemukan" }
+          "403": {
+            "description": "Akses materi ditolak"
+          },
+          "404": {
+            "description": "Materi tidak ditemukan"
+          }
         }
       },
       "post": {
         "summary": "Meminta generasi kuis dari materi dengan AI",
-        "tags": ["Materials", "Quizzes"],
-        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "tags": [
+          "Materials",
+          "Quizzes"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
         "parameters": [
-          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
         ],
         "requestBody": {
           "required": false,
           "content": {
             "application/json": {
-              "schema": { "$ref": "#/components/schemas/GenerateQuizInput" }
+              "schema": {
+                "$ref": "#/components/schemas/GenerateQuizInput"
+              }
             }
           }
         },
@@ -1057,17 +1958,29 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "quizId": { "type": "string" },
-                    "jobId": { "type": "string" },
-                    "message": { "type": "string" }
+                    "quizId": {
+                      "type": "string"
+                    },
+                    "jobId": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
                   }
                 }
               }
             }
           },
-          "400": { "description": "Validasi gagal atau materi belum READY" },
-          "403": { "description": "Akses ditolak" },
-          "429": { "description": "Kuota AI terlampaui" }
+          "400": {
+            "description": "Validasi gagal atau materi belum READY"
+          },
+          "403": {
+            "description": "Akses ditolak"
+          },
+          "429": {
+            "description": "Kuota AI terlampaui"
+          }
         }
       }
     },
@@ -1075,23 +1988,47 @@
       "post": {
         "summary": "Memulai atau melanjutkan sesi pengerjaan kuis",
         "description": "Mengembalikan soal-soal tanpa jawaban benar (correctIndex) atau pembahasan (explanation).",
-        "tags": ["Quizzes"],
-        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "tags": [
+          "Quizzes"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
         "parameters": [
-          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
         ],
         "responses": {
           "200": {
             "description": "Sesi attempt aktif",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/StartQuizAttemptResponse" }
+                "schema": {
+                  "$ref": "#/components/schemas/StartQuizAttemptResponse"
+                }
               }
             }
           },
-          "400": { "description": "Kuis belum READY" },
-          "403": { "description": "Akses kuis ditolak" },
-          "404": { "description": "Kuis tidak ditemukan" }
+          "400": {
+            "description": "Kuis belum READY"
+          },
+          "403": {
+            "description": "Akses kuis ditolak"
+          },
+          "404": {
+            "description": "Kuis tidak ditemukan"
+          }
         }
       }
     },
@@ -1099,10 +2036,26 @@
       "patch": {
         "summary": "Menyimpan jawaban sementara sebelum submit",
         "description": "Menyimpan pilihan jawaban pengguna pada sesi aktif tanpa penilaian.",
-        "tags": ["Quizzes"],
-        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "tags": [
+          "Quizzes"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
         "parameters": [
-          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
         ],
         "requestBody": {
           "required": true,
@@ -1110,11 +2063,15 @@
             "application/json": {
               "schema": {
                 "type": "object",
-                "required": ["answers"],
+                "required": [
+                  "answers"
+                ],
                 "properties": {
                   "answers": {
                     "type": "array",
-                    "items": { "$ref": "#/components/schemas/SubmitQuizAnswerItem" }
+                    "items": {
+                      "$ref": "#/components/schemas/SubmitQuizAnswerItem"
+                    }
                   }
                 }
               }
@@ -1122,10 +2079,18 @@
           }
         },
         "responses": {
-          "200": { "description": "Jawaban draft berhasil disimpan" },
-          "400": { "description": "Validasi gagal atau attempt sudah disubmit" },
-          "403": { "description": "Akses attempt ditolak" },
-          "404": { "description": "Attempt tidak ditemukan" }
+          "200": {
+            "description": "Jawaban draft berhasil disimpan"
+          },
+          "400": {
+            "description": "Validasi gagal atau attempt sudah disubmit"
+          },
+          "403": {
+            "description": "Akses attempt ditolak"
+          },
+          "404": {
+            "description": "Attempt tidak ditemukan"
+          }
         }
       }
     },
@@ -1133,16 +2098,34 @@
       "post": {
         "summary": "Mengirimkan jawaban kuis untuk dinilai oleh server",
         "description": "Penilaian 0-100 dilakukan di backend. Idempoten.",
-        "tags": ["Quizzes"],
-        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "tags": [
+          "Quizzes"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
         "parameters": [
-          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
         ],
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
-              "schema": { "$ref": "#/components/schemas/SubmitQuizAttemptInput" }
+              "schema": {
+                "$ref": "#/components/schemas/SubmitQuizAttemptInput"
+              }
             }
           }
         },
@@ -1151,36 +2134,321 @@
             "description": "Hasil evaluasi pengerjaan kuis dan pembahasan",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/QuizAttemptResponse" }
+                "schema": {
+                  "$ref": "#/components/schemas/QuizAttemptResponse"
+                }
               }
             }
           },
-          "400": { "description": "Format jawaban tidak valid" },
-          "403": { "description": "Akses attempt ditolak" },
-          "404": { "description": "Attempt tidak ditemukan" }
+          "400": {
+            "description": "Format jawaban tidak valid"
+          },
+          "403": {
+            "description": "Akses attempt ditolak"
+          },
+          "404": {
+            "description": "Attempt tidak ditemukan"
+          }
         }
       }
     },
     "/api/attempts/{id}": {
       "get": {
         "summary": "Melihat hasil pengerjaan kuis yang telah selesai",
-        "tags": ["Quizzes"],
-        "security": [{ "bearerAuth": [] }, { "cookieAuth": [] }],
+        "tags": [
+          "Quizzes"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
         "parameters": [
-          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
         ],
         "responses": {
           "200": {
             "description": "Hasil attempt dan review jawaban",
             "content": {
               "application/json": {
-                "schema": { "$ref": "#/components/schemas/QuizAttemptResponse" }
+                "schema": {
+                  "$ref": "#/components/schemas/QuizAttemptResponse"
+                }
               }
             }
           },
-          "400": { "description": "Attempt belum disubmit" },
-          "403": { "description": "Akses attempt ditolak" },
-          "404": { "description": "Attempt tidak ditemukan" }
+          "400": {
+            "description": "Attempt belum disubmit"
+          },
+          "403": {
+            "description": "Akses attempt ditolak"
+          },
+          "404": {
+            "description": "Attempt tidak ditemukan"
+          }
+        }
+      }
+    },
+    "/api/schedules": {
+      "get": {
+        "summary": "Mendapatkan daftar jadwal perkuliahan terstruktur",
+        "tags": [
+          "Schedules"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "courseId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Filter berdasarkan ID mata kuliah"
+          },
+          {
+            "name": "semesterId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Filter berdasarkan ID semester"
+          },
+          {
+            "name": "dayOfWeek",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 7
+            },
+            "description": "Filter hari 1 (Senin) .. 7 (Minggu)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Daftar jadwal perkuliahan terurut hari dan jam mulai",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CourseScheduleListResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Tidak terautentikasi"
+          }
+        }
+      },
+      "post": {
+        "summary": "Menambahkan sesi jadwal perkuliahan baru",
+        "tags": [
+          "Schedules"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateCourseScheduleInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Jadwal berhasil dibuat (bisa disertai flag hasConflict: true jika berbenturan waktu)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CourseScheduleResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validasi waktu tidak valid atau semester/mata kuliah diarsipkan"
+          },
+          "404": {
+            "description": "Mata kuliah tidak ditemukan"
+          },
+          "409": {
+            "description": "Sesi jadwal identik sudah terdaftar pada mata kuliah ini"
+          }
+        }
+      }
+    },
+    "/api/schedules/{id}": {
+      "get": {
+        "summary": "Mendapatkan detail satu sesi jadwal perkuliahan",
+        "tags": [
+          "Schedules"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Detail sesi jadwal perkuliahan",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CourseScheduleResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Jadwal tidak ditemukan"
+          }
+        }
+      },
+      "patch": {
+        "summary": "Memperbarui sesi jadwal perkuliahan",
+        "tags": [
+          "Schedules"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateCourseScheduleInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Jadwal berhasil diperbarui",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CourseScheduleResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validasi waktu tidak valid atau semester diarsipkan"
+          },
+          "404": {
+            "description": "Jadwal tidak ditemukan"
+          },
+          "409": {
+            "description": "Sesi jadwal identik sudah terdaftar"
+          }
+        }
+      },
+      "delete": {
+        "summary": "Menghapus sesi jadwal perkuliahan",
+        "tags": [
+          "Schedules"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Jadwal berhasil dihapus",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    },
+                    "deletedId": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Mata kuliah/semester diarsipkan"
+          },
+          "404": {
+            "description": "Jadwal tidak ditemukan"
+          }
         }
       }
     }
@@ -1190,349 +2458,930 @@
       "UserProfile": {
         "type": "object",
         "properties": {
-          "id": { "type": "string" },
-          "name": { "type": "string" },
-          "email": { "type": "string", "format": "email" },
-          "timezone": { "type": "string" },
-          "createdAt": { "type": "string", "format": "date-time" },
-          "updatedAt": { "type": "string", "format": "date-time" }
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string",
+            "format": "email"
+          },
+          "timezone": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
         }
       },
       "Semester": {
         "type": "object",
         "properties": {
-          "id": { "type": "string" },
-          "userId": { "type": "string" },
-          "name": { "type": "string" },
-          "academicYear": { "type": "string" },
-          "isActive": { "type": "boolean" },
-          "archivedAt": { "type": "string", "format": "date-time", "nullable": true },
-          "courseCount": { "type": "integer" },
-          "createdAt": { "type": "string", "format": "date-time" },
-          "updatedAt": { "type": "string", "format": "date-time" }
+          "id": {
+            "type": "string"
+          },
+          "userId": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "academicYear": {
+            "type": "string"
+          },
+          "isActive": {
+            "type": "boolean"
+          },
+          "archivedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "courseCount": {
+            "type": "integer"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
         }
       },
       "CreateSemesterInput": {
         "type": "object",
-        "required": ["name", "academicYear"],
+        "required": [
+          "name",
+          "academicYear"
+        ],
         "properties": {
-          "name": { "type": "string", "minLength": 2, "maxLength": 100 },
-          "academicYear": { "type": "string", "minLength": 4, "maxLength": 20 },
-          "makeActive": { "type": "boolean" }
+          "name": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 100
+          },
+          "academicYear": {
+            "type": "string",
+            "minLength": 4,
+            "maxLength": 20
+          },
+          "makeActive": {
+            "type": "boolean"
+          }
         }
       },
       "UpdateSemesterInput": {
         "type": "object",
         "properties": {
-          "name": { "type": "string", "minLength": 2, "maxLength": 100 },
-          "academicYear": { "type": "string", "minLength": 4, "maxLength": 20 }
+          "name": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 100
+          },
+          "academicYear": {
+            "type": "string",
+            "minLength": 4,
+            "maxLength": 20
+          }
         }
       },
       "Course": {
         "type": "object",
         "properties": {
-          "id": { "type": "string" },
-          "userId": { "type": "string" },
-          "semesterId": { "type": "string" },
-          "name": { "type": "string" },
-          "code": { "type": "string", "nullable": true },
-          "lecturer": { "type": "string", "nullable": true },
-          "description": { "type": "string", "nullable": true },
-          "archivedAt": { "type": "string", "format": "date-time", "nullable": true },
-          "semester": { "$ref": "#/components/schemas/Semester" },
-          "createdAt": { "type": "string", "format": "date-time" },
-          "updatedAt": { "type": "string", "format": "date-time" }
+          "id": {
+            "type": "string"
+          },
+          "userId": {
+            "type": "string"
+          },
+          "semesterId": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string",
+            "nullable": true
+          },
+          "lecturer": {
+            "type": "string",
+            "nullable": true
+          },
+          "description": {
+            "type": "string",
+            "nullable": true
+          },
+          "archivedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "semester": {
+            "$ref": "#/components/schemas/Semester"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
         }
       },
       "CreateCourseInput": {
         "type": "object",
-        "required": ["semesterId", "name"],
+        "required": [
+          "semesterId",
+          "name"
+        ],
         "properties": {
-          "semesterId": { "type": "string" },
-          "name": { "type": "string", "minLength": 2, "maxLength": 150 },
-          "code": { "type": "string", "maxLength": 30 },
-          "lecturer": { "type": "string", "maxLength": 100 },
-          "description": { "type": "string", "maxLength": 1000 }
+          "semesterId": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 150
+          },
+          "code": {
+            "type": "string",
+            "maxLength": 30
+          },
+          "lecturer": {
+            "type": "string",
+            "maxLength": 100
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 1000
+          }
         }
       },
       "UpdateCourseInput": {
         "type": "object",
         "properties": {
-          "name": { "type": "string", "minLength": 2, "maxLength": 150 },
-          "code": { "type": "string", "maxLength": 30 },
-          "lecturer": { "type": "string", "maxLength": 100 },
-          "description": { "type": "string", "maxLength": 1000 }
+          "name": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 150
+          },
+          "code": {
+            "type": "string",
+            "maxLength": 30
+          },
+          "lecturer": {
+            "type": "string",
+            "maxLength": 100
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 1000
+          }
         }
       },
       "InitiateUploadInput": {
         "type": "object",
-        "required": ["courseId", "title", "filename", "fileSize", "mimeType"],
+        "required": [
+          "courseId",
+          "title",
+          "filename",
+          "fileSize",
+          "mimeType"
+        ],
         "properties": {
-          "courseId": { "type": "string" },
-          "title": { "type": "string", "minLength": 1, "maxLength": 200 },
-          "filename": { "type": "string" },
-          "fileSize": { "type": "integer", "maximum": 20971520 },
-          "mimeType": { "type": "string", "enum": ["application/pdf"] }
+          "courseId": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "filename": {
+            "type": "string"
+          },
+          "fileSize": {
+            "type": "integer",
+            "maximum": 20971520
+          },
+          "mimeType": {
+            "type": "string",
+            "enum": [
+              "application/pdf"
+            ]
+          }
         }
       },
       "InitiateUploadResponse": {
         "type": "object",
         "properties": {
-          "materialId": { "type": "string" },
-          "uploadUrl": { "type": "string" },
-          "storageKey": { "type": "string" },
-          "expiresAt": { "type": "string", "format": "date-time" }
+          "materialId": {
+            "type": "string"
+          },
+          "uploadUrl": {
+            "type": "string"
+          },
+          "storageKey": {
+            "type": "string"
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time"
+          }
         }
       },
       "FinalizeUploadInput": {
         "type": "object",
-        "required": ["materialId"],
+        "required": [
+          "materialId"
+        ],
         "properties": {
-          "materialId": { "type": "string" }
+          "materialId": {
+            "type": "string"
+          }
         }
       },
       "FinalizeUploadResponse": {
         "type": "object",
         "properties": {
-          "material": { "type": "object" },
-          "jobId": { "type": "string" }
+          "material": {
+            "type": "object"
+          },
+          "jobId": {
+            "type": "string"
+          }
         }
       },
       "UpdateMaterialInput": {
         "type": "object",
         "properties": {
-          "title": { "type": "string", "minLength": 1, "maxLength": 200 }
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          }
         }
       },
       "StorageUsageResponse": {
         "type": "object",
         "properties": {
-          "usedBytes": { "type": "integer" },
-          "limitBytes": { "type": "integer" },
-          "percentage": { "type": "number" },
-          "dailyUploadsCount": { "type": "integer" },
-          "dailyUploadsLimit": { "type": "integer" },
-          "dailyResetUtc": { "type": "string" },
-          "dailyResetUserTimezone": { "type": "string" }
+          "usedBytes": {
+            "type": "integer"
+          },
+          "limitBytes": {
+            "type": "integer"
+          },
+          "percentage": {
+            "type": "number"
+          },
+          "dailyUploadsCount": {
+            "type": "integer"
+          },
+          "dailyUploadsLimit": {
+            "type": "integer"
+          },
+          "dailyResetUtc": {
+            "type": "string"
+          },
+          "dailyResetUserTimezone": {
+            "type": "string"
+          }
         }
       },
       "GenerateSummaryInput": {
         "type": "object",
         "properties": {
-          "regenerate": { "type": "boolean", "default": false }
+          "regenerate": {
+            "type": "boolean",
+            "default": false
+          }
         }
       },
       "KeyConcept": {
         "type": "object",
         "properties": {
-          "concept": { "type": "string" },
-          "explanation": { "type": "string" },
-          "pageReferences": { "type": "array", "items": { "type": "integer" } }
+          "concept": {
+            "type": "string"
+          },
+          "explanation": {
+            "type": "string"
+          },
+          "pageReferences": {
+            "type": "array",
+            "items": {
+              "type": "integer"
+            }
+          }
         },
-        "required": ["concept", "explanation", "pageReferences"]
+        "required": [
+          "concept",
+          "explanation",
+          "pageReferences"
+        ]
       },
       "SummarySection": {
         "type": "object",
         "properties": {
-          "heading": { "type": "string" },
-          "content": { "type": "string" },
-          "pageReferences": { "type": "array", "items": { "type": "integer" } }
+          "heading": {
+            "type": "string"
+          },
+          "content": {
+            "type": "string"
+          },
+          "pageReferences": {
+            "type": "array",
+            "items": {
+              "type": "integer"
+            }
+          }
         },
-        "required": ["heading", "content", "pageReferences"]
+        "required": [
+          "heading",
+          "content",
+          "pageReferences"
+        ]
       },
       "KeyTerm": {
         "type": "object",
         "properties": {
-          "term": { "type": "string" },
-          "definition": { "type": "string" },
-          "pageReferences": { "type": "array", "items": { "type": "integer" } }
+          "term": {
+            "type": "string"
+          },
+          "definition": {
+            "type": "string"
+          },
+          "pageReferences": {
+            "type": "array",
+            "items": {
+              "type": "integer"
+            }
+          }
         },
-        "required": ["term", "definition", "pageReferences"]
+        "required": [
+          "term",
+          "definition",
+          "pageReferences"
+        ]
       },
       "MaterialSummary": {
         "type": "object",
         "properties": {
-          "id": { "type": "string" },
-          "userId": { "type": "string" },
-          "materialId": { "type": "string" },
-          "status": { "type": "string", "enum": ["QUEUED", "PROCESSING", "READY", "FAILED"] },
-          "title": { "type": ["string", "null"] },
-          "overview": { "type": ["string", "null"] },
-          "keyConcepts": { "type": ["array", "null"], "items": { "$ref": "#/components/schemas/KeyConcept" } },
-          "sections": { "type": ["array", "null"], "items": { "$ref": "#/components/schemas/SummarySection" } },
-          "keyTerms": { "type": ["array", "null"], "items": { "$ref": "#/components/schemas/KeyTerm" } },
-          "limitations": { "type": ["string", "null"] },
-          "provider": { "type": "string" },
-          "model": { "type": "string" },
-          "promptVersion": { "type": "string" },
-          "sourcePageCount": { "type": "integer" },
-          "sourceCharacterCount": { "type": "integer" },
-          "inputTokens": { "type": ["integer", "null"] },
-          "outputTokens": { "type": ["integer", "null"] },
-          "durationMs": { "type": ["integer", "null"] },
-          "activeJobId": { "type": ["string", "null"] },
-          "errorCode": { "type": ["string", "null"] },
-          "errorMessage": { "type": ["string", "null"] },
-          "createdAt": { "type": "string", "format": "date-time" },
-          "updatedAt": { "type": "string", "format": "date-time" }
+          "id": {
+            "type": "string"
+          },
+          "userId": {
+            "type": "string"
+          },
+          "materialId": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "QUEUED",
+              "PROCESSING",
+              "READY",
+              "FAILED"
+            ]
+          },
+          "title": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "overview": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "keyConcepts": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/KeyConcept"
+            }
+          },
+          "sections": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/SummarySection"
+            }
+          },
+          "keyTerms": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/KeyTerm"
+            }
+          },
+          "limitations": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "provider": {
+            "type": "string"
+          },
+          "model": {
+            "type": "string"
+          },
+          "promptVersion": {
+            "type": "string"
+          },
+          "sourcePageCount": {
+            "type": "integer"
+          },
+          "sourceCharacterCount": {
+            "type": "integer"
+          },
+          "inputTokens": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "outputTokens": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "durationMs": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "activeJobId": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "errorCode": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "errorMessage": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
         }
       },
       "AiQuotaStatus": {
         "type": "object",
         "properties": {
-          "dailyLimit": { "type": "integer" },
-          "dailyUsed": { "type": "integer" },
-          "dailyRemaining": { "type": "integer" },
-          "activeJobsLimit": { "type": "integer" },
-          "activeJobsCount": { "type": "integer" },
-          "resetUtc": { "type": "string", "format": "date-time" }
+          "dailyLimit": {
+            "type": "integer"
+          },
+          "dailyUsed": {
+            "type": "integer"
+          },
+          "dailyRemaining": {
+            "type": "integer"
+          },
+          "activeJobsLimit": {
+            "type": "integer"
+          },
+          "activeJobsCount": {
+            "type": "integer"
+          },
+          "resetUtc": {
+            "type": "string",
+            "format": "date-time"
+          }
         }
       },
       "SummaryResponse": {
         "type": "object",
         "properties": {
-          "summary": { "anyOf": [{ "$ref": "#/components/schemas/MaterialSummary" }, { "type": "null" }] },
-          "quota": { "$ref": "#/components/schemas/AiQuotaStatus" }
+          "summary": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MaterialSummary"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "quota": {
+            "$ref": "#/components/schemas/AiQuotaStatus"
+          }
         }
       },
       "GenerateSummaryResponse": {
         "type": "object",
         "properties": {
-          "message": { "type": "string" },
-          "jobId": { "type": "string" },
-          "summary": { "$ref": "#/components/schemas/MaterialSummary" }
+          "message": {
+            "type": "string"
+          },
+          "jobId": {
+            "type": "string"
+          },
+          "summary": {
+            "$ref": "#/components/schemas/MaterialSummary"
+          }
         }
       },
       "Flashcard": {
         "type": "object",
         "properties": {
-          "id": { "type": "string" },
-          "setId": { "type": "string" },
-          "front": { "type": "string" },
-          "back": { "type": "string" },
-          "pageReferences": { "type": "array", "items": { "type": "integer" } },
-          "orderIndex": { "type": "integer" },
-          "masteryStatus": { "type": "string", "enum": ["UNRATED", "NEED_REVIEW", "MASTERED"] },
-          "createdAt": { "type": "string", "format": "date-time" },
-          "updatedAt": { "type": "string", "format": "date-time" }
+          "id": {
+            "type": "string"
+          },
+          "setId": {
+            "type": "string"
+          },
+          "front": {
+            "type": "string"
+          },
+          "back": {
+            "type": "string"
+          },
+          "pageReferences": {
+            "type": "array",
+            "items": {
+              "type": "integer"
+            }
+          },
+          "orderIndex": {
+            "type": "integer"
+          },
+          "masteryStatus": {
+            "type": "string",
+            "enum": [
+              "UNRATED",
+              "NEED_REVIEW",
+              "MASTERED"
+            ]
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
         }
       },
       "FlashcardSet": {
         "type": "object",
         "properties": {
-          "id": { "type": "string" },
-          "userId": { "type": "string" },
-          "materialId": { "type": "string" },
-          "title": { "type": "string" },
-          "cardCount": { "type": "integer" },
-          "status": { "type": "string", "enum": ["QUEUED", "PROCESSING", "READY", "FAILED"] },
-          "targetCount": { "type": "integer" },
-          "activeJobId": { "type": ["string", "null"] },
-          "errorCode": { "type": ["string", "null"] },
-          "errorMessage": { "type": ["string", "null"] },
-          "createdAt": { "type": "string", "format": "date-time" },
-          "updatedAt": { "type": "string", "format": "date-time" },
-          "cards": { "type": "array", "items": { "$ref": "#/components/schemas/Flashcard" } }
+          "id": {
+            "type": "string"
+          },
+          "userId": {
+            "type": "string"
+          },
+          "materialId": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "cardCount": {
+            "type": "integer"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "QUEUED",
+              "PROCESSING",
+              "READY",
+              "FAILED"
+            ]
+          },
+          "targetCount": {
+            "type": "integer"
+          },
+          "activeJobId": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "errorCode": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "errorMessage": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "cards": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Flashcard"
+            }
+          }
         }
       },
       "GenerateFlashcardsInput": {
         "type": "object",
         "properties": {
-          "targetCount": { "type": "integer", "enum": [5, 10, 20], "default": 10 }
+          "targetCount": {
+            "type": "integer",
+            "enum": [
+              5,
+              10,
+              20
+            ],
+            "default": 10
+          }
         }
       },
       "UpdateFlashcardMasteryInput": {
         "type": "object",
-        "required": ["masteryStatus"],
+        "required": [
+          "masteryStatus"
+        ],
         "properties": {
-          "masteryStatus": { "type": "string", "enum": ["UNRATED", "NEED_REVIEW", "MASTERED"] }
+          "masteryStatus": {
+            "type": "string",
+            "enum": [
+              "UNRATED",
+              "NEED_REVIEW",
+              "MASTERED"
+            ]
+          }
         }
       },
       "QuizQuestion": {
         "type": "object",
         "properties": {
-          "id": { "type": "string" },
-          "quizId": { "type": "string" },
-          "question": { "type": "string" },
-          "options": { "type": "array", "items": { "type": "string" } },
-          "correctIndex": { "type": "integer" },
-          "explanation": { "type": "string" },
-          "pageReferences": { "type": "array", "items": { "type": "integer" } },
-          "orderIndex": { "type": "integer" }
+          "id": {
+            "type": "string"
+          },
+          "quizId": {
+            "type": "string"
+          },
+          "question": {
+            "type": "string"
+          },
+          "options": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "correctIndex": {
+            "type": "integer"
+          },
+          "explanation": {
+            "type": "string"
+          },
+          "pageReferences": {
+            "type": "array",
+            "items": {
+              "type": "integer"
+            }
+          },
+          "orderIndex": {
+            "type": "integer"
+          }
         }
       },
       "ClientQuizQuestion": {
         "type": "object",
         "properties": {
-          "id": { "type": "string" },
-          "quizId": { "type": "string" },
-          "question": { "type": "string" },
-          "options": { "type": "array", "items": { "type": "string" } },
-          "orderIndex": { "type": "integer" }
+          "id": {
+            "type": "string"
+          },
+          "quizId": {
+            "type": "string"
+          },
+          "question": {
+            "type": "string"
+          },
+          "options": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "orderIndex": {
+            "type": "integer"
+          }
         }
       },
       "CompletedQuizQuestion": {
         "type": "object",
         "properties": {
-          "id": { "type": "string" },
-          "quizId": { "type": "string" },
-          "question": { "type": "string" },
-          "options": { "type": "array", "items": { "type": "string" } },
-          "correctIndex": { "type": "integer" },
-          "explanation": { "type": "string" },
-          "pageReferences": { "type": "array", "items": { "type": "integer" } },
-          "orderIndex": { "type": "integer" },
-          "userSelectedIndex": { "type": ["integer", "null"] },
-          "isCorrect": { "type": "boolean" }
+          "id": {
+            "type": "string"
+          },
+          "quizId": {
+            "type": "string"
+          },
+          "question": {
+            "type": "string"
+          },
+          "options": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "correctIndex": {
+            "type": "integer"
+          },
+          "explanation": {
+            "type": "string"
+          },
+          "pageReferences": {
+            "type": "array",
+            "items": {
+              "type": "integer"
+            }
+          },
+          "orderIndex": {
+            "type": "integer"
+          },
+          "userSelectedIndex": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "isCorrect": {
+            "type": "boolean"
+          }
         }
       },
       "Quiz": {
         "type": "object",
         "properties": {
-          "id": { "type": "string" },
-          "userId": { "type": "string" },
-          "materialId": { "type": "string" },
-          "title": { "type": "string" },
-          "questionCount": { "type": "integer" },
-          "status": { "type": "string", "enum": ["QUEUED", "PROCESSING", "READY", "FAILED"] },
-          "targetCount": { "type": "integer" },
-          "activeJobId": { "type": ["string", "null"] },
-          "errorCode": { "type": ["string", "null"] },
-          "errorMessage": { "type": ["string", "null"] },
-          "createdAt": { "type": "string", "format": "date-time" },
-          "updatedAt": { "type": "string", "format": "date-time" }
+          "id": {
+            "type": "string"
+          },
+          "userId": {
+            "type": "string"
+          },
+          "materialId": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "questionCount": {
+            "type": "integer"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "QUEUED",
+              "PROCESSING",
+              "READY",
+              "FAILED"
+            ]
+          },
+          "targetCount": {
+            "type": "integer"
+          },
+          "activeJobId": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "errorCode": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "errorMessage": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
         }
       },
       "GenerateQuizInput": {
         "type": "object",
         "properties": {
-          "targetCount": { "type": "integer", "enum": [5, 10], "default": 5 }
+          "targetCount": {
+            "type": "integer",
+            "enum": [
+              5,
+              10
+            ],
+            "default": 5
+          }
         }
       },
       "StartQuizAttemptResponse": {
         "type": "object",
         "properties": {
-          "attemptId": { "type": "string" },
-          "quizId": { "type": "string" },
-          "materialId": { "type": "string" },
-          "title": { "type": "string" },
-          "totalQuestions": { "type": "integer" },
-          "questions": { "type": "array", "items": { "$ref": "#/components/schemas/ClientQuizQuestion" } },
-          "existingAnswers": { "type": "object", "additionalProperties": { "type": "integer" } }
+          "attemptId": {
+            "type": "string"
+          },
+          "quizId": {
+            "type": "string"
+          },
+          "materialId": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "totalQuestions": {
+            "type": "integer"
+          },
+          "questions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ClientQuizQuestion"
+            }
+          },
+          "existingAnswers": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "integer"
+            }
+          }
         }
       },
       "SubmitQuizAttemptInput": {
         "type": "object",
-        "required": ["answers"],
+        "required": [
+          "answers"
+        ],
         "properties": {
           "answers": {
             "type": "array",
             "items": {
               "type": "object",
-              "required": ["questionId", "selectedIndex"],
+              "required": [
+                "questionId",
+                "selectedIndex"
+              ],
               "properties": {
-                "questionId": { "type": "string" },
-                "selectedIndex": { "type": ["integer", "null"] }
+                "questionId": {
+                  "type": "string"
+                },
+                "selectedIndex": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ]
+                }
               }
             }
           }
@@ -1541,14 +3390,274 @@
       "QuizAttemptResponse": {
         "type": "object",
         "properties": {
-          "id": { "type": "string" },
-          "quizId": { "type": "string" },
-          "userId": { "type": "string" },
-          "score": { "type": "number" },
-          "totalQuestions": { "type": "integer" },
-          "correctAnswersCount": { "type": "integer" },
-          "submittedAt": { "type": "string", "format": "date-time" },
-          "questions": { "type": "array", "items": { "$ref": "#/components/schemas/CompletedQuizQuestion" } }
+          "id": {
+            "type": "string"
+          },
+          "quizId": {
+            "type": "string"
+          },
+          "userId": {
+            "type": "string"
+          },
+          "score": {
+            "type": "number"
+          },
+          "totalQuestions": {
+            "type": "integer"
+          },
+          "correctAnswersCount": {
+            "type": "integer"
+          },
+          "submittedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "questions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CompletedQuizQuestion"
+            }
+          }
+        }
+      },
+      "CourseSchedule": {
+        "type": "object",
+        "required": [
+          "id",
+          "userId",
+          "courseId",
+          "dayOfWeek",
+          "startTime",
+          "endTime",
+          "createdAt",
+          "updatedAt"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "userId": {
+            "type": "string"
+          },
+          "courseId": {
+            "type": "string"
+          },
+          "dayOfWeek": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 7,
+            "description": "1=Senin..7=Minggu"
+          },
+          "startTime": {
+            "type": "string",
+            "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$",
+            "example": "08:00"
+          },
+          "endTime": {
+            "type": "string",
+            "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$",
+            "example": "09:40"
+          },
+          "room": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 100
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "course": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              },
+              "code": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "lecturer": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "semesterId": {
+                "type": "string"
+              }
+            }
+          },
+          "hasConflict": {
+            "type": "boolean"
+          },
+          "conflicts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CourseScheduleConflict"
+            }
+          }
+        }
+      },
+      "CourseScheduleConflict": {
+        "type": "object",
+        "required": [
+          "id",
+          "courseId",
+          "courseName",
+          "dayOfWeek",
+          "startTime",
+          "endTime"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "courseId": {
+            "type": "string"
+          },
+          "courseName": {
+            "type": "string"
+          },
+          "courseCode": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "dayOfWeek": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 7
+          },
+          "startTime": {
+            "type": "string",
+            "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$"
+          },
+          "endTime": {
+            "type": "string",
+            "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$"
+          },
+          "room": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 100
+          }
+        }
+      },
+      "CreateCourseScheduleInput": {
+        "type": "object",
+        "required": [
+          "courseId",
+          "dayOfWeek",
+          "startTime",
+          "endTime"
+        ],
+        "properties": {
+          "courseId": {
+            "type": "string",
+            "description": "ID mata kuliah (CUID)"
+          },
+          "dayOfWeek": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 7
+          },
+          "startTime": {
+            "type": "string",
+            "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$",
+            "example": "08:00"
+          },
+          "endTime": {
+            "type": "string",
+            "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$",
+            "example": "09:40"
+          },
+          "room": {
+            "type": "string",
+            "maxLength": 100
+          }
+        }
+      },
+      "UpdateCourseScheduleInput": {
+        "type": "object",
+        "properties": {
+          "dayOfWeek": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 7
+          },
+          "startTime": {
+            "type": "string",
+            "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$",
+            "example": "08:00"
+          },
+          "endTime": {
+            "type": "string",
+            "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$",
+            "example": "09:40"
+          },
+          "room": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 100
+          }
+        }
+      },
+      "CourseScheduleResponse": {
+        "type": "object",
+        "required": [
+          "schedule"
+        ],
+        "properties": {
+          "schedule": {
+            "$ref": "#/components/schemas/CourseSchedule"
+          },
+          "hasConflict": {
+            "type": "boolean"
+          },
+          "conflicts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CourseScheduleConflict"
+            }
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "CourseScheduleListResponse": {
+        "type": "object",
+        "required": [
+          "schedules",
+          "total"
+        ],
+        "properties": {
+          "schedules": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CourseSchedule"
+            }
+          },
+          "total": {
+            "type": "integer"
+          }
         }
       }
     },

@@ -227,6 +227,39 @@ Istilah owner pada pemeriksaan akses berarti pemilik resource, bukan role baru. 
 
 **Penerimaan:** dua klik cepat tidak membuat dua pekerjaan untuk permintaan yang sama; dua worker tidak menyimpan output ganda; kegagalan enqueue tidak membuat materi selamanya berstatus antre.
 
+### FR-11 — Jadwal Kuliah Mingguan
+
+- **Struktur Sesi Mingguan**:
+  - Jadwal berulang mingguan terkait langsung dengan satu mata kuliah (`courseId`).
+  - Semester mengikuti relasi mata kuliah (`course.semesterId`), bukan dipilih secara terpisah untuk mencegah inkonsistensi data.
+  - Satu mata kuliah dapat memiliki beberapa sesi per minggu (misalnya sesi kuliah teori dan sesi praktikum di hari yang sama atau berbeda).
+  - Setiap sesi memiliki atribut:
+    - `dayOfWeek`: Hari perkuliahan (1 = Senin hingga 7 = Minggu).
+    - `startTime`: Waktu mulai kuliah dalam format 24 jam `"HH:mm"` lokal pengguna (contoh `"08:00"`).
+    - `endTime`: Waktu selesai kuliah dalam format 24 jam `"HH:mm"` lokal pengguna (contoh `"09:40"`).
+    - `room`: Lokasi / ruangan perkuliahan opsional (maksimal 100 karakter).
+- **Aturan Validasi Waktu**:
+  - Waktu selesai harus lebih besar daripada waktu mulai (`startTime < endTime`).
+  - Sesi jadwal lintas tengah malam (`startTime > endTime`) belum didukung pada versi ini dan ditolak dengan pesan yang jelas.
+  - Sesi jadwal identik untuk mata kuliah yang sama (kombinasi `courseId`, `dayOfWeek`, `startTime`, `endTime` sama) ditolak dengan status 409 Conflict.
+- **Deteksi Konflik Waktu (Schedule Conflict)**:
+  - Jadwal yang bertabrakan waktu tetap diperbolehkan untuk disimpan (tidak memblokir operasi simpan), namun API mengembalikan metadata/flag konflik (`hasConflict: true`, daftar `conflicts`) agar antarmuka dapat memberi peringatan yang jelas kepada mahasiswa.
+  - Evaluasi konflik hanya membandingkan sesi dalam semester yang sama dan hari yang sama milik pengguna yang sama.
+  - Sesi waktu yang berdampingan (misalnya 08:00–10:00 dan 10:00–12:00) bukan merupakan konflik.
+  - Pembaruan sesi (edit) mengecualikan sesi itu sendiri dari perbandingan konflik.
+  - Sesi pada semester yang berbeda tidak dianggap konflik.
+- **Lifecycle & Invarian Arsip**:
+  - Penghapusan mata kuliah secara otomatis menghapus seluruh sesi jadwal terkait (`CASCADE`).
+  - Mata kuliah atau semester yang diarsipkan bersifat hanya-baca (read-only): penambahan, pengubahan, atau penghapusan sesi jadwal ditolak dengan pesan error.
+  - Nilai informasi dosen (`lecturer`) pada mata kuliah menjadi fallback default pengampu untuk seluruh sesi.
+
+**Penerimaan:** sesi jadwal tersimpan dengan urutan hari (Senin–Minggu) lalu jam mulai; multi-tenant isolation terjaga penuh; konflik waktu terdeteksi dengan tepat tanpa menolak penyimpanan.
+
+#### Rencana Antarmuka UI (Tahap Berikutnya):
+1. **Tampilan Mingguan Desktop**: Grid kalender visual Senin s/d Jumat/Minggu yang menampilkan blok waktu perkuliahan, kode ruangan, dan indikator peringatan konflik waktu.
+2. **Agenda Harian Mobile**: Tampilan daftar timeline harian yang ringkas, responsif, dan mudah dibaca tanpa overflow horizontal.
+3. **Widget "Jadwal Hari Ini" di Dashboard**: Kartu sorotan pada dashboard belajar yang menampilkan daftar mata kuliah yang harus dihadiri hari ini berdasarkan hari aktif di zona waktu pengguna.
+
 ## 8. Pengembangan v1.1
 
 ### 8.1 Ask StudyFlow — tanya-jawab berbasis materi

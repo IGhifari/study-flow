@@ -13,6 +13,7 @@ import {
   FileText,
   Files,
   ChevronDown,
+  CalendarClock,
 } from 'lucide-react';
 import { UserProfile } from '@studyflow/shared';
 import { apiLogout } from '@/lib/auth-client';
@@ -93,6 +94,11 @@ const navigationGroups = [
         label: 'Mata Kuliah',
         href: '/courses',
         icon: BookOpen,
+      },
+      {
+        label: 'Jadwal Kuliah',
+        href: '/schedule',
+        icon: CalendarClock,
       },
       {
         label: 'Kelola Semester',
@@ -226,6 +232,8 @@ function HeaderBreadcrumbs(): React.JSX.Element {
   } else if (pathname.startsWith('/courses/')) {
     items.push({ label: 'Mata Kuliah', href: '/courses' });
     items.push({ label: 'Detail Mata Kuliah' });
+  } else if (pathname === '/schedule') {
+    items.push({ label: 'Jadwal Kuliah' });
   } else if (pathname === '/semesters') {
     items.push({ label: 'Kelola Semester' });
   } else if (pathname === '/settings') {
