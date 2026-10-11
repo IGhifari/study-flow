@@ -53,7 +53,7 @@ export function DeleteSemesterDialog({
 
   return (
     <Dialog open={Boolean(semester)} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[440px]">
+      <DialogContent className="sm:max-w-[440px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-danger/10 text-danger">
@@ -68,24 +68,24 @@ export function DeleteSemesterDialog({
           </div>
         </DialogHeader>
 
-        {error ? (
+        {error && (
           <Alert variant="destructive">
             <AlertCircle className="h-4 w-4" />
             <AlertDescription>{error}</AlertDescription>
           </Alert>
-        ) : (
-          <div className="space-y-2 text-sm text-muted-foreground">
-            <p>
-              Apakah Anda yakin ingin menghapus semester{' '}
-              <strong className="text-foreground">{semester?.name}</strong> (
-              {semester?.academicYear})?
-            </p>
-            <p className="text-xs bg-muted/60 p-2.5 rounded-lg border border-border">
-              Catatan: Semester hanya dapat dihapus jika belum memiliki mata kuliah di dalamnya.
-              Jika sudah terdapat mata kuliah, disarankan untuk mengarsipkan semester tersebut.
-            </p>
-          </div>
         )}
+
+        <div className="space-y-2 text-sm text-muted-foreground">
+          <p>
+            Apakah Anda yakin ingin menghapus semester{' '}
+            <strong className="text-foreground break-words">{semester?.name}</strong> (
+            {semester?.academicYear})?
+          </p>
+          <p className="text-xs bg-muted/60 p-2.5 rounded-lg border border-border">
+            Catatan: Sistem menolak penghapusan jika semester telah memiliki mata kuliah di dalamnya.
+            Jika perkuliahan telah selesai, disarankan untuk mengarsipkan semester tersebut.
+          </p>
+        </div>
 
         <DialogFooter className="pt-2 flex flex-col-reverse sm:flex-row gap-2 sm:justify-end">
           <Button

@@ -15,7 +15,6 @@ import {
   AlertCircle,
   AlertTriangle,
   Loader2,
-  BookOpen,
   ListTodo,
   FileText,
   Plus,
@@ -299,7 +298,7 @@ export default function CourseDetailPage(): React.JSX.Element {
   if (isLoading) {
     return (
       <div className="space-y-6">
-        <Skeleton className="h-9 w-48 rounded-lg" />
+        <Skeleton className="h-8 w-48 rounded-lg" />
         <Skeleton className="h-44 w-full rounded-xl" />
         <Skeleton className="h-10 w-80 rounded-lg" />
         <Skeleton className="h-64 w-full rounded-xl" />
@@ -310,10 +309,10 @@ export default function CourseDetailPage(): React.JSX.Element {
   if (errorMsg || !course) {
     return (
       <div className="space-y-6">
-        <Button variant="ghost" asChild className="gap-2 text-sm w-fit">
+        <Button variant="ghost" asChild size="sm" className="h-8 gap-2 text-sm w-fit -ml-2">
           <Link href="/courses">
             <ArrowLeft className="h-4 w-4" />
-            <span>Kembali ke Mata Kuliah</span>
+            <span>Kembali ke Daftar Mata Kuliah</span>
           </Link>
         </Button>
         <Alert variant="destructive">
@@ -333,21 +332,26 @@ export default function CourseDetailPage(): React.JSX.Element {
   return (
     <div className="space-y-6">
       {/* 1. Top Navigasi & Aksi Utama */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-border pb-4">
-        <Button variant="ghost" asChild className="gap-2 text-sm w-fit -ml-2">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-b border-border pb-4">
+        <Button
+          variant="ghost"
+          asChild
+          size="sm"
+          className="h-8 gap-2 text-sm w-fit -ml-2 relative after:absolute after:-inset-1.5 sm:after:hidden touch-manipulation"
+        >
           <Link href="/courses">
             <ArrowLeft className="h-4 w-4" />
             <span>Kembali ke Daftar Mata Kuliah</span>
           </Link>
         </Button>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <Button
             variant="outline"
             size="sm"
             onClick={() => setIsEditOpen(true)}
             disabled={isArchived}
-            className="gap-1.5"
+            className="h-8 gap-1.5"
           >
             <Pencil className="h-3.5 w-3.5" />
             <span>Edit</span>
@@ -358,7 +362,7 @@ export default function CourseDetailPage(): React.JSX.Element {
               variant="outline"
               size="sm"
               onClick={handleUnarchive}
-              className="gap-1.5"
+              className="h-8 gap-1.5"
             >
               <RotateCcw className="h-3.5 w-3.5" />
               <span>Pulihkan</span>
@@ -368,7 +372,7 @@ export default function CourseDetailPage(): React.JSX.Element {
               variant="outline"
               size="sm"
               onClick={handleArchive}
-              className="gap-1.5 text-muted-foreground"
+              className="h-8 gap-1.5 text-muted-foreground"
             >
               <Archive className="h-3.5 w-3.5" />
               <span>Arsipkan</span>
@@ -379,7 +383,7 @@ export default function CourseDetailPage(): React.JSX.Element {
             variant="ghost"
             size="sm"
             onClick={() => setIsDeleteOpen(true)}
-            className="gap-1.5 text-danger hover:bg-danger/10"
+            className="h-8 gap-1.5 text-danger hover:bg-danger/10"
           >
             <Trash2 className="h-3.5 w-3.5" />
             <span>Hapus</span>
@@ -407,23 +411,23 @@ export default function CourseDetailPage(): React.JSX.Element {
       )}
 
       {/* 2. Informasi Utama Mata Kuliah */}
-      <div className="rounded-xl border border-border bg-card p-5 sm:p-6 shadow-xs space-y-6">
+      <div className="rounded-xl border border-border bg-card p-5 sm:p-6 shadow-xs space-y-5">
         <div>
           <div className="flex flex-wrap items-center gap-2.5">
-            <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
+            <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl break-words">
               {course.name}
             </h1>
             {course.code && (
-              <Badge variant="outline" className="font-mono text-xs">
+              <Badge variant="outline" className="font-mono text-xs shrink-0">
                 {course.code}
               </Badge>
             )}
             {isArchived ? (
-              <Badge variant="secondary" className="text-xs text-muted-foreground">
+              <Badge variant="secondary" className="text-xs text-muted-foreground shrink-0">
                 Arsip
               </Badge>
             ) : (
-              <Badge variant="default" className="text-xs">
+              <Badge variant="default" className="text-xs shrink-0">
                 Aktif
               </Badge>
             )}
@@ -477,7 +481,7 @@ export default function CourseDetailPage(): React.JSX.Element {
         {course.description && (
           <div className="border-t border-border pt-4">
             <h2 className="text-sm font-semibold text-foreground">Deskripsi / Silabus</h2>
-            <p className="mt-1.5 whitespace-pre-wrap text-sm leading-relaxed text-muted-foreground">
+            <p className="mt-1.5 whitespace-pre-wrap text-sm leading-relaxed text-muted-foreground break-words">
               {course.description}
             </p>
           </div>
@@ -521,7 +525,7 @@ export default function CourseDetailPage(): React.JSX.Element {
                 setIsCreateAsgOpen(true);
               }}
               disabled={isArchived}
-              className="gap-1.5 shrink-0"
+              className="gap-1.5 shrink-0 self-start sm:self-auto"
             >
               <Plus className="h-4 w-4" />
               <span>Tambah tugas</span>
@@ -535,7 +539,7 @@ export default function CourseDetailPage(): React.JSX.Element {
               <Skeleton className="h-12 w-full rounded-lg" />
             </div>
           ) : assignments.length === 0 ? (
-            <div className="rounded-xl border border-dashed border-border bg-card/40 p-8 text-center">
+            <div className="rounded-xl border border-dashed border-border bg-card/40 p-8 text-center sm:p-10">
               <ListTodo className="h-8 w-8 text-muted-foreground mx-auto" aria-hidden="true" />
               <h3 className="mt-2 text-sm font-semibold text-foreground">Belum ada tugas pada mata kuliah ini</h3>
               <p className="mt-1 text-xs text-muted-foreground max-w-sm mx-auto">
@@ -556,7 +560,7 @@ export default function CourseDetailPage(): React.JSX.Element {
           ) : (
             <>
               {/* Desktop Assignments Table */}
-              <div className="hidden md:block overflow-hidden rounded-xl border border-border bg-card shadow-xs">
+              <div className="hidden md:block overflow-x-auto rounded-xl border border-border bg-card shadow-xs">
                 <table className="w-full text-left text-sm">
                   <thead className="border-b border-border bg-muted/40 text-xs font-semibold uppercase text-muted-foreground">
                     <tr>
@@ -591,12 +595,12 @@ export default function CourseDetailPage(): React.JSX.Element {
                               )}
                             </button>
                           </td>
-                          <td className="px-4 py-3">
-                            <span className={`font-medium ${isDone ? 'line-through text-muted-foreground' : 'text-foreground'}`}>
+                          <td className="px-4 py-3 max-w-[360px]">
+                            <span className={`font-medium break-words ${isDone ? 'line-through text-muted-foreground' : 'text-foreground'}`}>
                               {asg.title}
                             </span>
                             {asg.description && (
-                              <p className="text-xs text-muted-foreground line-clamp-1 mt-0.5">{asg.description}</p>
+                              <p className="text-xs text-muted-foreground line-clamp-1 mt-0.5 break-words">{asg.description}</p>
                             )}
                           </td>
                           <td className="px-4 py-3 whitespace-nowrap text-xs text-muted-foreground">
@@ -649,7 +653,7 @@ export default function CourseDetailPage(): React.JSX.Element {
 
                       <div className="min-w-0 flex-1">
                         <div className="flex items-start justify-between gap-2">
-                          <p className={`text-sm font-medium ${isDone ? 'line-through text-muted-foreground' : 'text-foreground'}`}>
+                          <p className={`text-sm font-medium break-words ${isDone ? 'line-through text-muted-foreground' : 'text-foreground'}`}>
                             {asg.title}
                           </p>
                           <Badge
@@ -661,7 +665,7 @@ export default function CourseDetailPage(): React.JSX.Element {
                         </div>
 
                         {asg.description && (
-                          <p className="text-xs text-muted-foreground line-clamp-1 mt-0.5">
+                          <p className="text-xs text-muted-foreground line-clamp-2 mt-0.5 break-words">
                             {asg.description}
                           </p>
                         )}
@@ -699,7 +703,7 @@ export default function CourseDetailPage(): React.JSX.Element {
                 setIsCreateNoteOpen(true);
               }}
               disabled={isArchived}
-              className="gap-1.5 shrink-0"
+              className="gap-1.5 shrink-0 self-start sm:self-auto"
             >
               <Plus className="h-4 w-4" />
               <span>Buat catatan</span>
@@ -712,7 +716,7 @@ export default function CourseDetailPage(): React.JSX.Element {
               <Skeleton className="h-12 w-full rounded-lg" />
             </div>
           ) : notes.length === 0 ? (
-            <div className="rounded-xl border border-dashed border-border bg-card/40 p-8 text-center">
+            <div className="rounded-xl border border-dashed border-border bg-card/40 p-8 text-center sm:p-10">
               <FileText className="h-8 w-8 text-muted-foreground mx-auto" aria-hidden="true" />
               <h3 className="mt-2 text-sm font-semibold text-foreground">Belum ada catatan untuk mata kuliah ini</h3>
               <p className="mt-1 text-xs text-muted-foreground max-w-sm mx-auto">
@@ -740,7 +744,7 @@ export default function CourseDetailPage(): React.JSX.Element {
                   <div>
                     <Link
                       href={`/notes/${n.id}`}
-                      className="font-medium text-foreground hover:text-primary transition-colors line-clamp-2 text-sm"
+                      className="font-medium text-foreground hover:text-primary transition-colors line-clamp-2 text-sm break-words"
                     >
                       {n.title}
                     </Link>
@@ -777,7 +781,7 @@ export default function CourseDetailPage(): React.JSX.Element {
               size="standard"
               onClick={() => setIsUploadOpen(true)}
               disabled={isArchived}
-              className="gap-1.5 shrink-0"
+              className="gap-1.5 shrink-0 self-start sm:self-auto"
             >
               <FileUp className="h-4 w-4" />
               <span>Unggah materi</span>
@@ -790,7 +794,7 @@ export default function CourseDetailPage(): React.JSX.Element {
               <Skeleton className="h-12 w-full rounded-lg" />
             </div>
           ) : materials.length === 0 ? (
-            <div className="rounded-xl border border-dashed border-border bg-card/40 p-8 text-center">
+            <div className="rounded-xl border border-dashed border-border bg-card/40 p-8 text-center sm:p-10">
               <FileUp className="h-8 w-8 text-muted-foreground mx-auto" aria-hidden="true" />
               <h3 className="mt-2 text-sm font-semibold text-foreground">Belum ada materi untuk mata kuliah ini</h3>
               <p className="mt-1 text-xs text-muted-foreground max-w-sm mx-auto">
@@ -811,7 +815,7 @@ export default function CourseDetailPage(): React.JSX.Element {
           ) : (
             <>
               {/* Desktop Materials Table */}
-              <div className="hidden md:block overflow-hidden rounded-xl border border-border bg-card shadow-xs">
+              <div className="hidden md:block overflow-x-auto rounded-xl border border-border bg-card shadow-xs">
                 <table className="w-full text-left text-sm">
                   <thead className="border-b border-border bg-muted/40 text-xs font-semibold uppercase text-muted-foreground">
                     <tr>
@@ -825,15 +829,15 @@ export default function CourseDetailPage(): React.JSX.Element {
                   <tbody className="divide-y divide-border">
                     {materials.map((m) => (
                       <tr key={m.id} className="hover:bg-muted/30 transition-colors">
-                        <td className="px-4 py-3">
+                        <td className="px-4 py-3 max-w-[320px]">
                           <Link
                             href={`/materials/${m.id}`}
-                            className="font-medium text-foreground hover:text-primary transition-colors flex items-center gap-2"
+                            className="font-medium text-foreground hover:text-primary transition-colors flex items-center gap-2 break-words"
                           >
                             <FileText className="h-4 w-4 text-muted-foreground shrink-0" />
-                            <span>{m.title}</span>
+                            <span className="break-words">{m.title}</span>
                           </Link>
-                          <p className="text-xs text-muted-foreground line-clamp-1 mt-0.5 ml-6">
+                          <p className="text-xs text-muted-foreground line-clamp-1 mt-0.5 ml-6 break-words">
                             {m.originalFilename}
                           </p>
                         </td>
@@ -850,7 +854,7 @@ export default function CourseDetailPage(): React.JSX.Element {
                           {formatUserDateTime(m.createdAt, timezone)}
                         </td>
                         <td className="px-4 py-3 whitespace-nowrap text-right">
-                          <Button asChild variant="ghost" size="sm" className="h-8 px-2 text-xs">
+                          <Button asChild variant="ghost" size="sm" className="h-8 px-2.5 text-xs">
                             <Link href={`/materials/${m.id}`}>
                               Lihat
                               <ExternalLink className="ml-1 h-3 w-3" />
@@ -873,10 +877,10 @@ export default function CourseDetailPage(): React.JSX.Element {
                     <div className="flex items-start justify-between gap-2">
                       <Link
                         href={`/materials/${m.id}`}
-                        className="font-medium text-foreground hover:text-primary transition-colors text-sm line-clamp-1 flex items-center gap-1.5"
+                        className="font-medium text-foreground hover:text-primary transition-colors text-sm line-clamp-1 flex items-center gap-1.5 break-words flex-1 min-w-0"
                       >
                         <FileText className="h-4 w-4 text-muted-foreground shrink-0" />
-                        <span>{m.title}</span>
+                        <span className="break-words">{m.title}</span>
                       </Link>
                       <MaterialStatusBadge status={m.status} />
                     </div>
@@ -938,7 +942,7 @@ export default function CourseDetailPage(): React.JSX.Element {
 
       {/* Modal Tambah Tugas untuk Mata Kuliah ini */}
       <Dialog open={isCreateAsgOpen} onOpenChange={setIsCreateAsgOpen}>
-        <DialogContent className="sm:max-w-[480px]">
+        <DialogContent className="sm:max-w-[480px] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Tambah Tugas untuk {course.name}</DialogTitle>
             <DialogDescription>
@@ -953,7 +957,7 @@ export default function CourseDetailPage(): React.JSX.Element {
             </Alert>
           )}
 
-          <form onSubmit={handleCreateAssignment} className="space-y-4">
+          <form noValidate onSubmit={handleCreateAssignment} className="space-y-4">
             <div className="space-y-1.5">
               <Label htmlFor="course-asg-title">Judul Tugas *</Label>
               <Input
@@ -1031,7 +1035,7 @@ export default function CourseDetailPage(): React.JSX.Element {
 
       {/* Modal Tambah Catatan untuk Mata Kuliah ini */}
       <Dialog open={isCreateNoteOpen} onOpenChange={setIsCreateNoteOpen}>
-        <DialogContent className="sm:max-w-[480px]">
+        <DialogContent className="sm:max-w-[480px] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Buat Catatan untuk {course.name}</DialogTitle>
             <DialogDescription>
@@ -1046,7 +1050,7 @@ export default function CourseDetailPage(): React.JSX.Element {
             </Alert>
           )}
 
-          <form onSubmit={handleCreateNote} className="space-y-4">
+          <form noValidate onSubmit={handleCreateNote} className="space-y-4">
             <div className="space-y-1.5">
               <Label htmlFor="course-note-title">Judul Catatan *</Label>
               <Input

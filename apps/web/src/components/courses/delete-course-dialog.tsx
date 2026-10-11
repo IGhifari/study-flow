@@ -54,12 +54,12 @@ export function DeleteCourseDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[440px]">
+      <DialogContent className="sm:max-w-[440px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Hapus Mata Kuliah</DialogTitle>
           <DialogDescription>
             Apakah Anda yakin ingin menghapus mata kuliah{' '}
-            <strong className="text-foreground">{course?.name}</strong>? Tindakan ini tidak dapat dibatalkan.
+            <strong className="text-foreground break-words">{course?.name}</strong>? Tindakan ini tidak dapat dibatalkan.
           </DialogDescription>
         </DialogHeader>
 
@@ -70,8 +70,8 @@ export function DeleteCourseDialog({
           </Alert>
         )}
 
-        <p className="text-xs text-muted-foreground">
-          Mata kuliah yang masih memiliki materi, tugas, atau catatan aktif tidak dapat dihapus. Anda dapat menggunakan opsi arsip jika perkuliahan telah selesai.
+        <p className="text-xs text-muted-foreground bg-muted/40 p-2.5 rounded-lg border border-border">
+          Catatan: Sistem menolak penghapusan jika mata kuliah masih memiliki materi, tugas, atau catatan aktif. Pastikan data terkait telah dibersihkan terlebih dahulu, atau gunakan opsi arsip jika semester telah selesai.
         </p>
 
         <DialogFooter className="pt-2 flex flex-col-reverse sm:flex-row gap-2 sm:justify-end">

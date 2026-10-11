@@ -47,8 +47,10 @@ export function CreateCourseDialog({
     [semesters]
   );
 
+  const wasOpenRef = React.useRef(false);
+
   React.useEffect(() => {
-    if (open) {
+    if (open && !wasOpenRef.current) {
       setErrorMsg(null);
       setName('');
       setCode('');
@@ -62,6 +64,7 @@ export function CreateCourseDialog({
         setSemesterId('');
       }
     }
+    wasOpenRef.current = open;
   }, [open, activeSemesterId, nonArchivedSemesters]);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -102,7 +105,7 @@ export function CreateCourseDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[480px]">
+      <DialogContent className="sm:max-w-[480px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Tambah Mata Kuliah</DialogTitle>
           <DialogDescription>
@@ -117,7 +120,7 @@ export function CreateCourseDialog({
           </Alert>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form noValidate onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-1.5">
             <Label htmlFor="create-course-sem">Semester *</Label>
             <NativeSelect

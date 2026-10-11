@@ -17,6 +17,7 @@ import {
   CalendarRange,
   ArrowRight,
   ExternalLink,
+  MoreVertical,
 } from 'lucide-react';
 import {
   Course,
@@ -38,6 +39,13 @@ import {
   SelectContent,
   SelectItem,
 } from '@/components/ui/select';
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+} from '@/components/ui/dropdown-menu';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { CreateCourseDialog } from '@/components/courses/create-course-dialog';
@@ -179,7 +187,7 @@ export default function CoursesPage(): React.JSX.Element {
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl flex items-center gap-2.5">
             <BookOpen className="h-7 w-7 text-primary" aria-hidden="true" />
-            Mata Kuliah
+            <span>Mata Kuliah</span>
           </h1>
           <p className="mt-1 text-sm text-muted-foreground">
             Kelola daftar mata kuliah, dosen pengampu, dan keterhubungan materi perkuliahan.
@@ -273,16 +281,31 @@ export default function CoursesPage(): React.JSX.Element {
           </div>
         </div>
 
-        {/* Pencarian */}
-        <div className="relative w-full sm:w-72">
-          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            placeholder="Cari mata kuliah atau kode..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-9 h-9 text-sm"
-            aria-label="Cari mata kuliah atau kode"
-          />
+        {/* Pencarian & Reset Filter */}
+        <div className="flex items-center gap-2 w-full sm:w-auto">
+          <div className="relative flex-1 sm:w-72">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              placeholder="Cari mata kuliah atau kode..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-9 h-9 text-sm"
+              aria-label="Cari mata kuliah atau kode"
+            />
+          </div>
+          {hasFilter && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleResetFilter}
+              className="h-9 px-2.5 text-xs text-muted-foreground hover:text-foreground shrink-0"
+              title="Reset filter"
+              aria-label="Reset filter pencarian"
+            >
+              <RotateCcw className="h-3.5 w-3.5 mr-1.5" />
+              Reset
+            </Button>
+          )}
         </div>
       </div>
 
@@ -392,15 +415,15 @@ export default function CoursesPage(): React.JSX.Element {
                 return (
                   <tr
                     key={course.id}
-                    className="flex flex-col p-4 space-y-2.5 md:space-y-0 md:table-row md:p-0 hover:bg-muted/30 transition-colors group"
+                    className="flex flex-col p-4 space-y-2.5 md:space-y-0 md:table-row md:p-0 hover:bg-muted/30 transition-colors"
                   >
-                    {/* Nama & Kode (Mobile & Desktop) */}
-                    <td className="p-0 md:px-4 md:py-3.5 block md:table-cell">
+                    {/* Nama & Kode */}
+                    <td className="p-0 md:px-4 md:py-3.5 block md:table-cell max-w-[320px]">
                       <div className="flex items-start md:items-center justify-between md:justify-start gap-2">
-                        <div className="flex items-center gap-2 min-w-0">
+                        <div className="flex items-center gap-2 min-w-0 flex-wrap">
                           <Link
                             href={`/courses/${course.id}`}
-                            className="font-medium text-foreground hover:text-primary transition-colors line-clamp-1"
+                            className="font-medium text-foreground hover:text-primary hover:underline transition-colors break-words"
                           >
                             {course.name}
                           </Link>
@@ -410,6 +433,7 @@ export default function CoursesPage(): React.JSX.Element {
                             </Badge>
                           )}
                         </div>
+
                         {/* Mobile Status Badge */}
                         <div className="md:hidden shrink-0">
                           {isArchived ? (
@@ -424,7 +448,7 @@ export default function CoursesPage(): React.JSX.Element {
                         </div>
                       </div>
                       {course.description && (
-                        <p className="mt-1 md:mt-0.5 line-clamp-2 md:line-clamp-1 text-xs text-muted-foreground">
+                        <p className="mt-0.5 line-clamp-1 text-xs text-muted-foreground break-words">
                           {course.description}
                         </p>
                       )}
@@ -457,7 +481,7 @@ export default function CoursesPage(): React.JSX.Element {
                       )}
                     </td>
 
-                    {/* Status (Desktop only, mobile has it in row header) */}
+                    {/* Status (Desktop only) */}
                     <td className="hidden md:table-cell px-4 py-3.5 whitespace-nowrap">
                       {isArchived ? (
                         <Badge variant="secondary" className="text-[11px] text-muted-foreground">
@@ -472,12 +496,12 @@ export default function CoursesPage(): React.JSX.Element {
 
                     {/* Aksi */}
                     <td className="pt-2 md:pt-0 p-0 md:px-4 md:py-3.5 block md:table-cell border-t md:border-t-0 border-border/50 md:whitespace-nowrap md:text-right">
-                      <div className="flex items-center justify-between md:justify-end gap-1">
+                      <div className="flex items-center justify-between md:justify-end gap-1.5">
                         <Button
                           asChild
                           variant="ghost"
                           size="sm"
-                          className="h-8 px-2 text-xs"
+                          className="h-8 px-2.5 text-xs"
                         >
                           <Link href={`/courses/${course.id}`}>
                             Detail
@@ -485,63 +509,65 @@ export default function CoursesPage(): React.JSX.Element {
                           </Link>
                         </Button>
 
-                        <div className="flex items-center gap-1">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => setEditingCourse(course)}
-                            className="h-8 w-8 p-0"
-                            title="Edit mata kuliah"
-                            aria-label={`Edit mata kuliah ${course.name}`}
-                          >
-                            <Pencil className="h-3.5 w-3.5" />
-                          </Button>
-
-                          {isArchived ? (
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
                             <Button
                               variant="ghost"
-                              size="sm"
-                              onClick={() => handleUnarchive(course.id)}
-                              disabled={isPending}
-                              className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
-                              title="Pulihkan mata kuliah"
-                              aria-label={`Pulihkan mata kuliah ${course.name}`}
+                              size="icon-sm"
+                              className="h-8 w-8 relative after:absolute after:-inset-1.5 sm:after:hidden touch-manipulation text-muted-foreground hover:text-foreground"
+                              aria-label={`Menu aksi untuk mata kuliah "${course.name}"`}
                             >
-                              {isPending ? (
-                                <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                              ) : (
-                                <RotateCcw className="h-3.5 w-3.5" />
-                              )}
+                              <MoreVertical className="h-4 w-4" />
                             </Button>
-                          ) : (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleArchive(course.id)}
-                              disabled={isPending}
-                              className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
-                              title="Arsipkan mata kuliah"
-                              aria-label={`Arsipkan mata kuliah ${course.name}`}
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="w-44">
+                            <DropdownMenuItem
+                              onClick={() => setEditingCourse(course)}
+                              className="cursor-pointer"
                             >
-                              {isPending ? (
-                                <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                              ) : (
-                                <Archive className="h-3.5 w-3.5" />
-                              )}
-                            </Button>
-                          )}
+                              <Pencil className="h-4 w-4 mr-2" />
+                              <span>Edit mata kuliah</span>
+                            </DropdownMenuItem>
 
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => setDeletingCourse(course)}
-                            className="h-8 w-8 p-0 text-danger hover:bg-danger/10"
-                            title="Hapus mata kuliah"
-                            aria-label={`Hapus mata kuliah ${course.name}`}
-                          >
-                            <Trash2 className="h-3.5 w-3.5" />
-                          </Button>
-                        </div>
+                            {isArchived ? (
+                              <DropdownMenuItem
+                                onClick={() => handleUnarchive(course.id)}
+                                disabled={isPending}
+                                className="cursor-pointer"
+                              >
+                                {isPending ? (
+                                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                ) : (
+                                  <RotateCcw className="h-4 w-4 mr-2" />
+                                )}
+                                <span>Pulihkan</span>
+                              </DropdownMenuItem>
+                            ) : (
+                              <DropdownMenuItem
+                                onClick={() => handleArchive(course.id)}
+                                disabled={isPending}
+                                className="cursor-pointer"
+                              >
+                                {isPending ? (
+                                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                ) : (
+                                  <Archive className="h-4 w-4 mr-2" />
+                                )}
+                                <span>Arsipkan</span>
+                              </DropdownMenuItem>
+                            )}
+
+                            <DropdownMenuSeparator />
+
+                            <DropdownMenuItem
+                              onClick={() => setDeletingCourse(course)}
+                              className="cursor-pointer text-destructive focus:text-destructive focus:bg-destructive/10"
+                            >
+                              <Trash2 className="h-4 w-4 mr-2" />
+                              <span>Hapus mata kuliah</span>
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </div>
                     </td>
                   </tr>

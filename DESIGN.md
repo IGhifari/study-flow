@@ -248,12 +248,71 @@ Jika belum ada semester, tampilkan satu empty state “Mulai dari semester perta
 
 ### 9.4 Semester dan mata kuliah
 
-- Semester menggunakan daftar dengan tahun ajaran, penanda aktif/arsip, serta menu edit/arsip.
-- Mata kuliah menggunakan grid sederhana: tiga kolom jika ruang cukup, dua pada ukuran menengah, satu pada mobile. Card berisi judul, kode/dosen bila tersedia, dan ringkasan konten yang berasal dari data.
-- Setiap card mempunyai satu link judul dan menu aksi terpisah; hindari tombol bersarang dalam link yang membungkus seluruh card.
-- Detail mata kuliah: breadcrumb, judul, metadata, lalu tab “Materi”, “Tugas”, “Catatan”. Aksi utama mengikuti tab.
-- Arsip tetap dapat dibaca. Banner menjelaskan pembatasan penambahan data dan menyediakan aksi pulihkan sesuai PRD.
-- Penghapusan yang ditolak karena masih memiliki turunan memberi penjelasan dan opsi arsip; jangan menampilkan keberhasilan palsu.
+#### 9.4.1 Kelola Semester (/semesters)
+- **Header halaman dan kontrol**:
+  - Judul “Kelola Semester”, ikon `CalendarRange`, keterangan ringkas, indikator semester aktif saat ini, dan satu CTA utama “Tambah Semester” (`size="standard"`, tinggi 36 px / `h-9`).
+- **Toolbar status dan pencarian**:
+  - Filter status berbasis tab segmented: Semua, Aktif, dan Arsip.
+  - Input pencarian nama semester atau tahun ajaran (`h-9`) dengan tombol reset filter ketika filter atau kata kunci aktif.
+- **Daftar semester desktop dan mobile**:
+  - Desktop (>=768px): Tabel terstruktur dengan kolom Nama Semester, Tahun Ajaran, Mata Kuliah Terkait, Status, dan Aksi.
+  - Mobile (<768px): Flat clean list berpemisah (`divide-y`) tanpa kartu bertingkat, menyajikan nama semester, badge status, tahun ajaran, jumlah mata kuliah, dan aksi cepat.
+  - Pembedaan status eksplisit (kombinasi teks dan ikon/badge semantik):
+    - *Aktif*: Badge primer tebal dengan ikon `Check` dan teks “Aktif”.
+    - *Non-aktif*: Badge outline netral dengan teks “Non-aktif”.
+    - *Arsip*: Badge secondary netral dengan teks “Arsip”.
+- **Aksi aktivasi semester & sinkronisasi**:
+  - Tombol “Jadikan Aktif” (`size="sm"`, `h-8`) muncul pada semester non-aktif yang tidak berstatus arsip.
+  - Saat aktivasi berlangsung, tampilkan status pending (`Loader2` animasi memutar + “Mengaktifkan…”) dan cegah pengiriman request ganda (`disabled={Boolean(activatingId)}`).
+  - Status aktif baru **hanya ditampilkan setelah server mengonfirmasi keberhasilan**.
+  - Setelah berhasil, sinkronkan selector semester sidebar dan komponen terkait melalui custom event `studyflow:semester-changed` dan `router.refresh()`.
+  - Jika aktivasi gagal, status sebelumnya tetap dipertahankan dan pesan kesalahan ditampilkan dalam alert ramah.
+- **Menu aksi dan touch target**:
+  - Aksi sekunder (Edit semester, Arsipkan/Pulihkan, Hapus semester) dikelompokkan dalam menu dropdown tiga titik (`MoreVertical`, `size="icon-sm"`, `h-8 w-8`).
+  - Target sentuh tombol aksi pada mobile memenuhi minimal 44×44 px (`after:absolute after:-inset-1.5 sm:after:hidden touch-manipulation`).
+
+#### 9.4.2 Daftar Mata Kuliah (/courses)
+- **Header halaman**:
+  - Judul “Mata Kuliah”, ikon `BookOpen`, konteks semester aktif (misal: “Semester Aktif: [Nama Semester]”), dan satu CTA utama “Tambah mata kuliah” (`size="standard"`, `h-9`).
+  - Jika belum ada semester sama sekali, tampilkan warning alert ramah yang mengarahkan pengguna membuat semester terlebih dahulu.
+- **Toolbar pencarian dan filter**:
+  - Dropdown pemilih semester (`h-9`), toggle tab status Aktif / Arsip, dan input pencarian mata kuliah atau kode (`h-9`).
+  - Tombol reset filter muncul ketika pencarian atau filter sedang aktif.
+- **Tampilan tabel desktop dan flat list mobile**:
+  - Desktop (>=768px): Tabel rapi dengan kolom Mata Kuliah (nama tebal berpembalut teks aman *break-words*, kode font-mono, deskripsi ringkas), Semester (`CalendarRange`), Dosen Pengampu (`User`), Status (Aktif / Arsip), dan Aksi.
+  - Mobile (<768px): Flat list bersih (`divide-y`) tanpa kartu bertingkat berlebih. Baris atas memuat nama tautan, kode, badge status, dan menu dropdown tiga titik. Baris bawah memuat metadata semester, dosen, dan tombol tautan “Detail”.
+  - Judul panjang tidak mendorong tombol aksi keluar layar berkat pembungkus teks aman (*break-words*).
+- **Aksi baris**:
+  - Tombol tautan “Detail” (`size="sm"`, `h-8`) untuk membuka halaman detail mata kuliah.
+  - Menu dropdown terpadu (`MoreVertical`, `size="icon-sm"`, `h-8 w-8`) dengan opsi: “Edit mata kuliah” (`Pencil`), “Arsipkan / Pulihkan” (`Archive` / `RotateCcw`), dan “Hapus mata kuliah” (`Trash2`, teks merah destruktif).
+  - Target sentuh tombol pada mobile minimal 44×44 px tanpa tumpang tindih.
+
+#### 9.4.3 Detail Mata Kuliah (/courses/[id])
+- **Hierarki visual terstruktur**:
+  - Baris atas: Navigasi kembali “Kembali ke Daftar Mata Kuliah” (`size="sm"`, `h-8`, target sentuh 44×44 px) dan aksi header (Edit, Arsipkan/Pulihkan, Hapus).
+  - Judul utama: Nama mata kuliah besar (`text-2xl sm:text-3xl font-bold break-words`), badge kode font-mono, dan status badge (Aktif / Arsip).
+  - Banner peringatan: Jika mata kuliah atau semester induknya berstatus arsip, tampilkan banner peringatan bahwa konten bersifat hanya-baca (*read-only*).
+  - Kisi metadata ringkas: Semester, Dosen Pengampu, dan Tahun Ajaran. Disertai deskripsi/silabus (jika tersedia) dengan pembalut teks aman.
+- **Tab konten utama**:
+  - Tab terpadu WAI-ARIA: “Tugas ([jumlah])”, “Catatan ([jumlah])”, dan “Materi ([jumlah])”.
+  - Tab Tugas: Header dengan tombol “Tambah tugas” (`size="standard"`), tabel tugas desktop & kartu mobile, checkbox status toggle dengan loader optimistik, penanda tenggat waktu & overdue, serta badge prioritas.
+  - Tab Catatan: Header dengan tombol “Buat catatan” (`size="standard"`), kartu catatan dengan judul tautan tebal, waktu diperbarui, dan tautan buka editor.
+  - Tab Materi: Header dengan tombol “Unggah materi” (`size="standard"`), tabel materi desktop & kartu mobile dengan badge status pemrosesan (`MaterialStatusBadge`), ukuran file, jumlah halaman, dan tautan lihat materi.
+- **Modal tambah tugas & buat catatan khusus mata kuliah**:
+  - Form terikat langsung ke `courseId` yang sedang dibuka tanpa memerlukan pemilihan ulang mata kuliah.
+  - Retensi input (*input retention*) jika submit gagal, scrollable pada layar ponsel (`max-h-[90vh] overflow-y-auto`), dan tombol Batal/Simpan berukuran standard 36 px.
+
+#### 9.4.4 Dialog Tambah, Edit, Arsip, dan Hapus
+- **Retensi input pada kegagalan form**:
+  - Seluruh form dialog (Tambah/Edit Semester & Tambah/Edit Mata Kuliah) mempertahankan isian pengguna saat submit gagal akibat validasi server atau jaringan error.
+  - Dilengkapi `noValidate` untuk konsistensi pesan error semantik kustom.
+  - Dialog dapat digulir nyaman pada layar ponsel pendek (`max-h-[90vh] overflow-y-auto`) dengan tombol aksi selalu terlihat di footer dialog.
+- **Konfirmasi destruktif dan keakuratan aturan backend**:
+  - Dialog konfirmasi hapus secara spesifik menyebutkan nama objek yang akan dihapus (`<strong className="text-foreground break-words">{name}</strong>`).
+  - Menjelaskan dampak aktual sesuai batasan backend:
+    - *Mata Kuliah*: Sistem menolak penghapusan jika mata kuliah masih memiliki materi, tugas, atau catatan aktif. Pengguna disarankan mengarsipkan mata kuliah bila perkuliahan telah selesai.
+    - *Semester*: Sistem menolak penghapusan jika semester telah memiliki mata kuliah di dalamnya. Pengguna disarankan mengarsipkan semester bila perkuliahan telah selesai.
+  - Jika permintaan hapus atau arsip gagal di server, dialog tetap terbuka dan menampilkan pesan error dalam alert destruktif.
 
 ### 9.5 Tugas
 

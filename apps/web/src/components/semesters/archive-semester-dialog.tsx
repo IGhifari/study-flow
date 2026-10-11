@@ -53,7 +53,7 @@ export function ArchiveSemesterDialog({
 
   return (
     <Dialog open={Boolean(semester)} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[440px]">
+      <DialogContent className="sm:max-w-[440px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400">
@@ -68,27 +68,27 @@ export function ArchiveSemesterDialog({
           </div>
         </DialogHeader>
 
-        {error ? (
+        {error && (
           <Alert variant="destructive">
             <AlertCircle className="h-4 w-4" />
             <AlertDescription>{error}</AlertDescription>
           </Alert>
-        ) : (
-          <div className="space-y-2 text-sm text-muted-foreground">
-            <p>
-              Apakah Anda ingin mengarsipkan semester{' '}
-              <strong className="text-foreground">{semester?.name}</strong>?
-            </p>
-            <div className="rounded-lg border border-border bg-muted/60 p-3 text-xs space-y-1.5">
-              <p className="font-medium text-foreground">Konsekuensi pengarsipan:</p>
-              <ul className="list-disc pl-4 space-y-1 text-muted-foreground">
-                <li>Semester ini tidak akan dapat dijadikan semester aktif saat berstatus arsip.</li>
-                <li>Seluruh mata kuliah dan materi di dalamnya akan menjadi riwayat read-only.</li>
-                <li>Anda dapat memulihkan semester ini kapan saja melalui tab Arsip.</li>
-              </ul>
-            </div>
-          </div>
         )}
+
+        <div className="space-y-2 text-sm text-muted-foreground">
+          <p>
+            Apakah Anda ingin mengarsipkan semester{' '}
+            <strong className="text-foreground break-words">{semester?.name}</strong>?
+          </p>
+          <div className="rounded-lg border border-border bg-muted/60 p-3 text-xs space-y-1.5">
+            <p className="font-medium text-foreground">Konsekuensi pengarsipan:</p>
+            <ul className="list-disc pl-4 space-y-1 text-muted-foreground">
+              <li>Semester ini tidak dapat dijadikan semester aktif saat berstatus arsip.</li>
+              <li>Seluruh mata kuliah dan materi di dalamnya akan menjadi riwayat hanya-baca.</li>
+              <li>Anda dapat memulihkan semester ini kapan saja melalui filter status Arsip.</li>
+            </ul>
+          </div>
+        </div>
 
         <DialogFooter className="pt-2 flex flex-col-reverse sm:flex-row gap-2 sm:justify-end">
           <Button

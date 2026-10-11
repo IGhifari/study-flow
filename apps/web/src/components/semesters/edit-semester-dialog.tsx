@@ -33,11 +33,16 @@ export function EditSemesterDialog({
   const [error, setError] = React.useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
 
+  const lastSemesterIdRef = React.useRef<string | null>(null);
+
   React.useEffect(() => {
-    if (semester) {
+    if (semester && lastSemesterIdRef.current !== semester.id) {
       setName(semester.name);
       setAcademicYear(semester.academicYear);
       setError(null);
+      lastSemesterIdRef.current = semester.id;
+    } else if (!semester) {
+      lastSemesterIdRef.current = null;
     }
   }, [semester]);
 
@@ -77,8 +82,8 @@ export function EditSemesterDialog({
 
   return (
     <Dialog open={Boolean(semester)} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[480px]">
-        <form onSubmit={handleSubmit} className="space-y-4">
+      <DialogContent className="sm:max-w-[480px] max-h-[90vh] overflow-y-auto">
+        <form noValidate onSubmit={handleSubmit} className="space-y-4">
           <DialogHeader>
             <DialogTitle>Edit Semester</DialogTitle>
             <DialogDescription>

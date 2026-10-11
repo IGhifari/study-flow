@@ -15,6 +15,7 @@ import {
   Layers,
   Search,
   Check,
+  MoreVertical,
 } from 'lucide-react';
 import { Semester } from '@studyflow/shared';
 import {
@@ -27,6 +28,13 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Skeleton } from '@/components/ui/skeleton';
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+} from '@/components/ui/dropdown-menu';
 import { CreateSemesterDialog } from '@/components/semesters/create-semester-dialog';
 import { EditSemesterDialog } from '@/components/semesters/edit-semester-dialog';
 import { DeleteSemesterDialog } from '@/components/semesters/delete-semester-dialog';
@@ -121,16 +129,6 @@ export default function SemestersPage(): React.JSX.Element {
     );
   }, [semesters, searchQuery]);
 
-  const counts = React.useMemo(() => {
-    const activeCount = semesters.filter((s) => s.isActive && !s.archivedAt).length;
-    const archivedCount = semesters.filter((s) => Boolean(s.archivedAt)).length;
-    return {
-      all: semesters.length,
-      active: activeCount,
-      archived: archivedCount,
-    };
-  }, [semesters]);
-
   const hasFilter = Boolean(searchQuery.trim() || statusFilter !== 'all');
 
   const handleResetFilter = () => {
@@ -145,10 +143,10 @@ export default function SemestersPage(): React.JSX.Element {
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl flex items-center gap-2.5">
             <CalendarRange className="h-7 w-7 text-primary" aria-hidden="true" />
-            Kelola Semester
+            <span>Kelola Semester</span>
           </h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Atur periode perkuliahan, tentukan semester aktif utama, dan arsipkan riwayat perkuliahan lama.
+            Atur periode perkuliahan, tentukan semester aktif utama, dan arsipkan riwayat lama.
           </p>
         </div>
 
@@ -212,29 +210,49 @@ export default function SemestersPage(): React.JSX.Element {
           </button>
         </div>
 
-        {/* Input Pencarian */}
-        <div className="relative w-full sm:w-72">
-          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            placeholder="Cari nama atau tahun..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-9 h-9 text-sm"
-            aria-label="Cari semester"
-          />
+        {/* Input Pencarian & Reset Filter */}
+        <div className="flex items-center gap-2 w-full sm:w-auto">
+          <div className="relative flex-1 sm:w-72">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              placeholder="Cari nama atau tahun..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-9 h-9 text-sm"
+              aria-label="Cari semester"
+            />
+          </div>
+          {hasFilter && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleResetFilter}
+              className="h-9 px-2.5 text-xs text-muted-foreground hover:text-foreground shrink-0"
+              title="Reset filter"
+              aria-label="Reset filter pencarian"
+            >
+              <RotateCcw className="h-3.5 w-3.5 mr-1.5" />
+              Reset
+            </Button>
+          )}
         </div>
       </div>
 
       {/* 3. Konten & State Halaman */}
       {isLoading ? (
         <div className="space-y-4">
-          <div className="rounded-xl border border-border bg-card p-4">
+          <div className="hidden md:block rounded-xl border border-border bg-card p-4">
             <div className="space-y-3">
               <Skeleton className="h-8 w-full" />
               <Skeleton className="h-12 w-full" />
               <Skeleton className="h-12 w-full" />
               <Skeleton className="h-12 w-full" />
             </div>
+          </div>
+          <div className="grid gap-3 md:hidden">
+            <Skeleton className="h-28 w-full rounded-xl" />
+            <Skeleton className="h-28 w-full rounded-xl" />
+            <Skeleton className="h-28 w-full rounded-xl" />
           </div>
         </div>
       ) : errorMsg ? (
@@ -326,7 +344,7 @@ export default function SemestersPage(): React.JSX.Element {
                 return (
                   <tr
                     key={semester.id}
-                    className={`flex flex-col p-4 space-y-2.5 md:space-y-0 md:table-row md:p-0 transition-colors group ${
+                    className={`flex flex-col p-4 space-y-2.5 md:space-y-0 md:table-row md:p-0 transition-colors ${
                       isCurrentActive
                         ? 'bg-primary/[0.03] md:hover:bg-primary/[0.06]'
                         : 'hover:bg-muted/30'
@@ -335,11 +353,9 @@ export default function SemestersPage(): React.JSX.Element {
                     {/* Nama Semester */}
                     <td className="p-0 md:px-4 md:py-3.5 block md:table-cell">
                       <div className="flex items-start md:items-center justify-between md:justify-start gap-2">
-                        <div className="flex items-center gap-2 min-w-0">
-                          <span className="font-semibold text-foreground text-sm line-clamp-1">
-                            {semester.name}
-                          </span>
-                        </div>
+                        <span className="font-semibold text-foreground text-sm break-words">
+                          {semester.name}
+                        </span>
 
                         {/* Mobile Status Badge */}
                         <div className="md:hidden shrink-0">
@@ -380,7 +396,7 @@ export default function SemestersPage(): React.JSX.Element {
                       </div>
                     </td>
 
-                    {/* Status (Desktop only, mobile has it in name cell) */}
+                    {/* Status (Desktop only, mobile has it in row header) */}
                     <td className="hidden md:table-cell px-4 py-3.5 whitespace-nowrap">
                       {isCurrentActive ? (
                         <Badge variant="default" className="text-[11px] gap-1 bg-primary text-primary-foreground">
@@ -406,82 +422,86 @@ export default function SemestersPage(): React.JSX.Element {
                             size="sm"
                             variant="outline"
                             onClick={() => handleActivate(semester.id)}
-                            disabled={isActivating}
-                            className="h-8 px-2.5 text-xs inline-flex items-center gap-1.5 text-primary border-primary/30 hover:bg-primary/10"
+                            disabled={Boolean(activatingId)}
+                            className="h-8 px-2.5 text-xs inline-flex items-center gap-1.5 text-primary border-primary/30 hover:bg-primary/10 relative after:absolute after:-inset-1 sm:after:hidden touch-manipulation"
                             title="Jadikan semester aktif"
                           >
                             {isActivating ? (
-                              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                              <>
+                                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                <span>Mengaktifkan...</span>
+                              </>
                             ) : (
-                              <CheckCircle2 className="h-3.5 w-3.5 text-primary" />
+                              <>
+                                <CheckCircle2 className="h-3.5 w-3.5 text-primary" />
+                                <span>Jadikan Aktif</span>
+                              </>
                             )}
-                            <span>Jadikan Aktif</span>
                           </Button>
                         ) : isCurrentActive ? (
-                          <span className="text-xs font-medium text-primary hidden md:inline px-2">
+                          <span className="text-xs font-medium text-primary px-2">
                             Sedang Digunakan
                           </span>
                         ) : (
-                          <span className="text-xs text-muted-foreground hidden md:inline px-2">
-                            Read-only
+                          <span className="text-xs text-muted-foreground px-2">
+                            Hanya-Baca
                           </span>
                         )}
 
-                        <div className="flex items-center gap-1">
-                          {/* Tombol Edit */}
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => setEditingSemester(semester)}
-                            className="h-8 w-8 p-0"
-                            title="Edit semester"
-                            aria-label={`Edit semester ${semester.name}`}
-                          >
-                            <Pencil className="h-3.5 w-3.5" />
-                          </Button>
-
-                          {/* Tombol Arsip / Pulihkan */}
-                          {isArchived ? (
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
                             <Button
                               variant="ghost"
-                              size="sm"
-                              onClick={() => handleUnarchive(semester.id)}
-                              disabled={isUnarchiving}
-                              className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
-                              title="Pulihkan semester"
-                              aria-label={`Pulihkan semester ${semester.name}`}
+                              size="icon-sm"
+                              className="h-8 w-8 relative after:absolute after:-inset-1.5 sm:after:hidden touch-manipulation text-muted-foreground hover:text-foreground"
+                              aria-label={`Menu aksi untuk semester "${semester.name}"`}
                             >
-                              {isUnarchiving ? (
-                                <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                              ) : (
-                                <RotateCcw className="h-3.5 w-3.5" />
-                              )}
+                              <MoreVertical className="h-4 w-4" />
                             </Button>
-                          ) : (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => setArchivingSemester(semester)}
-                              className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
-                              title="Arsipkan semester"
-                              aria-label={`Arsipkan semester ${semester.name}`}
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="w-44">
+                            <DropdownMenuItem
+                              onClick={() => setEditingSemester(semester)}
+                              className="cursor-pointer"
                             >
-                              <Archive className="h-3.5 w-3.5" />
-                            </Button>
-                          )}
+                              <Pencil className="h-4 w-4 mr-2" />
+                              <span>Edit semester</span>
+                            </DropdownMenuItem>
 
-                          {/* Tombol Hapus */}
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => setDeletingSemester(semester)}
-                            className="h-8 w-8 p-0 text-danger hover:bg-danger/10"
-                            title="Hapus semester"
-                            aria-label={`Hapus semester ${semester.name}`}
-                          >
-                            <Trash2 className="h-3.5 w-3.5" />
-                          </Button>
-                        </div>
+                            {isArchived ? (
+                              <DropdownMenuItem
+                                onClick={() => handleUnarchive(semester.id)}
+                                disabled={isUnarchiving}
+                                className="cursor-pointer"
+                              >
+                                {isUnarchiving ? (
+                                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                ) : (
+                                  <RotateCcw className="h-4 w-4 mr-2" />
+                                )}
+                                <span>Pulihkan</span>
+                              </DropdownMenuItem>
+                            ) : (
+                              <DropdownMenuItem
+                                onClick={() => setArchivingSemester(semester)}
+                                className="cursor-pointer"
+                              >
+                                <Archive className="h-4 w-4 mr-2" />
+                                <span>Arsipkan</span>
+                              </DropdownMenuItem>
+                            )}
+
+                            <DropdownMenuSeparator />
+
+                            <DropdownMenuItem
+                              onClick={() => setDeletingSemester(semester)}
+                              className="cursor-pointer text-destructive focus:text-destructive focus:bg-destructive/10"
+                            >
+                              <Trash2 className="h-4 w-4 mr-2" />
+                              <span>Hapus semester</span>
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </div>
                     </td>
                   </tr>

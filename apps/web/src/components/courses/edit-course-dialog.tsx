@@ -38,13 +38,18 @@ export function EditCourseDialog({
   const [errorMsg, setErrorMsg] = React.useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
 
+  const lastCourseIdRef = React.useRef<string | null>(null);
+
   React.useEffect(() => {
-    if (open && course) {
+    if (open && course && lastCourseIdRef.current !== course.id) {
       setErrorMsg(null);
       setName(course.name || '');
       setCode(course.code || '');
       setLecturer(course.lecturer || '');
       setDescription(course.description || '');
+      lastCourseIdRef.current = course.id;
+    } else if (!open) {
+      lastCourseIdRef.current = null;
     }
   }, [open, course]);
 
@@ -82,7 +87,7 @@ export function EditCourseDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[480px]">
+      <DialogContent className="sm:max-w-[480px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Edit Mata Kuliah</DialogTitle>
           <DialogDescription>
@@ -98,7 +103,7 @@ export function EditCourseDialog({
           </Alert>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form noValidate onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-1.5">
             <Label htmlFor="edit-course-name">Nama Mata Kuliah *</Label>
             <Input

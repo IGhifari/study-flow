@@ -34,13 +34,16 @@ export function CreateSemesterDialog({
   const [error, setError] = React.useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
 
+  const wasOpenRef = React.useRef(false);
+
   React.useEffect(() => {
-    if (open) {
+    if (open && !wasOpenRef.current) {
       setName('');
       setAcademicYear('');
       setMakeActive(false);
       setError(null);
     }
+    wasOpenRef.current = open;
   }, [open]);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -79,8 +82,8 @@ export function CreateSemesterDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[480px]">
-        <form onSubmit={handleSubmit} className="space-y-4">
+      <DialogContent className="sm:max-w-[480px] max-h-[90vh] overflow-y-auto">
+        <form noValidate onSubmit={handleSubmit} className="space-y-4">
           <DialogHeader>
             <DialogTitle>Tambah Semester Baru</DialogTitle>
             <DialogDescription>
