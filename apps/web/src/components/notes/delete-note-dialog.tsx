@@ -54,12 +54,12 @@ export function DeleteNoteDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[420px]">
+      <DialogContent className="sm:max-w-[420px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Hapus Catatan</DialogTitle>
           <DialogDescription>
             Apakah Anda yakin ingin menghapus catatan{' '}
-            <strong className="text-foreground">{note?.title}</strong>? Tindakan ini tidak dapat dibatalkan.
+            <strong className="text-foreground break-words">{note?.title}</strong>? Tindakan ini tidak dapat dibatalkan dan catatan akan dihapus secara permanen.
           </DialogDescription>
         </DialogHeader>
 

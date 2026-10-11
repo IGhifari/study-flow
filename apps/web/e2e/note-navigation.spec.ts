@@ -1,5 +1,7 @@
 import { test, expect } from '@playwright/test';
 
+test.use({ screenshot: 'off' });
+
 test.describe('Note Editor Unsaved Changes & Navigation Guard', () => {
   const testPassword = 'TestPassword123!';
 

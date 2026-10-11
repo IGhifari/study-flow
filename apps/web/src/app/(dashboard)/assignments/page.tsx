@@ -708,7 +708,7 @@ export default function AssignmentsPage(): React.JSX.Element {
                               <Button
                                 variant="ghost"
                                 size="icon-sm"
-                                className="h-8 w-8 relative after:absolute after:-inset-1 sm:after:hidden touch-manipulation text-muted-foreground hover:text-foreground"
+                                className="h-8 w-8 relative after:absolute after:-inset-1.5 sm:after:hidden touch-manipulation text-muted-foreground hover:text-foreground"
                                 aria-label={`Menu aksi untuk tugas "${asg.title}"`}
                                 disabled={isArchived}
                               >
@@ -845,7 +845,7 @@ export default function AssignmentsPage(): React.JSX.Element {
                             <Button
                               variant="ghost"
                               size="icon-sm"
-                              className="h-8 w-8 relative after:absolute after:-inset-1 sm:after:hidden touch-manipulation text-muted-foreground hover:text-foreground shrink-0"
+                              className="h-8 w-8 relative after:absolute after:-inset-1.5 sm:after:hidden touch-manipulation text-muted-foreground hover:text-foreground shrink-0"
                               aria-label={`Menu aksi untuk tugas "${asg.title}"`}
                               disabled={isArchived}
                             >

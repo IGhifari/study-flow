@@ -403,12 +403,43 @@ Jika belum ada semester, tampilkan satu empty state “Mulai dari semester perta
 
 ### 9.10 Catatan
 
-- Daftar catatan menampilkan judul, mata kuliah, dan waktu edit terakhir.
-- Editor lebar maksimal 900 px; toolbar ringkas untuk formatting Markdown yang benar-benar didukung.
-- Desktop dapat memakai dua panel tulis/preview; mobile memakai tab “Tulis” dan “Pratinjau”.
-- Tombol “Simpan” selalu mudah ditemukan, disertai “Belum disimpan” atau “Tersimpan pukul …”. MVP memakai simpan manual sesuai PRD.
-- Perubahan belum tersimpan memicu peringatan saat meninggalkan halaman. Jangan menyatakan “Semua perubahan tersimpan” sebelum server berhasil.
-- Materi yang dihapus tidak menghapus catatan; tampilkan keterangan sumber sudah tidak tersedia jika relevan.
+- **Header halaman dan konteks semester**:
+  - Judul “Catatan”, konteks semester aktif beserta jumlah catatan terdaftar, dan satu CTA utama “Buat catatan” (`size="standard"`, tinggi 36 px / `h-9`).
+  - Jika belum ada mata kuliah aktif di semester berjalan, tampilkan banner peringatan ramah yang mengarahkan pengguna untuk membuat mata kuliah terlebih dahulu.
+- **Toolbar pencarian dan filter terpadu**:
+  - Input pencarian judul catatan (`h-9`) dan dropdown filter mata kuliah aktif (`h-9`).
+  - Sediakan tombol “Hapus filter” ketika pencarian atau filter sedang aktif. Pencarian dan filter bekerja di tingkat server (*server-side query*).
+  - Pada layar sempit (<768px/640px), kontrol tersusun rapi membungkus (*flex-wrap*) tanpa menyebabkan *horizontal overflow*.
+- **Daftar catatan desktop dan mobile**:
+  - Desain ringkas dan bersih tanpa kartu bertingkat yang berlebihan (*no excessive nested cards*).
+  - Judul catatan menjadi informasi utama (tautan teks tebal dengan ikon dokumen), diikuti nama mata kuliah, tautan materi terkait (jika ada), dan waktu terakhir diperbarui dalam zona waktu profil pengguna.
+  - Judul panjang dibatasi dengan pembalut teks aman (*break-words*) sehingga tidak mendorong kolom aksi keluar layar.
+  - Aksi baris dikelompokkan dalam menu dropdown terpadu tiga titik (`MoreVertical`, `size="icon-sm"`, `h-8 w-8`) berisi opsi: “Buka editor” (`Pencil`) dan “Hapus catatan” (`Trash2`, teks merah destruktif).
+  - Pada mobile, target sentuh tombol aksi minimal 44×44 px (`after:absolute after:-inset-1.5 sm:after:hidden touch-manipulation`).
+- **Editor catatan — ruang menulis terfokus**:
+  - Ruang baca dan tulis lapang dengan lebar maksimal terukur (`max-w-4xl` hingga `max-w-5xl`) tanpa dekorasi yang mengalihkan perhatian.
+  - Header editor menampilkan navigasi kembali, konteks mata kuliah, indikator status penyimpanan real-time, dan tombol utama “Simpan” (`size="standard"`, `h-9`).
+  - Metadata ringkas: satu baris bersih yang menampilkan mata kuliah dan pemilih tautan materi terkait.
+  - Pembedaan status simpan yang jujur dan tegas:
+    - *Belum disimpan*: Titik amber dengan teks “Belum disimpan”.
+    - *Menyimpan*: Spinner `Loader2` halus dengan teks “Menyimpan…”.
+    - *Tersimpan*: Ikon centang hijau dengan teks “Tersimpan pukul [jam lokal]”. Tidak pernah menampilkan status tersimpan sebelum backend mengonfirmasi keberhasilan.
+    - *Gagal*: Ikon peringatan merah dengan teks “Gagal menyimpan” beserta pesan error yang aman.
+  - Format Markdown: Menggunakan editor textarea native yang ringan dipadukan dengan tab “Tulis” dan “Pratinjau” (*Safe Markdown Rendering*). Toolbar markdown menyediakan pintasan esensial (Heading, Bold, Italic, Code, List, Quote, Link) tanpa memasang library rich-text yang berat atau toolbar dekoratif.
+- **Perlindungan data dan pencegahan kehilangan tulisan**:
+  - *Navigation Guard*: Perubahan lokal yang belum disimpan memicu konfirmasi terpadu (`Dialog`) saat pengguna mencoba berpindah halaman (klik navigasi internal maupun tombol *Browser Back/Forward*).
+  - Pilihan dialog guard: “Tetap mengedit” (mempertahankan posisi editor), “Buang perubahan dan lanjutkan”, serta “Simpan dan lanjutkan”.
+  - *Ketahanan Jaringan*: Jika proses simpan gagal (HTTP 500, koneksi putus, atau konflik), sistem membatalkan perpindahan halaman dan menjaga tulisan lokal pengguna tetap 100% utuh di textarea.
+  - *In-flight Typing*: Pengetikan yang dilakukan saat proses simpan sedang berlangsung tidak dianggap tersimpan dan mempertahankan status belum disimpan (*dirty*) setelah respons selesai.
+  - *Konflik Versi*: Menampilkan banner konflik yang menjelaskan situasi jika catatan telah diubah di sesi lain, disertai opsi “Muat Ulang Versi Server” atau “Timpa Server dengan Tulisan Ini” tanpa menimpa tulisan lokal secara sepihak.
+- **Dialog tambah dan hapus catatan**:
+  - *Tambah Catatan*: Judul *, Mata Kuliah *, dan isi awal opsional. Menerapkan *input retention* saat submit gagal dan dapat digulir nyaman pada layar ponsel (`max-h-[90vh] overflow-y-auto`).
+  - *Hapus Catatan*: Konfirmasi destruktif menyebutkan judul catatan yang akan dihapus secara spesifik. Jika penghapusan gagal, dialog tetap terbuka menampilkan pesan error.
+- **Penanganan state halaman**:
+  - *Loading*: Skeleton terstruktur untuk tabel desktop dan kartu mobile.
+  - *Gagal memuat*: Peringatan ramah dengan tombol “Coba Lagi” (`RefreshCw`).
+  - *Belum ada catatan (Onboarding)*: Tampilan tenang berikon `FileText`, penjelasan manfaat catatan belajar, dan tombol “Buat catatan”.
+  - *Filter tanpa hasil*: Pesan spesifik bahwa tidak ada catatan yang cocok dengan kriteria filter, disertai tombol “Hapus filter”.
 
 ### 9.11 Pengaturan
 
