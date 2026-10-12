@@ -24,11 +24,13 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { cn } from '@/lib/utils';
 
 export interface TodayScheduleWidgetProps {
   activeSemesterId?: string | null;
   activeSemesterName?: string | null;
   timezone: string;
+  className?: string;
 }
 
 export type ScheduleTimeStatus = 'UPCOMING' | 'ONGOING' | 'COMPLETED';
@@ -111,6 +113,7 @@ export function TodayScheduleWidget({
   activeSemesterId,
   activeSemesterName,
   timezone,
+  className,
 }: TodayScheduleWidgetProps): React.JSX.Element {
   const [schedules, setSchedules] = React.useState<CourseSchedule[]>([]);
   const [isLoading, setIsLoading] = React.useState(true);
@@ -248,10 +251,13 @@ export function TodayScheduleWidget({
 
   return (
     <div
-      className="rounded-xl border border-border bg-card p-5 sm:p-6 shadow-xs flex flex-col justify-between"
+      className={cn(
+        "rounded-xl border border-border bg-card p-5 sm:p-6 shadow-xs flex flex-col justify-between",
+        className
+      )}
       data-testid="today-schedule-widget"
     >
-      <div>
+      <div className="flex flex-col flex-1">
         {/* Header Widget */}
         <div className="flex items-center justify-between pb-3.5 border-b border-border">
           <div className="flex items-center gap-2 min-w-0">
@@ -274,7 +280,7 @@ export function TodayScheduleWidget({
         </div>
 
         {/* Content Section */}
-        <div className="mt-3">
+        <div className="mt-3 flex-1 flex flex-col justify-center">
           {/* A. Loading State */}
           {isLoading && (
             <div className="space-y-3">
@@ -332,7 +338,7 @@ export function TodayScheduleWidget({
 
           {/* D. Empty State: Tidak Ada Kelas Hari Ini */}
           {!isLoading && !errorMsg && activeSemesterId && schedules.length === 0 && (
-            <div className="flex flex-col items-center justify-center py-5 text-center text-muted-foreground">
+            <div className="flex flex-col items-center justify-center py-6 sm:py-8 my-auto text-center text-muted-foreground">
               <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10 text-primary mb-2">
                 <CalendarCheck2 className="h-4.5 w-4.5" />
               </div>

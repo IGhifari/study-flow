@@ -31,6 +31,7 @@ import { getDashboardSummary } from '@/lib/dashboard-client';
 import { updateAssignment } from '@/lib/assignment-client';
 import { getProfile } from '@/lib/auth-client';
 import { TodayScheduleWidget } from '@/components/dashboard/today-schedule-widget';
+import { DashboardCharts } from '@/components/dashboard/dashboard-charts';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -435,50 +436,58 @@ export function DashboardContent({ user }: DashboardContentProps): React.JSX.Ele
         </div>
       </div>
 
-      {/* Tata Letak Konten: Desktop 2/3 Tugas + 1/3 Materi; Mobile Kolom Tunggal */}
-      <div className="grid grid-cols-1 gap-4 sm:gap-6 lg:grid-cols-3">
+      {/* Grafik Aktivitas Belajar & Beban Tugas (Data Nyata) */}
+      <DashboardCharts
+        activeSemesterId={summary.activeSemester.id}
+        refreshTrigger={fetchRequestIdRef.current}
+      />
+
+      {/* Tata Letak Konten: Desktop 2/3 Tugas + 1/3 Jadwal; Mobile Kolom Tunggal */}
+      <div className="grid grid-cols-1 gap-4 sm:gap-6 lg:grid-cols-3 items-stretch">
         {/* Kolom Utama: Tugas (2/3 Lebar Desktop) */}
-        <div className="lg:col-span-2 space-y-4 sm:space-y-6">
+        <div className="lg:col-span-2 space-y-4 sm:space-y-6 flex flex-col justify-between h-full">
           {summary.assignmentsToday.length === 0 && summary.assignmentsUpcoming.length === 0 ? (
             /* Empty State Terpadu: Jika Hari Ini & 7 Hari Mendatang Sama-sama Kosong */
-            <div className="rounded-xl border border-border bg-card p-5 sm:p-6 shadow-xs">
-              <div className="flex items-center justify-between pb-3.5 border-b border-border">
-                <div className="flex items-center gap-2">
-                  <Clock className="h-4 w-4 text-primary" />
-                  <h2 className="text-base font-semibold text-foreground">
-                    Tugas Terdekat
-                  </h2>
+            <div className="rounded-xl border border-border bg-card p-5 sm:p-6 shadow-xs h-full flex flex-col justify-between">
+              <div>
+                <div className="flex items-center justify-between pb-3.5 border-b border-border">
+                  <div className="flex items-center gap-2">
+                    <Clock className="h-4 w-4 text-primary" />
+                    <h2 className="text-base font-semibold text-foreground">
+                      Tugas Terdekat
+                    </h2>
+                  </div>
+                  <Button asChild variant="ghost" size="sm" className="h-8 px-2 text-xs">
+                    <Link href="/assignments" className="gap-1">
+                      <span>Semua Tugas</span>
+                      <ArrowRight className="h-3.5 w-3.5" />
+                    </Link>
+                  </Button>
                 </div>
-                <Button asChild variant="ghost" size="sm" className="h-8 px-2 text-xs">
-                  <Link href="/assignments" className="gap-1">
-                    <span>Semua Tugas</span>
-                    <ArrowRight className="h-3.5 w-3.5" />
-                  </Link>
-                </Button>
               </div>
 
-              <div className="py-5 sm:py-6 flex flex-col items-center justify-center text-center">
+              <div className="py-6 sm:py-8 flex-1 flex flex-col items-center justify-center text-center my-auto">
                 {summary.totalAssignments === 0 ? (
                   <>
-                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted text-muted-foreground mb-2">
-                      <ListTodo className="h-4 w-4" />
+                    <div className="flex h-9 w-9 items-center justify-center rounded-full bg-muted text-muted-foreground mb-2">
+                      <ListTodo className="h-4.5 w-4.5" />
                     </div>
                     <p className="text-sm font-medium text-foreground">
                       Belum ada tugas tercatat
                     </p>
-                    <p className="text-xs text-muted-foreground mt-0.5 max-w-sm">
+                    <p className="text-xs text-muted-foreground mt-0.5 max-w-sm leading-relaxed">
                       Catat tugas kuliah baru agar deadline dan prioritas belajar Anda tetap teratur.
                     </p>
                   </>
                 ) : (
                   <>
-                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-success/20 text-success-foreground mb-2">
-                      <CheckCircle2 className="h-4 w-4" />
+                    <div className="flex h-9 w-9 items-center justify-center rounded-full bg-success/20 text-success-foreground mb-2">
+                      <CheckCircle2 className="h-4.5 w-4.5" />
                     </div>
                     <p className="text-sm font-medium text-foreground">
                       Tidak ada deadline dalam 7 hari ke depan
                     </p>
-                    <p className="text-xs text-muted-foreground mt-0.5 max-w-sm">
+                    <p className="text-xs text-muted-foreground mt-0.5 max-w-sm leading-relaxed">
                       Semua jadwal terdekat sudah tuntas atau belum ada deadline mendesak minggu ini.
                     </p>
                   </>
@@ -693,15 +702,19 @@ export function DashboardContent({ user }: DashboardContentProps): React.JSX.Ele
           )}
         </div>
 
-        {/* Kolom Pendukung: Jadwal Hari Ini & Materi Terbaru (1/3 Lebar Desktop) */}
-        <div className="space-y-6">
+        {/* Kolom Pendamping: Jadwal Hari Ini (1/3 Lebar Desktop, Bawah Sejajar dengan Tugas) */}
+        <div className="lg:col-span-1 flex flex-col">
           <TodayScheduleWidget
             activeSemesterId={summary.activeSemester.id}
             activeSemesterName={summary.activeSemester.name}
             timezone={timezone}
+            className="h-full"
           />
+        </div>
+      </div>
 
-          <div className="rounded-xl border border-border bg-card p-5 sm:p-6 shadow-xs flex flex-col justify-between">
+      {/* Card Materi Terbaru: Di bawah tugas & jadwal, melebar ke samping kanan penuh */}
+      <div className="rounded-xl border border-border bg-card p-5 sm:p-6 shadow-xs flex flex-col justify-between w-full">
             <div>
               <div className="flex items-center justify-between pb-3.5 border-b border-border">
                 <div className="flex items-center gap-2">
@@ -758,7 +771,7 @@ export function DashboardContent({ user }: DashboardContentProps): React.JSX.Ele
                           </Link>
                           <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-muted-foreground">
                             {m.course && (
-                              <span className="truncate max-w-[120px] font-medium text-foreground/80">
+                              <span className="truncate max-w-[200px] sm:max-w-[320px] font-medium text-foreground/80">
                                 {m.course.name}
                               </span>
                             )}
@@ -794,8 +807,6 @@ export function DashboardContent({ user }: DashboardContentProps): React.JSX.Ele
               </div>
             )}
           </div>
-        </div>
-      </div>
 
       {/* Modal Dialog: Tambah Tugas */}
       <CreateTaskDialog

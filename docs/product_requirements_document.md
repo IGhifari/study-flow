@@ -206,11 +206,25 @@ Istilah owner pada pemeriksaan akses berarti pemilik resource, bukan role baru. 
 
 ### FR-09 — Dashboard
 
-- Menampilkan semester aktif, tugas hari ini, deadline tujuh hari ke depan, jumlah tugas terlambat, materi terbaru, dan attempt kuis terbaru.
+- Menampilkan semester aktif, tugas hari ini, deadline tujuh hari ke depan, jumlah tugas terlambat, materi terbaru, dan grafik analitik belajar berbasis data nyata.
+- **Grafik Aktivitas Belajar**:
+  - Bar chart berdampingan dengan dua seri: “Tugas selesai” dan “Kuis selesai”.
+  - Filter periode: 7 hari (`7d`), 30 hari (`30d` - default), dan 3 bulan (`3m`).
+  - Periode 7d dan 30d dikelompokkan per hari menurut zona waktu profil pengguna; periode 3m didefinisikan sebagai bulan berjalan beserta dua bulan kalender sebelumnya, dikelompokkan per minggu mulai Senin.
+  - Zero-filled buckets: hari atau minggu tanpa aktivitas diisi nol. Sumbu Y berupa bilangan bulat mulai dari nol.
+  - Aturan pencatatan tugas: Satu tugas dihitung maksimal satu kali pada penyelesaian pertama (`firstCompletedAt`). Membuka kembali lalu menyelesaikan tugas yang sama tidak menambah jumlah aktivitas.
+  - Aturan pencatatan kuis: Satu attempt dihitung satu kali pada saat submit final (`submittedAt`); draft attempt tidak dihitung; retake dengan attempt baru dihitung sebagai aktivitas baru.
+  - Data historis sebelum pencatatan timestamp pertama tidak dikarang atau dihitung surut; tooltip menjelaskan batasan riwayat ini secara jujur.
+- **Grafik Beban Tugas**:
+  - Horizontal bar chart menampilkan jumlah tugas belum selesai (`TODO` dan `IN_PROGRESS`) per mata kuliah pada semester yang ditampilkan, termasuk tugas terlambat.
+  - Diurutkan dari beban terbanyak dengan urutan stabil. Klik pada bar mata kuliah membuka halaman tugas dengan filter mata kuliah terkait (`/assignments?courseId=...`).
+- **Lifecycle Data & Isolasi**:
+  - Data teragregasi di sisi server dengan query efisien (tanpa query per hari/per mata kuliah).
+  - Multi-tenant isolation terjamin di seluruh query; pengarsipan mata kuliah mengecualikan mata kuliah dari beban tugas aktif semester berjalan.
 - Statistik dibatasi pada semester aktif dan rentang waktu yang tertulis. Materi terbaru maksimal lima item.
 - Persentase tugas selesai dihitung dari tugas selesai dibagi seluruh tugas pada filter aktif; bila tidak ada tugas, tampilkan empty state, bukan persentase menyesatkan.
 - Empty state memiliki aksi yang relevan. Kegagalan satu bagian tidak menyamarkan data lain menjadi angka nol.
-- Semua angka dihitung dari data pengguna; tidak menggunakan statistik demo dalam akun nyata.
+- Semua angka dihitung dari data nyata pengguna; tidak menggunakan statistik demo atau array acak dalam akun nyata.
 
 ### FR-10 — Job, status, dan kuota
 

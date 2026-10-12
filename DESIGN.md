@@ -277,7 +277,7 @@ Urutan konten mengikuti kebutuhan harian dan prioritas tindakan belajar:
    - **Empty state terpadu**: Jika hari ini dan 7 hari mendatang sama-sama kosong, tampilkan satu panel terpadu ringkas tanpa tinggi minimum berlebihan. Bedakan status “Belum ada tugas tercatat” (total tugas semester = 0) dari “Tidak ada deadline dalam 7 hari ke depan” (semua deadline terdekat aman/tuntas).
    - **Pengelompokan ketika ada tugas**: Pisahkan menjadi “Tugas Hari Ini” dan “Tugas 7 Hari Mendatang” menggunakan daftar berpemisah (`divide-y`), checkbox aksesibel keyboard, deadline jam/tanggal, dan badge prioritas (Tinggi/Sedang/Rendah). Empty state per kelompok tetap ringkas dengan ikon kecil dan satu kalimat keterangan.
 4. **Area pendamping jadwal & materi (1/3 lebar desktop)**:
-   - **Widget Jadwal Hari Ini**: Diletakkan di atas “Materi terbaru” pada kolom kanan desktop (atau setelah daftar tugas pada mobile).
+   - **Widget Jadwal Hari Ini**: Diletakkan berdampingan di kolom kanan tugas (1/3 desktop) dengan tinggi membentang sehingga bagian bawahnya sejajar dengan card Tugas 7 Hari Mendatang (`items-stretch` dan `h-full`).
      - Menampilkan sesi perkuliahan aktif hari ini berdasarkan zona waktu profil pengguna (`user.timezone`), terurut berdasarkan jam mulai.
      - Setiap item sesi menyajikan: rentang jam lokal (`HH:mm`), nama mata kuliah (tautan langsung ke detail mata kuliah), kode mata kuliah, dan nama ruangan bila diisi.
      - Status waktu per sesi dihitung secara lokal setiap menit (`setInterval`, tanpa request API berkala):
@@ -291,8 +291,32 @@ Urutan konten mengikuti kebutuhan harian dan prioritas tindakan belajar:
      - Sinkronisasi semester aktif via custom event `studyflow:semester-changed` dan perubahan profil/zona waktu via `studyflow:profile-updated` dengan proteksi *race condition*.
      - Penanganan state terisolasi: skeleton loading, belum ada semester aktif, “Tidak ada kelas hari ini”, serta error state mandiri dengan tombol “Coba lagi” tanpa mengganggu widget tugas atau materi dashboard.
      - Header kartu menyediakan tautan “Lihat jadwal” menuju `/schedule`.
-   - **Materi terbaru**: Dibatasi maksimal 5 item dengan tombol “Unggah materi” di header panel dan tautan “Lihat semua materi” di footer. Jarak antarbaris dipadatkan, dan judul panjang terpotong dengan elipsis agar tidak mendorong tombol aksi “Buka” keluar panel.
-5. **Mobile**: Mengikuti tata letak satu kolom vertikal berdasarkan prioritas (Header ringkas → 3 baris statistik ringkas → Tugas terdekat → Jadwal hari ini → Materi terbaru). Jarak antarbagian dirapatkan secara proporsional.
+   - **Materi terbaru**: Diletakkan di bawah baris tugas & jadwal dan melebar penuh ke samping kanan (`w-full`). Dibatasi maksimal 5 item dengan tombol “Unggah materi” di header panel dan tautan “Lihat semua materi” di footer. Jarak antarbaris dipadatkan, dan judul panjang terpotong dengan elipsis agar tidak mendorong tombol aksi “Buka” keluar panel.
+5. **Visualisasi Aktivitas & Beban Belajar (Dashboard Charts)**:
+   - Diletakkan di bawah baris area tugas dan pendamping jadwal/materi.
+   - **Tata letak responsif**:
+     - Seluruh card chart melebar penuh ke samping kanan (`w-full`) dalam tata letak bertumpuk vertikal (`grid-cols-1 gap-4 sm:gap-6`).
+     - Urutan posisi: Chart Aktivitas Belajar di bagian atas, diikuti oleh Chart Beban Tugas tepat di bawahnya.
+   - **Chart Aktivitas Belajar (Interactive Area Chart)**:
+     - Menggunakan interactive area chart shadcn/ui (Recharts) dengan dua area saling overlay tanpa stacked, dilengkapi fill transparan dan gradient halus ke bawah.
+     - Dua seri semantik: “Tugas selesai” (`--chart-1`) dan “Kuis selesai” (`--chart-2`).
+     - Garis lembut menggunakan kurva monotone (`type="monotone"`) yang mempertahankan batas nilai non-negatif tanpa interpolasi di bawah nol.
+     - Sumbu Y dimulai dari nol dengan label bilangan bulat (`allowDecimals={false}`).
+     - Mendukung preferensi reduced-motion (`isAnimationActive={!prefersReducedMotion}`) agar nyaman diakses.
+     - Filter periode interaktif via dropdown: 7 Hari Terakhir, 30 Hari Terakhir (default), dan 3 Bulan Terakhir (dikelompokkan mingguan mulai Senin).
+     - Tooltip kustom menampilkan format tanggal/rentang tanggal lokal pengguna (`date-fns/locale/id`) serta jumlah angka aktivitas per seri.
+     - Penjelasan singkat pencatatan: penyelesaian pertama tugas dan attempt kuis yang disubmit final (bukan durasi/penguasaan).
+     - Tombol toggle tabel data aksesibel (`aria-expanded`) untuk melihat angka agregat dalam tabel HTML semantik ramah pembaca layar.
+   - **Chart Beban Tugas (Horizontal Bar Chart)**:
+     - Menggunakan horizontal bar chart shadcn/ui menampilkan jumlah tugas aktif (`TODO` & `IN_PROGRESS`) per mata kuliah semester aktif.
+     - Data diurutkan stabil secara menurun (mata kuliah dengan beban tugas terbanyak berada di atas).
+     - Warna batang menggunakan token konsisten `--chart-4` atau `--primary`.
+     - Interaktivitas klik: mengklik batang atau label mata kuliah langsung mengarahkan ke `/assignments?courseId={id}` untuk memfilter tugas terkait.
+   - **Ketahanan State & Isolasi**:
+     - Skeleton loading terpisah dengan animasi halus.
+     - Empty state ramah dan proporsional jika belum ada aktivitas atau semua tugas telah tuntas.
+     - Error state mandiri dengan tombol “Coba lagi” tanpa memblokir widget dashboard lainnya.
+6. **Mobile**: Mengikuti tata letak satu kolom vertikal berdasarkan prioritas (Header ringkas → 3 baris statistik ringkas → Tugas terdekat → Jadwal hari ini → Materi terbaru → Visualisasi Aktivitas & Beban Belajar). Jarak antarbagian dirapatkan secara proporsional.
 
 Jika belum ada semester, tampilkan satu empty state “Mulai dari semester pertamamu” dengan CTA “Tambah semester”. Setelah ada semester tetapi belum ada mata kuliah, CTA berubah menjadi “Tambah mata kuliah”. Jangan menampilkan semua empty state onboarding sekaligus.
 

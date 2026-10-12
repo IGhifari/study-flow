@@ -17,6 +17,7 @@ export const AssignmentSchema = z.object({
   priority: AssignmentPriorityEnum,
   status: AssignmentStatusEnum,
   completedAt: z.string().datetime().nullable(),
+  firstCompletedAt: z.string().datetime().nullable().optional(),
   isOverdue: z.boolean(),
   course: CourseSchema.optional(),
   createdAt: z.string().datetime(),

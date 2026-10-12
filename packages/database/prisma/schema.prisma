@@ -112,12 +112,14 @@ model Assignment {
   dueDate     DateTime           @map("due_date")
   priority    AssignmentPriority @default(MEDIUM)
   status      AssignmentStatus   @default(TODO)
-  completedAt DateTime?          @map("completed_at")
-  createdAt   DateTime           @default(now()) @map("created_at")
-  updatedAt   DateTime           @updatedAt @map("updated_at")
+  completedAt      DateTime?          @map("completed_at")
+  firstCompletedAt DateTime?          @map("first_completed_at")
+  createdAt        DateTime           @default(now()) @map("created_at")
+  updatedAt        DateTime           @updatedAt @map("updated_at")
 
   @@index([userId, dueDate])
   @@index([userId, status])
+  @@index([userId, firstCompletedAt])
   @@index([courseId])
   @@map("assignments")
 }
@@ -474,6 +476,7 @@ model QuizAttempt {
   answers QuizAttemptAnswer[]
 
   @@index([userId, quizId])
+  @@index([userId, submittedAt])
   @@map("quiz_attempts")
 }
 

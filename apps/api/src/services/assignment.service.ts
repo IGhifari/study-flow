@@ -18,6 +18,7 @@ interface RawAssignmentWithCourse {
   priority: 'LOW' | 'MEDIUM' | 'HIGH';
   status: 'TODO' | 'IN_PROGRESS' | 'DONE';
   completedAt: Date | null;
+  firstCompletedAt?: Date | null;
   createdAt: Date;
   updatedAt: Date;
   course?: {
@@ -57,6 +58,7 @@ function toAssignmentResponse(raw: RawAssignmentWithCourse): Assignment {
     priority: raw.priority,
     status: raw.status,
     completedAt: raw.completedAt ? raw.completedAt.toISOString() : null,
+    firstCompletedAt: raw.firstCompletedAt ? raw.firstCompletedAt.toISOString() : null,
     isOverdue,
     course: raw.course
       ? {
@@ -265,6 +267,7 @@ export async function createAssignment(
 
   const status = input.status || 'TODO';
   const completedAt = status === 'DONE' ? new Date() : null;
+  const firstCompletedAt = status === 'DONE' ? completedAt : null;
 
   const created = await prisma.assignment.create({
     data: {
@@ -276,6 +279,7 @@ export async function createAssignment(
       priority: input.priority || 'MEDIUM',
       status,
       completedAt,
+      firstCompletedAt,
     },
     include: {
       course: {
@@ -373,10 +377,17 @@ export async function updateAssignment(
     dataToUpdate.status = input.status;
     if (input.status === 'DONE') {
       // Preserve completedAt if already DONE, otherwise set to server now
-      dataToUpdate.completedAt = existing.status === 'DONE' && existing.completedAt ? existing.completedAt : new Date();
+      const completedTime =
+        existing.status === 'DONE' && existing.completedAt ? existing.completedAt : new Date();
+      dataToUpdate.completedAt = completedTime;
+      // Record firstCompletedAt if not set yet (atomic rule: maximum 1 count on first completion)
+      if (!existing.firstCompletedAt) {
+        dataToUpdate.firstCompletedAt = completedTime;
+      }
     } else {
       // Transition from DONE to TODO/IN_PROGRESS clears completedAt
       dataToUpdate.completedAt = null;
+      // firstCompletedAt is intentionally preserved so reopening does not erase or duplicate history
     }
   }
 

@@ -18,3 +18,42 @@ export const DashboardSummarySchema = z.object({
   completionPercentage: z.number().min(0).max(100),
 });
 export type DashboardSummary = z.infer<typeof DashboardSummarySchema>;
+
+export const DashboardChartPeriodSchema = z.enum(['7d', '30d', '3m']);
+export type DashboardChartPeriod = z.infer<typeof DashboardChartPeriodSchema>;
+
+export const ActivityBucketSchema = z.object({
+  date: z.string(),
+  label: z.string(),
+  fullDateLabel: z.string(),
+  tasksCompleted: z.number().int().nonnegative(),
+  quizzesCompleted: z.number().int().nonnegative(),
+});
+export type ActivityBucket = z.infer<typeof ActivityBucketSchema>;
+
+export const CourseWorkloadItemSchema = z.object({
+  courseId: z.string(),
+  courseName: z.string(),
+  courseCode: z.string().nullable(),
+  pendingTasks: z.number().int().nonnegative(),
+});
+export type CourseWorkloadItem = z.infer<typeof CourseWorkloadItemSchema>;
+
+export const DashboardChartsResponseSchema = z.object({
+  semesterId: z.string().nullable(),
+  semesterName: z.string().nullable(),
+  activityChart: z.object({
+    period: DashboardChartPeriodSchema,
+    grouping: z.enum(['daily', 'weekly']),
+    items: z.array(ActivityBucketSchema),
+    totalTasksCompleted: z.number().int().nonnegative(),
+    totalQuizzesCompleted: z.number().int().nonnegative(),
+    historyNotice: z.string().nullable(),
+  }),
+  workloadChart: z.object({
+    items: z.array(CourseWorkloadItemSchema),
+    totalPendingTasks: z.number().int().nonnegative(),
+  }),
+});
+export type DashboardChartsResponse = z.infer<typeof DashboardChartsResponseSchema>;
+

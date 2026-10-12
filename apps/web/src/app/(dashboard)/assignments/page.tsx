@@ -2,6 +2,7 @@
 
 import * as React from 'react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import {
   ListTodo,
   Plus,
@@ -111,13 +112,22 @@ export default function AssignmentsPage(): React.JSX.Element {
   const [activeSemester, setActiveSemester] = React.useState<Semester | null>(null);
   const [userProfile, setUserProfile] = React.useState<UserProfile | null>(null);
 
+  const searchParams = useSearchParams();
+  const urlCourseId = searchParams.get('courseId');
+
   // Filters
   const [searchQuery, setSearchQuery] = React.useState<string>('');
-  const [selectedCourseId, setSelectedCourseId] = React.useState<string>('ALL');
+  const [selectedCourseId, setSelectedCourseId] = React.useState<string>(urlCourseId || 'ALL');
   const [selectedStatus, setSelectedStatus] = React.useState<string>('ALL');
   const [selectedPriority, setSelectedPriority] = React.useState<string>('ALL');
   const [sortOrder, setSortOrder] = React.useState<'asc' | 'desc'>('asc');
   const [isOverdueOnly, setIsOverdueOnly] = React.useState<boolean>(false);
+
+  React.useEffect(() => {
+    if (urlCourseId) {
+      setSelectedCourseId(urlCourseId);
+    }
+  }, [urlCourseId]);
 
   // Page States
   const [isLoading, setIsLoading] = React.useState(true);
@@ -551,24 +561,24 @@ export default function AssignmentsPage(): React.JSX.Element {
           <div className="hidden md:block overflow-hidden rounded-xl border border-border bg-card shadow-xs">
             <div className="overflow-x-auto">
               <table className="w-full text-left text-sm">
-                <thead className="border-b border-border bg-muted/40 text-xs font-semibold uppercase text-muted-foreground">
+                <thead className="border-b border-border bg-muted/40 text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
                   <tr>
-                    <th scope="col" className="px-4 py-3.5 w-12 text-center">
+                    <th scope="col" className="px-4 py-3 w-14 text-center">
                       Status
                     </th>
-                    <th scope="col" className="px-4 py-3.5">
+                    <th scope="col" className="px-4 py-3">
                       Judul Tugas
                     </th>
-                    <th scope="col" className="px-4 py-3.5">
+                    <th scope="col" className="px-4 py-3">
                       Mata Kuliah
                     </th>
-                    <th scope="col" className="px-4 py-3.5">
+                    <th scope="col" className="px-4 py-3">
                       Tenggat Waktu
                     </th>
-                    <th scope="col" className="px-4 py-3.5">
+                    <th scope="col" className="px-4 py-3">
                       Prioritas
                     </th>
-                    <th scope="col" className="px-4 py-3.5 text-right w-14">
+                    <th scope="col" className="px-4 py-3 text-right w-14">
                       Aksi
                     </th>
                   </tr>
@@ -586,38 +596,36 @@ export default function AssignmentsPage(): React.JSX.Element {
                     return (
                       <tr
                         key={asg.id}
-                        className={`hover:bg-muted/30 transition-all duration-200 ${
-                          isDone ? 'bg-muted/10 opacity-75' : ''
+                        className={`hover:bg-muted/30 transition-all duration-150 ${
+                          isDone ? 'bg-muted/15' : ''
                         }`}
                       >
                         {/* Status Checkbox */}
-                        <td className="px-4 py-3.5 text-center align-top pt-3.5">
+                        <td className="px-4 py-3.5 text-center align-middle w-14">
                           <div className="flex items-center justify-center">
                             {isPending ? (
-                              <Loader2 className="h-4.5 w-4.5 animate-spin text-primary" />
+                              <Loader2 className="h-4 w-4 animate-spin text-primary" />
                             ) : (
-                              <div className="inline-flex items-center justify-center p-1 rounded-md transition-colors hover:bg-muted/50 -m-1">
-                                <Checkbox
-                                  id={`task-check-${asg.id}`}
-                                  checked={isDone}
-                                  disabled={isArchived || isPending}
-                                  onCheckedChange={() => handleToggleStatus(asg)}
-                                  aria-label={
-                                    isDone
-                                      ? `Tandai tugas "${asg.title}" belum selesai`
-                                      : `Tandai tugas "${asg.title}" selesai`
-                                  }
-                                />
-                              </div>
+                              <Checkbox
+                                id={`task-check-${asg.id}`}
+                                checked={isDone}
+                                disabled={isArchived || isPending}
+                                onCheckedChange={() => handleToggleStatus(asg)}
+                                aria-label={
+                                  isDone
+                                    ? `Tandai tugas "${asg.title}" belum selesai`
+                                    : `Tandai tugas "${asg.title}" selesai`
+                                }
+                              />
                             )}
                           </div>
                         </td>
 
                         {/* Judul Tugas & Deskripsi */}
-                        <td className="px-4 py-3.5 align-top">
+                        <td className="px-4 py-3.5 align-middle">
                           <div className="flex flex-col min-w-0 max-w-[360px]">
                             <span
-                              className={`font-medium text-sm break-words transition-all duration-200 ${
+                              className={`font-medium text-sm break-words transition-all duration-150 ${
                                 isDone
                                   ? 'line-through text-muted-foreground'
                                   : 'text-foreground'
@@ -626,7 +634,7 @@ export default function AssignmentsPage(): React.JSX.Element {
                               {asg.title}
                             </span>
                             {asg.description && (
-                              <p className="mt-0.5 text-xs text-muted-foreground line-clamp-2 break-words">
+                              <p className="mt-0.5 text-xs text-muted-foreground line-clamp-1 break-words">
                                 {asg.description}
                               </p>
                             )}
@@ -634,57 +642,57 @@ export default function AssignmentsPage(): React.JSX.Element {
                         </td>
 
                         {/* Mata Kuliah */}
-                        <td className="px-4 py-3.5 align-top whitespace-nowrap">
+                        <td className="px-4 py-3.5 align-middle whitespace-nowrap">
                           {asg.course ? (
                             <div className="flex items-center gap-1.5">
                               <Link
                                 href={`/courses/${asg.course.id}`}
-                                className="text-xs font-medium text-muted-foreground hover:text-foreground hover:underline flex items-center gap-1.5"
+                                className="text-xs font-medium text-muted-foreground hover:text-foreground hover:underline inline-flex items-center gap-1.5 transition-colors"
                                 title={asg.course.name}
                               >
-                                <BookOpen className="h-3.5 w-3.5 shrink-0" />
-                                <span className="truncate max-w-[180px]">
+                                <BookOpen className="h-3.5 w-3.5 shrink-0 text-muted-foreground/70" />
+                                <span className="truncate max-w-[200px]">
                                   {asg.course.name}
                                 </span>
                               </Link>
                               {isArchived && (
                                 <Badge
                                   variant="outline"
-                                  className="text-[10px] py-0 px-1 border-muted"
+                                  className="text-[10px] py-0 px-1 border-muted text-muted-foreground"
                                 >
                                   Arsip
                                 </Badge>
                               )}
                             </div>
                           ) : (
-                            <span className="text-xs text-muted-foreground">Mata Kuliah</span>
+                            <span className="text-xs text-muted-foreground">-</span>
                           )}
                         </td>
 
                         {/* Tenggat Waktu & Penanda Status */}
-                        <td className="px-4 py-3.5 align-top whitespace-nowrap">
+                        <td className="px-4 py-3.5 align-middle whitespace-nowrap">
                           <div className="flex flex-col gap-1">
                             <span className="text-xs text-foreground font-medium">
                               {formatUserDateTime(asg.dueDate, timezone)}
                             </span>
                             <div className="flex items-center gap-1.5">
                               <span
-                                className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[11px] ${deadlineInfo.badgeClass}`}
+                                className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium ${deadlineInfo.badgeClass}`}
                               >
                                 <DeadlineIcon className="h-3 w-3 shrink-0" />
                                 <span>{deadlineInfo.label}</span>
                               </span>
+                              {isDone && asg.completedAt && (
+                                <span className="text-[11px] text-muted-foreground">
+                                  ({formatUserDateTime(asg.completedAt, timezone)})
+                                </span>
+                              )}
                             </div>
-                            {isDone && asg.completedAt && (
-                              <span className="text-[11px] text-muted-foreground">
-                                Selesai: {formatUserDateTime(asg.completedAt, timezone)}
-                              </span>
-                            )}
                           </div>
                         </td>
 
                         {/* Prioritas */}
-                        <td className="px-4 py-3.5 align-top whitespace-nowrap">
+                        <td className="px-4 py-3.5 align-middle whitespace-nowrap">
                           <Badge
                             variant={
                               asg.priority === 'HIGH'
@@ -693,7 +701,7 @@ export default function AssignmentsPage(): React.JSX.Element {
                                 ? 'default'
                                 : 'secondary'
                             }
-                            className="text-xs"
+                            className="text-xs font-medium px-2 py-0.5 rounded-full"
                           >
                             {asg.priority === 'HIGH'
                               ? 'Tinggi'
@@ -704,7 +712,7 @@ export default function AssignmentsPage(): React.JSX.Element {
                         </td>
 
                         {/* Aksi Dropdown */}
-                        <td className="px-4 py-3.5 align-top text-right whitespace-nowrap">
+                        <td className="px-4 py-3.5 align-middle text-right whitespace-nowrap w-14">
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                               <Button

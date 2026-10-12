@@ -2451,10 +2451,206 @@
           }
         }
       }
+    },
+    "/api/dashboard": {
+      "get": {
+        "summary": "Mendapatkan ringkasan metrik dashboard pengguna",
+        "tags": [
+          "Dashboard"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Ringkasan metrik dashboard pengguna",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DashboardSummary"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Tidak terautentikasi"
+          }
+        }
+      }
+    },
+    "/api/dashboard/charts": {
+      "get": {
+        "summary": "Mendapatkan data grafik aktivitas belajar dan beban tugas dashboard",
+        "tags": [
+          "Dashboard"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "period",
+            "in": "query",
+            "required": false,
+            "description": "Periode aktivitas belajar (7d, 30d, 3m). Default: 30d",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "7d",
+                "30d",
+                "3m"
+              ],
+              "default": "30d"
+            }
+          },
+          {
+            "name": "semesterId",
+            "in": "query",
+            "required": false,
+            "description": "ID semester untuk cakupan data. Default: semester aktif",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Data agregasi grafik aktivitas belajar dan beban tugas",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DashboardChartsResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Parameter query tidak valid"
+          },
+          "401": {
+            "description": "Tidak terautentikasi"
+          },
+          "404": {
+            "description": "Semester tidak ditemukan"
+          }
+        }
+      }
     }
   },
   "components": {
     "schemas": {
+      "DashboardSummary": {
+        "type": "object",
+        "properties": {
+          "activeSemester": {
+            "type": "object",
+            "nullable": true
+          },
+          "totalCourses": {
+            "type": "integer"
+          },
+          "activeCourses": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "assignmentsToday": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "assignmentsUpcoming": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "recentMaterials": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          },
+          "overdueCount": {
+            "type": "integer"
+          },
+          "completedCount": {
+            "type": "integer"
+          },
+          "totalAssignments": {
+            "type": "integer"
+          },
+          "completionPercentage": {
+            "type": "number"
+          }
+        }
+      },
+      "DashboardChartsResponse": {
+        "type": "object",
+        "properties": {
+          "semesterId": {
+            "type": "string",
+            "nullable": true
+          },
+          "semesterName": {
+            "type": "string",
+            "nullable": true
+          },
+          "activityChart": {
+            "type": "object",
+            "properties": {
+              "period": {
+                "type": "string",
+                "enum": ["7d", "30d", "3m"]
+              },
+              "grouping": {
+                "type": "string",
+                "enum": ["daily", "weekly"]
+              },
+              "items": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "date": { "type": "string" },
+                    "label": { "type": "string" },
+                    "fullDateLabel": { "type": "string" },
+                    "tasksCompleted": { "type": "integer" },
+                    "quizzesCompleted": { "type": "integer" }
+                  }
+                }
+              },
+              "totalTasksCompleted": { "type": "integer" },
+              "totalQuizzesCompleted": { "type": "integer" },
+              "historyNotice": { "type": "string", "nullable": true }
+            }
+          },
+          "workloadChart": {
+            "type": "object",
+            "properties": {
+              "items": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "courseId": { "type": "string" },
+                    "courseName": { "type": "string" },
+                    "courseCode": { "type": "string", "nullable": true },
+                    "pendingTasks": { "type": "integer" }
+                  }
+                }
+              },
+              "totalPendingTasks": { "type": "integer" }
+            }
+          }
+        }
+      },
       "UserProfile": {
         "type": "object",
         "properties": {
