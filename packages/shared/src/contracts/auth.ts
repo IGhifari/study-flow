@@ -67,8 +67,40 @@ export const UserProfileSchema = z.object({
   timezone: z.string(),
   createdAt: z.string().datetime(),
   updatedAt: z.string().datetime(),
+  hasPassword: z.boolean().default(true),
+  providers: z.array(z.string()).default([]),
 });
 export type UserProfile = z.infer<typeof UserProfileSchema>;
+
+export const GoogleAuthStatusResponseSchema = z.object({
+  configured: z.boolean(),
+});
+export type GoogleAuthStatusResponse = z.infer<typeof GoogleAuthStatusResponseSchema>;
+
+export const GoogleExchangeInputSchema = z.object({
+  code: z.string().min(1, 'Authorization code wajib diisi'),
+  codeVerifier: z.string().min(1, 'Code verifier wajib diisi'),
+  nonce: z.string().min(1, 'Nonce wajib diisi'),
+  redirectUri: z.string().url('Redirect URI tidak valid'),
+  intent: z.enum(['login', 'link']).default('login'),
+});
+export type GoogleExchangeInput = z.infer<typeof GoogleExchangeInputSchema>;
+
+export const GoogleLinkInitInputSchema = z.object({
+  currentPassword: z.string().min(1, 'Password saat ini wajib diisi untuk re-autentikasi'),
+});
+export type GoogleLinkInitInput = z.infer<typeof GoogleLinkInitInputSchema>;
+
+export const OAuthTransactionCookieSchema = z.object({
+  state: z.string(),
+  nonce: z.string(),
+  codeVerifier: z.string(),
+  intent: z.enum(['login', 'link']),
+  returnUrl: z.string().default('/dashboard'),
+  userId: z.string().optional(),
+  createdAt: z.number(),
+});
+export type OAuthTransactionCookie = z.infer<typeof OAuthTransactionCookieSchema>;
 
 export const AuthResponseSchema = z.object({
   message: z.string(),

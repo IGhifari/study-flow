@@ -8,6 +8,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { Eye, EyeOff, Loader2, AlertCircle } from 'lucide-react';
 import { RegisterFormInput, RegisterInput, RegisterInputSchema } from '@studyflow/shared';
 import { apiRegister } from '@/lib/auth-client';
+import { GoogleSignInButton } from '@/components/auth/google-sign-in-button';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -33,9 +34,16 @@ function RegisterForm(): React.JSX.Element {
   const router = useRouter();
   const searchParams = useSearchParams();
   const returnUrl = searchParams.get('returnUrl');
+  const urlError = searchParams.get('error');
 
   const [showPassword, setShowPassword] = React.useState(false);
-  const [serverError, setServerError] = React.useState<string | null>(null);
+  const [serverError, setServerError] = React.useState<string | null>(urlError);
+
+  React.useEffect(() => {
+    if (urlError) {
+      setServerError(urlError);
+    }
+  }, [urlError]);
 
   const {
     register,
@@ -87,6 +95,19 @@ function RegisterForm(): React.JSX.Element {
               <AlertDescription className="text-xs break-words">{serverError}</AlertDescription>
             </Alert>
           )}
+
+          {/* Google Sign-In Button */}
+          <div className="space-y-3">
+            <GoogleSignInButton returnUrl={returnUrl} disabled={isSubmitting} />
+            <div className="relative flex items-center justify-center">
+              <div className="absolute inset-0 flex items-center">
+                <Separator />
+              </div>
+              <span className="relative bg-card px-2 text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
+                atau dengan email
+              </span>
+            </div>
+          </div>
 
           {/* Name Field */}
           <div className="space-y-2">

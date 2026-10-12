@@ -8,6 +8,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { Eye, EyeOff, Loader2, CheckCircle2, AlertCircle } from 'lucide-react';
 import { LoginInput, LoginInputSchema } from '@studyflow/shared';
 import { apiLogin, getSafeReturnUrl } from '@/lib/auth-client';
+import { GoogleSignInButton } from '@/components/auth/google-sign-in-button';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -27,9 +28,16 @@ function LoginForm(): React.JSX.Element {
   const searchParams = useSearchParams();
   const returnUrl = searchParams.get('returnUrl');
   const isRegisteredSuccess = searchParams.get('registered') === 'true';
+  const urlError = searchParams.get('error');
 
   const [showPassword, setShowPassword] = React.useState(false);
-  const [serverError, setServerError] = React.useState<string | null>(null);
+  const [serverError, setServerError] = React.useState<string | null>(urlError);
+
+  React.useEffect(() => {
+    if (urlError) {
+      setServerError(urlError);
+    }
+  }, [urlError]);
 
   const {
     register,
@@ -64,7 +72,7 @@ function LoginForm(): React.JSX.Element {
           Masuk ke StudyFlow
         </CardTitle>
         <CardDescription className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
-          Masukkan email dan password untuk melanjutkan kegiatan belajar Anda.
+          Masukkan email dan password atau lanjutkan dengan akun Google Anda.
         </CardDescription>
       </CardHeader>
 
@@ -89,6 +97,19 @@ function LoginForm(): React.JSX.Element {
               <AlertDescription className="text-xs break-words">{serverError}</AlertDescription>
             </Alert>
           )}
+
+          {/* Google Sign-In Button */}
+          <div className="space-y-3">
+            <GoogleSignInButton returnUrl={returnUrl} disabled={isSubmitting} />
+            <div className="relative flex items-center justify-center">
+              <div className="absolute inset-0 flex items-center">
+                <Separator />
+              </div>
+              <span className="relative bg-card px-2 text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
+                atau dengan email
+              </span>
+            </div>
+          </div>
 
           {/* Email Field */}
           <div className="space-y-2">

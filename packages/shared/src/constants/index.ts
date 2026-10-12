@@ -5,6 +5,7 @@ export const DEFAULT_TIMEZONE = 'Asia/Jakarta';
 export const COOKIE_NAMES = {
   accessToken: 'studyflow_access_token',
   refreshToken: 'studyflow_refresh_token',
+  oauthTx: 'studyflow_oauth_tx',
 } as const;
 
 export const AUTH_LIMITS = {

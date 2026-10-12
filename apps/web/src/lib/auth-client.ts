@@ -197,3 +197,30 @@ export async function apiGetProfile(): Promise<UserProfile> {
 
 export const getProfile = apiGetProfile;
 
+export async function getGoogleAuthStatus(): Promise<boolean> {
+  try {
+    const res = await fetch('/api/auth/google/status', { cache: 'no-store' });
+    if (!res.ok) return false;
+    const data = await res.json();
+    return Boolean(data.configured);
+  } catch {
+    return false;
+  }
+}
+
+export async function initiateGoogleLink(currentPassword: string): Promise<{ url: string }> {
+  const res = await fetch('/api/auth/google/link', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ currentPassword }),
+    credentials: 'include',
+  });
+
+  const data = await res.json();
+  if (!res.ok) {
+    throw new Error(data.error?.message || 'Gagal memulai pengaitan akun Google');
+  }
+
+  return data;
+}
+

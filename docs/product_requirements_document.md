@@ -113,13 +113,19 @@ Istilah owner pada pemeriksaan akses berarti pemilik resource, bukan role baru. 
 
 - Registrasi menggunakan nama, email unik tanpa membedakan huruf besar/kecil, dan password minimal 12 karakter; izinkan passphrase.
 - Login memberikan pesan kegagalan yang tidak mengungkap keberadaan akun.
+- Autentikasi federasi Google OAuth 2.0 (Authorization Code flow dengan PKCE S256 dan Nonce) tersedia pada Login dan Register.
+- Verifikasi Google ID token dilakukan di backend Express; akun diidentifikasi via `(provider, subject)`.
+- Akun Google baru yang email-nya belum terdaftar membuat akun tanpa password lokal (`passwordHash` nullable).
+- Akun dengan email yang sudah ada dan belum terhubung tidak otomatis digabung; pengguna diarahkan masuk dengan password lalu menghubungkan Google dari Pengaturan.
+- Pengaitan Google di Pengaturan memerlukan re-autentikasi password aktif, email Google terverifikasi yang cocok persis dengan email akun, dan subjek Google belum terikat ke pengguna lain.
+- Pada akun Google-only, formulir ganti password disembunyikan dan status metode masuk Google ditampilkan jelas.
 - Sesi menggunakan access JWT berumur pendek dan refresh token yang dapat dicabut serta dirotasi. Nilai awal masa berlaku: 15 menit dan 7 hari.
-- Profil menyediakan pengubahan nama, zona waktu, serta password. Ganti password memerlukan password saat ini dan mencabut sesi lama.
+- Profil menyediakan pengubahan nama, zona waktu, integrasi Google, serta password. Ganti password memerlukan password saat ini dan mencabut sesi lama.
 - Logout mencabut refresh session yang digunakan. Refresh token kedaluwarsa atau telah dicabut mengharuskan login kembali.
 - Password disimpan sebagai hash adaptif, refresh token disimpan sebagai hash. Token tidak disimpan di localStorage.
 - Reset password mandiri belum menjadi gate MVP pribadi; wajib tersedia sebelum membuka pendaftaran umum.
 
-**Penerimaan:** sesi bertahan setelah reload sesuai masa berlakunya; logout dan ganti password membuat token lama tidak dapat memperbarui sesi; pengguna lain tidak dapat membaca profil privat.
+**Penerimaan:** sesi bertahan setelah reload sesuai masa berlakunya; login/register Google menerbitkan sesi StudyFlow yang sah; akun ber-email sama yang belum terhubung dicegah login Google tanpa linking terlebih dahulu; logout dan ganti password membuat token lama tidak dapat memperbarui sesi; pengguna lain tidak dapat membaca profil privat.
 
 ### FR-02 — Semester dan mata kuliah
 

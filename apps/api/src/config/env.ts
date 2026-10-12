@@ -97,6 +97,10 @@ const EnvSchema = z.object({
     ),
   GEMINI_API_KEY: z.string().optional().default(''),
   GEMINI_MODEL: z.string().default('gemini-2.5-flash'),
+  // Google OAuth Configuration
+  GOOGLE_CLIENT_ID: z.string().optional().default(''),
+  GOOGLE_CLIENT_SECRET: z.string().optional().default(''),
+  GOOGLE_REDIRECT_URI: z.string().default('http://localhost:3000/api/auth/google/callback'),
 });
 
 export type Env = z.infer<typeof EnvSchema>;

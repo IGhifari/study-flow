@@ -259,11 +259,15 @@ Form create/edit yang validasinya gagal tetap menyimpan nilai input. Error muncu
   - Formulir dapat dikirim dengan menekan tombol `Enter` pada field mana pun.
 - **Toggle password aksesibel**:
   - Setiap field password dilengkapi tombol toggle `Eye` / `EyeOff` bersemantik `type="button"`, `aria-label` eksplisit (“Tampilkan password” / “Sembunyikan password”), dan target sentuh minimal 44×44 px pada mobile (`after:absolute after:-inset-2 sm:after:hidden touch-manipulation`).
+- **Autentikasi Google OAuth**:
+  - Tombol “Lanjutkan dengan Google” resmi (`GoogleSignInButton`, `variant="outline"`, `h-10 w-full`) dengan logo SVG 4-warna Google standar di atas form email-password.
+  - Alur otorisasi yang sama digunakan pada Login maupun Register, menjaga kesederhanaan antarmuka.
+  - Pemisah visual netral “atau dengan email” dengan garis tipis (`Separator`) memisahkan Google dan formulir kredensial lokal.
+  - Alert error ramah pengguna jika proses Google dibatalkan (`access_denied`), state kedaluwarsa, atau email sudah terdaftar lokal (`ACCOUNT_NOT_LINKED` mengarahkan untuk masuk dengan password lalu menghubungkan Google di Pengaturan).
 - **Kestabilan layout & ketahanan formulir**:
   - Tombol CTA submit (`h-10 w-full font-semibold`) mempertahankan dimensi saat beralih ke state pending/loading (`Loader2` spinner halus + “Memproses…”), tanpa layout shift.
   - Retensi input non-sensitif: nama dan alamat email tetap dipertahankan 100% utuh di dalam form ketika submit gagal, sehingga pengguna tidak perlu mengetik ulang dari awal.
   - Tautan perpindahan antar halaman Login dan Register selalu mempertahankan parameter `returnUrl` (jika ada).
-  - Tidak menampilkan fitur yang belum didukung backend seperti OAuth sosial, lupa password mandiri, atau verifikasi email.
 
 ### 9.3 Dashboard
 
@@ -589,8 +593,14 @@ Jika belum ada semester, tampilkan satu empty state “Mulai dari semester perta
   - *Sinkronisasi Header*: Saat pembaruan profil berhasil, sistem memancarkan custom event `studyflow:profile-updated` sehingga nama pengguna dan avatar inisial pada header shell langsung tersinkronisasi tanpa menunggu reload halaman.
 - **Tampilan & tema**:
   - Preferensi tema antarmuka (Sistem, Terang, Gelap) diselaraskan langsung dengan kontrol `ThemeToggle`.
+- **Akun terhubung (Google OAuth)**:
+  - Kartu mandiri berikon `Link2` yang menampilkan status layanan pihak ketiga yang terhubung.
+  - Logo SVG Google dengan badge status: “Terhubung” (badge hijau emerald dengan centang) atau “Belum Terhubung” (badge netral).
+  - Jika belum terhubung dan integrasi aktif, tersedia tombol “Hubungkan Google” yang memicu dialog modal konfirmasi password saat ini sebelum dialihkan ke Google consent screen.
+  - Notifikasi alert di atas halaman mengonfirmasi status sukses atau kegagalan saat kembali dari alur linking Google.
 - **Keamanan akun (Ganti password)**:
-  - Form independen dengan 3 field terstruktur: Password Saat Ini (`current-password`), Password Baru (`new-password`), dan Konfirmasi Password Baru (`new-password`).
+  - *Akun Google-Only*: Jika pengguna mendaftar langsung via Google (`hasPassword: false`), formulir ganti password disembunyikan dan digantikan banner informatif bahwa proteksi autentikasi dikelola langsung oleh akun Google pengguna.
+  - *Akun dengan Password Lokal*: Form independen dengan 3 field terstruktur: Password Saat Ini (`current-password`), Password Baru (`new-password`), dan Konfirmasi Password Baru (`new-password`).
   - Setiap field dilengkapi tombol toggle `Eye` / `EyeOff` aksesibel bersemantik `type="button"` dan touch target mobile 44×44 px.
   - Persyaratan validasi sesuai skema backend: Password saat ini wajib diisi; Password baru minimal 12 karakter dan harus berbeda dari password saat ini; Konfirmasi password harus cocok.
   - Banner peringatan menjelaskan konsekuensi pencabutan seluruh sesi aktif di perangkat lain.

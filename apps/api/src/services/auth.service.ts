@@ -20,21 +20,27 @@ import { AppError } from '../middleware/errorHandler.js';
 // or parallel asynchronous requests sharing the same refresh token (RFC 6819)
 const REFRESH_GRACE_PERIOD_MS = 15_000;
 
-export function toUserProfile(user: {
-  id: string;
-  name: string;
-  email: string;
-  timezone: string;
-  createdAt: Date;
-  updatedAt: Date;
-}): UserProfile {
+export function toUserProfile(
+  user: {
+    id: string;
+    name: string;
+    email: string;
+    timezone: string;
+    createdAt: Date | string;
+    updatedAt: Date | string;
+    passwordHash?: string | null;
+  },
+  providers: string[] = []
+): UserProfile {
   return {
     id: user.id,
     name: user.name,
     email: user.email,
     timezone: user.timezone,
-    createdAt: user.createdAt.toISOString(),
-    updatedAt: user.updatedAt.toISOString(),
+    createdAt: typeof user.createdAt === 'string' ? user.createdAt : user.createdAt.toISOString(),
+    updatedAt: typeof user.updatedAt === 'string' ? user.updatedAt : user.updatedAt.toISOString(),
+    hasPassword: Boolean(user.passwordHash),
+    providers,
   };
 }
 
@@ -89,10 +95,15 @@ export async function loginUser(input: LoginInput): Promise<{
 
   const user = await prisma.user.findUnique({
     where: { email: normalizedEmail },
+    include: {
+      federatedIdentities: {
+        select: { provider: true },
+      },
+    },
   });
 
-  // Generic message on failed login to not leak user existence
-  if (!user) {
+  // Generic message on failed login to not leak user existence or authentication method
+  if (!user || !user.passwordHash) {
     const error: AppError = new Error('Email atau password tidak sesuai');
     error.statusCode = 401;
     error.code = 'INVALID_CREDENTIALS';
@@ -141,7 +152,7 @@ export async function loginUser(input: LoginInput): Promise<{
   });
 
   return {
-    user: toUserProfile(user),
+    user: toUserProfile(user, user.federatedIdentities.map((f) => f.provider)),
     accessToken,
     refreshToken: rawRefreshToken,
   };
@@ -180,12 +191,13 @@ export async function rotateRefreshToken(rawRefreshToken: string): Promise<{
       id: string;
       name: string;
       email: string;
+      password_hash: string | null;
       timezone: string;
       token_version: number;
       created_at: Date;
       updated_at: Date;
     }>>`
-      SELECT id, name, email, timezone, token_version, created_at, updated_at
+      SELECT id, name, email, password_hash, timezone, token_version, created_at, updated_at
       FROM users
       WHERE id = ${initialSession.userId}
       LIMIT 1
@@ -226,6 +238,12 @@ export async function rotateRefreshToken(rawRefreshToken: string): Promise<{
       throw error;
     }
 
+    const federatedIdentities = await tx.federatedIdentity.findMany({
+      where: { userId: user.id },
+      select: { provider: true },
+    });
+    const providers = federatedIdentities.map((f) => f.provider);
+
     const userProfile: UserProfile = {
       id: user.id,
       name: user.name,
@@ -233,6 +251,8 @@ export async function rotateRefreshToken(rawRefreshToken: string): Promise<{
       timezone: user.timezone,
       createdAt: new Date(user.created_at).toISOString(),
       updatedAt: new Date(user.updated_at).toISOString(),
+      hasPassword: Boolean(user.password_hash),
+      providers,
     };
 
     const now = new Date();
@@ -390,6 +410,11 @@ export async function logoutUser(rawRefreshToken?: string): Promise<void> {
 export async function getUserProfile(userId: string): Promise<UserProfile> {
   const user = await prisma.user.findUnique({
     where: { id: userId },
+    include: {
+      federatedIdentities: {
+        select: { provider: true },
+      },
+    },
   });
 
   if (!user) {
@@ -399,7 +424,8 @@ export async function getUserProfile(userId: string): Promise<UserProfile> {
     throw error;
   }
 
-  return toUserProfile(user);
+  const providers = user.federatedIdentities.map((f) => f.provider);
+  return toUserProfile(user, providers);
 }
 
 export async function updateUserProfile(
@@ -419,9 +445,15 @@ export async function updateUserProfile(
     const updatedUser = await prisma.user.update({
       where: { id: userId },
       data: updateData,
+      include: {
+        federatedIdentities: {
+          select: { provider: true },
+        },
+      },
     });
 
-    return toUserProfile(updatedUser);
+    const providers = updatedUser.federatedIdentities.map((f) => f.provider);
+    return toUserProfile(updatedUser, providers);
   } catch {
     const error: AppError = new Error('Gagal memperbarui profil pengguna');
     error.statusCode = 404;
@@ -442,6 +474,13 @@ export async function changeUserPassword(
     const error: AppError = new Error('Pengguna tidak ditemukan');
     error.statusCode = 404;
     error.code = 'USER_NOT_FOUND';
+    throw error;
+  }
+
+  if (!user.passwordHash) {
+    const error: AppError = new Error('Akun ini terdaftar melalui Google dan belum memiliki password lokal.');
+    error.statusCode = 400;
+    error.code = 'PASSWORD_NOT_SET';
     throw error;
   }
 
