@@ -117,10 +117,28 @@ export type RefreshTokenResponse = z.infer<typeof RefreshTokenResponseSchema>;
 export const MessageResponseSchema = z.object({
   message: z.string(),
 });
-export type MessageResponse = z.infer<typeof MessageResponseSchema>;
+export const ForgotPasswordInputSchema = z.object({
+  email: z
+    .string()
+    .trim()
+    .toLowerCase()
+    .email('Format email tidak valid')
+    .max(255, 'Email maksimal 255 karakter'),
+});
+export type ForgotPasswordInput = z.infer<typeof ForgotPasswordInputSchema>;
+
+export const ResetPasswordInputSchema = z.object({
+  token: z.string().min(32, 'Token reset password tidak valid'),
+  newPassword: z
+    .string()
+    .min(12, 'Password baru minimal 12 karakter (disarankan passphrase)')
+    .max(128, 'Password baru maksimal 128 karakter'),
+});
+export type ResetPasswordInput = z.infer<typeof ResetPasswordInputSchema>;
 
 export interface AccessTokenPayload {
   userId: string;
   email: string;
   tokenVersion: number;
 }
+

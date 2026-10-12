@@ -123,9 +123,16 @@ Istilah owner pada pemeriksaan akses berarti pemilik resource, bukan role baru. 
 - Profil menyediakan pengubahan nama, zona waktu, integrasi Google, serta password. Ganti password memerlukan password saat ini dan mencabut sesi lama.
 - Logout mencabut refresh session yang digunakan. Refresh token kedaluwarsa atau telah dicabut mengharuskan login kembali.
 - Password disimpan sebagai hash adaptif, refresh token disimpan sebagai hash. Token tidak disimpan di localStorage.
-- Reset password mandiri belum menjadi gate MVP pribadi; wajib tersedia sebelum membuka pendaftaran umum.
+- Fitur "Lupa Password" mandiri via email:
+  - Tersedia form permintaan reset password publik (`/forgot-password`) dengan link dari `/login`.
+  - Respons generik seragam untuk email terdaftar, tidak terdaftar, maupun Google-only untuk mencegah user enumeration.
+  - Rate limiting per IP dan per email (SHA-256 hashed key di Redis), serta cooldown pengiriman.
+  - Token kriptografis 32-byte acak dengan TTL 30 menit; hanya hash SHA-256 disimpan di database.
+  - Pengiriman ulang membatalkan token aktif sebelumnya.
+  - Halaman form reset kata sandi (`/reset-password?token=...`) dengan verifikasi token, validasi kata sandi baru minimal 12 karakter, konfirmasi kata sandi, dan proteksi referrer (`no-referrer`).
+  - Konsumsi token bersifat atomik, mencabut seluruh refresh session lama (`tokenVersion` increment), dan membatalkan token reset aktif lainnya. Akun Google-only tidak dapat di-reset melalui alur ini. Ganti password dari Settings juga membatalkan token reset yang masih aktif.
 
-**Penerimaan:** sesi bertahan setelah reload sesuai masa berlakunya; login/register Google menerbitkan sesi StudyFlow yang sah; akun ber-email sama yang belum terhubung dicegah login Google tanpa linking terlebih dahulu; logout dan ganti password membuat token lama tidak dapat memperbarui sesi; pengguna lain tidak dapat membaca profil privat.
+**Penerimaan:** sesi bertahan setelah reload sesuai masa berlakunya; login/register Google menerbitkan sesi StudyFlow yang sah; akun ber-email sama yang belum terhubung dicegah login Google tanpa linking terlebih dahulu; logout dan ganti password membuat token lama tidak dapat memperbarui sesi; pengguna lain tidak dapat membaca profil privat; alur lupa password mengirimkan email bertautan aman untuk akun lokal berkata sandi dan memungkinkan pembaruan kata sandi secara atomik serta mencabut semua sesi lama.
 
 ### FR-02 — Semester dan mata kuliah
 

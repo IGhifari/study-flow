@@ -219,3 +219,58 @@ export const loginAccountRateLimiter = rateLimit({
     },
   },
 });
+
+/**
+ * IP-based Forgot Password Rate Limiter
+ * Limits password reset requests per client IP.
+ */
+export const forgotPasswordIpRateLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: env.NODE_ENV === 'test' ? 1000 : 10, // 10 requests per 15 minutes
+  standardHeaders: true,
+  legacyHeaders: false,
+  passOnStoreError: false,
+  store: createRateLimitStore({ prefix: 'studyflow:rl:forgot:ip:' }),
+  keyGenerator: (req) => {
+    const rawIp = req.ip || req.socket.remoteAddress || '127.0.0.1';
+    return ipKeyGenerator(rawIp);
+  },
+  handler: (_req, res, _next, options) => {
+    res.status(429).json(options.message);
+  },
+  message: {
+    error: {
+      code: 'TOO_MANY_REQUESTS',
+      message: 'Terlalu banyak permintaan reset kata sandi dari alamat ini. Silakan tunggu beberapa saat.',
+    },
+  },
+});
+
+/**
+ * Account-based Forgot Password Rate Limiter
+ * Limits password reset requests per hashed target email.
+ * Guarantees raw emails are NEVER stored in Redis keys.
+ */
+export const forgotPasswordAccountRateLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: env.NODE_ENV === 'test' ? 1000 : 5, // 5 requests per account per 15 minutes
+  standardHeaders: true,
+  legacyHeaders: false,
+  passOnStoreError: false,
+  store: createRateLimitStore({ prefix: 'studyflow:rl:forgot:acct:' }),
+  keyGenerator: (req) => {
+    const rawIp = req.ip || req.socket.remoteAddress || '127.0.0.1';
+    const accountHash = hashAccountIdentifier(req.body?.email);
+    return accountHash ? `acct:${accountHash}` : `ip:${ipKeyGenerator(rawIp)}`;
+  },
+  handler: (_req, res, _next, options) => {
+    res.status(429).json(options.message);
+  },
+  message: {
+    error: {
+      code: 'TOO_MANY_REQUESTS',
+      message: 'Terlalu banyak permintaan reset kata sandi untuk akun ini. Silakan tunggu beberapa saat.',
+    },
+  },
+});
+

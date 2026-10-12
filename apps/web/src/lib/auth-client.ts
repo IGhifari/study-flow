@@ -224,3 +224,34 @@ export async function initiateGoogleLink(currentPassword: string): Promise<{ url
   return data;
 }
 
+export async function apiForgotPassword(email: string): Promise<{ message: string }> {
+  const res = await fetch('/api/auth/forgot-password', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email }),
+  });
+
+  const data = await res.json();
+  if (!res.ok) {
+    throw new Error(data.error?.message || 'Gagal memproses permintaan reset password');
+  }
+
+  return data;
+}
+
+export async function apiResetPassword(token: string, newPassword: string): Promise<{ message: string }> {
+  const res = await fetch('/api/auth/reset-password', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ token, newPassword }),
+  });
+
+  const data = await res.json();
+  if (!res.ok) {
+    throw new Error(data.error?.message || 'Gagal mengatur ulang kata sandi');
+  }
+
+  return data;
+}
+
+

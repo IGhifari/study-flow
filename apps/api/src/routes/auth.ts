@@ -6,6 +6,8 @@ import {
   ChangePasswordInputSchema,
   GoogleExchangeInputSchema,
   GoogleLinkInitInputSchema,
+  ForgotPasswordInputSchema,
+  ResetPasswordInputSchema,
   COOKIE_NAMES,
 } from '@studyflow/shared';
 import { prisma } from '@studyflow/database';
@@ -17,6 +19,8 @@ import {
   getUserProfile,
   updateUserProfile,
   changeUserPassword,
+  requestPasswordReset,
+  resetPasswordWithToken,
 } from '../services/auth.service.js';
 import {
   isGoogleConfigured,
@@ -27,7 +31,12 @@ import { verifyPassword } from '../services/password.service.js';
 import { verifyAccessToken } from '../services/token.service.js';
 import { setAuthCookies, clearAuthCookies } from '../services/cookie.service.js';
 import { authenticate } from '../middleware/authenticate.js';
-import { authRateLimiter, loginAccountRateLimiter } from '../middleware/rateLimiter.js';
+import {
+  authRateLimiter,
+  loginAccountRateLimiter,
+  forgotPasswordIpRateLimiter,
+  forgotPasswordAccountRateLimiter,
+} from '../middleware/rateLimiter.js';
 import { originCheckMiddleware } from '../middleware/originCheck.js';
 import { AppError } from '../middleware/errorHandler.js';
 
@@ -347,4 +356,54 @@ authRouter.post(
     }
   }
 );
+
+// POST /api/auth/forgot-password
+authRouter.post(
+  '/forgot-password',
+  forgotPasswordIpRateLimiter,
+  forgotPasswordAccountRateLimiter,
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const parsed = ForgotPasswordInputSchema.safeParse(req.body);
+      if (!parsed.success) {
+        const error: AppError = new Error(
+          parsed.error.errors[0]?.message || 'Alamat email wajib diisi dengan format yang benar'
+        );
+        error.statusCode = 400;
+        error.code = 'VALIDATION_ERROR';
+        return next(error);
+      }
+
+      const result = await requestPasswordReset(parsed.data.email);
+      res.status(200).json(result);
+    } catch (err) {
+      next(err);
+    }
+  }
+);
+
+// POST /api/auth/reset-password
+authRouter.post(
+  '/reset-password',
+  authRateLimiter,
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const parsed = ResetPasswordInputSchema.safeParse(req.body);
+      if (!parsed.success) {
+        const error: AppError = new Error(
+          parsed.error.errors[0]?.message || 'Input reset password tidak valid'
+        );
+        error.statusCode = 400;
+        error.code = 'VALIDATION_ERROR';
+        return next(error);
+      }
+
+      const result = await resetPasswordWithToken(parsed.data.token, parsed.data.newPassword);
+      res.status(200).json(result);
+    } catch (err) {
+      next(err);
+    }
+  }
+);
+
 

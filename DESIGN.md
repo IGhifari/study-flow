@@ -268,6 +268,20 @@ Form create/edit yang validasinya gagal tetap menyimpan nilai input. Error muncu
   - Tombol CTA submit (`h-10 w-full font-semibold`) mempertahankan dimensi saat beralih ke state pending/loading (`Loader2` spinner halus + “Memproses…”), tanpa layout shift.
   - Retensi input non-sensitif: nama dan alamat email tetap dipertahankan 100% utuh di dalam form ketika submit gagal, sehingga pengguna tidak perlu mengetik ulang dari awal.
   - Tautan perpindahan antar halaman Login dan Register selalu mempertahankan parameter `returnUrl` (jika ada).
+- **Alur Lupa Password dan Reset Kata Sandi**:
+  - Halaman Login menyediakan tautan “Lupa kata sandi?” yang mudah dijangkau tepat di atas field password.
+  - Halaman Lupa Kata Sandi (`/forgot-password`):
+    - Input email ternormalisasi dengan ikon bantuan `Mail`.
+    - Alert informatif untuk akun terdaftar via Google ("Daftar menggunakan Google? Anda tidak memiliki kata sandi lokal...").
+    - State sukses menampilkan konfirmasi ramah tanpa membocorkan keberadaan akun, panduan memeriksa inbox/spam, keterangan masa berlaku 30 menit, dan tombol kembali ke halaman masuk.
+  - Halaman Reset Kata Sandi (`/reset-password?token=...`):
+    - Dilindungi header `no-referrer` dan `Cache-Control: no-store` untuk mencegah kebocoran token.
+    - Pembacaan token dari URL dibungkus `Suspense` Next.js dengan skeleton loading yang tenang.
+    - Jika token tidak ditemukan pada URL, menampilkan alert peringatan berikon `ShieldAlert` dan tombol “Minta Tautan Baru”.
+    - Field kata sandi baru dan konfirmasi kata sandi dilengkapi tombol toggle visibilitas aksesibel (`Eye`/`EyeOff`), minimum 12 karakter.
+    - Penanganan kesalahan server (token kedaluwarsa/invalid) menyertakan tautan langsung untuk meminta token baru.
+    - State sukses mengonfirmasi pembaruan kata sandi, menginformasikan bahwa sesi login lama telah dicabut demi keamanan akun, dan menyediakan tombol “Masuk Sekarang”.
+
 
 ### 9.3 Dashboard
 

@@ -15,7 +15,7 @@ const PROTECTED_PREFIXES = [
   '/semesters',
   '/settings',
 ];
-const AUTH_PREFIXES = ['/login', '/register'];
+const AUTH_PREFIXES = ['/login', '/register', '/forgot-password', '/reset-password'];
 
 function isValidReturnUrl(url: string | null): boolean {
   if (!url) return false;
@@ -144,5 +144,7 @@ export const config = {
     '/settings/:path*',
     '/login',
     '/register',
+    '/forgot-password',
+    '/reset-password',
   ],
 };

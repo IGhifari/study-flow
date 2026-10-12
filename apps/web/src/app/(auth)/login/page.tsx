@@ -136,9 +136,17 @@ function LoginForm(): React.JSX.Element {
 
           {/* Password Field with Accessible Toggle */}
           <div className="space-y-2">
-            <Label htmlFor="password" className="text-xs font-semibold text-foreground">
-              Password
-            </Label>
+            <div className="flex items-center justify-between">
+              <Label htmlFor="password" className="text-xs font-semibold text-foreground">
+                Password
+              </Label>
+              <Link
+                href="/forgot-password"
+                className="text-xs text-primary hover:underline font-medium"
+              >
+                Lupa password?
+              </Link>
+            </div>
             <div className="relative">
               <Input
                 id="password"

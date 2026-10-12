@@ -101,6 +101,18 @@ const EnvSchema = z.object({
   GOOGLE_CLIENT_ID: z.string().optional().default(''),
   GOOGLE_CLIENT_SECRET: z.string().optional().default(''),
   GOOGLE_REDIRECT_URI: z.string().default('http://localhost:3000/api/auth/google/callback'),
+  // Public Web App URL for reset link construction
+  APP_PUBLIC_URL: z.string().default('http://localhost:3000'),
+  // SMTP & Email Configuration
+  EMAIL_DRIVER: z
+    .enum(['smtp', 'mock'])
+    .default(process.env.NODE_ENV === 'test' ? 'mock' : 'smtp'),
+  SMTP_HOST: z.string().optional().default(''),
+  SMTP_PORT: z.coerce.number().default(587),
+  SMTP_SECURE: z.coerce.boolean().default(false),
+  SMTP_USER: z.string().optional().default(''),
+  SMTP_PASS: z.string().optional().default(''),
+  SMTP_FROM: z.string().default('StudyFlow <no-reply@studyflow.local>'),
 });
 
 export type Env = z.infer<typeof EnvSchema>;

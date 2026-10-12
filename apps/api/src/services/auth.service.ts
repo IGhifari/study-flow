@@ -15,6 +15,8 @@ import {
   getRefreshTokenExpiryDate,
 } from './token.service.js';
 import { AppError } from '../middleware/errorHandler.js';
+import { env } from '../config/env.js';
+import { sendPasswordResetEmail } from './email.service.js';
 
 // Grace period in milliseconds to tolerate race conditions between multiple tabs
 // or parallel asynchronous requests sharing the same refresh token (RFC 6819)
@@ -523,5 +525,204 @@ export async function changeUserPassword(
         revokedAt: new Date(),
       },
     });
+
+    // 4. Invalidate all active password reset tokens for this user
+    await tx.passwordResetToken.updateMany({
+      where: {
+        userId,
+        usedAt: null,
+      },
+      data: {
+        usedAt: new Date(),
+      },
+    });
   });
+}
+
+const GENERIC_FORGOT_PASSWORD_MESSAGE =
+  'Jika akun memenuhi syarat, tautan reset password akan dikirim ke email tersebut.';
+
+export async function requestPasswordReset(rawEmail: string): Promise<{ message: string }> {
+  const normalizedEmail = (rawEmail || '').toLowerCase().trim();
+
+  // Find user with federatedIdentities
+  const user = await prisma.user.findUnique({
+    where: { email: normalizedEmail },
+    include: { federatedIdentities: true },
+  });
+
+  // If user does not exist or user has no local password (Google-only user):
+  // Perform dummy password hashing to prevent timing attacks that reveal user existence / auth method.
+  if (!user || !user.passwordHash) {
+    await hashPassword('studyflow-dummy-mitigate-timing-attack-salt-padding-string-123');
+    return { message: GENERIC_FORGOT_PASSWORD_MESSAGE };
+  }
+
+  // Cooldown check: Check if an active reset token was generated less than 60 seconds ago
+  const now = new Date();
+  const recentToken = await prisma.passwordResetToken.findFirst({
+    where: {
+      userId: user.id,
+      usedAt: null,
+      expiresAt: { gt: now },
+      createdAt: { gt: new Date(now.getTime() - 60_000) },
+    },
+    orderBy: { createdAt: 'desc' },
+  });
+
+  if (recentToken) {
+    // Within cooldown: Return generic message without generating duplicate token or spamming emails
+    return { message: GENERIC_FORGOT_PASSWORD_MESSAGE };
+  }
+
+  // Generate 32-byte cryptographically secure random token (64 hex characters)
+  const rawToken = crypto.randomBytes(32).toString('hex');
+  const tokenHash = crypto.createHash('sha256').update(rawToken).digest('hex');
+  const expiresAt = new Date(now.getTime() + 30 * 60_000); // 30 minutes validity
+
+  // Invalidate previous active reset tokens and create the new one in a transaction
+  await prisma.$transaction(async (tx) => {
+    // Lock the user row to serialize concurrent reset requests
+    await tx.$queryRaw`
+      SELECT id FROM users
+      WHERE id = ${user.id}
+      LIMIT 1
+      FOR UPDATE
+    `;
+
+    // Cancel previous unconsumed reset tokens
+    await tx.passwordResetToken.updateMany({
+      where: {
+        userId: user.id,
+        usedAt: null,
+      },
+      data: {
+        usedAt: now,
+      },
+    });
+
+    // Create new reset token
+    await tx.passwordResetToken.create({
+      data: {
+        userId: user.id,
+        tokenHash,
+        expiresAt,
+      },
+    });
+  });
+
+  // Construct absolute reset URL from configured APP_PUBLIC_URL (never from Host header!)
+  const resetUrl = `${env.APP_PUBLIC_URL}/reset-password?token=${rawToken}`;
+
+  try {
+    await sendPasswordResetEmail({
+      to: user.email,
+      name: user.name,
+      resetUrl,
+      expiresInMinutes: 30,
+    });
+  } catch (err: unknown) {
+    // Log error safely without leaking recipient email, token, or secret
+    const errMsg = err instanceof Error ? err.message : String(err);
+    console.error(`[AUTH_SERVICE] Gagal mengirimkan email reset password ke penyedia email: ${errMsg}`);
+  }
+
+  return { message: GENERIC_FORGOT_PASSWORD_MESSAGE };
+}
+
+export async function resetPasswordWithToken(
+  rawToken: string,
+  newPassword: string
+): Promise<{ message: string }> {
+  if (!rawToken || typeof rawToken !== 'string' || rawToken.trim().length < 32) {
+    const error: AppError = new Error(
+      'Tautan reset password tidak valid atau telah kedaluwarsa. Silakan minta tautan baru.'
+    );
+    error.statusCode = 400;
+    error.code = 'TOKEN_INVALID_OR_EXPIRED';
+    throw error;
+  }
+
+  const tokenHash = crypto.createHash('sha256').update(rawToken.trim()).digest('hex');
+  const now = new Date();
+
+  // Find initial token
+  const initialToken = await prisma.passwordResetToken.findUnique({
+    where: { tokenHash },
+  });
+
+  if (!initialToken || initialToken.usedAt !== null || initialToken.expiresAt < now) {
+    const error: AppError = new Error(
+      'Tautan reset password tidak valid atau telah kedaluwarsa. Silakan minta tautan baru.'
+    );
+    error.statusCode = 400;
+    error.code = 'TOKEN_INVALID_OR_EXPIRED';
+    throw error;
+  }
+
+  const newPasswordHash = await hashPassword(newPassword);
+
+  // Atomic transaction following lock order: users -> password_reset_tokens / refresh_sessions
+  await prisma.$transaction(async (tx) => {
+    // 1. Lock user row first to serialize concurrent requests (e.g. parallel token consumption or session rotation)
+    await tx.$queryRaw`
+      SELECT id FROM users
+      WHERE id = ${initialToken.userId}
+      LIMIT 1
+      FOR UPDATE
+    `;
+
+    // 2. Re-check token under lock to guarantee exactly one request succeeds among concurrent attempts
+    const lockedToken = await tx.passwordResetToken.findUnique({
+      where: { id: initialToken.id },
+    });
+
+    if (!lockedToken || lockedToken.usedAt !== null || lockedToken.expiresAt < new Date()) {
+      const error: AppError = new Error(
+        'Tautan reset password tidak valid atau telah kedaluwarsa. Silakan minta tautan baru.'
+      );
+      error.statusCode = 400;
+      error.code = 'TOKEN_INVALID_OR_EXPIRED';
+      throw error;
+    }
+
+    // 3. Mark current token as used
+    await tx.passwordResetToken.update({
+      where: { id: lockedToken.id },
+      data: { usedAt: new Date() },
+    });
+
+    // 4. Invalidate all other active reset tokens for this user
+    await tx.passwordResetToken.updateMany({
+      where: {
+        userId: lockedToken.userId,
+        usedAt: null,
+      },
+      data: {
+        usedAt: new Date(),
+      },
+    });
+
+    // 5. Update passwordHash and increment tokenVersion (invalidates existing access tokens immediately)
+    await tx.user.update({
+      where: { id: lockedToken.userId },
+      data: {
+        passwordHash: newPasswordHash,
+        tokenVersion: { increment: 1 },
+      },
+    });
+
+    // 6. Revoke all active refresh sessions
+    await tx.refreshSession.updateMany({
+      where: {
+        userId: lockedToken.userId,
+        revokedAt: null,
+      },
+      data: {
+        revokedAt: new Date(),
+      },
+    });
+  });
+
+  return { message: 'Kata sandi berhasil diatur ulang. Silakan masuk dengan kata sandi baru Anda.' };
 }
