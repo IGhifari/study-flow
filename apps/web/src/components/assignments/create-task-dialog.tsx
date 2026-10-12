@@ -6,8 +6,15 @@ import { createAssignment } from '@/lib/assignment-client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { NativeSelect } from '@/components/ui/select';
+import {
+  RadixSelect as Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
+import { DateTimePicker } from '@/components/ui/date-picker';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertCircle, Loader2 } from 'lucide-react';
 import {
@@ -121,8 +128,8 @@ export function CreateTaskDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
-        <form noValidate onSubmit={handleSubmit} className="space-y-4">
+      <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+        <form noValidate onSubmit={handleSubmit} className="space-y-3.5">
           <DialogHeader>
             <DialogTitle>Tambah Tugas Baru</DialogTitle>
             <DialogDescription>
@@ -155,34 +162,34 @@ export function CreateTaskDialog({
           {/* Pilihan Mata Kuliah */}
           <div className="space-y-1.5">
             <Label htmlFor={courseInputId}>Mata Kuliah *</Label>
-            <NativeSelect
-              id={courseInputId}
+            <Select
               value={courseId}
-              onChange={(e) => setCourseId(e.target.value)}
+              onValueChange={(val) => setCourseId(val)}
               disabled={isSubmitting || activeCourses.length === 0}
-              required
             >
-              <option value="" disabled>
-                Pilih mata kuliah aktif
-              </option>
-              {activeCourses.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name} {c.code ? `(${c.code})` : ''}
-                </option>
-              ))}
-            </NativeSelect>
+              <SelectTrigger id={courseInputId} className="w-full">
+                <SelectValue placeholder="Pilih mata kuliah aktif" />
+              </SelectTrigger>
+              <SelectContent>
+                {activeCourses.map((c) => (
+                  <SelectItem key={c.id} value={c.id}>
+                    {c.name} {c.code ? `(${c.code})` : ''}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           {/* Tenggat Waktu */}
           <div className="space-y-1.5">
             <Label htmlFor={dueId}>Tenggat Waktu *</Label>
-            <Input
+            <DateTimePicker
               id={dueId}
-              type="datetime-local"
               value={dueDate}
-              onChange={(e) => setDueDate(e.target.value)}
+              onChange={setDueDate}
               disabled={isSubmitting}
               required
+              timezone={timezone}
             />
             <p className="text-xs text-muted-foreground">
               Zona waktu profil: <strong className="text-foreground">{timezone}</strong>. Jika jam tidak ditentukan, deadline otomatis diatur ke 23.59.
@@ -193,30 +200,38 @@ export function CreateTaskDialog({
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label htmlFor={priorityId}>Prioritas</Label>
-              <NativeSelect
-                id={priorityId}
+              <Select
                 value={priority}
-                onChange={(e) => setPriority(e.target.value as any)}
+                onValueChange={(val) => setPriority(val as any)}
                 disabled={isSubmitting}
               >
-                <option value="LOW">Rendah</option>
-                <option value="MEDIUM">Sedang</option>
-                <option value="HIGH">Tinggi</option>
-              </NativeSelect>
+                <SelectTrigger id={priorityId} className="w-full">
+                  <SelectValue placeholder="Pilih prioritas" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="LOW">Rendah</SelectItem>
+                  <SelectItem value="MEDIUM">Sedang</SelectItem>
+                  <SelectItem value="HIGH">Tinggi</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="space-y-1.5">
               <Label htmlFor={statusId}>Status</Label>
-              <NativeSelect
-                id={statusId}
+              <Select
                 value={status}
-                onChange={(e) => setStatus(e.target.value as any)}
+                onValueChange={(val) => setStatus(val as any)}
                 disabled={isSubmitting}
               >
-                <option value="TODO">Belum Dikerjakan</option>
-                <option value="IN_PROGRESS">Sedang Dikerjakan</option>
-                <option value="DONE">Selesai</option>
-              </NativeSelect>
+                <SelectTrigger id={statusId} className="w-full">
+                  <SelectValue placeholder="Pilih status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="TODO">Belum Dikerjakan</SelectItem>
+                  <SelectItem value="IN_PROGRESS">Sedang Dikerjakan</SelectItem>
+                  <SelectItem value="DONE">Selesai</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </div>
 
@@ -229,7 +244,8 @@ export function CreateTaskDialog({
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               disabled={isSubmitting}
-              rows={3}
+              rows={2}
+              className="min-h-[64px]"
               maxLength={2000}
             />
           </div>

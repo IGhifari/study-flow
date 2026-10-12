@@ -50,7 +50,8 @@ test.describe('StudyFlow Flashcard and Quiz Functional Verification (Stage 13)',
     await page.click('button:has-text("Unggah materi")');
     await expect(page.locator('div[role="dialog"] h2:has-text("Unggah Materi PDF")')).toBeVisible();
 
-    await page.selectOption('#upload-course', { index: 1 });
+    await page.click('#upload-course');
+    await page.locator('[role="option"]').first().click();
     const materialTitle = 'Modul Pohon Biner, AVL Tree, dan Red-Black Tree';
     await page.fill('#upload-title', materialTitle);
 

@@ -586,27 +586,29 @@ export default function AssignmentsPage(): React.JSX.Element {
                     return (
                       <tr
                         key={asg.id}
-                        className={`hover:bg-muted/30 transition-colors ${
+                        className={`hover:bg-muted/30 transition-all duration-200 ${
                           isDone ? 'bg-muted/10 opacity-75' : ''
                         }`}
                       >
                         {/* Status Checkbox */}
-                        <td className="px-4 py-3.5 text-center align-top pt-4">
+                        <td className="px-4 py-3.5 text-center align-top pt-3.5">
                           <div className="flex items-center justify-center">
                             {isPending ? (
-                              <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                              <Loader2 className="h-4.5 w-4.5 animate-spin text-primary" />
                             ) : (
-                              <Checkbox
-                                id={`task-check-${asg.id}`}
-                                checked={isDone}
-                                disabled={isArchived || isPending}
-                                onCheckedChange={() => handleToggleStatus(asg)}
-                                aria-label={
-                                  isDone
-                                    ? `Tandai tugas "${asg.title}" belum selesai`
-                                    : `Tandai tugas "${asg.title}" selesai`
-                                }
-                              />
+                              <div className="inline-flex items-center justify-center p-1 rounded-md transition-colors hover:bg-muted/50 -m-1">
+                                <Checkbox
+                                  id={`task-check-${asg.id}`}
+                                  checked={isDone}
+                                  disabled={isArchived || isPending}
+                                  onCheckedChange={() => handleToggleStatus(asg)}
+                                  aria-label={
+                                    isDone
+                                      ? `Tandai tugas "${asg.title}" belum selesai`
+                                      : `Tandai tugas "${asg.title}" selesai`
+                                  }
+                                />
+                              </div>
                             )}
                           </div>
                         </td>
@@ -615,7 +617,7 @@ export default function AssignmentsPage(): React.JSX.Element {
                         <td className="px-4 py-3.5 align-top">
                           <div className="flex flex-col min-w-0 max-w-[360px]">
                             <span
-                              className={`font-medium text-sm break-words ${
+                              className={`font-medium text-sm break-words transition-all duration-200 ${
                                 isDone
                                   ? 'line-through text-muted-foreground'
                                   : 'text-foreground'
@@ -758,7 +760,7 @@ export default function AssignmentsPage(): React.JSX.Element {
               return (
                 <Card
                   key={asg.id}
-                  className={`p-3.5 transition-colors ${
+                  className={`p-3.5 transition-all duration-200 ${
                     isDone ? 'bg-muted/20 opacity-80' : ''
                   }`}
                 >
@@ -766,19 +768,21 @@ export default function AssignmentsPage(): React.JSX.Element {
                     {/* Checkbox Status */}
                     <div className="pt-0.5 shrink-0">
                       {isPending ? (
-                        <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                        <Loader2 className="h-4.5 w-4.5 animate-spin text-primary" />
                       ) : (
-                        <Checkbox
-                          id={`mob-task-check-${asg.id}`}
-                          checked={isDone}
-                          disabled={isArchived || isPending}
-                          onCheckedChange={() => handleToggleStatus(asg)}
-                          aria-label={
-                            isDone
-                              ? `Tandai tugas "${asg.title}" belum selesai`
-                              : `Tandai tugas "${asg.title}" selesai`
-                          }
-                        />
+                        <div className="inline-flex items-center justify-center p-1 rounded-md transition-colors hover:bg-muted/50 -m-1">
+                          <Checkbox
+                            id={`mob-task-check-${asg.id}`}
+                            checked={isDone}
+                            disabled={isArchived || isPending}
+                            onCheckedChange={() => handleToggleStatus(asg)}
+                            aria-label={
+                              isDone
+                                ? `Tandai tugas "${asg.title}" belum selesai`
+                                : `Tandai tugas "${asg.title}" selesai`
+                            }
+                          />
+                        </div>
                       )}
                     </div>
 
@@ -786,7 +790,7 @@ export default function AssignmentsPage(): React.JSX.Element {
                       {/* Title & Priority Badge */}
                       <div className="flex items-start justify-between gap-2">
                         <h4
-                          className={`text-sm font-semibold leading-snug break-words flex-1 min-w-0 ${
+                          className={`text-sm font-semibold leading-snug break-words flex-1 min-w-0 transition-all duration-200 ${
                             isDone
                               ? 'line-through text-muted-foreground'
                               : 'text-foreground'

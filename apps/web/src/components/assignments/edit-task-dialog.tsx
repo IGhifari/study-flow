@@ -6,8 +6,15 @@ import { updateAssignment } from '@/lib/assignment-client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { NativeSelect } from '@/components/ui/select';
+import {
+  RadixSelect as Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
+import { DateTimePicker } from '@/components/ui/date-picker';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertCircle, Loader2 } from 'lucide-react';
 import {
@@ -96,8 +103,8 @@ export function EditTaskDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
-        <form noValidate onSubmit={handleSubmit} className="space-y-4">
+      <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+        <form noValidate onSubmit={handleSubmit} className="space-y-3.5">
           <DialogHeader>
             <DialogTitle>Edit Tugas</DialogTitle>
             <DialogDescription>
@@ -142,13 +149,13 @@ export function EditTaskDialog({
           {/* Tenggat Waktu */}
           <div className="space-y-1.5">
             <Label htmlFor="edit-due">Tenggat Waktu *</Label>
-            <Input
+            <DateTimePicker
               id="edit-due"
-              type="datetime-local"
               value={dueDate}
-              onChange={(e) => setDueDate(e.target.value)}
+              onChange={setDueDate}
               disabled={isSubmitting}
               required
+              timezone={timezone}
             />
             <p className="text-xs text-muted-foreground">
               Zona waktu profil: <strong className="text-foreground">{timezone}</strong>.
@@ -159,30 +166,38 @@ export function EditTaskDialog({
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label htmlFor="edit-priority">Prioritas</Label>
-              <NativeSelect
-                id="edit-priority"
+              <Select
                 value={priority}
-                onChange={(e) => setPriority(e.target.value as any)}
+                onValueChange={(val) => setPriority(val as any)}
                 disabled={isSubmitting}
               >
-                <option value="LOW">Rendah</option>
-                <option value="MEDIUM">Sedang</option>
-                <option value="HIGH">Tinggi</option>
-              </NativeSelect>
+                <SelectTrigger id="edit-priority" className="w-full">
+                  <SelectValue placeholder="Pilih prioritas" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="LOW">Rendah</SelectItem>
+                  <SelectItem value="MEDIUM">Sedang</SelectItem>
+                  <SelectItem value="HIGH">Tinggi</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="space-y-1.5">
               <Label htmlFor="edit-status">Status</Label>
-              <NativeSelect
-                id="edit-status"
+              <Select
                 value={status}
-                onChange={(e) => setStatus(e.target.value as any)}
+                onValueChange={(val) => setStatus(val as any)}
                 disabled={isSubmitting}
               >
-                <option value="TODO">Belum Dikerjakan</option>
-                <option value="IN_PROGRESS">Sedang Dikerjakan</option>
-                <option value="DONE">Selesai</option>
-              </NativeSelect>
+                <SelectTrigger id="edit-status" className="w-full">
+                  <SelectValue placeholder="Pilih status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="TODO">Belum Dikerjakan</SelectItem>
+                  <SelectItem value="IN_PROGRESS">Sedang Dikerjakan</SelectItem>
+                  <SelectItem value="DONE">Selesai</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </div>
 
@@ -194,7 +209,8 @@ export function EditTaskDialog({
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               disabled={isSubmitting}
-              rows={3}
+              rows={2}
+              className="min-h-[64px]"
               maxLength={2000}
             />
           </div>

@@ -72,9 +72,12 @@ test.describe('StudyFlow End-to-End Suite', () => {
     await page.waitForURL('**/assignments');
     await page.click('button:has-text("Tambah Tugas")');
     await page.fill('#create-title', 'Tugas Pemrograman Graf');
-    await page.selectOption('#create-course', { index: 1 });
-    await page.fill('#create-due', '2026-11-20T23:59');
-    await page.selectOption('#create-priority', 'HIGH');
+    await page.click('#create-course');
+    await page.locator('[role="option"]').first().click();
+    await page.click('#create-due');
+    await page.locator('[data-slot="calendar"] button:not([disabled])').getByText('20', { exact: true }).first().click();
+    await page.click('#create-priority');
+    await page.locator('[role="option"]:has-text("Tinggi")').click();
     await page.click('button:has-text("Simpan Tugas")');
     // Verify assignment item appears in list
     await expect(page.locator('table').getByText('Tugas Pemrograman Graf')).toBeVisible({ timeout: 10000 });
@@ -132,7 +135,8 @@ test.describe('StudyFlow End-to-End Suite', () => {
     await page.waitForURL('**/materials');
     await page.click('button:has-text("Unggah Materi")');
 
-    await page.selectOption('#upload-course', { index: 1 });
+    await page.click('#upload-course');
+    await page.locator('[role="option"]').first().click();
     await page.fill('#upload-title', 'Buku Ajar Kecerdasan Buatan');
 
     const fileChooserPromise = page.waitForEvent('filechooser');
@@ -399,8 +403,10 @@ test.describe('StudyFlow End-to-End Suite', () => {
     await page.click('button:has-text("Tambah tugas")');
     await expect(page.locator('h2:has-text("Tambah Tugas Baru")')).toBeVisible();
     await page.fill('#task-title', 'Laporan Praktikum Socket TCP');
-    await page.fill('#task-duedate', '2026-10-15T23:59');
-    await page.selectOption('#task-priority', 'HIGH');
+    await page.click('#task-duedate');
+    await page.locator('[data-slot="calendar"] button:not([disabled])').getByText('15', { exact: true }).first().click();
+    await page.click('#task-priority');
+    await page.locator('[role="option"]:has-text("Tinggi")').click();
     await page.click('button:has-text("Simpan Tugas")');
 
     // Dialog menutup dan tugas muncul di daftar

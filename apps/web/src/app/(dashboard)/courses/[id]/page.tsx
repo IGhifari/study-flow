@@ -63,8 +63,15 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { NativeSelect } from '@/components/ui/select';
+import {
+  RadixSelect as Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
+import { DateTimePicker } from '@/components/ui/date-picker';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
@@ -1167,7 +1174,7 @@ export default function CourseDetailPage(): React.JSX.Element {
 
       {/* Modal Tambah Tugas untuk Mata Kuliah ini */}
       <Dialog open={isCreateAsgOpen} onOpenChange={setIsCreateAsgOpen}>
-        <DialogContent className="sm:max-w-[480px] max-h-[90vh] overflow-y-auto">
+        <DialogContent className="sm:max-w-[480px] max-h-[90vh] overflow-y-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
           <DialogHeader>
             <DialogTitle>Tambah Tugas untuk {course.name}</DialogTitle>
             <DialogDescription>
@@ -1194,31 +1201,37 @@ export default function CourseDetailPage(): React.JSX.Element {
               />
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label htmlFor="course-asg-due">Tenggat Waktu *</Label>
-                <Input
-                  id="course-asg-due"
-                  type="datetime-local"
-                  value={createAsgDueDate}
-                  onChange={(e) => setCreateAsgDueDate(e.target.value)}
-                  disabled={isSubmittingAsg}
-                />
-              </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="course-asg-due">Tenggat Waktu *</Label>
+              <DateTimePicker
+                id="course-asg-due"
+                value={createAsgDueDate}
+                onChange={setCreateAsgDueDate}
+                disabled={isSubmittingAsg}
+                required
+                timezone={timezone}
+              />
+              <p className="text-xs text-muted-foreground">
+                Zona waktu profil: <strong className="text-foreground">{timezone}</strong>. Jika jam tidak ditentukan, deadline otomatis diatur ke 23.59.
+              </p>
+            </div>
 
-              <div className="space-y-1.5">
-                <Label htmlFor="course-asg-priority">Prioritas *</Label>
-                <NativeSelect
-                  id="course-asg-priority"
-                  value={createAsgPriority}
-                  onChange={(e) => setCreateAsgPriority(e.target.value as any)}
-                  disabled={isSubmittingAsg}
-                >
-                  <option value="LOW">Rendah</option>
-                  <option value="MEDIUM">Sedang</option>
-                  <option value="HIGH">Tinggi</option>
-                </NativeSelect>
-              </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="course-asg-priority">Prioritas *</Label>
+              <Select
+                value={createAsgPriority}
+                onValueChange={(val) => setCreateAsgPriority(val as any)}
+                disabled={isSubmittingAsg}
+              >
+                <SelectTrigger id="course-asg-priority" className="w-full">
+                  <SelectValue placeholder="Pilih prioritas" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="LOW">Rendah</SelectItem>
+                  <SelectItem value="MEDIUM">Sedang</SelectItem>
+                  <SelectItem value="HIGH">Tinggi</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="space-y-1.5">

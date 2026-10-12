@@ -194,7 +194,7 @@ Gunakan komponen shadcn/ui yang sudah dipasang; pilih satu keluarga primitive se
 | --- | --- | --- |
 | Aksi | Button | Primary untuk aksi utama; outline/ghost untuk pendukung |
 | Input | Field/Label, Input, Textarea, Select | Label permanen, helper dan error terhubung |
-| Pilihan tanggal | Date picker atau kontrol tanggal yang aksesibel | Tetap sediakan input keyboard; tampilkan zona waktu |
+| Pilihan tanggal | DatePicker Basic (Popover + Calendar) | Varian Basic satu kalender; format Indonesia (“12 Oktober 2026”); navigasi bulan; tutup otomatis; input jam terpisah untuk deadline |
 | Aksi baris | DropdownMenu | Trigger “Aksi untuk [judul]”; aksi hapus dipisahkan |
 | Form singkat | Dialog | Max-width sekitar 480–560 px; fokus awal logis |
 | Form mobile/filter | Sheet | Konten dapat scroll; footer tidak menutup field |
@@ -206,6 +206,15 @@ Gunakan komponen shadcn/ui yang sudah dipasang; pilih satu keluarga primitive se
 | Umpan balik singkat | Toast | Pelengkap, bukan satu-satunya pesan kesalahan |
 | Daftar desktop | Table atau list semantik | Hindari table untuk sekadar membuat layout |
 | Bantuan ikon | Tooltip + accessible name | Tooltip bukan pengganti label aksesibel |
+
+### 8.1 Standar Date Picker Basic
+- **Komposisi Radix + shadcn/ui**: Menggunakan `Popover` + `Calendar` (`react-day-picker`) tanpa range picker atau presets berat.
+- **Bahasa & Format**: Locale Indonesia (`date-fns/locale/id`) dengan format tampilan teks penuh, misalnya “12 Oktober 2026”, dan placeholder “Pilih tanggal”.
+- **Interaksi**: Trigger `Button variant="outline"` `type="button"` (`h-11`, min 44 px touch target) berisi teks tanggal dan `ChevronDownIcon`, agar tidak memicu submit formulir. Kalender memakai `captionLayout="dropdown"` (pilihan bulan & tahun) dengan rentang tahun eksplisit. Popover menutup otomatis begitu tanggal dipilih, dengan fokus aksesibel kembali ke trigger.
+- **Kondisi Edit**: Saat dibuka untuk penyuntingan, kalender langsung menampilkan bulan dari tanggal yang tersimpan (`defaultMonth`/`month`).
+- **Input Jam Terpisah (Date and Time Picker)**: Untuk tenggat waktu, field “Tanggal” (DatePicker) dan field “Jam” (`type="time"`, format `HH:mm`, default `23:59`, indikator picker native disembunyikan) tampil berdampingan di desktop dan bertumpuk di mobile. Nilai digabungkan tanpa konversi UTC yang berisiko menggeser tanggal kalender.
+- **Pengosongan**: Field tanggal opsional menyediakan aksi “Kosongkan tanggal” di footer popover; field wajib tidak menampilkannya.
+- **Kompatibilitas Dialog**: Popover bekerja mulus di dalam Dialog tanpa konflik focus trap atau penutupan backdrop.
 
 Loading button mempertahankan lebar dan label, misalnya “Menyimpan…”. Aksi ganda dicegah tanpa menonaktifkan seluruh halaman. Disabled action selalu memiliki penjelasan yang dapat dibaca tanpa hover pada tombol disabled.
 
@@ -381,7 +390,7 @@ Jika belum ada semester, tampilkan satu empty state “Mulai dari semester perta
   - Mendukung pembaruan optimistik (*optimistic update*). Jika request server gagal, status otomatis dipulihkan (*rollback*) ke kondisi tersimpan dan menampilkan pesan error yang jelas.
   - Selama proses pembaruan berlangsung, kontrol dinonaktifkan dengan indikator spinner halus untuk mencegah *double click* atau pengiriman request ganda.
 - **Dialog tambah dan edit tugas**:
-  - Urutan field terstruktur: Judul Tugas * (min 2, max 200 karakter), Mata Kuliah * (pilihan mata kuliah aktif), Tenggat Waktu * (tanggal dan jam dengan keterangan zona waktu profil pengguna yang ringkas), Prioritas & Status (grid 2 kolom), serta Deskripsi/Catatan (opsional).
+  - Urutan field terstruktur: Judul Tugas * (min 2, max 200 karakter), Mata Kuliah * (pilihan mata kuliah aktif), Tenggat Waktu * (menggunakan DatePicker Basic untuk memilih tanggal kalender lokal dan input jam terpisah, dilengkapi keterangan zona waktu profil pengguna), Prioritas & Status (grid 2 kolom), serta Deskripsi/Catatan (opsional).
   - Jika submit gagal akibat validasi server atau kendala jaringan, isian form pengguna tetap dipertahankan (*input retention*) dan pesan error ditampilkan di bagian atas form.
   - Tombol simpan dinonaktifkan selama proses pengiriman dengan label loading yang jelas (“Menyimpan…” / “Memperbarui…”).
   - Dialog mendukung *scrolling* vertikal yang nyaman pada layar ponsel (`max-h-[90vh] overflow-y-auto`) dengan tombol Batal dan Simpan selalu dapat dijangkau.
@@ -737,3 +746,4 @@ Palet, layout, ukuran, dan microcopy adalah keputusan desain StudyFlow. Dokument
 | --- | --- | --- |
 | 1.0 | 3 Oktober 2026 | Arah visual awal, token light/dark, shell responsif, rancangan seluruh halaman MVP, state AI, dan checklist implementasi |
 | 1.1 | 11 Oktober 2026 | Penambahan panduan desain antarmuka Jadwal Kuliah mingguan desktop, agenda mobile, dan integrasi Detail Mata Kuliah |
+| 1.2 | 11 Oktober 2026 | Standardisasi pemilih tanggal menggunakan shadcn/ui Date Picker varian Basic (Popover + Calendar Radix), locale Indonesia, dan pemisahan input jam |

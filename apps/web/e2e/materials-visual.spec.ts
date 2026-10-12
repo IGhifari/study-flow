@@ -103,7 +103,8 @@ test.describe('Materials Visual Inspection & Upload Screenshots', () => {
     // 6. VERIFIKASI RETENSI INPUT SAAT UPLOAD GAGAL & RETRY SUKSES TERISOLASI
     // =========================================================================
     await page.setViewportSize({ width: 1440, height: 900 });
-    await page.selectOption('#upload-course', { index: 1 });
+    await page.click('#upload-course');
+    await page.locator('[role="option"]').first().click();
     const longTitle =
       'Modul Perkuliahan Komprehensif Protokol Jaringan Komputer, TCP/IP, dan Model OSI Layer';
     await page.fill('#upload-title', longTitle);
@@ -133,7 +134,7 @@ test.describe('Materials Visual Inspection & Upload Screenshots', () => {
     // Verifikasi error alert muncul dan input form TETAP DIPERTAHANKAN (tidak terhapus)
     await expect(page.locator('div[role="dialog"] [role="alert"]')).toBeVisible({ timeout: 10000 });
     await expect(page.locator('#upload-title')).toHaveValue(longTitle);
-    await expect(page.locator('#upload-course')).not.toHaveValue('');
+    await expect(page.locator('#upload-course')).not.toHaveText('Pilih mata kuliah...');
     await expect(page.locator('text=sample.pdf')).toBeVisible();
 
     // Unroute untuk retry normal
@@ -150,7 +151,8 @@ test.describe('Materials Visual Inspection & Upload Screenshots', () => {
     // Tambah materi kedua untuk variasi daftar
     await page.click('button:has-text("Unggah materi")');
     await expect(page.locator('div[role="dialog"] h2:has-text("Unggah Materi PDF")')).toBeVisible();
-    await page.selectOption('#upload-course', { index: 1 });
+    await page.click('#upload-course');
+    await page.locator('[role="option"]').first().click();
     await page.fill('#upload-title', 'Slide Presentasi Arsitektur DNS dan Routing BGP');
     const fileChooser2Promise = page.waitForEvent('filechooser');
     await page.click('button:has-text("Pilih Berkas PDF")');

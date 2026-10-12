@@ -65,18 +65,22 @@ test.describe('Assignments Redesign & Interactions Flow', () => {
 
     // Coba submit dengan judul terlalu pendek (1 karakter) untuk menguji retensi input & error message
     await page.fill('#create-title', 'A');
-    await page.fill('#create-due', '2026-11-20T23:59');
+    await page.click('#create-due');
+    await page.locator('[data-slot="calendar"] button:not([disabled])').getByText('20', { exact: true }).first().click();
+    await page.fill('#create-due-time', '23:59');
     await page.fill('#create-desc', 'Catatan penting mengenai kompleksitas algoritma.');
     await page.click('button:has-text("Simpan Tugas")');
 
     // Pesan error muncul dan form tidak di-reset
     await expect(page.locator('text=Judul tugas minimal 2 karakter')).toBeVisible();
-    await expect(page.locator('#create-due')).toHaveValue('2026-11-20T23:59');
+    await expect(page.locator('#create-due')).toContainText('20');
+    await expect(page.locator('#create-due-time')).toHaveValue('23:59');
     await expect(page.locator('#create-desc')).toHaveValue('Catatan penting mengenai kompleksitas algoritma.');
 
     // Perbaiki judul tugas dan simpan
     await page.fill('#create-title', 'Tugas 1: Analisis Kompleksitas Waktu');
-    await page.selectOption('#create-priority', 'HIGH');
+    await page.click('#create-priority');
+    await page.click('[role="option"]:has-text("Tinggi")');
     await page.click('button:has-text("Simpan Tugas")');
 
     // Dialog tertutup dan item tugas muncul di tabel
@@ -95,7 +99,8 @@ test.describe('Assignments Redesign & Interactions Flow', () => {
 
     // Ubah judul dan prioritas
     await page.fill('#edit-title', 'Tugas 1: Analisis Kompleksitas & Memori');
-    await page.selectOption('#edit-priority', 'MEDIUM');
+    await page.click('#edit-priority');
+    await page.click('[role="option"]:has-text("Sedang")');
     await page.click('button:has-text("Simpan Perubahan")');
 
     // Verifikasi pembaruan di tabel
@@ -141,7 +146,8 @@ test.describe('Assignments Redesign & Interactions Flow', () => {
     // Tambah tugas kedua
     await page.click('button:has-text("Tambah tugas")');
     await page.fill('#create-title', 'Tugas 2: Struktur Data Heap');
-    await page.fill('#create-due', '2026-11-25T23:59');
+    await page.click('#create-due');
+    await page.locator('[data-slot="calendar"] button:not([disabled])').getByText('25', { exact: true }).first().click();
     await page.selectOption('#create-priority', 'LOW');
     await page.click('button:has-text("Simpan Tugas")');
     await expect(page.locator('table').getByText('Tugas 2: Struktur Data Heap')).toBeVisible({ timeout: 10000 });

@@ -13,7 +13,13 @@ import { initiateUpload, finalizeUpload } from '@/lib/material-client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { NativeSelect } from '@/components/ui/select';
+import {
+  RadixSelect as Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from '@/components/ui/select';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import {
   Dialog,
@@ -224,7 +230,7 @@ export function MaterialUploadDialog({
         }
       }}
     >
-      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-[520px] p-5 sm:p-6">
+      <DialogContent className="max-h-[90vh] overflow-y-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden sm:max-w-[520px] p-5 sm:p-6">
         <form onSubmit={handleSubmit}>
           <DialogHeader>
             <DialogTitle className="text-lg font-bold text-foreground">
@@ -250,23 +256,22 @@ export function MaterialUploadDialog({
               <Label htmlFor="upload-course" className="text-xs font-semibold text-foreground">
                 Mata Kuliah *
               </Label>
-              <NativeSelect
-                id="upload-course"
+              <Select
                 value={courseId}
-                onChange={(e) => setCourseId(e.target.value)}
+                onValueChange={(val) => setCourseId(val)}
                 disabled={isUploading || Boolean(initialCourseId)}
-                required
-                className="h-10 text-xs sm:text-sm"
               >
-                <option value="" disabled>
-                  Pilih mata kuliah...
-                </option>
-                {courses.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.name} {c.code ? `(${c.code})` : ''}
-                  </option>
-                ))}
-              </NativeSelect>
+                <SelectTrigger id="upload-course" className="h-10 text-xs sm:text-sm w-full">
+                  <SelectValue placeholder="Pilih mata kuliah..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {courses.map((c) => (
+                    <SelectItem key={c.id} value={c.id}>
+                      {c.name} {c.code ? `(${c.code})` : ''}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             {/* Judul Materi */}

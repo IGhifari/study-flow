@@ -65,7 +65,8 @@ test.describe('Material Detail, PDF Reader & Summary Tab Visual Inspection', () 
     await page.click('button:has-text("Unggah materi")');
     await expect(page.locator('div[role="dialog"] h2:has-text("Unggah Materi PDF")')).toBeVisible();
 
-    await page.selectOption('#upload-course', { index: 1 });
+    await page.click('#upload-course');
+    await page.locator('[role="option"]').first().click();
     const materialTitle =
       'Modul Perkuliahan: Konsensus Raft, Paxos, dan Replikasi State Machine Terdistribusi';
     await page.fill('#upload-title', materialTitle);
