@@ -7,7 +7,13 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { NativeSelect } from '@/components/ui/select';
+import {
+  RadixSelect as Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from '@/components/ui/select';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertCircle, Loader2 } from 'lucide-react';
 import {
@@ -123,19 +129,27 @@ export function CreateCourseDialog({
         <form noValidate onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-1.5">
             <Label htmlFor="create-course-sem">Semester *</Label>
-            <NativeSelect
-              id="create-course-sem"
-              value={semesterId}
-              onChange={(e) => setSemesterId(e.target.value)}
-              disabled={isSubmitting}
+            <Select
+              value={semesterId || undefined}
+              onValueChange={(val) => setSemesterId(val)}
+              disabled={isSubmitting || nonArchivedSemesters.length === 0}
             >
-              <option value="" disabled>Pilih semester</option>
-              {nonArchivedSemesters.map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.name} ({s.academicYear}){s.isActive ? ' — Aktif' : ''}
-                </option>
-              ))}
-            </NativeSelect>
+              <SelectTrigger id="create-course-sem" className="w-full">
+                <SelectValue placeholder="Pilih semester" />
+              </SelectTrigger>
+              <SelectContent>
+                {nonArchivedSemesters.map((s) => (
+                  <SelectItem key={s.id} value={s.id}>
+                    {s.name} ({s.academicYear}){s.isActive ? ' — Aktif' : ''}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {nonArchivedSemesters.length === 0 && (
+              <p className="text-xs text-muted-foreground mt-1">
+                Belum ada semester aktif. Buat semester terlebih dahulu di menu Semester.
+              </p>
+            )}
           </div>
 
           <div className="space-y-1.5">

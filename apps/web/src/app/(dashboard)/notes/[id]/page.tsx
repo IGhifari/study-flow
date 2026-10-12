@@ -7,6 +7,8 @@ import {
   ArrowLeft,
   BookOpen,
   Calendar,
+  CalendarClock,
+  Clock,
   AlertCircle,
   AlertTriangle,
   Loader2,
@@ -15,10 +17,13 @@ import {
   Heading2,
   Bold,
   Italic,
+  Strikethrough,
   Code,
   List,
+  ListOrdered,
   Quote,
   Link2,
+  Minus,
   ExternalLink,
   Save,
   Edit3,
@@ -33,7 +38,13 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
-import { NativeSelect } from '@/components/ui/select';
+import {
+  RadixSelect as Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from '@/components/ui/select';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { SafeMarkdownRenderer } from '@/components/notes/markdown-renderer';
@@ -206,9 +217,19 @@ export default function NoteDetailPage(): React.JSX.Element {
     }, 0);
   };
 
+  const isArchived = Boolean(note?.course?.archivedAt || note?.course?.semester?.archivedAt);
+
+  // Note stats (word count, char count, read time)
+  const stats = React.useMemo(() => {
+    const trimmed = content.trim();
+    const words = trimmed ? trimmed.split(/\s+/).length : 0;
+    const chars = content.length;
+    const readTimeMinutes = Math.max(1, Math.ceil(words / 200));
+    return { words, chars, readTimeMinutes };
+  }, [content]);
+
   // Perform Save
-  // Perform Save
-  const handleSave = async (overrideVersion?: number): Promise<{ success: boolean; stillDirty: boolean }> => {
+  const handleSave = React.useCallback(async (overrideVersion?: number): Promise<{ success: boolean; stillDirty: boolean }> => {
     if (!note) return { success: false, stillDirty: false };
     const currentTitle = titleRef.current;
     if (!currentTitle.trim()) {
@@ -269,7 +290,23 @@ export default function NoteDetailPage(): React.JSX.Element {
       setSaveStatus('ERROR');
       return { success: false, stillDirty: true };
     }
-  };
+  }, [note]);
+
+  // Keyboard shortcut: Ctrl+S / Cmd+S to save
+  React.useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
+        e.preventDefault();
+        if (saveStatus !== 'SAVING' && !isArchived) {
+          void handleSave();
+        }
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [saveStatus, isArchived, handleSave]);
 
   // Intercept internal link clicks when unsaved changes exist
   React.useEffect(() => {
@@ -429,13 +466,10 @@ export default function NoteDetailPage(): React.JSX.Element {
     }
   };
 
-  // Resolve Conflict: Force overwrite using latest version number
   const handleForceOverwrite = async () => {
     if (!versionConflict) return;
     await handleSave(versionConflict.currentVersion);
   };
-
-  const isArchived = Boolean(note?.course?.archivedAt || note?.course?.semester?.archivedAt);
 
   if (isLoading) {
     return (
@@ -614,60 +648,86 @@ export default function NoteDetailPage(): React.JSX.Element {
       )}
 
       {/* 4. Metadata: Course & Linked Material Bar */}
-      <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border bg-muted/30 px-3 py-2 text-xs">
-        <div className="flex items-center gap-2 text-muted-foreground">
-          <BookOpen className="h-3.5 w-3.5 text-primary shrink-0" />
-          <span>Mata Kuliah:</span>
-          {note.course ? (
-            <Link
-              href={`/courses/${note.course.id}`}
-              className="font-semibold text-foreground hover:underline"
-            >
-              {note.course.name}
-            </Link>
-          ) : (
-            <span className="font-semibold text-foreground">—</span>
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border/80 bg-card/60 backdrop-blur-xs px-4 py-3 text-xs shadow-2xs">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3 text-muted-foreground">
+          <div className="flex items-center gap-1.5">
+            <BookOpen className="h-3.5 w-3.5 text-primary shrink-0" />
+            <span className="font-medium text-muted-foreground">Mata Kuliah:</span>
+            {note.course ? (
+              <Link
+                href={`/courses/${note.course.id}`}
+                className="font-semibold text-foreground hover:text-primary transition-colors hover:underline"
+              >
+                {note.course.name}
+              </Link>
+            ) : (
+              <span className="font-semibold text-foreground">—</span>
+            )}
+          </div>
+
+          {note.updatedAt && (
+            <>
+              <span className="hidden sm:inline text-border">•</span>
+              <div className="flex items-center gap-1 text-muted-foreground">
+                <Clock className="h-3.5 w-3.5 shrink-0" />
+                <span>
+                  Diperbarui {formatUserDateTime(note.updatedAt, timezone)}
+                </span>
+              </div>
+            </>
           )}
         </div>
 
-        <div className="flex items-center gap-2">
-          <span className="text-muted-foreground">Tautan Materi:</span>
+        {/* Tautan Materi Dropdown */}
+        <div className="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-end">
+          <span className="text-muted-foreground whitespace-nowrap font-medium">Materi:</span>
           {isArchived ? (
             note.material ? (
               <Link
                 href={`/materials/${note.material.id}`}
-                className="font-medium text-primary hover:underline flex items-center gap-1"
+                className="font-medium text-primary hover:underline flex items-center gap-1.5 max-w-[220px]"
               >
-                <FileText className="h-3.5 w-3.5" />
-                <span className="truncate max-w-[200px]">{note.material.title}</span>
+                <FileText className="h-3.5 w-3.5 shrink-0" />
+                <span className="truncate">{note.material.title}</span>
               </Link>
             ) : (
               <span className="text-muted-foreground italic">Tidak terhubung</span>
             )
           ) : (
-            <div className="flex items-center gap-2">
-              <NativeSelect
+            <div className="flex items-center gap-1.5">
+              <Select
                 value={materialId || 'none'}
-                onChange={(e) => setMaterialId(e.target.value === 'none' ? null : e.target.value)}
-                className="h-8 text-xs py-0 w-auto min-w-[200px] max-w-[280px]"
-                aria-label="Pilih Materi Terkait"
+                onValueChange={(val) => setMaterialId(val === 'none' ? null : val)}
               >
-                <option value="none">— Tidak terhubung ke materi —</option>
-                {courseMaterials.map((m) => (
-                  <option key={m.id} value={m.id}>
-                    📄 {m.title}
-                  </option>
-                ))}
-              </NativeSelect>
-              {materialId && (
-                <Link
-                  href={`/materials/${materialId}`}
-                  target="_blank"
-                  className="text-muted-foreground hover:text-primary transition-colors"
-                  title="Buka materi di tab baru"
+                <SelectTrigger
+                  className="h-8 text-xs py-0 w-auto min-w-[200px] max-w-[280px] bg-background"
+                  aria-label="Pilih Materi Terkait"
                 >
-                  <ExternalLink className="h-3.5 w-3.5" />
-                </Link>
+                  <SelectValue placeholder="Pilih materi terkait..." />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">
+                    <span className="text-muted-foreground">— Tidak terhubung ke materi —</span>
+                  </SelectItem>
+                  {courseMaterials.map((m) => (
+                    <SelectItem key={m.id} value={m.id}>
+                      <span className="truncate">{m.title}</span>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {materialId && (
+                <Button
+                  asChild
+                  variant="ghost"
+                  size="icon-sm"
+                  className="h-8 w-8 text-muted-foreground hover:text-foreground shrink-0"
+                  title="Buka materi terkait di tab baru"
+                >
+                  <Link href={`/materials/${materialId}`} target="_blank">
+                    <ExternalLink className="h-3.5 w-3.5" />
+                  </Link>
+                </Button>
               )}
             </div>
           )}
@@ -682,21 +742,21 @@ export default function NoteDetailPage(): React.JSX.Element {
           onChange={(e) => setTitle(e.target.value)}
           disabled={isArchived}
           placeholder="Judul Catatan..."
-          className="text-xl sm:text-2xl font-bold tracking-tight h-12 px-3 border-none bg-transparent hover:bg-muted/20 focus-visible:bg-transparent shadow-none"
+          className="text-xl sm:text-2xl lg:text-3xl font-bold tracking-tight h-13 sm:h-14 px-4 bg-card border-border/80 rounded-xl shadow-2xs focus-visible:ring-2 focus-visible:ring-primary/40 placeholder:text-muted-foreground/60 transition-all"
         />
       </div>
 
       {/* 6. Tabs: Tulis & Pratinjau */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <Card className="overflow-hidden border border-border bg-card shadow-xs">
+        <Card className="overflow-hidden border border-border/80 bg-card shadow-xs rounded-xl">
           {/* Tab List & Formatting Toolbar */}
-          <div className="flex flex-wrap items-center justify-between border-b border-border bg-muted/40 p-2 gap-2">
+          <div className="flex flex-wrap items-center justify-between border-b border-border/80 bg-muted/40 p-2 sm:px-3 gap-2">
             <TabsList className="h-9">
-              <TabsTrigger value="write" className="gap-1.5">
+              <TabsTrigger value="write" className="gap-1.5 text-xs">
                 <Edit3 className="h-3.5 w-3.5" />
                 <span>Tulis</span>
               </TabsTrigger>
-              <TabsTrigger value="preview" className="gap-1.5">
+              <TabsTrigger value="preview" className="gap-1.5 text-xs">
                 <Eye className="h-3.5 w-3.5" />
                 <span>Pratinjau</span>
               </TabsTrigger>
@@ -704,84 +764,127 @@ export default function NoteDetailPage(): React.JSX.Element {
 
             {/* Markdown Quick Toolbar (Only shown in Write tab) */}
             {activeTab === 'write' && !isArchived && (
-              <div className="flex items-center gap-1 overflow-x-auto py-0.5">
+              <div className="flex items-center gap-0.5 overflow-x-auto py-0.5">
+                {/* Heading group */}
                 <Button
                   variant="ghost"
-                  size="sm"
-                  className="h-8 w-8 p-0"
+                  size="icon-sm"
+                  className="h-8 w-8 text-muted-foreground hover:text-foreground"
                   onClick={() => insertFormatting('# ', '', 'Judul')}
-                  title="Heading 1"
+                  title="Heading 1 (# Judul)"
                   aria-label="Format Heading 1"
                 >
                   <Heading1 className="h-4 w-4" />
                 </Button>
                 <Button
                   variant="ghost"
-                  size="sm"
-                  className="h-8 w-8 p-0"
+                  size="icon-sm"
+                  className="h-8 w-8 text-muted-foreground hover:text-foreground"
                   onClick={() => insertFormatting('## ', '', 'Subjudul')}
-                  title="Heading 2"
+                  title="Heading 2 (## Subjudul)"
                   aria-label="Format Heading 2"
                 >
                   <Heading2 className="h-4 w-4" />
                 </Button>
+
+                <div className="h-4 w-px bg-border/80 mx-1 shrink-0" />
+
+                {/* Inline formatting group */}
                 <Button
                   variant="ghost"
-                  size="sm"
-                  className="h-8 w-8 p-0"
+                  size="icon-sm"
+                  className="h-8 w-8 text-muted-foreground hover:text-foreground"
                   onClick={() => insertFormatting('**', '**', 'teks tebal')}
-                  title="Bold (Tebal)"
-                  aria-label="Format Bold"
+                  title="Tebal (**teks**)"
+                  aria-label="Format Tebal"
                 >
                   <Bold className="h-4 w-4" />
                 </Button>
                 <Button
                   variant="ghost"
-                  size="sm"
-                  className="h-8 w-8 p-0"
+                  size="icon-sm"
+                  className="h-8 w-8 text-muted-foreground hover:text-foreground"
                   onClick={() => insertFormatting('*', '*', 'teks miring')}
-                  title="Italic (Miring)"
-                  aria-label="Format Italic"
+                  title="Miring (*teks*)"
+                  aria-label="Format Miring"
                 >
                   <Italic className="h-4 w-4" />
                 </Button>
                 <Button
                   variant="ghost"
-                  size="sm"
-                  className="h-8 w-8 p-0"
-                  onClick={() => insertFormatting('```\n', '\n```', 'kode')}
-                  title="Code block"
-                  aria-label="Format Code Block"
+                  size="icon-sm"
+                  className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                  onClick={() => insertFormatting('~~', '~~', 'teks dicoret')}
+                  title="Coret (~~teks~~)"
+                  aria-label="Format Coret"
                 >
-                  <Code className="h-4 w-4" />
+                  <Strikethrough className="h-4 w-4" />
                 </Button>
                 <Button
                   variant="ghost"
-                  size="sm"
-                  className="h-8 w-8 p-0"
+                  size="icon-sm"
+                  className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                  onClick={() => insertFormatting('`', '`', 'kode')}
+                  title="Kode inline (`kode`)"
+                  aria-label="Format Kode Inline"
+                >
+                  <Code className="h-4 w-4" />
+                </Button>
+
+                <div className="h-4 w-px bg-border/80 mx-1 shrink-0" />
+
+                {/* Block and list group */}
+                <Button
+                  variant="ghost"
+                  size="icon-sm"
+                  className="h-8 w-8 text-muted-foreground hover:text-foreground"
                   onClick={() => insertFormatting('- ', '', 'Poin daftar')}
-                  title="Daftar (List)"
-                  aria-label="Format List"
+                  title="Daftar Poin (- Poin)"
+                  aria-label="Format Daftar Poin"
                 >
                   <List className="h-4 w-4" />
                 </Button>
                 <Button
                   variant="ghost"
-                  size="sm"
-                  className="h-8 w-8 p-0"
+                  size="icon-sm"
+                  className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                  onClick={() => insertFormatting('1. ', '', 'Poin nomor')}
+                  title="Daftar Nomor (1. Poin)"
+                  aria-label="Format Daftar Nomor"
+                >
+                  <ListOrdered className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon-sm"
+                  className="h-8 w-8 text-muted-foreground hover:text-foreground"
                   onClick={() => insertFormatting('> ', '', 'Kutipan')}
-                  title="Kutipan (Quote)"
-                  aria-label="Format Quote"
+                  title="Kutipan (> Kutipan)"
+                  aria-label="Format Kutipan"
                 >
                   <Quote className="h-4 w-4" />
                 </Button>
                 <Button
                   variant="ghost"
-                  size="sm"
-                  className="h-8 w-8 p-0"
+                  size="icon-sm"
+                  className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                  onClick={() => insertFormatting('\n---\n', '', '')}
+                  title="Garis Pemisah (---)"
+                  aria-label="Format Garis Pemisah"
+                >
+                  <Minus className="h-4 w-4" />
+                </Button>
+
+                <div className="h-4 w-px bg-border/80 mx-1 shrink-0" />
+
+                {/* Link group */}
+                <Button
+                  variant="ghost"
+                  size="icon-sm"
+                  className="h-8 w-8 text-muted-foreground hover:text-foreground"
                   onClick={() => insertFormatting('[', '](https://example.com)', 'Nama tautan')}
-                  title="Link"
-                  aria-label="Format Link"
+                  title="Tautan ([Nama](https://...))"
+                  aria-label="Format Tautan"
                 >
                   <Link2 className="h-4 w-4" />
                 </Button>
@@ -790,24 +893,65 @@ export default function NoteDetailPage(): React.JSX.Element {
           </div>
 
           {/* Tab Content: Write */}
-          <TabsContent value="write" className="m-0 p-4">
+          <TabsContent value="write" className="m-0 p-4 sm:p-6">
             <textarea
               ref={textareaRef}
               value={content}
               onChange={(e) => setContent(e.target.value)}
               disabled={isArchived}
-              placeholder="Tulis catatan menggunakan format Markdown di sini..."
-              rows={22}
-              className="w-full resize-y rounded-md bg-transparent p-2 font-mono text-sm leading-relaxed text-foreground placeholder:text-muted-foreground focus:outline-hidden focus:ring-1 focus:ring-primary border-none min-h-[460px]"
+              placeholder="Tulis catatan menggunakan format Markdown di sini... Gunakan toolbar di atas untuk memformat teks dengan cepat."
+              rows={24}
+              className="w-full resize-y rounded-lg bg-transparent p-2 font-mono text-sm leading-relaxed text-foreground placeholder:text-muted-foreground/60 focus:outline-hidden border-none min-h-[500px]"
             />
           </TabsContent>
 
           {/* Tab Content: Preview */}
-          <TabsContent value="preview" className="m-0 p-6 min-h-[500px] bg-background/50">
-            <div className="max-w-3xl mx-auto">
-              <SafeMarkdownRenderer content={content} />
-            </div>
+          <TabsContent value="preview" className="m-0 p-6 min-h-[520px] bg-background/40">
+            {content.trim() ? (
+              <div className="max-w-3xl mx-auto py-2">
+                <SafeMarkdownRenderer content={content} />
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center py-20 text-center">
+                <div className="rounded-full bg-muted/60 p-4 mb-3 text-muted-foreground">
+                  <FileText className="h-8 w-8" />
+                </div>
+                <h4 className="text-base font-semibold text-foreground">Belum ada konten untuk dipratinjau</h4>
+                <p className="text-sm text-muted-foreground max-w-sm mt-1">
+                  Tulis rangkuman dan catatan Anda di tab Tulis dengan format Markdown, lalu lihat hasil tampilannya di sini.
+                </p>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setActiveTab('write')}
+                  className="mt-4 gap-1.5 text-xs"
+                >
+                  <Edit3 className="h-3.5 w-3.5" />
+                  Mulai Menulis
+                </Button>
+              </div>
+            )}
           </TabsContent>
+
+          {/* Footer Bar: Stats & Hints */}
+          <div className="flex flex-wrap items-center justify-between border-t border-border/80 bg-muted/20 px-4 py-2.5 text-xs text-muted-foreground gap-2">
+            <div className="flex items-center gap-3">
+              <span>{stats.words.toLocaleString('id-ID')} kata</span>
+              <span>•</span>
+              <span>{stats.chars.toLocaleString('id-ID')} karakter</span>
+              <span>•</span>
+              <span className="flex items-center gap-1">
+                <Clock className="h-3 w-3" />
+                ±{stats.readTimeMinutes} menit baca
+              </span>
+            </div>
+            <div className="flex items-center gap-2 text-[11px] text-muted-foreground/80">
+              <kbd className="pointer-events-none inline-flex h-5 select-none items-center gap-1 rounded border border-border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground">
+                Ctrl+S
+              </kbd>
+              <span>untuk menyimpan</span>
+            </div>
+          </div>
         </Card>
       </Tabs>
 
