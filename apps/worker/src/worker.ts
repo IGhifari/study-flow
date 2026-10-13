@@ -5,6 +5,10 @@ import {
   processAiFlashcardJob,
   processAiQuizJob,
 } from './queues/aiQueue.js';
+import {
+  createAssignmentReminderWorker,
+  reconcileAssignmentReminders,
+} from './queues/assignmentReminderQueue.js';
 import { Worker, Job } from 'bullmq';
 import { QUEUE_NAMES } from '@studyflow/shared';
 import { env } from './config/env.js';
@@ -21,6 +25,29 @@ console.log(JSON.stringify({
 const redisConnection = createRedisConnection();
 globalAiRateLimiter.setRedisClient(redisConnection);
 const smokeWorker = createSmokeWorker(redisConnection);
+const reminderWorker = createAssignmentReminderWorker(redisConnection);
+
+// Initial non-blocking reconciliation on startup
+reconcileAssignmentReminders().catch((err) => {
+  console.error(JSON.stringify({
+    level: 'error',
+    timestamp: new Date().toISOString(),
+    message: '[Worker] Initial reminder reconciliation error',
+    error: err?.message,
+  }));
+});
+
+// Periodic reconciliation every 15 minutes
+const reconciliationInterval = setInterval(() => {
+  reconcileAssignmentReminders().catch((err) => {
+    console.error(JSON.stringify({
+      level: 'error',
+      timestamp: new Date().toISOString(),
+      message: '[Worker] Periodic reminder reconciliation error',
+      error: err?.message,
+    }));
+  });
+}, 15 * 60 * 1000);
 
 const documentWorker = new Worker(
   QUEUE_NAMES.documentProcessing,
@@ -109,11 +136,14 @@ async function gracefulShutdown(signal: string): Promise<void> {
     process.exit(1);
   }, 10000);
 
+  clearInterval(reconciliationInterval);
+
   try {
     await Promise.all([
       smokeWorker.close(),
       documentWorker.close(),
       aiWorker.close(),
+      reminderWorker.close(),
     ]);
     await redisConnection.quit();
 

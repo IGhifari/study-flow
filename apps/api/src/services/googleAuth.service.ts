@@ -267,12 +267,22 @@ export async function exchangeGoogleCode(
       },
     });
 
+    // If user's email was not verified yet, but Google claims email_verified and email matches, mark verified
+    let updatedCurrentUser = currentUser;
+    if (!currentUser.emailVerifiedAt && verifiedPayload.email_verified && googleEmail === currentUser.email.toLowerCase().trim()) {
+      updatedCurrentUser = await prisma.user.update({
+        where: { id: currentUser.id },
+        data: { emailVerifiedAt: new Date() },
+        include: { federatedIdentities: true },
+      });
+    }
+
     const providers = Array.from(
       new Set([...currentUser.federatedIdentities.map((f) => f.provider), 'google'])
     );
 
     return {
-      user: toUserProfile(currentUser, providers),
+      user: toUserProfile(updatedCurrentUser, providers),
       message: 'Akun Google berhasil dihubungkan ke akun StudyFlow Anda',
     };
   }
@@ -363,6 +373,7 @@ export async function exchangeGoogleCode(
           email: googleEmail,
           passwordHash: null,
           timezone: 'Asia/Jakarta',
+          emailVerifiedAt: verifiedPayload.email_verified && googleEmail === rawEmail.toLowerCase().trim() ? new Date() : null,
         },
       });
 

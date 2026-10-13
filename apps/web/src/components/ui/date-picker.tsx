@@ -340,10 +340,10 @@ export function DateTimePicker({
           type="time"
           value={timePart || localTime}
           onChange={handleTimeChange}
-          disabled={disabled || !datePart}
+          disabled={disabled}
           aria-describedby={ariaDescribedBy}
           className={cn(
-            'h-11 appearance-none bg-card [&::-webkit-calendar-picker-indicator]:hidden [&::-webkit-calendar-picker-indicator]:appearance-none',
+            'h-11 bg-card cursor-pointer dark:[color-scheme:dark]',
             hasError && 'border-destructive focus-visible:ring-destructive/30'
           )}
         />

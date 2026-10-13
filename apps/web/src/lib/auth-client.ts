@@ -128,6 +128,15 @@ export async function apiRegister(input: RegisterInput): Promise<{ user: UserPro
   return data;
 }
 
+export interface ApiError extends Error {
+  code?: string;
+  details?: { requireCaptcha?: boolean } & Record<string, unknown>;
+}
+
+export function isApiError(err: unknown): err is ApiError {
+  return err instanceof Error;
+}
+
 export async function apiLogin(input: LoginInput): Promise<{ user: UserProfile }> {
   const res = await fetch('/api/auth/login', {
     method: 'POST',
@@ -138,7 +147,10 @@ export async function apiLogin(input: LoginInput): Promise<{ user: UserProfile }
 
   const data = await res.json();
   if (!res.ok) {
-    throw new Error(data.error?.message || 'Login gagal');
+    const error: ApiError = new Error(data.error?.message || 'Login gagal');
+    error.code = data.error?.code;
+    error.details = data.error?.details;
+    throw error;
   }
 
   return data;
@@ -224,11 +236,11 @@ export async function initiateGoogleLink(currentPassword: string): Promise<{ url
   return data;
 }
 
-export async function apiForgotPassword(email: string): Promise<{ message: string }> {
+export async function apiForgotPassword(email: string, turnstileToken?: string): Promise<{ message: string }> {
   const res = await fetch('/api/auth/forgot-password', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email }),
+    body: JSON.stringify({ email, turnstileToken }),
   });
 
   const data = await res.json();
@@ -253,5 +265,35 @@ export async function apiResetPassword(token: string, newPassword: string): Prom
 
   return data;
 }
+
+export async function apiRequestEmailVerification(): Promise<{ message: string }> {
+  const res = await authFetch('/api/auth/verify-email/request', {
+    method: 'POST',
+  });
+
+  const data = await res.json();
+  if (!res.ok) {
+    throw new Error(data.error?.message || 'Gagal mengirim email verifikasi');
+  }
+
+  return data;
+}
+
+export async function apiConfirmEmailVerification(token: string): Promise<{ message: string; user?: UserProfile }> {
+  const res = await fetch('/api/auth/verify-email/confirm', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ token }),
+    credentials: 'include',
+  });
+
+  const data = await res.json();
+  if (!res.ok) {
+    throw new Error(data.error?.message || 'Gagal memverifikasi alamat email');
+  }
+
+  return data;
+}
+
 
 

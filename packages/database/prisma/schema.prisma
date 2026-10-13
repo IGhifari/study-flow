@@ -16,6 +16,8 @@ model User {
   email           String           @unique
   passwordHash    String?          @map("password_hash")
   timezone        String           @default("Asia/Jakarta")
+  emailVerifiedAt DateTime?        @map("email_verified_at")
+  reminderEmailDeadline Boolean      @default(false) @map("reminder_email_deadline")
   tokenVersion    Int              @default(0) @map("token_version")
   createdAt       DateTime         @default(now()) @map("created_at")
   updatedAt       DateTime         @updatedAt @map("updated_at")
@@ -23,6 +25,8 @@ model User {
   federatedIdentities FederatedIdentity[]
   refreshSessions RefreshSession[]
   passwordResetTokens PasswordResetToken[]
+  emailVerificationTokens EmailVerificationToken[]
+  assignmentReminderLogs  AssignmentReminderLog[]
   semesters       Semester[]
   courses         Course[]
   assignments     Assignment[]
@@ -134,10 +138,13 @@ model Assignment {
   createdAt        DateTime           @default(now()) @map("created_at")
   updatedAt        DateTime           @updatedAt @map("updated_at")
 
+  reminderLogs AssignmentReminderLog[]
+
   @@index([userId, dueDate])
   @@index([userId, status])
   @@index([userId, firstCompletedAt])
   @@index([courseId])
+  @@index([status, dueDate])
   @@map("assignments")
 }
 
@@ -334,6 +341,22 @@ model PasswordResetToken {
   @@index([userId])
   @@index([userId, expiresAt])
   @@map("password_reset_tokens")
+}
+
+model EmailVerificationToken {
+  id        String    @id @default(cuid())
+  userId    String    @map("user_id")
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  email     String
+  tokenHash String    @unique @map("token_hash")
+  expiresAt DateTime  @map("expires_at")
+  usedAt    DateTime? @map("used_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  @@index([userId])
+  @@index([userId, expiresAt])
+  @@index([email])
+  @@map("email_verification_tokens")
 }
 
 // Milestone 6 — AI Summaries
@@ -544,4 +567,34 @@ model CourseSchedule {
   @@index([courseId])
   @@map("course_schedules")
 }
+
+// Assignment Deadline Reminder H-1 Persistence & Idempotency Logs
+enum ReminderLogStatus {
+  PENDING
+  PROCESSING
+  SENT
+  SKIPPED
+  FAILED
+}
+
+model AssignmentReminderLog {
+  id           String            @id @default(cuid())
+  assignmentId String            @map("assignment_id")
+  assignment   Assignment        @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  userId       String            @map("user_id")
+  user         User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  reminderType String            @default("D_MINUS_1") @map("reminder_type")
+  deadline     DateTime          @map("deadline")
+  status       ReminderLogStatus @default(PENDING)
+  sentAt       DateTime?         @map("sent_at")
+  error        String?           @map("error")
+  createdAt    DateTime          @default(now()) @map("created_at")
+  updatedAt    DateTime          @updatedAt @map("updated_at")
+
+  @@unique([assignmentId, reminderType, deadline], name: "assignment_reminder_unique")
+  @@index([userId, status])
+  @@index([status, deadline])
+  @@map("assignment_reminder_logs")
+}
+
 

@@ -8,6 +8,7 @@ import {
   GoogleLinkInitInputSchema,
   ForgotPasswordInputSchema,
   ResetPasswordInputSchema,
+  VerifyEmailInputSchema,
   COOKIE_NAMES,
 } from '@studyflow/shared';
 import { prisma } from '@studyflow/database';
@@ -21,12 +22,20 @@ import {
   changeUserPassword,
   requestPasswordReset,
   resetPasswordWithToken,
+  requestEmailVerification,
+  verifyEmailWithToken,
 } from '../services/auth.service.js';
 import {
   isGoogleConfigured,
   generateGoogleAuthUrl,
   exchangeGoogleCode,
 } from '../services/googleAuth.service.js';
+import { verifyTurnstileToken } from '../services/turnstile.service.js';
+import {
+  isCaptchaRequiredForLogin,
+  recordLoginFailure,
+  resetAccountLoginFailures,
+} from '../services/loginProtection.service.js';
 import { verifyPassword } from '../services/password.service.js';
 import { verifyAccessToken } from '../services/token.service.js';
 import { setAuthCookies, clearAuthCookies } from '../services/cookie.service.js';
@@ -36,9 +45,11 @@ import {
   loginAccountRateLimiter,
   forgotPasswordIpRateLimiter,
   forgotPasswordAccountRateLimiter,
+  verificationEmailRateLimiter,
 } from '../middleware/rateLimiter.js';
 import { originCheckMiddleware } from '../middleware/originCheck.js';
 import { AppError } from '../middleware/errorHandler.js';
+import { env } from '../config/env.js';
 
 export const authRouter = Router();
 
@@ -57,6 +68,26 @@ authRouter.post(
         error.statusCode = 400;
         error.code = 'VALIDATION_ERROR';
         return next(error);
+      }
+
+      // Turnstile is strictly required in production/development, or in test when TEST_ENFORCE_TURNSTILE is active
+      const isTurnstileEnforced =
+        env.NODE_ENV !== 'test'
+          ? Boolean(env.TURNSTILE_SECRET_KEY)
+          : process.env.TEST_ENFORCE_TURNSTILE === 'true';
+
+      if (isTurnstileEnforced && (!parsed.data.turnstileToken || parsed.data.turnstileToken.trim().length === 0)) {
+        const error: AppError = new Error('Verifikasi keamanan Turnstile wajib diisi');
+        error.statusCode = 400;
+        error.code = 'TURNSTILE_TOKEN_REQUIRED';
+        return next(error);
+      }
+
+      if (parsed.data.turnstileToken) {
+        await verifyTurnstileToken({
+          token: parsed.data.turnstileToken,
+          remoteIp: req.ip,
+        });
       }
 
       const { user } = await registerUser(parsed.data);
@@ -86,8 +117,55 @@ authRouter.post(
         return next(error);
       }
 
-      const { user, accessToken, refreshToken } = await loginUser(parsed.data);
+      // Adaptive CAPTCHA: Turnstile is only required after repeated failures
+      // (per account hash OR per IP). Enforced in production/development when
+      // TURNSTILE_SECRET_KEY is set, or in test when TEST_ENFORCE_TURNSTILE is active.
+      const isTurnstileEnforced =
+        env.NODE_ENV !== 'test'
+          ? Boolean(env.TURNSTILE_SECRET_KEY)
+          : process.env.TEST_ENFORCE_TURNSTILE === 'true';
 
+      const captchaRequired =
+        isTurnstileEnforced && (await isCaptchaRequiredForLogin(parsed.data.email, req.ip));
+
+      if (captchaRequired) {
+        if (!parsed.data.turnstileToken || parsed.data.turnstileToken.trim().length === 0) {
+          const error: AppError = new Error('Verifikasi keamanan diperlukan. Selesaikan verifikasi lalu coba lagi.');
+          error.statusCode = 400;
+          error.code = 'TURNSTILE_TOKEN_REQUIRED';
+          error.details = { requireCaptcha: true };
+          return next(error);
+        }
+
+        try {
+          await verifyTurnstileToken({
+            token: parsed.data.turnstileToken,
+            remoteIp: req.ip,
+          });
+        } catch (turnstileErr) {
+          if (turnstileErr instanceof Error) {
+            (turnstileErr as AppError).details = { requireCaptcha: true };
+          }
+          throw turnstileErr;
+        }
+      }
+
+      let loginResult: Awaited<ReturnType<typeof loginUser>>;
+      try {
+        loginResult = await loginUser(parsed.data);
+      } catch (loginErr) {
+        const appErr = loginErr as AppError;
+        if (isTurnstileEnforced && appErr instanceof Error && appErr.statusCode === 401) {
+          // Counted identically for registered/unregistered emails (no account enumeration)
+          const nowRequired = await recordLoginFailure(parsed.data.email, req.ip);
+          appErr.details = { requireCaptcha: nowRequired };
+        }
+        throw loginErr;
+      }
+
+      await resetAccountLoginFailures(parsed.data.email);
+
+      const { user, accessToken, refreshToken } = loginResult;
       setAuthCookies(res, accessToken, refreshToken);
 
       res.status(200).json({
@@ -374,6 +452,26 @@ authRouter.post(
         return next(error);
       }
 
+      // Turnstile is strictly required in production/development, or in test when TEST_ENFORCE_TURNSTILE is active
+      const isTurnstileEnforced =
+        env.NODE_ENV !== 'test'
+          ? Boolean(env.TURNSTILE_SECRET_KEY)
+          : process.env.TEST_ENFORCE_TURNSTILE === 'true';
+
+      if (isTurnstileEnforced && (!parsed.data.turnstileToken || parsed.data.turnstileToken.trim().length === 0)) {
+        const error: AppError = new Error('Verifikasi keamanan Turnstile wajib diisi');
+        error.statusCode = 400;
+        error.code = 'TURNSTILE_TOKEN_REQUIRED';
+        return next(error);
+      }
+
+      if (parsed.data.turnstileToken) {
+        await verifyTurnstileToken({
+          token: parsed.data.turnstileToken,
+          remoteIp: req.ip,
+        });
+      }
+
       const result = await requestPasswordReset(parsed.data.email);
       res.status(200).json(result);
     } catch (err) {
@@ -405,5 +503,46 @@ authRouter.post(
     }
   }
 );
+
+// POST /api/auth/verify-email/request (Pengguna login meminta email verifikasi)
+authRouter.post(
+  '/verify-email/request',
+  authRateLimiter,
+  verificationEmailRateLimiter,
+  authenticate,
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const result = await requestEmailVerification(req.user!.id);
+      res.status(200).json(result);
+    } catch (err) {
+      next(err);
+    }
+  }
+);
+
+// POST /api/auth/verify-email/confirm (Konsumsi token verifikasi email)
+authRouter.post(
+  '/verify-email/confirm',
+  authRateLimiter,
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const parsed = VerifyEmailInputSchema.safeParse(req.body);
+      if (!parsed.success) {
+        const error: AppError = new Error(
+          parsed.error.errors[0]?.message || 'Input verifikasi email tidak valid'
+        );
+        error.statusCode = 400;
+        error.code = 'VALIDATION_ERROR';
+        return next(error);
+      }
+
+      const result = await verifyEmailWithToken(parsed.data.token);
+      res.status(200).json(result);
+    } catch (err) {
+      next(err);
+    }
+  }
+);
+
 
 

@@ -32,6 +32,7 @@ export const QUEUE_NAMES = {
   smoke: 'studyflow-smoke-queue',
   documentProcessing: 'studyflow-document-processing',
   aiGeneration: 'studyflow-ai-generation',
+  assignmentReminder: 'studyflow-assignment-reminder',
 } as const;
 
 export const AI_SUMMARY_LIMITS = {

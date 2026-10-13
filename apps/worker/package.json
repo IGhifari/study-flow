@@ -19,12 +19,14 @@
     "bullmq": "^5.41.6",
     "dotenv": "^16.4.7",
     "ioredis": "^5.5.0",
+    "nodemailer": "^10.1.0",
     "pdfjs-dist": "6.4.299",
     "zod": "^3.24.2"
   },
   "devDependencies": {
     "@studyflow/config": "*",
     "@types/node": "^22.13.9",
+    "@types/nodemailer": "^8.0.2",
     "tsx": "^4.19.3",
     "typescript": "^5.8.2",
     "vitest": "^3.0.7"

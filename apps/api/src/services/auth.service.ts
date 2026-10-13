@@ -16,7 +16,7 @@ import {
 } from './token.service.js';
 import { AppError } from '../middleware/errorHandler.js';
 import { env } from '../config/env.js';
-import { sendPasswordResetEmail } from './email.service.js';
+import { sendPasswordResetEmail, sendVerificationEmail } from './email.service.js';
 
 // Grace period in milliseconds to tolerate race conditions between multiple tabs
 // or parallel asynchronous requests sharing the same refresh token (RFC 6819)
@@ -28,17 +28,29 @@ export function toUserProfile(
     name: string;
     email: string;
     timezone: string;
+    emailVerifiedAt?: Date | string | null;
+    reminderEmailDeadline?: boolean;
     createdAt: Date | string;
     updatedAt: Date | string;
     passwordHash?: string | null;
   },
   providers: string[] = []
 ): UserProfile {
+  let emailVerifiedAtStr: string | null = null;
+  if (user.emailVerifiedAt) {
+    emailVerifiedAtStr =
+      typeof user.emailVerifiedAt === 'string'
+        ? user.emailVerifiedAt
+        : user.emailVerifiedAt.toISOString();
+  }
+
   return {
     id: user.id,
     name: user.name,
     email: user.email,
     timezone: user.timezone,
+    emailVerifiedAt: emailVerifiedAtStr,
+    reminderEmailDeadline: Boolean(user.reminderEmailDeadline),
     createdAt: typeof user.createdAt === 'string' ? user.createdAt : user.createdAt.toISOString(),
     updatedAt: typeof user.updatedAt === 'string' ? user.updatedAt : user.updatedAt.toISOString(),
     hasPassword: Boolean(user.passwordHash),
@@ -195,11 +207,12 @@ export async function rotateRefreshToken(rawRefreshToken: string): Promise<{
       email: string;
       password_hash: string | null;
       timezone: string;
+      email_verified_at: Date | null;
       token_version: number;
       created_at: Date;
       updated_at: Date;
     }>>`
-      SELECT id, name, email, password_hash, timezone, token_version, created_at, updated_at
+      SELECT id, name, email, password_hash, timezone, email_verified_at, token_version, created_at, updated_at
       FROM users
       WHERE id = ${initialSession.userId}
       LIMIT 1
@@ -246,16 +259,16 @@ export async function rotateRefreshToken(rawRefreshToken: string): Promise<{
     });
     const providers = federatedIdentities.map((f) => f.provider);
 
-    const userProfile: UserProfile = {
+    const userProfile = toUserProfile({
       id: user.id,
       name: user.name,
       email: user.email,
       timezone: user.timezone,
-      createdAt: new Date(user.created_at).toISOString(),
-      updatedAt: new Date(user.updated_at).toISOString(),
-      hasPassword: Boolean(user.password_hash),
-      providers,
-    };
+      emailVerifiedAt: user.email_verified_at,
+      createdAt: user.created_at,
+      updatedAt: user.updated_at,
+      passwordHash: user.password_hash,
+    }, providers);
 
     const now = new Date();
 
@@ -434,13 +447,36 @@ export async function updateUserProfile(
   userId: string,
   input: UpdateProfileInput
 ): Promise<UserProfile> {
-  const updateData: { name?: string; timezone?: string } = {};
+  const currentUser = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { id: true, emailVerifiedAt: true },
+  });
+
+  if (!currentUser) {
+    const error: AppError = new Error('Pengguna tidak ditemukan');
+    error.statusCode = 404;
+    error.code = 'USER_NOT_FOUND';
+    throw error;
+  }
+
+  const updateData: { name?: string; timezone?: string; reminderEmailDeadline?: boolean } = {};
 
   if (input.name !== undefined) {
     updateData.name = input.name.trim();
   }
   if (input.timezone !== undefined) {
     updateData.timezone = input.timezone;
+  }
+  if (input.reminderEmailDeadline !== undefined) {
+    if (input.reminderEmailDeadline === true && !currentUser.emailVerifiedAt) {
+      const error: AppError = new Error(
+        'Alamat email harus diverifikasi terlebih dahulu sebelum mengaktifkan pengingat deadline'
+      );
+      error.statusCode = 400;
+      error.code = 'EMAIL_NOT_VERIFIED';
+      throw error;
+    }
+    updateData.reminderEmailDeadline = input.reminderEmailDeadline;
   }
 
   try {
@@ -456,7 +492,8 @@ export async function updateUserProfile(
 
     const providers = updatedUser.federatedIdentities.map((f) => f.provider);
     return toUserProfile(updatedUser, providers);
-  } catch {
+  } catch (err: any) {
+    if (err?.statusCode || err?.code) throw err;
     const error: AppError = new Error('Gagal memperbarui profil pengguna');
     error.statusCode = 404;
     error.code = 'USER_NOT_FOUND';
@@ -725,4 +762,205 @@ export async function resetPasswordWithToken(
   });
 
   return { message: 'Kata sandi berhasil diatur ulang. Silakan masuk dengan kata sandi baru Anda.' };
+}
+
+const VERIFICATION_TOKEN_TTL_MS = 30 * 60 * 1000; // 30 minutes
+const VERIFICATION_COOLDOWN_MS = 60 * 1000; // 60 seconds cooldown between dispatches
+
+export async function requestEmailVerification(userId: string): Promise<{ message: string }> {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      emailVerifiedAt: true,
+    },
+  });
+
+  if (!user) {
+    const error: AppError = new Error('Pengguna tidak ditemukan');
+    error.statusCode = 404;
+    error.code = 'USER_NOT_FOUND';
+    throw error;
+  }
+
+  // Already verified accounts do not need another email
+  if (user.emailVerifiedAt !== null) {
+    return { message: 'Alamat email Anda sudah terverifikasi.' };
+  }
+
+  const now = new Date();
+
+  // Enforce server-side cooldown per user: check if a token was issued within 60s
+  const recentToken = await prisma.emailVerificationToken.findFirst({
+    where: {
+      userId: user.id,
+      createdAt: { gt: new Date(now.getTime() - VERIFICATION_COOLDOWN_MS) },
+    },
+    orderBy: { createdAt: 'desc' },
+  });
+
+  if (recentToken) {
+    const error: AppError = new Error(
+      'Permintaan verifikasi email terlalu sering. Silakan tunggu 1 menit sebelum meminta kembali.'
+    );
+    error.statusCode = 429;
+    error.code = 'VERIFICATION_COOLDOWN_ACTIVE';
+    throw error;
+  }
+
+  // Generate cryptographic token (at least 32 bytes)
+  const rawToken = crypto.randomBytes(32).toString('hex');
+  const tokenHash = crypto.createHash('sha256').update(rawToken).digest('hex');
+  const expiresAt = new Date(now.getTime() + VERIFICATION_TOKEN_TTL_MS);
+
+  // Invalidate previous active verification tokens for this user atomically
+  await prisma.$transaction(async (tx) => {
+    await tx.emailVerificationToken.updateMany({
+      where: {
+        userId: user.id,
+        usedAt: null,
+      },
+      data: {
+        usedAt: now,
+      },
+    });
+
+    await tx.emailVerificationToken.create({
+      data: {
+        userId: user.id,
+        email: user.email,
+        tokenHash,
+        expiresAt,
+      },
+    });
+  });
+
+  // Construct absolute verification URL from configured APP_PUBLIC_URL (never from Host header!)
+  const verificationUrl = `${env.APP_PUBLIC_URL}/verify-email?token=${rawToken}`;
+
+  try {
+    await sendVerificationEmail({
+      to: user.email,
+      name: user.name,
+      verificationUrl,
+      expiresInMinutes: 30,
+    });
+  } catch (err: unknown) {
+    const errMsg = err instanceof Error ? err.message : String(err);
+    console.error(`[AUTH_SERVICE] Gagal mengirimkan email verifikasi: ${errMsg}`);
+    const error: AppError = new Error('Gagal mengirimkan email verifikasi. Silakan coba lagi nanti.');
+    error.statusCode = 503;
+    error.code = 'EMAIL_SEND_FAILED';
+    throw error;
+  }
+
+  return { message: 'Email verifikasi telah dikirim. Silakan periksa kotak masuk atau spam Anda.' };
+}
+
+export async function verifyEmailWithToken(rawToken: string): Promise<{ message: string; user: UserProfile }> {
+  if (!rawToken || typeof rawToken !== 'string' || rawToken.trim().length < 32) {
+    const error: AppError = new Error(
+      'Tautan verifikasi email tidak valid atau telah kedaluwarsa. Silakan minta tautan baru.'
+    );
+    error.statusCode = 400;
+    error.code = 'TOKEN_INVALID_OR_EXPIRED';
+    throw error;
+  }
+
+  const tokenHash = crypto.createHash('sha256').update(rawToken.trim()).digest('hex');
+  const now = new Date();
+
+  // Initial check
+  const initialToken = await prisma.emailVerificationToken.findUnique({
+    where: { tokenHash },
+    include: {
+      user: {
+        include: {
+          federatedIdentities: { select: { provider: true } },
+        },
+      },
+    },
+  });
+
+  if (!initialToken || initialToken.usedAt !== null || initialToken.expiresAt < now) {
+    const error: AppError = new Error(
+      'Tautan verifikasi email tidak valid atau telah kedaluwarsa. Silakan minta tautan baru.'
+    );
+    error.statusCode = 400;
+    error.code = 'TOKEN_INVALID_OR_EXPIRED';
+    throw error;
+  }
+
+  // Ensure current user email matches token bound email
+  if (initialToken.user.email.toLowerCase().trim() !== initialToken.email.toLowerCase().trim()) {
+    const error: AppError = new Error(
+      'Alamat email pada token tidak cocok dengan alamat email akun saat ini.'
+    );
+    error.statusCode = 400;
+    error.code = 'EMAIL_MISMATCH';
+    throw error;
+  }
+
+  // Atomic transaction following lock order: users -> email_verification_tokens
+  const updatedUser = await prisma.$transaction(async (tx) => {
+    // 1. Lock user row first to serialize concurrent requests
+    await tx.$queryRaw`
+      SELECT id FROM users
+      WHERE id = ${initialToken.userId}
+      LIMIT 1
+      FOR UPDATE
+    `;
+
+    // 2. Re-check token under lock to guarantee exactly one request succeeds among concurrent attempts
+    const lockedToken = await tx.emailVerificationToken.findUnique({
+      where: { id: initialToken.id },
+    });
+
+    if (!lockedToken || lockedToken.usedAt !== null || lockedToken.expiresAt < new Date()) {
+      const error: AppError = new Error(
+        'Tautan verifikasi email tidak valid atau telah kedaluwarsa. Silakan minta tautan baru.'
+      );
+      error.statusCode = 400;
+      error.code = 'TOKEN_INVALID_OR_EXPIRED';
+      throw error;
+    }
+
+    // 3. Mark current token as used
+    await tx.emailVerificationToken.update({
+      where: { id: lockedToken.id },
+      data: { usedAt: new Date() },
+    });
+
+    // 4. Invalidate all other active verification tokens for this user
+    await tx.emailVerificationToken.updateMany({
+      where: {
+        userId: lockedToken.userId,
+        usedAt: null,
+      },
+      data: {
+        usedAt: new Date(),
+      },
+    });
+
+    // 5. Update user emailVerifiedAt atomically
+    const user = await tx.user.update({
+      where: { id: lockedToken.userId },
+      data: {
+        emailVerifiedAt: new Date(),
+      },
+      include: {
+        federatedIdentities: { select: { provider: true } },
+      },
+    });
+
+    return user;
+  });
+
+  const providers = updatedUser.federatedIdentities.map((f) => f.provider);
+  return {
+    message: 'Alamat email berhasil diverifikasi.',
+    user: toUserProfile(updatedUser, providers),
+  };
 }

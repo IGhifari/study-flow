@@ -18,7 +18,10 @@ import {
   Clock,
   ShieldCheck,
   Link2,
+  Mail,
+  Bell,
 } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
 import {
   UpdateProfileInput,
   UpdateProfileInputSchema,
@@ -33,6 +36,7 @@ import {
   getCurrentUser,
   getGoogleAuthStatus,
   initiateGoogleLink,
+  apiRequestEmailVerification,
 } from '@/lib/auth-client';
 import { getStorageUsage } from '@/lib/material-client';
 import { GoogleLogo } from '@/components/auth/google-sign-in-button';
@@ -115,6 +119,76 @@ function SettingsContent(): React.JSX.Element {
   const [storageUsage, setStorageUsage] = React.useState<StorageUsageResponse | null>(null);
   const [storageLoading, setStorageLoading] = React.useState(true);
 
+  // Email Verification State & Cooldown
+  const [isVerifyingSubmitting, setIsVerifyingSubmitting] = React.useState(false);
+  const [verifyAlert, setVerifyAlert] = React.useState<{ type: 'success' | 'error'; message: string } | null>(null);
+  const [verifyCooldown, setVerifyCooldown] = React.useState(0);
+
+  // Email Deadline Reminder Preference State
+  const [reminderEmailDeadline, setReminderEmailDeadline] = React.useState(false);
+  const [isReminderSubmitting, setIsReminderSubmitting] = React.useState(false);
+  const [reminderAlert, setReminderAlert] = React.useState<{ type: 'success' | 'error'; message: string } | null>(null);
+
+  React.useEffect(() => {
+    if (verifyCooldown <= 0) return;
+    const timer = setInterval(() => {
+      setVerifyCooldown((prev) => Math.max(0, prev - 1));
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [verifyCooldown]);
+
+  const handleSendVerificationEmail = async () => {
+    setIsVerifyingSubmitting(true);
+    setVerifyAlert(null);
+    try {
+      const res = await apiRequestEmailVerification();
+      setVerifyAlert({ type: 'success', message: res.message });
+      setVerifyCooldown(60); // 60s cooldown
+    } catch (err: any) {
+      setVerifyAlert({
+        type: 'error',
+        message: err.message || 'Gagal mengirimkan email verifikasi. Silakan coba lagi.',
+      });
+    } finally {
+      setIsVerifyingSubmitting(false);
+    }
+  };
+
+  const handleToggleReminder = async (newVal: boolean) => {
+    if (isReminderSubmitting) return;
+
+    if (newVal && !currentUser?.emailVerifiedAt) {
+      setReminderAlert({
+        type: 'error',
+        message: 'Alamat email harus diverifikasi terlebih dahulu sebelum mengaktifkan pengingat deadline.',
+      });
+      return;
+    }
+
+    setIsReminderSubmitting(true);
+    setReminderAlert(null);
+
+    try {
+      const updated = await apiUpdateProfile({ reminderEmailDeadline: newVal });
+      setCurrentUser(updated);
+      setReminderEmailDeadline(Boolean(updated.reminderEmailDeadline));
+      setReminderAlert({
+        type: 'success',
+        message: newVal
+          ? 'Pengingat deadline via email berhasil diaktifkan. Anda akan menerima notifikasi sekitar 24 jam sebelum deadline tugas.'
+          : 'Pengingat deadline via email berhasil dinonaktifkan.',
+      });
+    } catch (err: any) {
+      setReminderAlert({
+        type: 'error',
+        message: err.message || 'Gagal mengubah preferensi pengingat deadline.',
+      });
+      setReminderEmailDeadline(Boolean(currentUser?.reminderEmailDeadline));
+    } finally {
+      setIsReminderSubmitting(false);
+    }
+  };
+
   // Check URL search parameters for Google Linking outcome
   React.useEffect(() => {
     const googleStatus = searchParams.get('google');
@@ -144,6 +218,7 @@ function SettingsContent(): React.JSX.Element {
           setCurrentUser(user);
           setName(user.name);
           setTimezone(user.timezone || 'Asia/Jakarta');
+          setReminderEmailDeadline(Boolean(user.reminderEmailDeadline));
         }
       } catch (err) {
         console.error('Failed to load current user:', err);
@@ -396,19 +471,78 @@ function SettingsContent(): React.JSX.Element {
               </Alert>
             )}
 
-            {/* Email (Read-Only) */}
-            <div className="space-y-1.5">
-              <Label htmlFor="profile-email">Email</Label>
-              <Input
-                id="profile-email"
-                value={currentUser?.email || ''}
-                disabled
-                readOnly
-                aria-readonly="true"
-                className="bg-muted/50 cursor-not-allowed text-muted-foreground font-mono text-sm"
-              />
+            {/* Email & Status Verifikasi */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="profile-email">Alamat Email</Label>
+                {currentUser?.emailVerifiedAt ? (
+                  <Badge variant="outline" className="border-emerald-500/40 bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-300 text-xs gap-1">
+                    <CheckCircle2 className="h-3 w-3" /> Terverifikasi
+                  </Badge>
+                ) : (
+                  <Badge variant="outline" className="border-amber-500/50 text-amber-600 dark:text-amber-400 text-xs gap-1">
+                    <AlertCircle className="h-3 w-3" /> Belum Terverifikasi
+                  </Badge>
+                )}
+              </div>
+              <div className="flex flex-col sm:flex-row gap-2">
+                <Input
+                  id="profile-email"
+                  value={currentUser?.email || ''}
+                  disabled
+                  readOnly
+                  aria-readonly="true"
+                  className="bg-muted/50 cursor-not-allowed text-muted-foreground font-mono text-sm flex-1"
+                />
+                {!currentUser?.emailVerifiedAt && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="standard"
+                    onClick={handleSendVerificationEmail}
+                    disabled={isVerifyingSubmitting || verifyCooldown > 0}
+                    className="shrink-0 gap-1.5"
+                  >
+                    {isVerifyingSubmitting ? (
+                      <>
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        <span>Mengirim...</span>
+                      </>
+                    ) : verifyCooldown > 0 ? (
+                      <>
+                        <Clock className="h-3.5 w-3.5" />
+                        <span>Kirim ulang ({verifyCooldown}s)</span>
+                      </>
+                    ) : (
+                      <>
+                        <Mail className="h-3.5 w-3.5" />
+                        <span>Kirim email verifikasi</span>
+                      </>
+                    )}
+                  </Button>
+                )}
+              </div>
+
+              {verifyAlert && (
+                <Alert
+                  variant={verifyAlert.type === 'success' ? 'default' : 'destructive'}
+                  className={
+                    verifyAlert.type === 'success'
+                      ? 'border-emerald-500/40 bg-emerald-50/50 dark:bg-emerald-950/20 text-emerald-900 dark:text-emerald-300 py-2 text-xs'
+                      : 'py-2 text-xs'
+                  }
+                >
+                  {verifyAlert.type === 'success' ? (
+                    <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
+                  ) : (
+                    <AlertCircle className="h-3.5 w-3.5" />
+                  )}
+                  <AlertDescription>{verifyAlert.message}</AlertDescription>
+                </Alert>
+              )}
+
               <p className="text-xs text-muted-foreground">
-                Email terikat permanen dengan akun StudyFlow Anda dan tidak dapat diubah.
+                Email terikat permanen dengan akun StudyFlow Anda. {currentUser?.emailVerifiedAt ? 'Alamat email ini telah terverifikasi.' : 'Verifikasi email membantu mengamankan akses akun dan pemulihan kata sandi.'}
               </p>
             </div>
 
@@ -484,6 +618,127 @@ function SettingsContent(): React.JSX.Element {
             </Button>
           </CardFooter>
         </form>
+      </Card>
+
+      {/* 2. Section: Pengingat & Notifikasi Email */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-2 text-primary font-semibold text-sm">
+            <Bell className="h-4 w-4" />
+            <span>Notifikasi & Pengingat</span>
+          </div>
+          <CardTitle className="text-lg">Pengingat Deadline Tugas</CardTitle>
+          <CardDescription>
+            Atur pengingat tenggat waktu tugas yang dikirimkan langsung ke kotak masuk email Anda.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {/* Target Alamat Email */}
+          <div className="rounded-xl border border-border p-4 bg-muted/20 space-y-2">
+            <div className="flex items-center justify-between">
+              <Label className="text-sm font-medium">Alamat Email Pengiriman</Label>
+              {currentUser?.emailVerifiedAt ? (
+                <Badge variant="outline" className="border-emerald-500/40 bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-300 text-xs gap-1">
+                  <CheckCircle2 className="h-3 w-3" /> Terverifikasi
+                </Badge>
+              ) : (
+                <Badge variant="outline" className="border-amber-500/50 text-amber-600 dark:text-amber-400 text-xs gap-1">
+                  <AlertCircle className="h-3 w-3" /> Belum Terverifikasi
+                </Badge>
+              )}
+            </div>
+            <Input
+              value={currentUser?.email || ''}
+              disabled
+              readOnly
+              className="bg-muted/50 cursor-not-allowed font-mono text-sm text-muted-foreground"
+            />
+            <p className="text-xs text-muted-foreground">
+              Pengingat dikirim ke alamat email resmi akun Anda.
+            </p>
+          </div>
+
+          {/* Toggle Switch Pengingat H-1 */}
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 rounded-xl border border-border p-4 bg-muted/20">
+            <div className="space-y-1">
+              <Label htmlFor="reminder-switch" className="text-sm font-medium text-foreground cursor-pointer">
+                Pengingat deadline lewat email
+              </Label>
+              <p className="text-xs text-muted-foreground">
+                Pengingat dikirim sekitar 24 jam sebelum deadline untuk tugas yang belum selesai.
+              </p>
+            </div>
+            <div className="flex items-center gap-2 self-start sm:self-center">
+              {isReminderSubmitting && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
+              <Switch
+                id="reminder-switch"
+                checked={reminderEmailDeadline}
+                onCheckedChange={handleToggleReminder}
+                disabled={isReminderSubmitting || !currentUser?.emailVerifiedAt}
+                aria-label="Pengingat deadline lewat email"
+              />
+            </div>
+          </div>
+
+          {/* Warning bila email belum terverifikasi */}
+          {!currentUser?.emailVerifiedAt && (
+            <Alert className="border-amber-500/50 bg-amber-50/50 dark:bg-amber-950/20 text-amber-900 dark:text-amber-300 text-xs py-3">
+              <AlertCircle className="h-4 w-4 text-amber-600 dark:text-amber-400 shrink-0" />
+              <div className="space-y-2 flex-1">
+                <AlertTitle className="text-xs font-semibold">Verifikasi Email Diperlukan</AlertTitle>
+                <AlertDescription className="text-xs text-amber-800 dark:text-amber-300">
+                  Hanya email yang telah diverifikasi yang dapat mengaktifkan pengingat deadline. Silakan verifikasi email Anda terlebih dahulu.
+                </AlertDescription>
+                <div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={handleSendVerificationEmail}
+                    disabled={isVerifyingSubmitting || verifyCooldown > 0}
+                    className="h-7 text-xs gap-1 border-amber-500/40 hover:bg-amber-100/50 dark:hover:bg-amber-900/40"
+                  >
+                    {isVerifyingSubmitting ? (
+                      <>
+                        <Loader2 className="h-3 w-3 animate-spin" />
+                        <span>Mengirim...</span>
+                      </>
+                    ) : verifyCooldown > 0 ? (
+                      <>
+                        <Clock className="h-3 w-3" />
+                        <span>Kirim ulang ({verifyCooldown}s)</span>
+                      </>
+                    ) : (
+                      <>
+                        <Mail className="h-3 w-3" />
+                        <span>Kirim email verifikasi sekarang</span>
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </div>
+            </Alert>
+          )}
+
+          {/* Feedback Alert */}
+          {reminderAlert && (
+            <Alert
+              variant={reminderAlert.type === 'success' ? 'default' : 'destructive'}
+              className={
+                reminderAlert.type === 'success'
+                  ? 'border-emerald-500/40 bg-emerald-50/50 dark:bg-emerald-950/20 text-emerald-900 dark:text-emerald-300 py-2.5 text-xs'
+                  : 'py-2.5 text-xs'
+              }
+            >
+              {reminderAlert.type === 'success' ? (
+                <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+              ) : (
+                <AlertCircle className="h-4 w-4" />
+              )}
+              <AlertDescription>{reminderAlert.message}</AlertDescription>
+            </Alert>
+          )}
+        </CardContent>
       </Card>
 
       {/* 3. Section: Preferensi Tampilan */}

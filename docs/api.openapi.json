@@ -383,6 +383,10 @@
                   },
                   "timezone": {
                     "type": "string"
+                  },
+                  "reminderEmailDeadline": {
+                    "type": "boolean",
+                    "description": "Pengaturan pengingat deadline lewat email (H-1). Hanya dapat diaktifkan jika email pengguna telah terverifikasi."
                   }
                 }
               }
@@ -463,6 +467,99 @@
           },
           "401": {
             "description": "Tidak terautentikasi"
+          }
+        }
+      }
+    },
+    "/api/auth/verify-email/request": {
+      "post": {
+        "summary": "Meminta pengiriman tautan verifikasi alamat email untuk akun terautentikasi",
+        "tags": [
+          "Authentication"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Tautan verifikasi email berhasil dikirim atau email sudah terverifikasi",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Sesi autentikasi diperlukan"
+          },
+          "429": {
+            "description": "Terlalu banyak permintaan atau cooldown verifikasi sedang aktif (1 menit)"
+          },
+          "503": {
+            "description": "Layanan email tidak tersedia"
+          }
+        }
+      }
+    },
+    "/api/auth/verify-email/confirm": {
+      "post": {
+        "summary": "Mengonfirmasi dan memverifikasi alamat email menggunakan token sekali pakai",
+        "tags": [
+          "Authentication"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "token"
+                ],
+                "properties": {
+                  "token": {
+                    "type": "string",
+                    "minLength": 32,
+                    "description": "Token verifikasi email kriptografis dari tautan email"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Email berhasil diverifikasi",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    },
+                    "user": {
+                      "$ref": "#/components/schemas/UserProfile"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Token verifikasi tidak valid, telah kedaluwarsa, atau sudah digunakan"
           }
         }
       }
@@ -2666,6 +2763,17 @@
           },
           "timezone": {
             "type": "string"
+          },
+          "emailVerifiedAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "reminderEmailDeadline": {
+            "type": "boolean",
+            "description": "Preferensi notifikasi pengingat deadline lewat email (H-1)"
           },
           "createdAt": {
             "type": "string",

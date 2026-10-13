@@ -77,6 +77,18 @@ const WorkerEnvSchema = z.object({
   // Provider call rate limiting (M6)
   AI_CALLS_PER_MINUTE: z.coerce.number().int().positive().default(15),
   AI_MAX_CALLS_PER_JOB: z.coerce.number().int().positive().default(8),
+  // Public Web App URL for links
+  APP_PUBLIC_URL: z.string().default('http://localhost:3000'),
+  // SMTP & Email Configuration for Deadline Reminders
+  EMAIL_DRIVER: z
+    .enum(['smtp', 'mock'])
+    .default(process.env.NODE_ENV === 'test' ? 'mock' : 'smtp'),
+  SMTP_HOST: z.string().optional().default(''),
+  SMTP_PORT: z.coerce.number().default(587),
+  SMTP_SECURE: z.coerce.boolean().default(false),
+  SMTP_USER: z.string().optional().default(''),
+  SMTP_PASS: z.string().optional().default(''),
+  SMTP_FROM: z.string().default('StudyFlow <no-reply@studyflow.local>'),
 });
 
 export type WorkerEnv = z.infer<typeof WorkerEnvSchema>;

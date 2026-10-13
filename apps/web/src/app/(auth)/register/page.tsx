@@ -9,6 +9,7 @@ import { Eye, EyeOff, Loader2, AlertCircle } from 'lucide-react';
 import { RegisterFormInput, RegisterInput, RegisterInputSchema } from '@studyflow/shared';
 import { apiRegister } from '@/lib/auth-client';
 import { GoogleSignInButton } from '@/components/auth/google-sign-in-button';
+import { TurnstileWidget, TurnstileWidgetHandle } from '@/components/auth/turnstile-widget';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -38,6 +39,8 @@ function RegisterForm(): React.JSX.Element {
 
   const [showPassword, setShowPassword] = React.useState(false);
   const [serverError, setServerError] = React.useState<string | null>(urlError);
+  const [turnstileToken, setTurnstileToken] = React.useState<string>('');
+  const turnstileRef = React.useRef<TurnstileWidgetHandle>(null);
 
   React.useEffect(() => {
     if (urlError) {
@@ -48,6 +51,7 @@ function RegisterForm(): React.JSX.Element {
   const {
     register,
     handleSubmit,
+    setValue,
     formState: { errors, isSubmitting },
   } = useForm<RegisterFormInput, unknown, RegisterInput>({
     resolver: zodResolver(RegisterInputSchema),
@@ -56,8 +60,20 @@ function RegisterForm(): React.JSX.Element {
       email: '',
       password: '',
       timezone: 'Asia/Jakarta',
+      turnstileToken: '',
     },
   });
+
+  const handleTurnstileVerify = (token: string) => {
+    setTurnstileToken(token);
+    setValue('turnstileToken', token, { shouldValidate: true });
+    setServerError(null);
+  };
+
+  const handleTurnstileExpire = () => {
+    setTurnstileToken('');
+    setValue('turnstileToken', '', { shouldValidate: true });
+  };
 
   const onSubmit = async (data: RegisterInput) => {
     setServerError(null);
@@ -71,6 +87,10 @@ function RegisterForm(): React.JSX.Element {
       setServerError(
         err instanceof Error ? err.message : 'Terjadi kesalahan saat mendaftar. Silakan coba lagi.'
       );
+      // Reset Turnstile token on failure to ensure fresh verification
+      setTurnstileToken('');
+      setValue('turnstileToken', '');
+      turnstileRef.current?.reset();
     }
   };
 
@@ -222,13 +242,29 @@ function RegisterForm(): React.JSX.Element {
               </p>
             )}
           </div>
+
+          {/* Cloudflare Turnstile Verification Widget */}
+          <div className="space-y-1">
+            <TurnstileWidget
+              ref={turnstileRef}
+              action="register"
+              onVerify={handleTurnstileVerify}
+              onExpire={handleTurnstileExpire}
+              onError={(err) => setServerError(err || 'Verifikasi keamanan gagal. Silakan coba lagi.')}
+            />
+            {errors.turnstileToken && (
+              <p className="text-center text-xs font-medium text-destructive">
+                {errors.turnstileToken.message}
+              </p>
+            )}
+          </div>
         </CardContent>
 
         <CardFooter className="flex flex-col space-y-4 pt-2">
           <Button
             type="submit"
             className="w-full h-10 font-semibold gap-2"
-            disabled={isSubmitting}
+            disabled={isSubmitting || !turnstileToken}
           >
             {isSubmitting ? (
               <>

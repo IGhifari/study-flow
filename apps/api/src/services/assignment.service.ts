@@ -7,6 +7,7 @@ import {
   parseUserDateInput,
 } from '@studyflow/shared';
 import { AppError } from '../middleware/errorHandler.js';
+import { scheduleAssignmentReminder } from './assignmentReminder.service.js';
 
 interface RawAssignmentWithCourse {
   id: string;
@@ -290,6 +291,9 @@ export async function createAssignment(
     },
   });
 
+  // Schedule H-1 deadline reminder in BullMQ
+  scheduleAssignmentReminder(created).catch(() => {});
+
   return toAssignmentResponse(created);
 }
 
@@ -402,6 +406,9 @@ export async function updateAssignment(
       },
     },
   });
+
+  // Re-schedule H-1 deadline reminder in BullMQ if updated
+  scheduleAssignmentReminder(updated).catch(() => {});
 
   return toAssignmentResponse(updated);
 }

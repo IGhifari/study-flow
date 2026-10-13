@@ -274,3 +274,32 @@ export const forgotPasswordAccountRateLimiter = rateLimit({
   },
 });
 
+/**
+ * Account/User-based Email Verification Rate Limiter
+ * Limits verification email dispatch per authenticated user account (and IP).
+ * 3 requests per 15 minutes in production.
+ */
+export const verificationEmailRateLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: env.NODE_ENV === 'test' ? 1000 : 3, // 3 requests per 15 minutes
+  standardHeaders: true,
+  legacyHeaders: false,
+  passOnStoreError: false,
+  store: createRateLimitStore({ prefix: 'studyflow:rl:verify_email:' }),
+  keyGenerator: (req) => {
+    const rawIp = req.ip || req.socket.remoteAddress || '127.0.0.1';
+    const userId = req.user?.id;
+    return userId ? `user:${userId}` : `ip:${ipKeyGenerator(rawIp)}`;
+  },
+  handler: (_req, res, _next, options) => {
+    res.status(429).json(options.message);
+  },
+  message: {
+    error: {
+      code: 'TOO_MANY_REQUESTS',
+      message: 'Terlalu banyak permintaan verifikasi email. Silakan tunggu beberapa saat.',
+    },
+  },
+});
+
+

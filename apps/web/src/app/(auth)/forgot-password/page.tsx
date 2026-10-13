@@ -19,30 +19,50 @@ import {
   CardFooter,
 } from '@/components/ui/card';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
+import { TurnstileWidget, TurnstileWidgetHandle } from '@/components/auth/turnstile-widget';
 
 export default function ForgotPasswordPage(): React.JSX.Element {
   const [serverError, setServerError] = React.useState<string | null>(null);
   const [successMessage, setSuccessMessage] = React.useState<string | null>(null);
+  const [turnstileToken, setTurnstileToken] = React.useState<string>('');
+  const turnstileRef = React.useRef<TurnstileWidgetHandle>(null);
 
   const {
     register,
     handleSubmit,
+    setValue,
     formState: { errors, isSubmitting },
   } = useForm<ForgotPasswordInput>({
     resolver: zodResolver(ForgotPasswordInputSchema),
     defaultValues: {
       email: '',
+      turnstileToken: '',
     },
   });
+
+  const handleTurnstileVerify = (token: string) => {
+    setTurnstileToken(token);
+    setValue('turnstileToken', token, { shouldValidate: true });
+    setServerError(null);
+  };
+
+  const handleTurnstileExpire = () => {
+    setTurnstileToken('');
+    setValue('turnstileToken', '', { shouldValidate: true });
+  };
 
   const onSubmit = async (data: ForgotPasswordInput) => {
     setServerError(null);
     setSuccessMessage(null);
     try {
-      const res = await apiForgotPassword(data.email);
+      const res = await apiForgotPassword(data.email, data.turnstileToken);
       setSuccessMessage(res.message);
     } catch (err: any) {
       setServerError(err.message || 'Gagal mengirim permintaan reset kata sandi.');
+      // Reset Turnstile token on failure
+      setTurnstileToken('');
+      setValue('turnstileToken', '');
+      turnstileRef.current?.reset();
     }
   };
 
@@ -137,12 +157,28 @@ export default function ForgotPasswordPage(): React.JSX.Element {
                 pada halaman masuk.
               </p>
             </div>
+
+            {/* Cloudflare Turnstile Verification Widget */}
+            <div className="space-y-1">
+              <TurnstileWidget
+                ref={turnstileRef}
+                action="forgot_password"
+                onVerify={handleTurnstileVerify}
+                onExpire={handleTurnstileExpire}
+                onError={(err) => setServerError(err || 'Verifikasi keamanan gagal. Silakan coba lagi.')}
+              />
+              {errors.turnstileToken && (
+                <p className="text-center text-xs font-medium text-destructive">
+                  {errors.turnstileToken.message}
+                </p>
+              )}
+            </div>
           </CardContent>
 
           <CardFooter className="flex flex-col gap-3">
             <Button
               type="submit"
-              disabled={isSubmitting}
+              disabled={isSubmitting || !turnstileToken}
               className="w-full h-10 font-semibold"
             >
               {isSubmitting ? (

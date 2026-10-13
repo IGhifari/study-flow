@@ -113,6 +113,8 @@ const EnvSchema = z.object({
   SMTP_USER: z.string().optional().default(''),
   SMTP_PASS: z.string().optional().default(''),
   SMTP_FROM: z.string().default('StudyFlow <no-reply@studyflow.local>'),
+  // Cloudflare Turnstile CAPTCHA Protection
+  TURNSTILE_SECRET_KEY: z.string().optional().default(''),
 });
 
 export type Env = z.infer<typeof EnvSchema>;

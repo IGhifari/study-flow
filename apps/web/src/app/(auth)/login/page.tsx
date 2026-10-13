@@ -7,8 +7,9 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Eye, EyeOff, Loader2, CheckCircle2, AlertCircle } from 'lucide-react';
 import { LoginInput, LoginInputSchema } from '@studyflow/shared';
-import { apiLogin, getSafeReturnUrl } from '@/lib/auth-client';
+import { apiLogin, getSafeReturnUrl, isApiError } from '@/lib/auth-client';
 import { GoogleSignInButton } from '@/components/auth/google-sign-in-button';
+import { TurnstileWidget, TurnstileWidgetHandle } from '@/components/auth/turnstile-widget';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -32,6 +33,9 @@ function LoginForm(): React.JSX.Element {
 
   const [showPassword, setShowPassword] = React.useState(false);
   const [serverError, setServerError] = React.useState<string | null>(urlError);
+  const [requireCaptcha, setRequireCaptcha] = React.useState(false);
+  const [turnstileToken, setTurnstileToken] = React.useState<string>('');
+  const turnstileRef = React.useRef<TurnstileWidgetHandle>(null);
 
   React.useEffect(() => {
     if (urlError) {
@@ -42,14 +46,27 @@ function LoginForm(): React.JSX.Element {
   const {
     register,
     handleSubmit,
+    setValue,
     formState: { errors, isSubmitting },
   } = useForm<LoginInput>({
     resolver: zodResolver(LoginInputSchema),
     defaultValues: {
       email: '',
       password: '',
+      turnstileToken: '',
     },
   });
+
+  const handleTurnstileVerify = (token: string) => {
+    setTurnstileToken(token);
+    setValue('turnstileToken', token, { shouldValidate: true });
+    setServerError(null);
+  };
+
+  const handleTurnstileExpire = () => {
+    setTurnstileToken('');
+    setValue('turnstileToken', '', { shouldValidate: true });
+  };
 
   const onSubmit = async (data: LoginInput) => {
     setServerError(null);
@@ -58,10 +75,22 @@ function LoginForm(): React.JSX.Element {
       const safeTarget = getSafeReturnUrl(returnUrl, '/dashboard');
       router.push(safeTarget);
       router.refresh();
-    } catch (err) {
+    } catch (err: unknown) {
       setServerError(
         err instanceof Error ? err.message : 'Terjadi kesalahan saat masuk. Silakan coba lagi.'
       );
+
+      // Adaptive CAPTCHA: backend signals when verification is needed for the next attempt
+      if (isApiError(err)) {
+        if (err.details?.requireCaptcha === true || err.code === 'TURNSTILE_TOKEN_REQUIRED') {
+          setRequireCaptcha(true);
+        }
+      }
+
+      // Token Turnstile sekali pakai: reset widget setelah submit gagal
+      setTurnstileToken('');
+      setValue('turnstileToken', '');
+      turnstileRef.current?.reset();
     }
   };
 
@@ -179,13 +208,29 @@ function LoginForm(): React.JSX.Element {
               </p>
             )}
           </div>
+
+          {/* Adaptive Cloudflare Turnstile: tampil setelah beberapa percobaan gagal */}
+          {requireCaptcha && (
+            <div className="space-y-1.5 pt-1">
+              <p className="text-center text-[11px] text-muted-foreground">
+                Selesaikan verifikasi keamanan untuk melanjutkan.
+              </p>
+              <TurnstileWidget
+                ref={turnstileRef}
+                action="login"
+                onVerify={handleTurnstileVerify}
+                onExpire={handleTurnstileExpire}
+                onError={(err) => setServerError(err || 'Verifikasi keamanan gagal. Silakan coba lagi.')}
+              />
+            </div>
+          )}
         </CardContent>
 
         <CardFooter className="flex flex-col space-y-4 pt-2">
           <Button
             type="submit"
             className="w-full h-10 font-semibold gap-2"
-            disabled={isSubmitting}
+            disabled={isSubmitting || (requireCaptcha && !turnstileToken)}
           >
             {isSubmitting ? (
               <>
