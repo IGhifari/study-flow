@@ -14,6 +14,7 @@ import {
   Files,
   ChevronDown,
   CalendarClock,
+  CalendarDays,
 } from 'lucide-react';
 import { UserProfile } from '@studyflow/shared';
 import { apiLogout } from '@/lib/auth-client';
@@ -99,6 +100,11 @@ const navigationGroups = [
         label: 'Jadwal Kuliah',
         href: '/schedule',
         icon: CalendarClock,
+      },
+      {
+        label: 'Kalender',
+        href: '/calendar',
+        icon: CalendarDays,
       },
       {
         label: 'Kelola Semester',
@@ -234,6 +240,8 @@ function HeaderBreadcrumbs(): React.JSX.Element {
     items.push({ label: 'Detail Mata Kuliah' });
   } else if (pathname === '/schedule') {
     items.push({ label: 'Jadwal Kuliah' });
+  } else if (pathname === '/calendar') {
+    items.push({ label: 'Kalender' });
   } else if (pathname === '/semesters') {
     items.push({ label: 'Kelola Semester' });
   } else if (pathname === '/settings') {

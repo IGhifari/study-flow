@@ -2549,6 +2549,116 @@
         }
       }
     },
+    "/api/calendar": {
+      "get": {
+        "summary": "Mendapatkan data kalender akademik terpadu (jadwal perkuliahan & tenggat tugas)",
+        "tags": [
+          "Calendar"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "startDate",
+            "in": "query",
+            "required": true,
+            "description": "Tanggal awal rentang [startDate, endDate) dalam format YYYY-MM-DD atau ISO",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "endDate",
+            "in": "query",
+            "required": true,
+            "description": "Tanggal akhir batas atas (eksklusif) dalam format YYYY-MM-DD atau ISO",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "semesterId",
+            "in": "query",
+            "required": false,
+            "description": "ID Semester aktif/pilihan pengguna",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "courseId",
+            "in": "query",
+            "required": false,
+            "description": "Filter untuk mata kuliah tertentu",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "type",
+            "in": "query",
+            "required": false,
+            "description": "Filter tipe event: 'all', 'schedule', atau 'assignment'",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "all",
+                "schedule",
+                "assignment"
+              ],
+              "default": "all"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Data kalender akademik berhasil dimuat",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "events": {
+                      "type": "array",
+                      "items": {
+                        "type": "object"
+                      }
+                    },
+                    "semester": {
+                      "type": "object"
+                    },
+                    "range": {
+                      "type": "object"
+                    },
+                    "timezone": {
+                      "type": "string"
+                    },
+                    "disclaimer": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Rentang tanggal tidak valid, terlalu besar (>60 hari), atau semester diarsipkan"
+          },
+          "401": {
+            "description": "Tidak terautentikasi"
+          },
+          "404": {
+            "description": "Semester atau mata kuliah tidak ditemukan"
+          }
+        }
+      }
+    },
     "/api/dashboard": {
       "get": {
         "summary": "Mendapatkan ringkasan metrik dashboard pengguna",

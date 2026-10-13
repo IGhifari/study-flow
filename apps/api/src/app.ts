@@ -18,6 +18,7 @@ import { materialRouter } from './routes/materials.js';
 import { flashcardRouter, quizRouter, attemptRouter } from './routes/learning.js';
 import { localStorageRouter } from './routes/localStorage.js';
 import { scheduleRouter } from './routes/schedules.js';
+import { calendarRouter } from './routes/calendar.js';
 
 export function createApp(): Express {
   const app = express();
@@ -84,6 +85,7 @@ export function createApp(): Express {
   app.use('/api/quizzes', quizRouter);
   app.use('/api/attempts', attemptRouter);
   app.use('/api/schedules', scheduleRouter);
+  app.use('/api/calendar', calendarRouter);
   app.use('/api/storage/local', localStorageRouter);
 
   // 404 handler
