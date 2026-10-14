@@ -23,7 +23,9 @@ import {
   Layers,
   HelpCircle,
   MoreVertical,
+  Pin,
 } from 'lucide-react';
+import { pinMaterial } from '@/lib/pin-client';
 import { MaterialFlashcardTab } from '@/components/materials/material-flashcard-tab';
 import { MaterialQuizTab } from '@/components/materials/material-quiz-tab';
 import { MaterialPdfViewer } from '@/components/materials/material-pdf-viewer';
@@ -122,6 +124,7 @@ export default function MaterialDetailPage(): React.JSX.Element {
   // Retry document processing state
   const [isRetrying, setIsRetrying] = React.useState(false);
   const [actionError, setActionError] = React.useState<string | null>(null);
+  const [isPinning, setIsPinning] = React.useState(false);
 
   const timezone = userProfile?.timezone || 'Asia/Jakarta';
 
@@ -368,6 +371,25 @@ export default function MaterialDetailPage(): React.JSX.Element {
     }, 2000);
   };
 
+  const handleTogglePin = async () => {
+    if (!material || isPinning || isArchived) return;
+    const nextPinned = !material.isPinned;
+    setIsPinning(true);
+
+    // Optimistic update
+    setMaterial((prev) => (prev ? { ...prev, isPinned: nextPinned } : null));
+
+    try {
+      await pinMaterial(material.id, nextPinned);
+    } catch (err: any) {
+      // Rollback
+      setMaterial((prev) => (prev ? { ...prev, isPinned: material.isPinned } : null));
+      setActionError(err.message || 'Gagal mengubah status sematan materi');
+    } finally {
+      setIsPinning(false);
+    }
+  };
+
   const isArchived = Boolean(
     material?.course?.archivedAt || material?.course?.semester?.archivedAt
   );
@@ -510,6 +532,23 @@ export default function MaterialDetailPage(): React.JSX.Element {
 
         {/* Aksi Utama & Dropdown Aksi Sekunder */}
         <div className="flex items-center gap-2 shrink-0 self-start sm:self-auto">
+          <Button
+            variant="outline"
+            size="standard"
+            onClick={handleTogglePin}
+            disabled={isPinning || isArchived}
+            className="gap-1.5 text-xs"
+            title={material.isPinned ? 'Lepas sematan' : 'Sematkan materi ini'}
+            aria-label={material.isPinned ? 'Lepas sematan' : 'Sematkan materi ini'}
+          >
+            {isPinning ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Pin className={`h-4 w-4 ${material.isPinned ? 'fill-primary text-primary' : ''}`} />
+            )}
+            <span>{material.isPinned ? 'Disematkan' : 'Sematkan'}</span>
+          </Button>
+
           {material.status === 'READY' && (
             <Button
               variant="outline"
@@ -552,6 +591,15 @@ export default function MaterialDetailPage(): React.JSX.Element {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-52">
+              <DropdownMenuItem
+                onClick={handleTogglePin}
+                disabled={isPinning || isArchived}
+                className="cursor-pointer text-xs"
+              >
+                <Pin className={`mr-2 h-3.5 w-3.5 ${material.isPinned ? 'fill-primary text-primary' : ''}`} />
+                <span>{material.isPinned ? 'Lepas Sematan' : 'Sematkan'}</span>
+              </DropdownMenuItem>
+
               <DropdownMenuItem
                 onClick={() => setIsEditOpen(true)}
                 disabled={isArchived}

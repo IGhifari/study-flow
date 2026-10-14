@@ -31,6 +31,7 @@ import { getDashboardSummary } from '@/lib/dashboard-client';
 import { updateAssignment } from '@/lib/assignment-client';
 import { getProfile } from '@/lib/auth-client';
 import { TodayScheduleWidget } from '@/components/dashboard/today-schedule-widget';
+import { PinnedItemsWidget } from '@/components/dashboard/pinned-items-widget';
 import { DashboardCharts } from '@/components/dashboard/dashboard-charts';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -711,6 +712,14 @@ export function DashboardContent({ user }: DashboardContentProps): React.JSX.Ele
             className="h-full"
           />
         </div>
+      </div>
+
+      {/* Bagian Disematkan: Materi & Catatan Penting */}
+      <div className="mb-6">
+        <PinnedItemsWidget
+          activeSemesterId={summary.activeSemester?.id}
+          timezone={timezone}
+        />
       </div>
 
       {/* Card Materi Terbaru: Di bawah tugas & jadwal, melebar ke samping kanan penuh */}

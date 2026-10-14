@@ -17,6 +17,7 @@ import {
   MoreVertical,
   Download,
   Trash2,
+  Pin,
 } from 'lucide-react';
 import {
   MaterialListItem,
@@ -31,6 +32,7 @@ import {
   deleteMaterial,
   getMaterialDownloadUrl,
 } from '@/lib/material-client';
+import { pinMaterial } from '@/lib/pin-client';
 import { listCourses } from '@/lib/course-client';
 import { listSemesters } from '@/lib/semester-client';
 import { getProfile } from '@/lib/auth-client';
@@ -86,6 +88,7 @@ export default function MaterialsPage(): React.JSX.Element {
   const [downloadingId, setDownloadingId] = React.useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = React.useState<MaterialListItem | null>(null);
   const [isDeleting, setIsDeleting] = React.useState(false);
+  const [pinningId, setPinningId] = React.useState<string | null>(null);
 
   const timezone = userProfile?.timezone || 'Asia/Jakarta';
 
@@ -215,6 +218,29 @@ export default function MaterialsPage(): React.JSX.Element {
       setErrorMsg(err.message || 'Gagal menghapus materi.');
     } finally {
       setIsDeleting(false);
+    }
+  };
+
+  const handleTogglePin = async (material: MaterialListItem) => {
+    if (pinningId === material.id) return;
+    const nextPinned = !material.isPinned;
+    setPinningId(material.id);
+
+    // Optimistic update
+    setMaterials((prev) =>
+      prev.map((m) => (m.id === material.id ? { ...m, isPinned: nextPinned } : m))
+    );
+
+    try {
+      await pinMaterial(material.id, nextPinned);
+    } catch (err: any) {
+      // Rollback on failure
+      setMaterials((prev) =>
+        prev.map((m) => (m.id === material.id ? { ...m, isPinned: material.isPinned } : m))
+      );
+      setErrorMsg(err.message || 'Gagal memperbarui status sematan materi');
+    } finally {
+      setPinningId(null);
     }
   };
 
@@ -466,6 +492,11 @@ export default function MaterialsPage(): React.JSX.Element {
                                 >
                                   <FileText className="h-4 w-4 text-primary shrink-0" />
                                   <span className="truncate max-w-[240px] lg:max-w-[340px]">{m.title}</span>
+                                  {m.isPinned && (
+                                    <span title="Disematkan" aria-label="Disematkan" className="inline-flex text-primary shrink-0">
+                                      <Pin className="h-3.5 w-3.5 fill-current" />
+                                    </span>
+                                  )}
                                 </Link>
                               </TooltipTrigger>
                               <TooltipContent side="top" align="start" className="max-w-xs break-words">
@@ -550,6 +581,19 @@ export default function MaterialsPage(): React.JSX.Element {
                                   </Link>
                                 </DropdownMenuItem>
 
+                                <DropdownMenuItem
+                                  onClick={() => handleTogglePin(m)}
+                                  disabled={pinningId === m.id}
+                                  className="cursor-pointer text-xs"
+                                >
+                                  {pinningId === m.id ? (
+                                    <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />
+                                  ) : (
+                                    <Pin className={`mr-2 h-3.5 w-3.5 ${m.isPinned ? 'fill-primary text-primary' : ''}`} />
+                                  )}
+                                  <span>{m.isPinned ? 'Lepas Sematan' : 'Sematkan'}</span>
+                                </DropdownMenuItem>
+
                                 {canRetry && (
                                   <DropdownMenuItem
                                     onClick={() => handleRetry(m.id)}
@@ -623,11 +667,16 @@ export default function MaterialsPage(): React.JSX.Element {
                     <div className="min-w-0 flex-1">
                       <Link
                         href={`/materials/${m.id}`}
-                        className="font-medium text-foreground hover:text-primary transition-colors block text-sm break-words"
+                        className="font-medium text-foreground hover:text-primary transition-colors inline-flex items-center gap-1.5 text-sm break-words"
                         title={m.title}
                         aria-label={`Buka materi: ${m.title}`}
                       >
-                        {m.title}
+                        <span>{m.title}</span>
+                        {m.isPinned && (
+                          <span title="Disematkan" aria-label="Disematkan" className="inline-flex text-primary shrink-0">
+                            <Pin className="h-3 w-3 fill-current" />
+                          </span>
+                        )}
                       </Link>
                       <p
                         className="text-xs text-muted-foreground break-all mt-0.5"
@@ -694,6 +743,19 @@ export default function MaterialsPage(): React.JSX.Element {
                             <ExternalLink className="mr-2 h-3.5 w-3.5" />
                             <span>Buka Materi</span>
                           </Link>
+                        </DropdownMenuItem>
+
+                        <DropdownMenuItem
+                          onClick={() => handleTogglePin(m)}
+                          disabled={pinningId === m.id}
+                          className="cursor-pointer text-xs"
+                        >
+                          {pinningId === m.id ? (
+                            <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />
+                          ) : (
+                            <Pin className={`mr-2 h-3.5 w-3.5 ${m.isPinned ? 'fill-primary text-primary' : ''}`} />
+                          )}
+                          <span>{m.isPinned ? 'Lepas Sematan' : 'Sematkan'}</span>
                         </DropdownMenuItem>
 
                         {canRetry && (

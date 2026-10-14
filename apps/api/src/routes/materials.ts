@@ -7,6 +7,7 @@ import {
   GenerateSummaryInputSchema,
   GenerateFlashcardsInputSchema,
   GenerateQuizInputSchema,
+  SetPinInputSchema,
 } from '@studyflow/shared';
 import {
   initiateUpload,
@@ -31,6 +32,7 @@ import {
   getQuizzes,
   requestQuizGeneration,
 } from '../services/learning.service.js';
+import { setMaterialPin } from '../services/pin.service.js';
 import { authenticate } from '../middleware/authenticate.js';
 import { originCheckMiddleware } from '../middleware/originCheck.js';
 import { AppError } from '../middleware/errorHandler.js';
@@ -318,6 +320,29 @@ materialRouter.post(
     }
   }
 );
+
+// PATCH /api/materials/:id/pin — Pin or unpin material
+materialRouter.patch('/:id/pin', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const id = req.params.id as string;
+    const parseResult = SetPinInputSchema.safeParse(req.body);
+    if (!parseResult.success) {
+      res.status(400).json({
+        error: {
+          code: 'VALIDATION_ERROR',
+          message: 'Status pin tidak valid',
+          details: parseResult.error.format(),
+        },
+      });
+      return;
+    }
+
+    const result = await setMaterialPin(req.user!.id, id, parseResult.data.pinned);
+    res.status(200).json(result);
+  } catch (err) {
+    next(err);
+  }
+});
 
 // DELETE /api/materials/:id — Delete material
 materialRouter.delete('/:id', async (req: Request, res: Response, next: NextFunction) => {

@@ -29,9 +29,11 @@ import {
   Edit3,
   Eye,
   FileText,
+  Pin,
 } from 'lucide-react';
 import { Note, formatUserDateTime, UserProfile, MaterialListItem } from '@studyflow/shared';
 import { getNote, updateNote } from '@/lib/note-client';
+import { pinNote } from '@/lib/pin-client';
 import { listMaterials } from '@/lib/material-client';
 import { getProfile } from '@/lib/auth-client';
 import { Button } from '@/components/ui/button';
@@ -89,6 +91,7 @@ export default function NoteDetailPage(): React.JSX.Element {
     currentVersion: number;
     message: string;
   } | null>(null);
+  const [isPinning, setIsPinning] = React.useState(false);
 
   const textareaRef = React.useRef<HTMLTextAreaElement>(null);
 
@@ -471,6 +474,25 @@ export default function NoteDetailPage(): React.JSX.Element {
     await handleSave(versionConflict.currentVersion);
   };
 
+  const handleTogglePin = async () => {
+    if (!note || isPinning || isArchived) return;
+    const nextPinned = !note.isPinned;
+    setIsPinning(true);
+
+    // Optimistic update
+    setNote((prev) => (prev ? { ...prev, isPinned: nextPinned } : null));
+
+    try {
+      await pinNote(note.id, nextPinned);
+    } catch (err: any) {
+      // Rollback
+      setNote((prev) => (prev ? { ...prev, isPinned: note.isPinned } : null));
+      setSaveErrorMessage(err.message || 'Gagal memperbarui status sematan catatan');
+    } finally {
+      setIsPinning(false);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="flex h-96 items-center justify-center">
@@ -570,6 +592,23 @@ export default function NoteDetailPage(): React.JSX.Element {
               </span>
             )}
           </div>
+
+          <Button
+            variant="outline"
+            size="standard"
+            onClick={handleTogglePin}
+            disabled={isPinning || isArchived}
+            className="gap-1.5 shrink-0 text-xs"
+            title={note.isPinned ? 'Lepas sematan' : 'Sematkan catatan ini'}
+            aria-label={note.isPinned ? 'Lepas sematan' : 'Sematkan catatan ini'}
+          >
+            {isPinning ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Pin className={`h-4 w-4 ${note.isPinned ? 'fill-primary text-primary' : ''}`} />
+            )}
+            <span>{note.isPinned ? 'Disematkan' : 'Sematkan'}</span>
+          </Button>
 
           <Button
             onClick={() => handleSave()}

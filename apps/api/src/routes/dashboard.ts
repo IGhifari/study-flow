@@ -1,6 +1,7 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import { authenticate } from '../middleware/authenticate.js';
 import { getDashboardSummary, getDashboardCharts } from '../services/dashboard.service.js';
+import { getPinnedItems } from '../services/pin.service.js';
 
 export const dashboardRouter = Router();
 
@@ -12,6 +13,21 @@ dashboardRouter.get(
     try {
       const summary = await getDashboardSummary(req.user!.id);
       res.json(summary);
+    } catch (err) {
+      next(err);
+    }
+  }
+);
+
+// GET /api/dashboard/pinned
+dashboardRouter.get(
+  '/pinned',
+  authenticate,
+  async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const semesterId = typeof req.query.semesterId === 'string' ? req.query.semesterId : undefined;
+      const pinned = await getPinnedItems(req.user!.id, semesterId);
+      res.json(pinned);
     } catch (err) {
       next(err);
     }

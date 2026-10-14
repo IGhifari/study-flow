@@ -298,6 +298,18 @@ Pencarian cepat berbasis metadata untuk mempermudah navigasi lintas entitas perk
 - **Parameter & Perilaku:** Query minimal 2 karakter, maksimal 100 karakter, case-insensitive, debounce ~300 ms, dibatasi maksimal 5 hasil per kategori dengan pemeringkatan deterministik (exact match → prefix → substring).
 - **Antarmuka:** Dialog pencarian global dapat dipicu melalui tombol header app shell atau shortcut keyboard `Ctrl+K` (Windows/Linux) / `Cmd+K` (macOS).
 
+### 7.6 Fitur Pin/Favorit (Materi & Catatan)
+
+Fitur penyematan materi dan catatan penting agar mahasiswa dapat mengaksesnya secara instan langsung dari dashboard:
+
+- **Cakupan Entitas:** Materi perkuliahan (`Material`) dan Catatan perkuliahan (`Note`).
+- **Penyimpanan & Model:** Status pin dan waktu penyematan (`createdAt`) disimpan secara terpisah pada tabel `pinned_items`, sehingga perubahan pin sama sekali tidak mengubah timestamp edit konten (`updatedAt`) yang digunakan untuk pengurutan "Terakhir diedit".
+- **Integritas & Cascading:** Penghapusan materi atau catatan secara otomatis menghapus rekaman pin terkait (`ON DELETE CASCADE`), mencegah pin rusak (dangling pointer). Item yang dihapus (soft-deleted) atau berada di bawah mata kuliah/semester yang diarsipkan dikecualikan dari daftar sematan dan tidak dapat disematkan.
+- **Batas & Konkurensi:** Maksimal 20 item disematkan gabungan per pengguna (materi + catatan). Batas ditegakkan secara atomik di database menggunakan penguncian baris (`FOR UPDATE`) dalam transaksi database untuk mencegah race condition pada permintaan paralel.
+- **Operasi Eksplisit & Idempotensi:** Menggunakan payload status eksplisit (`pinned: true` atau `pinned: false`), bukan toggle tanpa arah. Permintaan berulang dengan status yang sama bersifat idempotent.
+- **Integrasi Dashboard & Semester:** Widget "Disematkan" di dashboard menampilkan hingga 6 item disematkan awal terurut berdasarkan waktu penyematan terbaru (dengan id tie-breaker yang stabil), dengan tombol "Tampilkan semua" untuk membuka modal dialog interaktif lengkap yang mendukung pelepasan sematan langsung. Widget mengikuti semester aktif, dan menyertakan catatan umum tanpa relasi semester dengan label "Catatan Umum" yang jelas.
+- **Antarmuka Materi & Catatan:** Aksi sematkan/lepas sematan tersedia pada menu dropdown baris dan toolbar halaman detail, dilengkapi indikator pin kecil yang rapi serta perlindungan status editor catatan yang belum tersimpan.
+
 ## 8. Pengembangan v1.1
 
 ### 8.1 Ask StudyFlow — tanya-jawab berbasis materi

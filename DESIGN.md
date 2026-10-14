@@ -804,3 +804,5 @@ Palet, layout, ukuran, dan microcopy adalah keputusan desain StudyFlow. Dokument
 | 1.0 | 3 Oktober 2026 | Arah visual awal, token light/dark, shell responsif, rancangan seluruh halaman MVP, state AI, dan checklist implementasi |
 | 1.1 | 11 Oktober 2026 | Penambahan panduan desain antarmuka Jadwal Kuliah mingguan desktop, agenda mobile, dan integrasi Detail Mata Kuliah |
 | 1.2 | 11 Oktober 2026 | Standardisasi pemilih tanggal menggunakan shadcn/ui Date Picker varian Basic (Popover + Calendar Radix), locale Indonesia, dan pemisahan input jam |
+| 1.3 | 14 Oktober 2026 | Penambahan panduan desain fitur Pin/Favorit: widget dashboard "Disematkan", modal dialog interaktif, indikator ikon Pin pada baris materi dan catatan, serta toolbar halaman detail |
+

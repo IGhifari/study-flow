@@ -20,6 +20,7 @@ export const NoteSchema = z.object({
     .optional(),
   createdAt: z.string().datetime(),
   updatedAt: z.string().datetime(),
+  isPinned: z.boolean().optional(),
 });
 export type Note = z.infer<typeof NoteSchema>;
 

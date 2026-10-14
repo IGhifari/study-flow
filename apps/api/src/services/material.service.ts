@@ -38,6 +38,9 @@ export function toMaterialListItem(m: any): MaterialListItem {
     createdAt: m.createdAt.toISOString(),
     updatedAt: m.updatedAt.toISOString(),
     deletedAt: m.deletedAt ? m.deletedAt.toISOString() : null,
+    isPinned: Array.isArray(m.pinnedItems)
+      ? m.pinnedItems.length > 0
+      : (typeof m.isPinned === 'boolean' ? m.isPinned : false),
   };
 }
 
@@ -340,6 +343,10 @@ export async function listMaterials(
         course: {
           include: { semester: true },
         },
+        pinnedItems: {
+          where: { userId },
+          select: { id: true },
+        },
       },
       orderBy: [{ createdAt: 'desc' }, { id: 'asc' }],
       skip,
@@ -364,6 +371,10 @@ export async function getMaterialById(userId: string, id: string): Promise<Mater
     include: {
       course: {
         include: { semester: true },
+      },
+      pinnedItems: {
+        where: { userId },
+        select: { id: true },
       },
       pages: {
         orderBy: { pageNumber: 'asc' },

@@ -27,6 +27,7 @@ model User {
   passwordResetTokens PasswordResetToken[]
   emailVerificationTokens EmailVerificationToken[]
   assignmentReminderLogs  AssignmentReminderLog[]
+  pinnedItems     PinnedItem[]
   semesters       Semester[]
   courses         Course[]
   assignments     Assignment[]
@@ -162,6 +163,8 @@ model Note {
   createdAt  DateTime  @default(now()) @map("created_at")
   updatedAt  DateTime  @updatedAt @map("updated_at")
 
+  pinnedItems PinnedItem[]
+
   @@index([userId, updatedAt])
   @@index([courseId])
   @@index([materialId])
@@ -202,6 +205,7 @@ model Material {
   summary        MaterialSummary?
   flashcardSets  FlashcardSet[]
   quizzes        Quiz[]
+  pinnedItems    PinnedItem[]
 
   // Target for composite FK references if needed
   @@unique([id, userId])
@@ -595,6 +599,30 @@ model AssignmentReminderLog {
   @@index([userId, status])
   @@index([status, deadline])
   @@map("assignment_reminder_logs")
+}
+
+// Pinned/Favorite Items for Materials and Notes
+enum PinnedItemType {
+  MATERIAL
+  NOTE
+}
+
+model PinnedItem {
+  id         String         @id @default(cuid())
+  userId     String         @map("user_id")
+  user       User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type       PinnedItemType
+  materialId String?        @map("material_id")
+  material   Material?      @relation(fields: [materialId], references: [id], onDelete: Cascade)
+  noteId     String?        @map("note_id")
+  note       Note?          @relation(fields: [noteId], references: [id], onDelete: Cascade)
+  createdAt  DateTime       @default(now()) @map("created_at")
+
+  @@unique([userId, materialId])
+  @@unique([userId, noteId])
+  @@index([userId, createdAt])
+  @@index([userId, type])
+  @@map("pinned_items")
 }
 
 

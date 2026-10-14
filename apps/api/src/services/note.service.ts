@@ -90,6 +90,9 @@ function toNoteResponse(raw: RawNoteWithCourse, includeContent = true): Note {
       : undefined,
     createdAt: raw.createdAt.toISOString(),
     updatedAt: raw.updatedAt.toISOString(),
+    isPinned: Array.isArray((raw as any).pinnedItems)
+      ? (raw as any).pinnedItems.length > 0
+      : (typeof (raw as any).isPinned === 'boolean' ? (raw as any).isPinned : false),
   };
 }
 
@@ -154,6 +157,10 @@ export async function listNotes(
             semester: true,
           },
         },
+        pinnedItems: {
+          where: { userId },
+          select: { id: true },
+        },
       },
       orderBy: [
         { updatedAt: 'desc' },
@@ -190,6 +197,10 @@ export async function getNoteById(userId: string, id: string): Promise<Note> {
         include: {
           semester: true,
         },
+      },
+      pinnedItems: {
+        where: { userId },
+        select: { id: true },
       },
     },
   });

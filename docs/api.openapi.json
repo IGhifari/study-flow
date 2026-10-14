@@ -1683,6 +1683,156 @@
         }
       }
     },
+    "/api/materials/{id}/pin": {
+      "patch": {
+        "summary": "Menetapkan status sematan (pin/unpin) materi",
+        "description": "Menyematkan atau melepas sematan materi kuliah. Operasi eksplisit (pinned: true/false), idempotent, dan membatasi maksimal 20 item gabungan per user.",
+        "tags": [
+          "Materials",
+          "Pinned Items"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "ID materi"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "pinned"
+                ],
+                "properties": {
+                  "pinned": {
+                    "type": "boolean"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Status pin materi berhasil diperbarui",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "pinned": {
+                      "type": "boolean"
+                    },
+                    "pinnedAt": {
+                      "type": "string",
+                      "nullable": true,
+                      "format": "date-time"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Batas 20 item terlampaui atau item diarsipkan"
+          },
+          "404": {
+            "description": "Materi tidak ditemukan"
+          }
+        }
+      }
+    },
+    "/api/notes/{id}/pin": {
+      "patch": {
+        "summary": "Menetapkan status sematan (pin/unpin) catatan",
+        "description": "Menyematkan atau melepas sematan catatan kuliah. Operasi eksplisit (pinned: true/false), idempotent, dan membatasi maksimal 20 item gabungan per user.",
+        "tags": [
+          "Notes",
+          "Pinned Items"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "ID catatan"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "pinned"
+                ],
+                "properties": {
+                  "pinned": {
+                    "type": "boolean"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Status pin catatan berhasil diperbarui",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "pinned": {
+                      "type": "boolean"
+                    },
+                    "pinnedAt": {
+                      "type": "string",
+                      "nullable": true,
+                      "format": "date-time"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Batas 20 item terlampaui atau item diarsipkan"
+          },
+          "404": {
+            "description": "Catatan tidak ditemukan"
+          }
+        }
+      }
+    },
     "/api/materials/{id}/summary": {
       "get": {
         "summary": "Mendapatkan ringkasan AI dan status kuota untuk materi",
@@ -2820,6 +2970,104 @@
           },
           "404": {
             "description": "Semester tidak ditemukan"
+          }
+        }
+      }
+    },
+    "/api/dashboard/pinned": {
+      "get": {
+        "summary": "Mendapatkan daftar item materi dan catatan yang disematkan",
+        "description": "Mengambil item yang disematkan untuk pengguna aktif, difilter berdasarkan semesterId (jika disediakan). Catatan umum tanpa semester tetap disertakan.",
+        "tags": [
+          "Dashboard",
+          "Pinned Items"
+        ],
+        "security": [
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "semesterId",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "ID semester untuk memfilter item materi/catatan semester terkait"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Daftar item disematkan berhasil dimuat",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "type": {
+                            "type": "string",
+                            "enum": [
+                              "MATERIAL",
+                              "NOTE"
+                            ]
+                          },
+                          "targetId": {
+                            "type": "string"
+                          },
+                          "title": {
+                            "type": "string"
+                          },
+                          "courseId": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "courseName": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "semesterId": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "semesterName": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "isGeneralNote": {
+                            "type": "boolean"
+                          },
+                          "pinnedAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "materialStatus": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "pageCount": {
+                            "type": "number",
+                            "nullable": true
+                          }
+                        }
+                      }
+                    },
+                    "total": {
+                      "type": "number"
+                    }
+                  }
+                }
+              }
+            }
           }
         }
       }

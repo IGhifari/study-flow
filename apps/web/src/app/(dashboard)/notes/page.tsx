@@ -15,6 +15,8 @@ import {
   RefreshCw,
   RotateCcw,
   MoreVertical,
+  Pin,
+  Loader2,
 } from 'lucide-react';
 import {
   NoteListItem,
@@ -25,6 +27,7 @@ import {
   Note,
 } from '@studyflow/shared';
 import { listNotes } from '@/lib/note-client';
+import { pinNote } from '@/lib/pin-client';
 import { listCourses } from '@/lib/course-client';
 import { listSemesters } from '@/lib/semester-client';
 import { getProfile } from '@/lib/auth-client';
@@ -69,6 +72,7 @@ export default function NotesPage(): React.JSX.Element {
   // Dialog States
   const [isCreateOpen, setIsCreateOpen] = React.useState(false);
   const [deletingNote, setDeletingNote] = React.useState<NoteListItem | null>(null);
+  const [pinningId, setPinningId] = React.useState<string | null>(null);
 
   const timezone = userProfile?.timezone || 'Asia/Jakarta';
 
@@ -152,6 +156,29 @@ export default function NotesPage(): React.JSX.Element {
     () => courses.filter((c) => !c.archivedAt),
     [courses]
   );
+
+  const handleTogglePin = async (note: NoteListItem) => {
+    if (pinningId === note.id) return;
+    const nextPinned = !note.isPinned;
+    setPinningId(note.id);
+
+    // Optimistic update
+    setNotes((prev) =>
+      prev.map((n) => (n.id === note.id ? { ...n, isPinned: nextPinned } : n))
+    );
+
+    try {
+      await pinNote(note.id, nextPinned);
+    } catch (err: any) {
+      // Rollback on failure
+      setNotes((prev) =>
+        prev.map((n) => (n.id === note.id ? { ...n, isPinned: note.isPinned } : n))
+      );
+      setErrorMsg(err.message || 'Gagal memperbarui status sematan catatan');
+    } finally {
+      setPinningId(null);
+    }
+  };
 
   const hasFilter = Boolean(searchQuery || selectedCourseId !== 'ALL');
 
@@ -379,10 +406,15 @@ export default function NotesPage(): React.JSX.Element {
                           <div className="flex flex-col min-w-0 max-w-[360px]">
                             <Link
                               href={`/notes/${note.id}`}
-                              className="font-medium text-foreground hover:text-primary transition-colors flex items-center gap-2 break-words"
+                              className="font-medium text-foreground hover:text-primary transition-colors inline-flex items-center gap-2 break-words"
                             >
                               <FileText className="h-4 w-4 text-primary shrink-0" />
                               <span className="break-words">{note.title}</span>
+                              {note.isPinned && (
+                                <span title="Disematkan" aria-label="Disematkan" className="inline-flex text-primary shrink-0">
+                                  <Pin className="h-3.5 w-3.5 fill-current" />
+                                </span>
+                              )}
                             </Link>
                           </div>
                         </td>
@@ -453,12 +485,24 @@ export default function NotesPage(): React.JSX.Element {
                                 <MoreVertical className="h-4 w-4" />
                               </Button>
                             </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end" className="w-40">
+                            <DropdownMenuContent align="end" className="w-44">
                               <DropdownMenuItem asChild className="cursor-pointer">
                                 <Link href={`/notes/${note.id}`} className="flex items-center">
                                   <Pencil className="h-4 w-4 mr-2" />
                                   <span>Buka editor</span>
                                 </Link>
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={() => handleTogglePin(note)}
+                                disabled={pinningId === note.id}
+                                className="cursor-pointer text-xs"
+                              >
+                                {pinningId === note.id ? (
+                                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                ) : (
+                                  <Pin className={`mr-2 h-4 w-4 ${note.isPinned ? 'fill-primary text-primary' : ''}`} />
+                                )}
+                                <span>{note.isPinned ? 'Lepas sematan' : 'Sematkan'}</span>
                               </DropdownMenuItem>
                               <DropdownMenuSeparator />
                               <DropdownMenuItem
@@ -496,6 +540,11 @@ export default function NotesPage(): React.JSX.Element {
                     >
                       <FileText className="h-4 w-4 text-primary shrink-0 mt-0.5" />
                       <span className="break-words">{note.title}</span>
+                      {note.isPinned && (
+                        <span title="Disematkan" aria-label="Disematkan" className="inline-flex text-primary shrink-0 mt-0.5">
+                          <Pin className="h-3 w-3 fill-current" />
+                        </span>
+                      )}
                     </Link>
                     {isArchived && (
                       <Badge
@@ -542,12 +591,24 @@ export default function NotesPage(): React.JSX.Element {
                           <MoreVertical className="h-4 w-4" />
                         </Button>
                       </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="w-40">
+                      <DropdownMenuContent align="end" className="w-44">
                         <DropdownMenuItem asChild className="cursor-pointer">
                           <Link href={`/notes/${note.id}`} className="flex items-center">
                             <Pencil className="h-4 w-4 mr-2" />
                             <span>Buka editor</span>
                           </Link>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={() => handleTogglePin(note)}
+                          disabled={pinningId === note.id}
+                          className="cursor-pointer text-xs"
+                        >
+                          {pinningId === note.id ? (
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          ) : (
+                            <Pin className={`mr-2 h-4 w-4 ${note.isPinned ? 'fill-primary text-primary' : ''}`} />
+                          )}
+                          <span>{note.isPinned ? 'Lepas sematan' : 'Sematkan'}</span>
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem

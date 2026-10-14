@@ -73,6 +73,7 @@ export const MaterialSchema = z.object({
   createdAt: z.string().datetime(),
   updatedAt: z.string().datetime(),
   deletedAt: z.string().datetime().nullable().optional(),
+  isPinned: z.boolean().optional(),
 });
 export type Material = z.infer<typeof MaterialSchema>;
 

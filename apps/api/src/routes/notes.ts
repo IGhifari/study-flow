@@ -3,6 +3,7 @@ import {
   CreateNoteInputSchema,
   UpdateNoteInputSchema,
   NoteListQuerySchema,
+  SetPinInputSchema,
 } from '@studyflow/shared';
 import {
   listNotes,
@@ -11,6 +12,7 @@ import {
   updateNote,
   deleteNote,
 } from '../services/note.service.js';
+import { setNotePin } from '../services/pin.service.js';
 import { authenticate } from '../middleware/authenticate.js';
 import { originCheckMiddleware } from '../middleware/originCheck.js';
 import { AppError } from '../middleware/errorHandler.js';
@@ -95,6 +97,29 @@ noteRouter.patch('/:id', async (req: Request, res: Response, next: NextFunction)
       message: 'Catatan berhasil diperbarui',
       note,
     });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// PATCH /api/notes/:id/pin — Pin or unpin note
+noteRouter.patch('/:id/pin', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const id = req.params.id as string;
+    const parseResult = SetPinInputSchema.safeParse(req.body);
+    if (!parseResult.success) {
+      res.status(400).json({
+        error: {
+          code: 'VALIDATION_ERROR',
+          message: 'Status pin tidak valid',
+          details: parseResult.error.format(),
+        },
+      });
+      return;
+    }
+
+    const result = await setNotePin(req.user!.id, id, parseResult.data.pinned);
+    res.status(200).json(result);
   } catch (err) {
     next(err);
   }
