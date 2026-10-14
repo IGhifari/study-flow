@@ -449,6 +449,14 @@ Jika belum ada semester, tampilkan satu empty state “Mulai dari semester perta
   - Konfirmasi destruktif menyebutkan judul tugas yang akan dihapus secara spesifik dan menjelaskan konsekuensi penghapusan permanen.
   - Tombol “Batal” (`variant="outline" size="standard"`) dan “Hapus Tugas” (`variant="destructive" size="standard"`).
   - Jika penghapusan gagal di server, dialog tetap terbuka menampilkan pesan kesalahan tanpa merusak alur pengguna.
+- **Subtugas dan checklist pekerjaan**:
+  - Terintegrasi di dalam `EditTaskDialog` sebagai bagian terstruktur di bawah catatan/deskripsi.
+  - Menampilkan header dengan statistik dan bilah progres visual: *“X dari Y langkah selesai (Z%)”*.
+  - Input tambah cepat di bagian bawah: input teks ringkas yang dapat dikirim langsung dengan tombol `Enter` atau tombol `Tambah` (`Plus`). Isian teks tetap dipertahankan jika proses simpan gagal (*input retention*).
+  - Setiap subtugas dilengkapi checkbox aksesibel, judul yang dapat diklik untuk diedit secara inline (dengan tombol Simpan `Check` dan Batal `X`), serta aksi hapus dengan konfirmasi inline ramah untuk mencegah klik tidak sengaja.
+  - Tampilan ringkas pada daftar tugas: Jika tugas memiliki subtugas (`total > 0`), tabel desktop dan kartu mobile menyajikan indikator pil ringkas berikon `ListTodo` dan label `X/Y langkah`. Tugas tanpa subtugas tidak menampilkan penanda kosong ("0/0").
+  - Dialog konfirmasi penyelesaian: Bila pengguna mencentang selesai tugas induk yang memiliki subtugas belum tuntas, sistem memunculkan dialog konfirmasi ("Tugas memiliki N subtugas yang belum selesai. Tetap selesaikan tugas?") dengan tombol "Batal" dan "Tetap Selesaikan".
+  - Proteksi status selesai: Saat tugas berstatus `DONE`, checklist otomatis beralih ke mode hanya-baca (*read-only*) disertai banner informasi ramah bahwa tugas harus dibuka kembali untuk mengedit checklist.
 - **Penanganan state halaman**:
   - *Loading*: Skeleton terstruktur untuk tabel desktop dan kartu mobile.
   - *Gagal memuat*: Peringatan ramah dengan tombol “Coba Lagi” (`RefreshCw`).
@@ -789,6 +797,29 @@ Ketentuan berikut menjadi arah awal saat milestone PRD terkait dikerjakan, bukan
 6. Verifikasi hasil render dengan data realistis pada kedua tema dan viewport yang relevan. Pemeriksaan visual tidak digantikan hanya oleh build sukses.
 7. Laporkan halaman yang berubah, kondisi yang telah diperiksa, dan keterbatasan nyata. Perbarui dokumen jika keputusan desain berubah secara sengaja.
 
+### 9.13 Dashboard Administrator StudyFlow (apps/admin)
+
+- **Identitas dan App Shell**:
+  - Menggunakan block `sidebar-07` resmi shadcn/ui dengan mode collapsible `icon` dan drawer mobile terpadu.
+  - Header admin menampilkan `SidebarTrigger`, `Separator` vertikal, `Breadcrumb` rute aktif (StudyFlow Admin > Ringkasan / Pengguna), dan `ThemeToggle` (Sistem, Terang, Gelap).
+  - Footer sidebar menyajikan identitas administrator masuk dengan `Avatar`, inisial nama, email, serta `DropdownMenu` aksi akun berisi tombol “Keluar” destruktif.
+- **Login Administrator (`/login`)**:
+  - Halaman terisolasi berbasis `Card` shadcn terpusat (`max-w-md`) dengan ikon perisai (`Shield`) dan tipografi tegas.
+  - Input email dan kata sandi dilengkapi tombol visibilitas kata sandi yang aksesibel (`Eye` / `EyeOff`, aria-label, `tabIndex={-1}`).
+  - Tombol aksi utama dengan `Loader2` saat proses mutasi, pencegahan submit ganda, serta pesan error terpadu (`Alert variant="destructive"`).
+  - Tanpa opsi registrasi publik atau tombol login Google.
+- **Ringkasan Platform (`/dashboard`)**:
+  - Tata letak kisi kartu metrik responsif (`grid gap-4 sm:grid-cols-2 lg:grid-cols-4`).
+  - 4 metrik nyata: Total Pengguna (`Users`), Total Materi (`FileText`), Total Tugas (`CheckSquare`), dan Pekerjaan AI Gagal 24 Jam (`AlertTriangle`).
+  - Sediakan skeleton loading (`Skeleton`), penanganan kegagalan dengan tombol coba lagi (`RefreshCw`), serta kartu penjelasan cakupan data teknis dan timestamp waktu perhitungan.
+- **Daftar Pengguna Read-Only (`/users`)**:
+  - Kontrol atas: input pencarian nama/email debounced (300ms) dengan tombol pembersih (`X`) dan selektor ukuran baris per halaman (10, 20, 50).
+  - Tabel semantik shadcn (`Table`, `TableHeader`, `TableRow`, `TableHead`, `TableBody`, `TableCell`) dengan wadah gulir horizontal aman tanpa *overflow* halaman.
+  - Kolom: Nama, Email (font mono terukur), Peran (`Badge` ADMIN / USER), Status Verifikasi (`Badge` Terverifikasi / Belum Verifikasi), dan Tanggal Bergabung.
+  - Header kolom mendukung pengurutan stabil (`ArrowUpDown`).
+  - Bagian bawah menampilkan keterangan jumlah record terfilter dan tombol paginasi navigasi (Sebelumnya, Halaman X / Y, Berikutnya).
+  - Pembedaan tegas antara state loading (`Skeleton`), error dengan retry, “Belum ada pengguna”, dan “Hasil pencarian tidak ditemukan”.
+
 ## 18. Referensi
 
 Palet, layout, ukuran, dan microcopy adalah keputusan desain StudyFlow. Dokumentasi berikut dipakai untuk memeriksa integrasi serta acuan aksesibilitas, diakses 3 Oktober 2026:
@@ -805,4 +836,6 @@ Palet, layout, ukuran, dan microcopy adalah keputusan desain StudyFlow. Dokument
 | 1.1 | 11 Oktober 2026 | Penambahan panduan desain antarmuka Jadwal Kuliah mingguan desktop, agenda mobile, dan integrasi Detail Mata Kuliah |
 | 1.2 | 11 Oktober 2026 | Standardisasi pemilih tanggal menggunakan shadcn/ui Date Picker varian Basic (Popover + Calendar Radix), locale Indonesia, dan pemisahan input jam |
 | 1.3 | 14 Oktober 2026 | Penambahan panduan desain fitur Pin/Favorit: widget dashboard "Disematkan", modal dialog interaktif, indikator ikon Pin pada baris materi dan catatan, serta toolbar halaman detail |
+| 1.4 | 14 Oktober 2026 | Penambahan panduan desain fitur Subtugas/Checklist pada Tugas: integrasi komponen checklist pada EditTaskDialog, input tambah cepat (Enter), edit/hapus inline aman, bilah progres & persentase langkah selesai, indikator ringkas pada tabel dan kartu daftar tugas (X/Y langkah), modal konfirmasi penyelesaian tugas ber-subtugas belum tuntas, serta state hanya-baca saat tugas selesai |
+| 1.5 | 14 Oktober 2026 | Penambahan panduan desain Dashboard Administrator (apps/admin): app shell sidebar-07, login admin terisolasi, kartu metrik statistik nyata, direktori pengguna read-only dengan paginasi/sorting/pencarian server-side, serta token shadcn/ui |
 

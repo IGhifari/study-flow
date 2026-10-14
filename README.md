@@ -27,6 +27,7 @@ Repository ini dikelola menggunakan npm workspaces:
 study-flow/
 ├── apps/
 │   ├── web/            # Frontend: Next.js 15 (App Router), Tailwind CSS v4, shadcn/ui, Lucide
+│   ├── admin/          # Frontend: Next.js 15 Panel Administrator StudyFlow (Port 3002)
 │   ├── api/            # Backend: Express REST API, Zod validation, Health/Readiness
 │   └── worker/         # Worker: Proses background BullMQ untuk pengolahan dokumen dan AI
 ├── packages/
@@ -63,6 +64,7 @@ Copy-Item .env.example .env
 Copy-Item apps/api/.env.example apps/api/.env
 Copy-Item apps/worker/.env.example apps/worker/.env
 Copy-Item apps/web/.env.example apps/web/.env.local
+Copy-Item apps/admin/.env.example apps/admin/.env.local
 Copy-Item packages/database/.env.example packages/database/.env
 ```
 
@@ -136,6 +138,10 @@ npm run dev
   ```bash
   npm run dev:web
   ```
+- **Admin Dashboard Web** (port `3002`):
+  ```bash
+  npm run dev:admin
+  ```
 - **Backend API** (port `4000`):
   ```bash
   npm run dev:api
@@ -144,6 +150,16 @@ npm run dev
   ```bash
   npm run dev:worker
   ```
+
+### Bootstrap / Promosi Akun Administrator:
+Untuk memberikan role `ADMIN` pada pengguna yang sudah terdaftar:
+```bash
+npm run promote:admin -- user@example.com
+```
+Atau tanpa konfirmasi interaktif (misalnya untuk automasi):
+```bash
+npm run promote:admin -- user@example.com --yes
+```
 
 ---
 
@@ -191,6 +207,7 @@ Jalankan quality gates dan rangkaian test yang tersedia:
   docker build -f apps/api/Dockerfile -t studyflow-api:latest .
   docker build -f apps/worker/Dockerfile -t studyflow-worker:latest .
   docker build -f apps/web/Dockerfile -t studyflow-web:latest .
+  docker build -f apps/admin/Dockerfile -t studyflow-admin:latest .
   ```
 - **Evaluasi Performa Ekstraksi & Kualitas AI**:
   ```bash

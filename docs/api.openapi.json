@@ -1237,6 +1237,240 @@
         }
       }
     },
+    "/api/assignments/{assignmentId}/subtasks": {
+      "get": {
+        "summary": "Mengambil daftar subtugas untuk tugas tertentu",
+        "tags": [
+          "Assignments"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "assignmentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Daftar subtugas berhasil diambil",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "subtasks": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/AssignmentSubtask"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Tugas tidak ditemukan"
+          }
+        }
+      },
+      "post": {
+        "summary": "Menambahkan subtugas baru ke tugas tertentu",
+        "tags": [
+          "Assignments"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "assignmentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateSubtaskInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Subtugas berhasil ditambahkan",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    },
+                    "subtask": {
+                      "$ref": "#/components/schemas/AssignmentSubtask"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validasi gagal, batas 50 subtugas tercapai, atau tugas telah selesai"
+          },
+          "404": {
+            "description": "Tugas tidak ditemukan"
+          }
+        }
+      }
+    },
+    "/api/assignments/{assignmentId}/subtasks/{subtaskId}": {
+      "patch": {
+        "summary": "Memperbarui judul atau status selesai subtugas",
+        "tags": [
+          "Assignments"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "assignmentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "subtaskId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateSubtaskInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Subtugas berhasil diperbarui",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    },
+                    "subtask": {
+                      "$ref": "#/components/schemas/AssignmentSubtask"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validasi gagal atau tugas telah selesai"
+          },
+          "404": {
+            "description": "Tugas atau subtugas tidak ditemukan"
+          }
+        }
+      },
+      "delete": {
+        "summary": "Menghapus subtugas",
+        "tags": [
+          "Assignments"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "assignmentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "subtaskId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Subtugas berhasil dihapus",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Tugas telah selesai atau terarsip"
+          },
+          "404": {
+            "description": "Tugas atau subtugas tidak ditemukan"
+          }
+        }
+      }
+    },
     "/api/materials/initiate-upload": {
       "post": {
         "summary": "Memulai inisiasi upload PDF materi",
@@ -2863,12 +3097,24 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "query": { "type": "string" },
-                    "semesterScope": { "type": "object" },
-                    "results": { "type": "object" },
-                    "totalCount": { "type": "integer" },
-                    "hasMore": { "type": "object" },
-                    "limitPerCategory": { "type": "integer" }
+                    "query": {
+                      "type": "string"
+                    },
+                    "semesterScope": {
+                      "type": "object"
+                    },
+                    "results": {
+                      "type": "object"
+                    },
+                    "totalCount": {
+                      "type": "integer"
+                    },
+                    "hasMore": {
+                      "type": "object"
+                    },
+                    "limitPerCategory": {
+                      "type": "integer"
+                    }
                   }
                 }
               }
@@ -3071,6 +3317,236 @@
           }
         }
       }
+    },
+    "/api/admin/auth/login": {
+      "post": {
+        "summary": "Login Administrator",
+        "description": "Autentikasi akun dengan peran ADMIN. Menolak akun non-admin dengan 403 tanpa meninggalkan sesi admin aktif.",
+        "tags": [
+          "Admin"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "email",
+                  "password"
+                ],
+                "properties": {
+                  "email": {
+                    "type": "string",
+                    "format": "email",
+                    "example": "admin@studyflow.id"
+                  },
+                  "password": {
+                    "type": "string",
+                    "example": "PasswordAdmin123!"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Login admin berhasil, mengembalikan cookie admin HttpOnly"
+          },
+          "400": {
+            "description": "Validasi input gagal"
+          },
+          "401": {
+            "description": "Email atau password salah"
+          },
+          "403": {
+            "description": "Akses ditolak: Akun bukan administrator"
+          },
+          "429": {
+            "description": "Rate limit tercapai"
+          }
+        }
+      }
+    },
+    "/api/admin/auth/refresh": {
+      "post": {
+        "summary": "Refresh Sesi Administrator",
+        "description": "Rotasi refresh token admin dan menerbitkan access token baru untuk administrator.",
+        "tags": [
+          "Admin"
+        ],
+        "responses": {
+          "200": {
+            "description": "Token admin berhasil diperbarui"
+          },
+          "400": {
+            "description": "Refresh token tidak ditemukan"
+          },
+          "401": {
+            "description": "Sesi tidak valid atau telah berakhir"
+          },
+          "403": {
+            "description": "Akses ditolak: Akun bukan administrator"
+          }
+        }
+      }
+    },
+    "/api/admin/auth/logout": {
+      "post": {
+        "summary": "Logout Administrator",
+        "description": "Mencabut keluarga sesi refresh token admin dan membersihkan cookie admin tanpa memengaruhi sesi web.",
+        "tags": [
+          "Admin"
+        ],
+        "responses": {
+          "200": {
+            "description": "Logout admin berhasil"
+          }
+        }
+      }
+    },
+    "/api/admin/auth/me": {
+      "get": {
+        "summary": "Profil Administrator Masuk",
+        "description": "Mengambil profil akun administrator yang sedang login.",
+        "tags": [
+          "Admin"
+        ],
+        "responses": {
+          "200": {
+            "description": "Profil admin berhasil diambil"
+          },
+          "401": {
+            "description": "Autentikasi admin diperlukan"
+          },
+          "403": {
+            "description": "Bukan akun administrator"
+          }
+        }
+      }
+    },
+    "/api/admin/summary": {
+      "get": {
+        "summary": "Ringkasan Statistik Platform",
+        "description": "Mengambil ringkasan data platform (total pengguna, total materi aktif, total tugas, dan pekerjaan AI gagal 24 jam terakhir).",
+        "tags": [
+          "Admin"
+        ],
+        "responses": {
+          "200": {
+            "description": "Agregasi statistik platform",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "totalUsers": {
+                      "type": "integer",
+                      "example": 120
+                    },
+                    "totalMaterials": {
+                      "type": "integer",
+                      "example": 450
+                    },
+                    "totalAssignments": {
+                      "type": "integer",
+                      "example": 890
+                    },
+                    "failedJobs24h": {
+                      "type": "integer",
+                      "example": 0
+                    },
+                    "calculatedAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Autentikasi admin diperlukan"
+          },
+          "403": {
+            "description": "Akses ditolak: Memerlukan peran ADMIN"
+          }
+        }
+      }
+    },
+    "/api/admin/users": {
+      "get": {
+        "summary": "Daftar Pengguna Read-Only",
+        "description": "Mengambil daftar pengguna dengan paginasi server-side, pencarian nama/email, dan sorting. Memastikan kolom sensitif (passwordHash, tokenVersion, token reset) tidak diekspos.",
+        "tags": [
+          "Admin"
+        ],
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 1
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 20
+            }
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sortBy",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "createdAt",
+                "name",
+                "email"
+              ],
+              "default": "createdAt"
+            }
+          },
+          {
+            "name": "sortOrder",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "asc",
+                "desc"
+              ],
+              "default": "desc"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Daftar pengguna dan metadata paginasi"
+          },
+          "400": {
+            "description": "Parameter query tidak valid"
+          },
+          "401": {
+            "description": "Autentikasi admin diperlukan"
+          },
+          "403": {
+            "description": "Akses ditolak: Memerlukan peran ADMIN"
+          }
+        }
+      }
     }
   },
   "components": {
@@ -3139,28 +3615,52 @@
             "properties": {
               "period": {
                 "type": "string",
-                "enum": ["7d", "30d", "3m"]
+                "enum": [
+                  "7d",
+                  "30d",
+                  "3m"
+                ]
               },
               "grouping": {
                 "type": "string",
-                "enum": ["daily", "weekly"]
+                "enum": [
+                  "daily",
+                  "weekly"
+                ]
               },
               "items": {
                 "type": "array",
                 "items": {
                   "type": "object",
                   "properties": {
-                    "date": { "type": "string" },
-                    "label": { "type": "string" },
-                    "fullDateLabel": { "type": "string" },
-                    "tasksCompleted": { "type": "integer" },
-                    "quizzesCompleted": { "type": "integer" }
+                    "date": {
+                      "type": "string"
+                    },
+                    "label": {
+                      "type": "string"
+                    },
+                    "fullDateLabel": {
+                      "type": "string"
+                    },
+                    "tasksCompleted": {
+                      "type": "integer"
+                    },
+                    "quizzesCompleted": {
+                      "type": "integer"
+                    }
                   }
                 }
               },
-              "totalTasksCompleted": { "type": "integer" },
-              "totalQuizzesCompleted": { "type": "integer" },
-              "historyNotice": { "type": "string", "nullable": true }
+              "totalTasksCompleted": {
+                "type": "integer"
+              },
+              "totalQuizzesCompleted": {
+                "type": "integer"
+              },
+              "historyNotice": {
+                "type": "string",
+                "nullable": true
+              }
             }
           },
           "workloadChart": {
@@ -3171,14 +3671,25 @@
                 "items": {
                   "type": "object",
                   "properties": {
-                    "courseId": { "type": "string" },
-                    "courseName": { "type": "string" },
-                    "courseCode": { "type": "string", "nullable": true },
-                    "pendingTasks": { "type": "integer" }
+                    "courseId": {
+                      "type": "string"
+                    },
+                    "courseName": {
+                      "type": "string"
+                    },
+                    "courseCode": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "pendingTasks": {
+                      "type": "integer"
+                    }
                   }
                 }
               },
-              "totalPendingTasks": { "type": "integer" }
+              "totalPendingTasks": {
+                "type": "integer"
+              }
             }
           }
         }
@@ -4398,6 +4909,70 @@
             "type": "integer"
           }
         }
+      },
+      "AssignmentSubtask": {
+        "type": "object",
+        "required": [
+          "id",
+          "assignmentId",
+          "title",
+          "completed",
+          "order",
+          "createdAt",
+          "updatedAt"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "assignmentId": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string",
+            "maxLength": 200
+          },
+          "completed": {
+            "type": "boolean"
+          },
+          "order": {
+            "type": "integer"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "CreateSubtaskInput": {
+        "type": "object",
+        "required": [
+          "title"
+        ],
+        "properties": {
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          }
+        }
+      },
+      "UpdateSubtaskInput": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "completed": {
+            "type": "boolean"
+          }
+        }
       }
     },
     "securitySchemes": {
@@ -4412,5 +4987,11 @@
         "name": "studyflow_access_token"
       }
     }
-  }
+  },
+  "tags": [
+    {
+      "name": "Admin",
+      "description": "Endpoint khusus Administrator StudyFlow untuk autentikasi terisolasi, ringkasan statistik platform, dan direktori pengguna read-only."
+    }
+  ]
 }

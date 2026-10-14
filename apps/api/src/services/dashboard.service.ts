@@ -101,6 +101,26 @@ export async function getDashboardSummary(userId: string): Promise<DashboardSumm
     ],
   });
 
+  const assignmentIds = allAssignments.map((a) => a.id);
+  const subtaskCountMap: Record<string, { total: number; completed: number }> = {};
+
+  if (assignmentIds.length > 0) {
+    const grouped = await prisma.assignmentSubtask.groupBy({
+      by: ['assignmentId', 'isCompleted'],
+      where: { assignmentId: { in: assignmentIds } },
+      _count: { _all: true },
+    });
+
+    for (const item of grouped) {
+      const current = subtaskCountMap[item.assignmentId] || { total: 0, completed: 0 };
+      current.total += item._count._all;
+      if (item.isCompleted) {
+        current.completed += item._count._all;
+      }
+      subtaskCountMap[item.assignmentId] = current;
+    }
+  }
+
   let overdueCount = 0;
   let completedCount = 0;
   const assignmentsToday: Assignment[] = [];
@@ -127,6 +147,7 @@ export async function getDashboardSummary(userId: string): Promise<DashboardSumm
       status: raw.status,
       completedAt: raw.completedAt ? raw.completedAt.toISOString() : null,
       isOverdue,
+      subtaskCount: subtaskCountMap[raw.id] || { total: 0, completed: 0 },
       course: raw.course
         ? {
             id: raw.course.id,

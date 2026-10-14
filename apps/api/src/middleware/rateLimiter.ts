@@ -302,4 +302,32 @@ export const verificationEmailRateLimiter = rateLimit({
   },
 });
 
+/**
+ * Admin Login Rate Limiter
+ * Limits admin login attempts per target email / IP.
+ */
+export const adminLoginRateLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: env.NODE_ENV === 'test' ? 1000 : 5, // 5 attempts per 15 minutes
+  standardHeaders: true,
+  legacyHeaders: false,
+  passOnStoreError: false,
+  store: createRateLimitStore({ prefix: 'studyflow:rl:admin:login:' }),
+  keyGenerator: (req) => {
+    const rawIp = req.ip || req.socket.remoteAddress || '127.0.0.1';
+    const accountHash = hashAccountIdentifier(req.body?.email);
+    return accountHash ? `admin:acct:${accountHash}` : `admin:ip:${ipKeyGenerator(rawIp)}`;
+  },
+  handler: (_req, res, _next, options) => {
+    res.status(429).json(options.message);
+  },
+  message: {
+    error: {
+      code: 'TOO_MANY_REQUESTS',
+      message: 'Terlalu banyak percobaan login administrator. Silakan tunggu beberapa saat.',
+    },
+  },
+});
+
+
 

@@ -8,6 +8,11 @@ export const COOKIE_NAMES = {
   oauthTx: 'studyflow_oauth_tx',
 } as const;
 
+export const ADMIN_COOKIE_NAMES = {
+  accessToken: 'studyflow_admin_access_token',
+  refreshToken: 'studyflow_admin_refresh_token',
+} as const;
+
 export const AUTH_LIMITS = {
   accessTokenExpirySeconds: 15 * 60, // 15 minutes
   refreshTokenExpiryDays: 7, // 7 days

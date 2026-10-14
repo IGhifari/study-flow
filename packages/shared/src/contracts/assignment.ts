@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { CourseSchema } from './course.js';
+import { SubtaskCountSchema } from './subtask.js';
 
 export const AssignmentPriorityEnum = z.enum(['LOW', 'MEDIUM', 'HIGH']);
 export type AssignmentPriority = z.infer<typeof AssignmentPriorityEnum>;
@@ -20,6 +21,7 @@ export const AssignmentSchema = z.object({
   firstCompletedAt: z.string().datetime().nullable().optional(),
   isOverdue: z.boolean(),
   course: CourseSchema.optional(),
+  subtaskCount: SubtaskCountSchema.optional(),
   createdAt: z.string().datetime(),
   updatedAt: z.string().datetime(),
 });

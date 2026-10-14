@@ -60,6 +60,14 @@ import {
 import { CreateTaskDialog } from '@/components/assignments/create-task-dialog';
 import { EditTaskDialog } from '@/components/assignments/edit-task-dialog';
 import { DeleteTaskDialog } from '@/components/assignments/delete-task-dialog';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '@/components/ui/dialog';
 
 function getDeadlineStatusInfo(asg: Assignment, timezone: string) {
   if (asg.status === 'DONE') {
@@ -233,8 +241,10 @@ export default function AssignmentsPage(): React.JSX.Element {
     };
   }, [fetchAssignmentsList]);
 
+  const [confirmDoneTask, setConfirmDoneTask] = React.useState<Assignment | null>(null);
+
   // Checkbox Toggle Status with optimistic rollback
-  const handleToggleStatus = async (asg: Assignment) => {
+  const executeToggleStatus = async (asg: Assignment) => {
     const isDone = asg.status === 'DONE';
     const nextStatus = isDone ? 'TODO' : 'DONE';
     setActionError(null);
@@ -272,6 +282,19 @@ export default function AssignmentsPage(): React.JSX.Element {
         return updated;
       });
     }
+  };
+
+  const handleToggleStatus = (asg: Assignment) => {
+    if (
+      asg.status !== 'DONE' &&
+      asg.subtaskCount &&
+      asg.subtaskCount.total > 0 &&
+      asg.subtaskCount.completed < asg.subtaskCount.total
+    ) {
+      setConfirmDoneTask(asg);
+      return;
+    }
+    executeToggleStatus(asg);
   };
 
   const activeCourses = React.useMemo(
@@ -624,19 +647,38 @@ export default function AssignmentsPage(): React.JSX.Element {
                         {/* Judul Tugas & Deskripsi */}
                         <td className="px-4 py-3.5 align-middle">
                           <div className="flex flex-col min-w-0 max-w-[360px]">
-                            <span
-                              className={`font-medium text-sm break-words transition-all duration-150 ${
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (!isArchived) setEditingAssignment(asg);
+                              }}
+                              className={`text-left font-medium text-sm break-words transition-all duration-150 hover:underline ${
                                 isDone
                                   ? 'line-through text-muted-foreground'
                                   : 'text-foreground'
                               }`}
                             >
                               {asg.title}
-                            </span>
+                            </button>
                             {asg.description && (
                               <p className="mt-0.5 text-xs text-muted-foreground line-clamp-1 break-words">
                                 {asg.description}
                               </p>
+                            )}
+                            {asg.subtaskCount && asg.subtaskCount.total > 0 && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  if (!isArchived) setEditingAssignment(asg);
+                                }}
+                                className="inline-flex items-center gap-1 text-[11px] font-medium text-muted-foreground hover:text-foreground bg-muted/60 hover:bg-muted px-1.5 py-0.5 rounded border border-border/40 w-fit mt-1.5 transition-colors"
+                                title={`${asg.subtaskCount.completed} dari ${asg.subtaskCount.total} subtugas selesai (klik untuk kelola)`}
+                              >
+                                <ListTodo className="h-3 w-3 text-primary shrink-0" />
+                                <span>
+                                  {asg.subtaskCount.completed}/{asg.subtaskCount.total} langkah
+                                </span>
+                              </button>
                             )}
                           </div>
                         </td>
@@ -797,15 +839,19 @@ export default function AssignmentsPage(): React.JSX.Element {
                     <div className="flex-1 min-w-0">
                       {/* Title & Priority Badge */}
                       <div className="flex items-start justify-between gap-2">
-                        <h4
-                          className={`text-sm font-semibold leading-snug break-words flex-1 min-w-0 transition-all duration-200 ${
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (!isArchived) setEditingAssignment(asg);
+                          }}
+                          className={`text-left text-sm font-semibold leading-snug break-words flex-1 min-w-0 transition-all duration-200 hover:underline ${
                             isDone
                               ? 'line-through text-muted-foreground'
                               : 'text-foreground'
                           }`}
                         >
                           {asg.title}
-                        </h4>
+                        </button>
                         <Badge
                           variant={
                             asg.priority === 'HIGH'
@@ -823,6 +869,23 @@ export default function AssignmentsPage(): React.JSX.Element {
                             : 'Rendah'}
                         </Badge>
                       </div>
+
+                      {/* Subtask Indicator for Mobile */}
+                      {asg.subtaskCount && asg.subtaskCount.total > 0 && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (!isArchived) setEditingAssignment(asg);
+                          }}
+                          className="inline-flex items-center gap-1 text-[11px] font-medium text-muted-foreground hover:text-foreground bg-muted/60 hover:bg-muted px-1.5 py-0.5 rounded border border-border/40 w-fit mt-1 transition-colors"
+                          title={`${asg.subtaskCount.completed} dari ${asg.subtaskCount.total} subtugas selesai (klik untuk kelola)`}
+                        >
+                          <ListTodo className="h-3 w-3 text-primary shrink-0" />
+                          <span>
+                            {asg.subtaskCount.completed}/{asg.subtaskCount.total} langkah
+                          </span>
+                        </button>
+                      )}
 
                       {/* Course */}
                       {asg.course && (
@@ -927,6 +990,52 @@ export default function AssignmentsPage(): React.JSX.Element {
           fetchAssignmentsList(true);
         }}
       />
+
+      {/* Confirmation Dialog when completing task with unfinished subtasks */}
+      <Dialog
+        open={Boolean(confirmDoneTask)}
+        onOpenChange={(open) => {
+          if (!open) setConfirmDoneTask(null);
+        }}
+      >
+        <DialogContent className="sm:max-w-[420px]">
+          <DialogHeader>
+            <DialogTitle>Selesaikan Tugas?</DialogTitle>
+            <DialogDescription className="text-xs text-muted-foreground pt-1">
+              Tugas &quot;{confirmDoneTask?.title}&quot; memiliki{' '}
+              <strong className="text-foreground">
+                {(confirmDoneTask?.subtaskCount?.total ?? 0) -
+                  (confirmDoneTask?.subtaskCount?.completed ?? 0)}{' '}
+                subtugas
+              </strong>{' '}
+              yang belum selesai. Apakah Anda yakin ingin tetap menandai tugas ini sebagai selesai?
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="flex flex-col-reverse sm:flex-row gap-2 pt-2 sm:justify-end">
+            <Button
+              type="button"
+              variant="outline"
+              size="standard"
+              onClick={() => setConfirmDoneTask(null)}
+            >
+              Batal
+            </Button>
+            <Button
+              type="button"
+              size="standard"
+              onClick={() => {
+                if (confirmDoneTask) {
+                  const target = confirmDoneTask;
+                  setConfirmDoneTask(null);
+                  executeToggleStatus(target);
+                }
+              }}
+            >
+              Tetap Selesaikan
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

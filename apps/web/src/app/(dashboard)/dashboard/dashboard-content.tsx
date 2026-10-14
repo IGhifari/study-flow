@@ -37,6 +37,14 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '@/components/ui/dialog';
 import { DashboardSkeleton } from './dashboard-skeleton';
 
 interface DashboardContentProps {
@@ -140,8 +148,11 @@ export function DashboardContent({ user }: DashboardContentProps): React.JSX.Ele
     };
   }, [loadSummary]);
 
+  // Subtask unfinished confirmation
+  const [confirmDoneTask, setConfirmDoneTask] = React.useState<Assignment | null>(null);
+
   // Toggle completion with per-task pending and error isolation
-  const handleToggleTask = async (asg: Assignment) => {
+  const executeToggleTask = async (asg: Assignment) => {
     if (pendingTaskIds.has(asg.id)) return;
 
     setPendingTaskIds((prev) => new Set(prev).add(asg.id));
@@ -163,6 +174,19 @@ export function DashboardContent({ user }: DashboardContentProps): React.JSX.Ele
         return next;
       });
     }
+  };
+
+  const handleToggleTask = (asg: Assignment) => {
+    if (
+      asg.status !== 'DONE' &&
+      asg.subtaskCount &&
+      asg.subtaskCount.total > 0 &&
+      asg.subtaskCount.completed < asg.subtaskCount.total
+    ) {
+      setConfirmDoneTask(asg);
+      return;
+    }
+    executeToggleTask(asg);
   };
 
   // 1. Initial Loading State: Skeletons matching exact layout
@@ -569,6 +593,20 @@ export function DashboardContent({ user }: DashboardContentProps): React.JSX.Ele
                                   )}
                                   <span>•</span>
                                   <span>{formatUserDateTime(asg.dueDate, timezone)}</span>
+                                  {asg.subtaskCount && asg.subtaskCount.total > 0 && (
+                                    <>
+                                      <span>•</span>
+                                      <span
+                                        className="inline-flex items-center gap-1 font-medium text-muted-foreground"
+                                        title={`${asg.subtaskCount.completed} dari ${asg.subtaskCount.total} subtugas selesai`}
+                                      >
+                                        <ListTodo className="h-3 w-3 text-primary shrink-0" />
+                                        <span>
+                                          {asg.subtaskCount.completed}/{asg.subtaskCount.total}
+                                        </span>
+                                      </span>
+                                    </>
+                                  )}
                                   {isPending && (
                                     <>
                                       <span>•</span>
@@ -667,6 +705,20 @@ export function DashboardContent({ user }: DashboardContentProps): React.JSX.Ele
                                   )}
                                   <span>•</span>
                                   <span>{formatUserDateTime(asg.dueDate, timezone)}</span>
+                                  {asg.subtaskCount && asg.subtaskCount.total > 0 && (
+                                    <>
+                                      <span>•</span>
+                                      <span
+                                        className="inline-flex items-center gap-1 font-medium text-muted-foreground"
+                                        title={`${asg.subtaskCount.completed} dari ${asg.subtaskCount.total} subtugas selesai`}
+                                      >
+                                        <ListTodo className="h-3 w-3 text-primary shrink-0" />
+                                        <span>
+                                          {asg.subtaskCount.completed}/{asg.subtaskCount.total}
+                                        </span>
+                                      </span>
+                                    </>
+                                  )}
                                   {isPending && (
                                     <>
                                       <span>•</span>
@@ -838,6 +890,52 @@ export function DashboardContent({ user }: DashboardContentProps): React.JSX.Ele
           loadSummary(true);
         }}
       />
+
+      {/* Confirmation Dialog when completing task with unfinished subtasks */}
+      <Dialog
+        open={Boolean(confirmDoneTask)}
+        onOpenChange={(open) => {
+          if (!open) setConfirmDoneTask(null);
+        }}
+      >
+        <DialogContent className="sm:max-w-[420px]">
+          <DialogHeader>
+            <DialogTitle>Selesaikan Tugas?</DialogTitle>
+            <DialogDescription className="text-xs text-muted-foreground pt-1">
+              Tugas &quot;{confirmDoneTask?.title}&quot; memiliki{' '}
+              <strong className="text-foreground">
+                {(confirmDoneTask?.subtaskCount?.total ?? 0) -
+                  (confirmDoneTask?.subtaskCount?.completed ?? 0)}{' '}
+                subtugas
+              </strong>{' '}
+              yang belum selesai. Apakah Anda yakin ingin tetap menandai tugas ini sebagai selesai?
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="flex flex-col-reverse sm:flex-row gap-2 pt-2 sm:justify-end">
+            <Button
+              type="button"
+              variant="outline"
+              size="standard"
+              onClick={() => setConfirmDoneTask(null)}
+            >
+              Batal
+            </Button>
+            <Button
+              type="button"
+              size="standard"
+              onClick={() => {
+                if (confirmDoneTask) {
+                  const target = confirmDoneTask;
+                  setConfirmDoneTask(null);
+                  executeToggleTask(target);
+                }
+              }}
+            >
+              Tetap Selesaikan
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

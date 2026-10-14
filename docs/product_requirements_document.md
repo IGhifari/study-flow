@@ -151,8 +151,16 @@ Istilah owner pada pemeriksaan akses berarti pemilik resource, bukan role baru. 
 - `OVERDUE` merupakan kondisi turunan dari deadline dan status, bukan status yang dipilih pengguna.
 - Deadline disimpan sebagai waktu UTC dan ditampilkan dalam zona waktu profil. Input tanggal saja dinormalisasi menjadi pukul 23.59 pada zona waktu tersebut.
 - Saat selesai, simpan `completedAt`; saat dibuka kembali, hapus nilai tersebut.
+- Subtugas / Checklist:
+  - Setiap tugas dapat memiliki checklist langkah pekerjaan (maksimal 50 subtugas per tugas, ditegakkan secara atomik).
+  - Subtugas mencakup id, judul wajib (1-200 karakter, trimmed), status selesai boolean eksplisit, dan urutan stabil.
+  - Subtugas bersifat mandiri: semua subtugas selesai tidak otomatis menyelesaikan tugas induk; menyelesaikan tugas induk tidak otomatis mencentang subtugas.
+  - Saat pengguna menyelesaikan tugas induk dengan checklist belum tuntas, sistem meminta konfirmasi terlebih dahulu.
+  - Setelah tugas induk selesai (`DONE`), checklist menjadi hanya-baca (read-only) di backend maupun UI hingga tugas dibuka kembali.
+  - Mutasi subtugas tidak memengaruhi `firstCompletedAt`, statistik tugas selesai, atau penjadwalan reminder email.
+  - Indikator progres ringkas (misal: "3/5 langkah") hanya ditampilkan pada daftar jika tugas memiliki subtugas.
 
-**Penerimaan:** tugas selesai tidak tampil terlambat; perubahan zona waktu mengubah tampilan waktu tanpa mengubah momen deadline.
+**Penerimaan:** tugas selesai tidak tampil terlambat; perubahan zona waktu mengubah tampilan waktu tanpa mengubah momen deadline; subtugas tersimpan dengan benar dan dapat dioperasikan secara aman tanpa race condition; menyelesaikan tugas dengan checklist belum tuntas menampilkan dialog konfirmasi.
 
 ### FR-04 — Upload dan pengelolaan materi
 
@@ -563,8 +571,33 @@ Referensi ini mendukung batas teknis rancangan; pilihan scope dan angka target m
 - [BullMQ — Idempotent jobs](https://docs.bullmq.io/patterns/idempotent-jobs): pekerjaan yang aman ketika dicoba kembali.
 - [Supabase — Storage Buckets](https://supabase.com/docs/guides/storage/buckets/fundamentals): bucket privat dan akses file terotorisasi.
 
-## 21. Riwayat perubahan
+## 21. Dashboard Administrator (Tahap 1)
+
+### 21.1 Peran dan Batas Akses
+- Peran akun pada sistem: `USER` (default untuk seluruh akun mahasiswa baru dan existing) dan `ADMIN`.
+- Hak administrator wajib ditegakkan secara otoritatif pada lapisan database/API (`requireAdmin`), bukan hanya berdasarkan payload token JWT.
+- Akses anonim ke endpoint admin mengembalikan 401 Unauthorized; akses oleh akun ber-peran `USER` mengembalikan 403 Forbidden.
+- Pencabutan peran admin langsung memblokir permintaan berikutnya tanpa menunggu expiry token.
+- Pendaftaran publik dan alur login Google tidak pernah menerima injeksi peran dari client.
+- Bootstrap akun admin dilakukan secara eksplisit via CLI lokal (`npm run promote:admin`), tanpa endpoint pembuatan admin publik.
+
+### 21.2 Autentikasi dan Isolasi Sesi Admin
+- Admin login menggunakan nama cookie dan keluarga sesi terpisah (`studyflow_admin_access_token`, `studyflow_admin_refresh_token`).
+- BFF proxy `apps/admin` hanya meneruskan cookie admin secara selektif ke backend Express, mencegah crosstalk sesi dengan aplikasi web mahasiswa di domain/host yang sama.
+- Logout admin mencabut keluarga sesi refresh admin tanpa membatalkan sesi web mahasiswa yang terpisah.
+- BFF proxy admin menerapkan validasi ketat Origin/CSRF dan memaksa header `Cache-Control: no-store, private`.
+
+### 21.3 Ringkasan Platform dan Direktori Pengguna
+- **Ringkasan Platform (`/api/admin/summary`)**:
+  - Menyajikan angka statistik nyata: Total Pengguna, Total Materi aktif (mengecualikan soft-delete), Total Tugas, dan Pekerjaan AI Gagal dalam 24 jam terakhir.
+- **Daftar Pengguna Read-Only (`/api/admin/users`)**:
+  - Paginasi server-side (page, limit 1–100), pencarian nama/email debounced, serta pengurutan stabil.
+  - Proyeksi aman: id, name, email, role, emailVerifiedAt, createdAt.
+  - Secara ketat mengecualikan hash password, token sesi, token OAuth, token reset password, dan data konten privat pengguna.
+
+## 22. Riwayat perubahan
 
 | Versi | Tanggal | Perubahan |
 | --- | --- | --- |
 | 1.0 | 3 Oktober 2026 | PRD awal; Next.js + Express; MVP personal dengan PDF, ringkasan, flashcard, kuis; chat/realtime menjadi v1.1 |
+| 1.1 | 14 Oktober 2026 | Penambahan spesifikasi Dashboard Administrator Tahap 1: peran USER/ADMIN, autentikasi & sesi cookie terisolasi, ringkasan metrik platform nyata, direktori pengguna read-only, bootstrap CLI, dan arsitektur apps/admin |

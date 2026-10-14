@@ -28,6 +28,7 @@ export function toUserProfile(
     name: string;
     email: string;
     timezone: string;
+    role?: 'USER' | 'ADMIN';
     emailVerifiedAt?: Date | string | null;
     reminderEmailDeadline?: boolean;
     createdAt: Date | string;
@@ -49,6 +50,7 @@ export function toUserProfile(
     name: user.name,
     email: user.email,
     timezone: user.timezone,
+    role: user.role ?? 'USER',
     emailVerifiedAt: emailVerifiedAtStr,
     reminderEmailDeadline: Boolean(user.reminderEmailDeadline),
     createdAt: typeof user.createdAt === 'string' ? user.createdAt : user.createdAt.toISOString(),
@@ -207,12 +209,13 @@ export async function rotateRefreshToken(rawRefreshToken: string): Promise<{
       email: string;
       password_hash: string | null;
       timezone: string;
+      role: 'USER' | 'ADMIN';
       email_verified_at: Date | null;
       token_version: number;
       created_at: Date;
       updated_at: Date;
     }>>`
-      SELECT id, name, email, password_hash, timezone, email_verified_at, token_version, created_at, updated_at
+      SELECT id, name, email, password_hash, timezone, role, email_verified_at, token_version, created_at, updated_at
       FROM users
       WHERE id = ${initialSession.userId}
       LIMIT 1
@@ -264,6 +267,7 @@ export async function rotateRefreshToken(rawRefreshToken: string): Promise<{
       name: user.name,
       email: user.email,
       timezone: user.timezone,
+      role: user.role,
       emailVerifiedAt: user.email_verified_at,
       createdAt: user.created_at,
       updatedAt: user.updated_at,

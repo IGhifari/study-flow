@@ -46,7 +46,10 @@ interface RawAssignmentWithCourse {
   };
 }
 
-function toAssignmentResponse(raw: RawAssignmentWithCourse): Assignment {
+function toAssignmentResponse(
+  raw: RawAssignmentWithCourse,
+  subtaskCount?: { total: number; completed: number }
+): Assignment {
   const isOverdue = raw.status !== 'DONE' && raw.dueDate.getTime() < Date.now();
 
   return {
@@ -87,6 +90,7 @@ function toAssignmentResponse(raw: RawAssignmentWithCourse): Assignment {
             : undefined,
         }
       : undefined,
+    subtaskCount: subtaskCount || { total: 0, completed: 0 },
     createdAt: raw.createdAt.toISOString(),
     updatedAt: raw.updatedAt.toISOString(),
   };
@@ -184,8 +188,30 @@ export async function listAssignments(
     }),
   ]);
 
+  const assignmentIds = rawAssignments.map((a) => a.id);
+  const subtaskCountMap: Record<string, { total: number; completed: number }> = {};
+
+  if (assignmentIds.length > 0) {
+    const grouped = await prisma.assignmentSubtask.groupBy({
+      by: ['assignmentId', 'isCompleted'],
+      where: { assignmentId: { in: assignmentIds } },
+      _count: { _all: true },
+    });
+
+    for (const item of grouped) {
+      const current = subtaskCountMap[item.assignmentId] || { total: 0, completed: 0 };
+      current.total += item._count._all;
+      if (item.isCompleted) {
+        current.completed += item._count._all;
+      }
+      subtaskCountMap[item.assignmentId] = current;
+    }
+  }
+
   return {
-    assignments: rawAssignments.map(toAssignmentResponse),
+    assignments: rawAssignments.map((a) =>
+      toAssignmentResponse(a, subtaskCountMap[a.id])
+    ),
     pagination: {
       total,
       page,
@@ -214,7 +240,20 @@ export async function getAssignmentById(userId: string, id: string): Promise<Ass
     throw error;
   }
 
-  return toAssignmentResponse(assignment);
+  const grouped = await prisma.assignmentSubtask.groupBy({
+    by: ['assignmentId', 'isCompleted'],
+    where: { assignmentId: id },
+    _count: { _all: true },
+  });
+  const subtaskCount = { total: 0, completed: 0 };
+  for (const item of grouped) {
+    subtaskCount.total += item._count._all;
+    if (item.isCompleted) {
+      subtaskCount.completed += item._count._all;
+    }
+  }
+
+  return toAssignmentResponse(assignment, subtaskCount);
 }
 
 export async function createAssignment(
@@ -410,7 +449,20 @@ export async function updateAssignment(
   // Re-schedule H-1 deadline reminder in BullMQ if updated
   scheduleAssignmentReminder(updated).catch(() => {});
 
-  return toAssignmentResponse(updated);
+  const grouped = await prisma.assignmentSubtask.groupBy({
+    by: ['assignmentId', 'isCompleted'],
+    where: { assignmentId: id },
+    _count: { _all: true },
+  });
+  const subtaskCount = { total: 0, completed: 0 };
+  for (const item of grouped) {
+    subtaskCount.total += item._count._all;
+    if (item.isCompleted) {
+      subtaskCount.completed += item._count._all;
+    }
+  }
+
+  return toAssignmentResponse(updated, subtaskCount);
 }
 
 export async function deleteAssignment(userId: string, id: string): Promise<void> {

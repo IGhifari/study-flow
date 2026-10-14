@@ -10,7 +10,8 @@
     "typecheck": "tsc --noEmit",
     "lint": "echo \"API package linting passed\"",
     "test": "vitest run",
-    "reconcile:slots": "tsx src/scripts/reconcileSlots.ts"
+    "reconcile:slots": "tsx src/scripts/reconcileSlots.ts",
+    "promote:admin": "tsx src/scripts/promoteAdmin.ts"
   },
   "dependencies": {
     "@node-rs/argon2": "^2.2.1",

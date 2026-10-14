@@ -20,6 +20,8 @@ import { localStorageRouter } from './routes/localStorage.js';
 import { scheduleRouter } from './routes/schedules.js';
 import { calendarRouter } from './routes/calendar.js';
 import { searchRouter } from './routes/search.js';
+import { adminAuthRouter } from './routes/adminAuth.js';
+import { adminRouter } from './routes/admin.js';
 
 export function createApp(): Express {
   const app = express();
@@ -53,6 +55,8 @@ export function createApp(): Express {
         env.CORS_ORIGIN,
         'http://localhost:3000',
         'http://127.0.0.1:3000',
+        'http://localhost:3002',
+        'http://127.0.0.1:3002',
       ];
       if (allowedOrigins.includes(origin)) {
         return callback(null, true);
@@ -76,6 +80,8 @@ export function createApp(): Express {
 
   // Milestone 2, 3, 4, 5, 6 & 7 API endpoints
   app.use('/api/auth', authRouter);
+  app.use('/api/admin/auth', adminAuthRouter);
+  app.use('/api/admin', adminRouter);
   app.use('/api/semesters', semesterRouter);
   app.use('/api/courses', courseRouter);
   app.use('/api/assignments', assignmentRouter);

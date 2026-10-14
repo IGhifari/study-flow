@@ -13,6 +13,8 @@ export * from './contracts/schedule.js';
 export * from './contracts/calendar.js';
 export * from './contracts/search.js';
 export * from './contracts/pinned.js';
+export * from './contracts/subtask.js';
+export * from './contracts/admin.js';
 export * from './utils/timezone.js';
 export * from './utils/format.js';
 export * from './constants/index.js';

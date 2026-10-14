@@ -3,6 +3,8 @@ import {
   CreateAssignmentInputSchema,
   UpdateAssignmentInputSchema,
   AssignmentListQuerySchema,
+  CreateSubtaskInputSchema,
+  UpdateSubtaskInputSchema,
 } from '@studyflow/shared';
 import {
   listAssignments,
@@ -11,6 +13,12 @@ import {
   updateAssignment,
   deleteAssignment,
 } from '../services/assignment.service.js';
+import {
+  getSubtasks,
+  createSubtask,
+  updateSubtask,
+  deleteSubtask,
+} from '../services/subtask.service.js';
 import { authenticate } from '../middleware/authenticate.js';
 import { originCheckMiddleware } from '../middleware/originCheck.js';
 import { AppError } from '../middleware/errorHandler.js';
@@ -107,6 +115,76 @@ assignmentRouter.delete('/:id', async (req: Request, res: Response, next: NextFu
     await deleteAssignment(req.user!.id, id);
     res.status(200).json({
       message: 'Tugas berhasil dihapus',
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// GET /api/assignments/:assignmentId/subtasks
+assignmentRouter.get('/:assignmentId/subtasks', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const assignmentId = req.params.assignmentId as string;
+    const subtasks = await getSubtasks(req.user!.id, assignmentId);
+    res.status(200).json({ subtasks });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// POST /api/assignments/:assignmentId/subtasks
+assignmentRouter.post('/:assignmentId/subtasks', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const parsed = CreateSubtaskInputSchema.safeParse(req.body);
+    if (!parsed.success) {
+      const error: AppError = new Error(parsed.error.errors[0]?.message || 'Input subtugas tidak valid');
+      error.statusCode = 400;
+      error.code = 'VALIDATION_ERROR';
+      return next(error);
+    }
+
+    const assignmentId = req.params.assignmentId as string;
+    const subtask = await createSubtask(req.user!.id, assignmentId, parsed.data);
+    res.status(201).json({
+      message: 'Subtugas berhasil ditambahkan',
+      subtask,
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// PATCH /api/assignments/:assignmentId/subtasks/:subtaskId
+assignmentRouter.patch('/:assignmentId/subtasks/:subtaskId', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const parsed = UpdateSubtaskInputSchema.safeParse(req.body);
+    if (!parsed.success) {
+      const error: AppError = new Error(parsed.error.errors[0]?.message || 'Input pembaruan subtugas tidak valid');
+      error.statusCode = 400;
+      error.code = 'VALIDATION_ERROR';
+      return next(error);
+    }
+
+    const assignmentId = req.params.assignmentId as string;
+    const subtaskId = req.params.subtaskId as string;
+    const subtask = await updateSubtask(req.user!.id, assignmentId, subtaskId, parsed.data);
+    res.status(200).json({
+      message: 'Subtugas berhasil diperbarui',
+      subtask,
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// DELETE /api/assignments/:assignmentId/subtasks/:subtaskId
+assignmentRouter.delete('/:assignmentId/subtasks/:subtaskId', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const assignmentId = req.params.assignmentId as string;
+    const subtaskId = req.params.subtaskId as string;
+    await deleteSubtask(req.user!.id, assignmentId, subtaskId);
+    res.status(200).json({
+      message: 'Subtugas berhasil dihapus',
     });
   } catch (err) {
     next(err);

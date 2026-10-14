@@ -68,6 +68,7 @@ export const UserProfileSchema = z.object({
   name: z.string(),
   email: z.string().email(),
   timezone: z.string(),
+  role: z.enum(['USER', 'ADMIN']).default('USER'),
   emailVerifiedAt: z.string().datetime().nullable().default(null),
   reminderEmailDeadline: z.boolean().default(false),
   createdAt: z.string().datetime(),

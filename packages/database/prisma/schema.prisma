@@ -16,6 +16,7 @@ model User {
   email           String           @unique
   passwordHash    String?          @map("password_hash")
   timezone        String           @default("Asia/Jakarta")
+  role            Role             @default(USER)
   emailVerifiedAt DateTime?        @map("email_verified_at")
   reminderEmailDeadline Boolean      @default(false) @map("reminder_email_deadline")
   tokenVersion    Int              @default(0) @map("token_version")
@@ -140,6 +141,7 @@ model Assignment {
   updatedAt        DateTime           @updatedAt @map("updated_at")
 
   reminderLogs AssignmentReminderLog[]
+  subtasks     AssignmentSubtask[]
 
   @@index([userId, dueDate])
   @@index([userId, status])
@@ -147,6 +149,20 @@ model Assignment {
   @@index([courseId])
   @@index([status, dueDate])
   @@map("assignments")
+}
+
+model AssignmentSubtask {
+  id           String     @id @default(cuid())
+  assignmentId String     @map("assignment_id")
+  assignment   Assignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  title        String
+  isCompleted  Boolean    @default(false) @map("is_completed")
+  order        Int        @default(0)
+  createdAt    DateTime   @default(now()) @map("created_at")
+  updatedAt    DateTime   @updatedAt @map("updated_at")
+
+  @@index([assignmentId, order])
+  @@map("assignment_subtasks")
 }
 
 model Note {
@@ -625,4 +641,7 @@ model PinnedItem {
   @@map("pinned_items")
 }
 
-
+enum Role {
+  USER
+  ADMIN
+}
