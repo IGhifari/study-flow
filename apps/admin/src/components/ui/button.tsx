@@ -14,7 +14,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     const Comp = asChild ? Slot : 'button';
 
     const variantStyles = {
-      default: 'bg-primary text-primary-foreground hover:bg-primary-hover shadow-xs',
+      default: 'bg-primary text-primary-foreground hover:bg-primary/90 shadow-xs',
       destructive: 'bg-destructive text-destructive-foreground hover:opacity-90 shadow-xs',
       outline: 'border border-border bg-card hover:bg-accent hover:text-accent-foreground',
       secondary: 'bg-secondary text-secondary-foreground hover:bg-secondary/80',
@@ -23,7 +23,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     };
 
     const sizeStyles = {
-      default: 'h-11 px-4 py-2 text-sm rounded-lg min-h-[44px]',
+      default: 'h-10 px-4 py-2 text-sm rounded-lg min-h-[40px]',
       standard: 'h-9 px-3.5 py-1.5 text-sm rounded-lg min-h-[36px]',
       sm: 'h-8 rounded-md px-2.5 py-1 text-xs min-h-[32px]',
       lg: 'h-11 rounded-lg px-6 text-sm min-h-[44px]',
