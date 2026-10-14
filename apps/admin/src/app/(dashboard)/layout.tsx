@@ -3,7 +3,7 @@
 import * as React from 'react';
 import { useRouter } from 'next/navigation';
 import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar';
-import { AdminSidebar } from '@/components/admin-sidebar';
+import { AppSidebar } from '@/components/app-sidebar';
 import { AdminHeader } from '@/components/admin-header';
 import { useAdminAuth } from '@/components/admin-auth-context';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -40,7 +40,7 @@ export default function DashboardLayout({
 
   return (
     <SidebarProvider>
-      <AdminSidebar />
+      <AppSidebar />
       <SidebarInset>
         <AdminHeader />
         <main className="flex-1 bg-background">{children}</main>

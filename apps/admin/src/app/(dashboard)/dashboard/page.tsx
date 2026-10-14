@@ -1,14 +1,9 @@
 'use client';
 
 import * as React from 'react';
-import {
-  Users,
-  FileText,
-  CheckSquare,
-  AlertTriangle,
-  RefreshCw,
-  AlertCircle,
-} from 'lucide-react';
+import { RefreshCw, AlertCircle, Sparkles } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import {
   Card,
   CardContent,
@@ -16,12 +11,11 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { SectionCards } from '@/components/section-cards';
+import { ChartAreaInteractive } from '@/components/chart-area-interactive';
+import { DataTable } from '@/components/data-table';
 import { fetchAdminSummary } from '@/lib/admin-api';
-import { AdminSummary } from '@studyflow/shared';
+import type { AdminSummary } from '@studyflow/shared';
 
 export default function AdminDashboardPage() {
   const [summary, setSummary] = React.useState<AdminSummary | null>(null);
@@ -46,14 +40,21 @@ export default function AdminDashboardPage() {
   }, [loadSummary]);
 
   return (
-    <div className="flex flex-1 flex-col gap-6 p-4 md:p-8 max-w-7xl mx-auto w-full">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+    <div className="flex flex-1 flex-col gap-6 py-6 w-full max-w-7xl mx-auto">
+      {/* Header Bar */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 px-4 lg:px-6">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-foreground md:text-3xl">
-            Ringkasan Platform
-          </h1>
+          <div className="flex items-center gap-2">
+            <h1 className="text-2xl font-bold tracking-tight text-foreground md:text-3xl">
+              Dashboard Administrator
+            </h1>
+            <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
+              <Sparkles className="h-3 w-3" />
+              v1.0
+            </span>
+          </div>
           <p className="text-sm text-muted-foreground mt-1">
-            Pantau pertumbuhan pengguna, dokumen materi, tugas, dan kestabilan antrean AI secara langsung.
+            Pantau pertumbuhan mahasiswa, dokumen materi kuliah, tugas akademik, dan kesehatan antrean AI.
           </p>
         </div>
         <Button
@@ -61,195 +62,84 @@ export default function AdminDashboardPage() {
           size="sm"
           onClick={loadSummary}
           disabled={isLoading}
-          className="self-start sm:self-auto gap-2"
+          className="self-start sm:self-auto gap-2 h-9 px-3 text-xs md:text-sm shadow-xs"
         >
-          <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+          <RefreshCw className={`h-3.5 w-3.5 ${isLoading ? 'animate-spin' : ''}`} />
           Perbarui Data
         </Button>
       </div>
 
       {error && (
-        <Alert variant="destructive">
-          <AlertCircle className="h-4 w-4" />
-          <AlertTitle>Terjadi Kesalahan</AlertTitle>
-          <AlertDescription className="flex items-center justify-between gap-4">
-            <span>{error}</span>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={loadSummary}
-              className="bg-card text-foreground"
-            >
-              Coba Lagi
-            </Button>
-          </AlertDescription>
-        </Alert>
+        <div className="px-4 lg:px-6">
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Terjadi Kesalahan</AlertTitle>
+            <AlertDescription className="flex items-center justify-between gap-4">
+              <span>{error}</span>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={loadSummary}
+                className="bg-card text-foreground"
+              >
+                Coba Lagi
+              </Button>
+            </AlertDescription>
+          </Alert>
+        </div>
       )}
 
-      {/* Metric Cards Grid */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {/* Total Pengguna */}
-        <Card className="border-border bg-card shadow-xs">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Total Pengguna
-            </CardTitle>
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary">
-              <Users className="h-4 w-4" aria-hidden="true" />
-            </div>
-          </CardHeader>
-          <CardContent>
-            {isLoading ? (
-              <div className="space-y-2">
-                <Skeleton className="h-8 w-20" />
-                <Skeleton className="h-4 w-32" />
-              </div>
-            ) : (
-              <>
-                <div className="text-3xl font-bold text-foreground">
-                  {summary ? summary.totalUsers.toLocaleString('id-ID') : '0'}
-                </div>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Akun mahasiswa terdaftar
-                </p>
-              </>
-            )}
-          </CardContent>
-        </Card>
+      {/* 1. Metric Cards (dashboard-01 SectionCards with subtle gradients, pills & trending indicators) */}
+      <SectionCards summary={summary} isLoading={isLoading} />
 
-        {/* Total Materi */}
-        <Card className="border-border bg-card shadow-xs">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Total Materi
-            </CardTitle>
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-500/10 text-blue-600 dark:text-blue-400">
-              <FileText className="h-4 w-4" aria-hidden="true" />
-            </div>
-          </CardHeader>
-          <CardContent>
-            {isLoading ? (
-              <div className="space-y-2">
-                <Skeleton className="h-8 w-20" />
-                <Skeleton className="h-4 w-32" />
-              </div>
-            ) : (
-              <>
-                <div className="text-3xl font-bold text-foreground">
-                  {summary ? summary.totalMaterials.toLocaleString('id-ID') : '0'}
-                </div>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Dokumen aktif (tidak termasuk arsip/terhapus)
-                </p>
-              </>
-            )}
-          </CardContent>
-        </Card>
+      {/* 2. Interactive Area Chart (dashboard-01 ChartAreaInteractive with 90d/30d/7d time range) */}
+      <div className="px-4 lg:px-6">
+        <ChartAreaInteractive />
+      </div>
 
-        {/* Total Tugas */}
-        <Card className="border-border bg-card shadow-xs">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Total Tugas
-            </CardTitle>
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
-              <CheckSquare className="h-4 w-4" aria-hidden="true" />
-            </div>
-          </CardHeader>
-          <CardContent>
-            {isLoading ? (
-              <div className="space-y-2">
-                <Skeleton className="h-8 w-20" />
-                <Skeleton className="h-4 w-32" />
-              </div>
-            ) : (
-              <>
-                <div className="text-3xl font-bold text-foreground">
-                  {summary ? summary.totalAssignments.toLocaleString('id-ID') : '0'}
-                </div>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Tugas akademik dibuat mahasiswa
-                </p>
-              </>
-            )}
-          </CardContent>
-        </Card>
+      {/* 3. Platform Modules & Health Table (dashboard-01 TanStack DataTable) */}
+      <div className="flex flex-col gap-3">
+        <div className="px-4 lg:px-6">
+          <h2 className="text-lg font-semibold tracking-tight text-foreground">
+            Status Modul & Layanan Platform
+          </h2>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            Daftar komponen arsitektur, kapasitas batas, dan status kesehatan operasional StudyFlow.
+          </p>
+        </div>
+        <DataTable />
+      </div>
 
-        {/* Gagal AI (24 Jam) */}
+      {/* 4. Technical Policy & Metrics Scope */}
+      <div className="px-4 lg:px-6">
         <Card className="border-border bg-card shadow-xs">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Gagal AI (24 Jam)
-            </CardTitle>
-            <div
-              className={`flex h-8 w-8 items-center justify-center rounded-lg ${
-                summary && summary.failedJobs24h > 0
-                  ? 'bg-destructive/10 text-destructive'
-                  : 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
-              }`}
-            >
-              <AlertTriangle className="h-4 w-4" aria-hidden="true" />
-            </div>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base font-semibold">Cakupan Data & Kebijakan Metrik</CardTitle>
+            <CardDescription>
+              Definisi teknis batas agregasi data yang disajikan pada dashboard administrator StudyFlow.
+            </CardDescription>
           </CardHeader>
-          <CardContent>
-            {isLoading ? (
-              <div className="space-y-2">
-                <Skeleton className="h-8 w-20" />
-                <Skeleton className="h-4 w-32" />
-              </div>
-            ) : (
-              <>
-                <div className="flex items-center gap-2">
-                  <span className="text-3xl font-bold text-foreground">
-                    {summary ? summary.failedJobs24h.toLocaleString('id-ID') : '0'}
-                  </span>
-                  {summary && summary.failedJobs24h === 0 ? (
-                    <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950 dark:text-emerald-300 dark:border-emerald-800 text-xs">
-                      Normal
-                    </Badge>
-                  ) : (
-                    <Badge variant="danger" className="text-xs">
-                      Perlu Perhatian
-                    </Badge>
-                  )}
-                </div>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Pekerjaan ekstraksi/generasi AI gagal 24 jam terakhir
-                </p>
-              </>
+          <CardContent className="space-y-2 text-sm text-muted-foreground">
+            <p>
+              • <strong>Total Pengguna:</strong> Menghitung seluruh catatan akun mahasiswa aktif yang tersimpan pada database utama.
+            </p>
+            <p>
+              • <strong>Total Materi:</strong> Menghitung dokumen pembelajaran aktif, mengecualikan dokumen dengan status soft-delete (deletedAt terisi).
+            </p>
+            <p>
+              • <strong>Total Tugas:</strong> Seluruh item tugas akademik mahasiswa lintas semester.
+            </p>
+            <p>
+              • <strong>Gagal AI (24 Jam):</strong> Pekerjaan antrean pemrosesan dokumen atau generasi AI yang berstatus FAILED dalam rentang waktu 24 jam terakhir.
+            </p>
+            {summary && (
+              <p className="text-xs text-muted-foreground/80 pt-2 border-t border-border">
+                Terakhir dihitung pada: {new Date(summary.calculatedAt).toLocaleString('id-ID')}
+              </p>
             )}
           </CardContent>
         </Card>
       </div>
-
-      {/* Information Notes */}
-      <Card className="border-border bg-card">
-        <CardHeader>
-          <CardTitle className="text-base font-semibold">Cakupan Data & Kebijakan Metrik</CardTitle>
-          <CardDescription>
-            Definisi teknis batas agregasi data yang disajikan pada dashboard administrator.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-2 text-sm text-muted-foreground">
-          <p>
-            • <strong>Total Pengguna:</strong> Menghitung seluruh catatan pengguna yang tersimpan pada tabel basis data.
-          </p>
-          <p>
-            • <strong>Total Materi:</strong> Menghitung dokumen pembelajaran aktif, mengecualikan dokumen dengan status soft-delete (deletedAt terisi).
-          </p>
-          <p>
-            • <strong>Total Tugas:</strong> Seluruh item tugas akademik mahasiswa lintas semester.
-          </p>
-          <p>
-            • <strong>Gagal AI (24 Jam):</strong> Pekerjaan antrean pemrosesan dokumen atau generasi AI yang mengalami status FAILED dalam rentang waktu 24 jam dari waktu perhitungan saat ini.
-          </p>
-          {summary && (
-            <p className="text-xs text-muted-foreground/80 pt-2 border-t border-border">
-              Terakhir dihitung pada: {new Date(summary.calculatedAt).toLocaleString('id-ID')}
-            </p>
-          )}
-        </CardContent>
-      </Card>
     </div>
   );
 }
