@@ -15,10 +15,12 @@ import {
   ChevronDown,
   CalendarClock,
   CalendarDays,
+  Search,
 } from 'lucide-react';
 import { UserProfile } from '@studyflow/shared';
 import { apiLogout } from '@/lib/auth-client';
 import { ThemeToggle } from '@/components/theme-toggle';
+import { GlobalSearchDialog } from '@/components/search/global-search-dialog';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';
@@ -287,6 +289,21 @@ function HeaderBreadcrumbs(): React.JSX.Element {
 export function AppShell({ user, children }: AppShellProps): React.JSX.Element {
   const router = useRouter();
   const [currentUser, setCurrentUser] = React.useState<UserProfile>(user);
+  const [isSearchOpen, setIsSearchOpen] = React.useState(false);
+  const searchTriggerRef = React.useRef<HTMLButtonElement | null>(null);
+
+  React.useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        setIsSearchOpen((prev) => !prev);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, []);
 
   React.useEffect(() => {
     setCurrentUser(user);
@@ -337,8 +354,22 @@ export function AppShell({ user, children }: AppShellProps): React.JSX.Element {
               </div>
             </div>
 
-            {/* Right Header: ThemeToggle & User Account Menu */}
+            {/* Right Header: Global Search, ThemeToggle & User Account Menu */}
             <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+              <button
+                ref={searchTriggerRef}
+                type="button"
+                onClick={() => setIsSearchOpen(true)}
+                aria-label="Pencarian global (Ctrl+K)"
+                className="flex items-center gap-2 rounded-lg border border-border/80 bg-muted/40 px-2.5 py-1.5 text-xs text-muted-foreground hover:bg-muted hover:text-foreground transition-colors shadow-2xs focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring"
+              >
+                <Search className="h-3.5 w-3.5 text-muted-foreground" />
+                <span className="hidden sm:inline">Cari...</span>
+                <kbd className="hidden md:inline-flex items-center gap-0.5 rounded border border-border bg-background px-1.5 py-0.5 text-[10px] font-mono text-muted-foreground">
+                  <span className="text-[11px]">⌘</span>K
+                </kbd>
+              </button>
+
               <ThemeToggle />
               <Separator orientation="vertical" className="h-4" />
 
@@ -404,6 +435,15 @@ export function AppShell({ user, children }: AppShellProps): React.JSX.Element {
             <div className="mx-auto max-w-[1200px]">{children}</div>
           </div>
         </SidebarInset>
+
+        {/* Global Search Dialog Modal */}
+        <GlobalSearchDialog
+          isOpen={isSearchOpen}
+          onClose={() => {
+            setIsSearchOpen(false);
+            searchTriggerRef.current?.focus();
+          }}
+        />
       </div>
     </SidebarProvider>
   );

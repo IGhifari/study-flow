@@ -287,6 +287,17 @@ Istilah owner pada pemeriksaan akses berarti pemilik resource, bukan role baru. 
 2. **Agenda Harian Mobile**: Tampilan daftar timeline harian yang ringkas, responsif, dan mudah dibaca tanpa overflow horizontal.
 3. **Widget "Jadwal Hari Ini" di Dashboard**: Kartu sorotan pada dashboard belajar yang menampilkan daftar mata kuliah yang harus dihadiri hari ini berdasarkan hari aktif di zona waktu pengguna.
 
+### 7.5 Pencarian Global (Global Search)
+
+Pencarian cepat berbasis metadata untuk mempermudah navigasi lintas entitas perkuliahan:
+
+- **Cakupan Entitas:** Mata Kuliah (nama dan kode), Materi (judul), Tugas (judul), dan Catatan (judul).
+- **Batasan:** Tidak mencakup pencarian isi penuh PDF, isi teks catatan, pencarian berbasis AI/vektor, atau layanan pencarian pihak ketiga eksternal.
+- **Isolasi & Akses:** Seluruh pencarian wajib dibatasi `userId` dari sesi terautentikasi. Data yang telah dihapus (soft-deleted) atau diarsipkan tidak ditampilkan.
+- **Cakupan Semester:** Default mencari pada semester aktif pengguna, dengan opsi beralih ke "Semua Semester".
+- **Parameter & Perilaku:** Query minimal 2 karakter, maksimal 100 karakter, case-insensitive, debounce ~300 ms, dibatasi maksimal 5 hasil per kategori dengan pemeringkatan deterministik (exact match → prefix → substring).
+- **Antarmuka:** Dialog pencarian global dapat dipicu melalui tombol header app shell atau shortcut keyboard `Ctrl+K` (Windows/Linux) / `Cmd+K` (macOS).
+
 ## 8. Pengembangan v1.1
 
 ### 8.1 Ask StudyFlow — tanya-jawab berbasis materi

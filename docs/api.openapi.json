@@ -2659,6 +2659,83 @@
         }
       }
     },
+    "/api/search": {
+      "get": {
+        "summary": "Pencarian global metadata mata kuliah, materi, tugas, dan catatan",
+        "tags": [
+          "Search"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          },
+          {
+            "cookieAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": true,
+            "description": "Kata kunci pencarian (2-100 karakter)",
+            "schema": {
+              "type": "string",
+              "minLength": 2,
+              "maxLength": 100
+            }
+          },
+          {
+            "name": "semesterId",
+            "in": "query",
+            "required": false,
+            "description": "ID semester tertentu atau 'all' untuk semua semester",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "description": "Batas hasil per kategori (default 5, max 10)",
+            "schema": {
+              "type": "integer",
+              "default": 5
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Hasil pencarian berhasil ditemukan",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "query": { "type": "string" },
+                    "semesterScope": { "type": "object" },
+                    "results": { "type": "object" },
+                    "totalCount": { "type": "integer" },
+                    "hasMore": { "type": "object" },
+                    "limitPerCategory": { "type": "integer" }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Kata kunci tidak valid (<2 atau >100 karakter) atau semester diarsipkan"
+          },
+          "401": {
+            "description": "Tidak terautentikasi"
+          },
+          "404": {
+            "description": "Semester tidak ditemukan"
+          }
+        }
+      }
+    },
     "/api/dashboard": {
       "get": {
         "summary": "Mendapatkan ringkasan metrik dashboard pengguna",

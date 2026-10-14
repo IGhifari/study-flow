@@ -19,6 +19,7 @@ import { flashcardRouter, quizRouter, attemptRouter } from './routes/learning.js
 import { localStorageRouter } from './routes/localStorage.js';
 import { scheduleRouter } from './routes/schedules.js';
 import { calendarRouter } from './routes/calendar.js';
+import { searchRouter } from './routes/search.js';
 
 export function createApp(): Express {
   const app = express();
@@ -86,6 +87,7 @@ export function createApp(): Express {
   app.use('/api/attempts', attemptRouter);
   app.use('/api/schedules', scheduleRouter);
   app.use('/api/calendar', calendarRouter);
+  app.use('/api/search', searchRouter);
   app.use('/api/storage/local', localStorageRouter);
 
   // 404 handler

@@ -11,6 +11,7 @@ export * from './contracts/summary.js';
 export * from './contracts/learning.js';
 export * from './contracts/schedule.js';
 export * from './contracts/calendar.js';
+export * from './contracts/search.js';
 export * from './utils/timezone.js';
 export * from './utils/format.js';
 export * from './constants/index.js';

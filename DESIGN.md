@@ -154,7 +154,7 @@ Permukaan utama dibedakan lewat background dan border. Panel konten tidak memerl
 
 - Sidebar expanded 240 px; collapsed sekitar 64 px, cukup untuk target ikon 44 px.
 - Gunakan komposisi shadcn `SidebarProvider`, `Sidebar`, `SidebarInset`, dan `SidebarTrigger` sesuai API yang terpasang. Bila menggunakan varian inset, tempatkan main content pada `SidebarInset`; hindari offset margin manual ganda.
-- Header konten sekitar 64 px berisi trigger, breadcrumb, segmented theme toggle, dan dropdown menu akun terpadu (profil, pengaturan, dan keluar) yang selalu tersedia di desktop maupun mobile. Footer sidebar bersih tanpa duplikasi kartu identitas maupun tombol keluar ganda.
+- Header konten sekitar 64 px berisi trigger sidebar, breadcrumb, tombol pemicu pencarian global (Ctrl+K/Cmd+K), segmented theme toggle, dan dropdown menu akun terpadu (profil, pengaturan, dan keluar) yang selalu tersedia di desktop maupun mobile. Footer sidebar bersih tanpa duplikasi kartu identitas maupun tombol keluar ganda.
 - Header sticky dengan backdrop-blur halus; konten dan anchor memiliki scroll offset agar tidak tertutup.
 - Main content dashboard maksimal 1200 px dan rata tengah dalam area setelah sidebar. Halaman materi dua panel dapat memakai lebar hingga 1440 px.
 - Sidebar menampilkan logo StudyFlow, selektor semester aktif, lalu kelompok navigasi Belajar, Perkuliahan, dan Pengaturan.
@@ -178,6 +178,15 @@ Flashcard dan kuis dibuka dari materi. Tidak perlu menu mandiri untuk semua subf
 | Lebar viewport | Navigasi | Konten |
 | --- | --- | --- |
 | Di bawah 768 px | Sidebar menjadi Sheet/drawer | Satu kolom; filter dapat dilipat |
+| 768–1023 px | Sidebar collapsible icon / Sheet | Grid 2 kolom fleksibel |
+| 1024 px ke atas | Permanent collapsible sidebar | Tata letak desktop penuh |
+
+### 7.4 Dialog Pencarian Global (Ctrl+K / Cmd+K)
+
+- **Pemicu:** Tombol search di header app shell atau shortcut keyboard `Ctrl+K` (Windows/Linux) / `Cmd+K` (macOS).
+- **Komponen:** Dialog modal terpusat (`Dialog`) dengan input search autofocus, badge toggle cakupan semester (aktif vs semua semester), dan debounced fetching (300 ms).
+- **Pengelompokan:** Hasil dikelompokkan ke dalam kategori (Mata Kuliah, Materi, Tugas, Catatan) dengan indikator visual dan metadata terkait (kode matkul, tenggat tugas, status).
+- **Navigasi Keyboard:** Tombol panah atas/bawah untuk memilih item, Enter untuk membuka rute tujuan, Escape untuk menutup dialog dan mengembalikan fokus ke pemicu.
 | 768–1023 px | Drawer tetap digunakan | Satu/dua kolom sesuai ruang |
 | 1024 px ke atas | Sidebar permanen, dapat diciutkan | Dashboard dua kolom bila cukup |
 | 1280 px ke atas | Sidebar permanen | Preview PDF dan hasil belajar dapat berdampingan |
