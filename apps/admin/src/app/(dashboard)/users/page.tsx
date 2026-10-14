@@ -1,6 +1,8 @@
 'use client';
 
 import * as React from 'react';
+import Link from 'next/link';
+import { useSearchParams, useRouter } from 'next/navigation';
 import {
   Search,
   Users,
@@ -13,6 +15,7 @@ import {
   MoreHorizontal,
   Copy,
   Check,
+  Eye,
 } from 'lucide-react';
 import {
   Table,
@@ -34,14 +37,6 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
-import {
   Select,
   SelectContent,
   SelectItem,
@@ -51,39 +46,102 @@ import {
 import { fetchAdminUsers } from '@/lib/admin-api';
 import { AdminUserListItem, AdminUserListResponse } from '@studyflow/shared';
 
-export default function AdminUsersPage() {
+function UsersTableSkeleton() {
+  return (
+    <div className="space-y-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <Skeleton className="h-10 w-full sm:max-w-sm" />
+        <Skeleton className="h-9 w-32 self-end sm:self-auto" />
+      </div>
+      <div className="rounded-lg border border-border bg-card shadow-xs overflow-hidden">
+        <div className="p-4 space-y-3">
+          {Array.from({ length: 6 }).map((_, idx) => (
+            <Skeleton key={idx} className="h-10 w-full" />
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function AdminUsersContent() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+
+  // Initialize from searchParams
+  const initialSearch = searchParams.get('search') || '';
+  const initialPage = Math.max(1, parseInt(searchParams.get('page') || '1', 10) || 1);
+  const initialLimit = [10, 20, 50].includes(Number(searchParams.get('limit')))
+    ? Number(searchParams.get('limit'))
+    : 20;
+  const initialSortBy = (['createdAt', 'name', 'email'].includes(searchParams.get('sortBy') || '')
+    ? searchParams.get('sortBy')
+    : 'createdAt') as 'createdAt' | 'name' | 'email';
+  const initialSortOrder = (['asc', 'desc'].includes(searchParams.get('sortOrder') || '')
+    ? searchParams.get('sortOrder')
+    : 'desc') as 'asc' | 'desc';
+
   const [data, setData] = React.useState<AdminUserListResponse | null>(null);
   const [isLoading, setIsLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
 
   // Filter & Pagination state
-  const [search, setSearch] = React.useState('');
-  const [debouncedSearch, setDebouncedSearch] = React.useState('');
-  const [page, setPage] = React.useState(1);
-  const [limit, setLimit] = React.useState(20);
-  const [sortBy, setSortBy] = React.useState<'createdAt' | 'name' | 'email'>('createdAt');
-  const [sortOrder, setSortOrder] = React.useState<'asc' | 'desc'>('desc');
+  const [search, setSearch] = React.useState(initialSearch);
+  const [debouncedSearch, setDebouncedSearch] = React.useState(initialSearch);
+  const [page, setPage] = React.useState(initialPage);
+  const [limit, setLimit] = React.useState(initialLimit);
+  const [sortBy, setSortBy] = React.useState<'createdAt' | 'name' | 'email'>(initialSortBy);
+  const [sortOrder, setSortOrder] = React.useState<'asc' | 'desc'>(initialSortOrder);
 
-  // Action dialog states
-  const [detailUser, setDetailUser] = React.useState<AdminUserListItem | null>(null);
-  const [duplicateUser, setDuplicateUser] = React.useState<AdminUserListItem | null>(null);
-  const [deleteUser, setDeleteUser] = React.useState<AdminUserListItem | null>(null);
-  const [copiedField, setCopiedField] = React.useState<string | null>(null);
+  // Copy feedback state
+  const [copiedKey, setCopiedKey] = React.useState<string | null>(null);
 
-  const handleCopy = (text: string, field: string) => {
+  const handleCopy = (text: string, key: string) => {
     navigator.clipboard.writeText(text);
-    setCopiedField(field);
-    setTimeout(() => setCopiedField(null), 2000);
+    setCopiedKey(key);
+    setTimeout(() => {
+      setCopiedKey((curr) => (curr === key ? null : curr));
+    }, 2000);
   };
 
   // Debounce search input by 300ms
   React.useEffect(() => {
     const handler = setTimeout(() => {
-      setDebouncedSearch(search.trim());
-      setPage(1); // Reset to page 1 on new search
+      const trimmed = search.trim();
+      setDebouncedSearch((prev) => {
+        if (prev !== trimmed) {
+          setPage(1);
+        }
+        return trimmed;
+      });
     }, 300);
     return () => clearTimeout(handler);
   }, [search]);
+
+  // Sync URL search params
+  React.useEffect(() => {
+    const params = new URLSearchParams();
+    if (page > 1) params.set('page', String(page));
+    if (limit !== 20) params.set('limit', String(limit));
+    if (debouncedSearch) params.set('search', debouncedSearch);
+    if (sortBy !== 'createdAt') params.set('sortBy', sortBy);
+    if (sortOrder !== 'desc') params.set('sortOrder', sortOrder);
+
+    const queryString = params.toString();
+    const targetUrl = queryString ? `/users?${queryString}` : '/users';
+    window.history.replaceState(null, '', targetUrl);
+  }, [page, limit, debouncedSearch, sortBy, sortOrder]);
+
+  // Current query string to pass to detail link for preserving back context
+  const currentQueryString = React.useMemo(() => {
+    const params = new URLSearchParams();
+    if (page > 1) params.set('page', String(page));
+    if (limit !== 20) params.set('limit', String(limit));
+    if (debouncedSearch) params.set('search', debouncedSearch);
+    if (sortBy !== 'createdAt') params.set('sortBy', sortBy);
+    if (sortOrder !== 'desc') params.set('sortOrder', sortOrder);
+    return params.toString();
+  }, [page, limit, debouncedSearch, sortBy, sortOrder]);
 
   // Fetch users when parameters change, ignoring stale responses
   React.useEffect(() => {
@@ -272,7 +330,7 @@ export default function AdminUsersPage() {
                     <ArrowUpDown className="h-3.5 w-3.5" />
                   </button>
                 </TableHead>
-                <TableHead className="text-right w-[80px]">Actions</TableHead>
+                <TableHead className="text-right w-[90px]">Aksi</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -300,69 +358,100 @@ export default function AdminUsersPage() {
                   </TableRow>
                 ))
               ) : data && data.items.length > 0 ? (
-                data.items.map((user: AdminUserListItem) => (
-                  <TableRow key={user.id} className="hover:bg-muted/30">
-                    <TableCell className="font-medium text-foreground">
-                      {user.name}
-                    </TableCell>
-                    <TableCell className="text-muted-foreground font-mono text-xs">
-                      {user.email}
-                    </TableCell>
-                    <TableCell>
-                      {user.role === 'ADMIN' ? (
-                        <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20 font-semibold">
-                          ADMIN
-                        </Badge>
-                      ) : (
-                        <Badge variant="secondary" className="font-normal">
-                          USER
-                        </Badge>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      {user.emailVerifiedAt ? (
-                        <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950 dark:text-emerald-300 dark:border-emerald-800 text-xs">
-                          Terverifikasi
-                        </Badge>
-                      ) : (
-                        <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950 dark:text-amber-300 dark:border-amber-800 text-xs">
-                          Belum Verifikasi
-                        </Badge>
-                      )}
-                    </TableCell>
-                    <TableCell className="text-muted-foreground text-xs whitespace-nowrap">
-                      {new Date(user.createdAt).toLocaleDateString('id-ID', {
-                        year: 'numeric',
-                        month: 'short',
-                        day: 'numeric',
-                      })}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon" className="h-8 w-8 p-0">
-                            <span className="sr-only">Open menu</span>
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="w-36">
-                          <DropdownMenuItem onClick={() => setDetailUser(user)}>
-                            Edit
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => setDuplicateUser(user)}>
-                            Duplicate
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            className="text-destructive focus:text-destructive focus:bg-destructive/10"
-                            onClick={() => setDeleteUser(user)}
-                          >
-                            Delete
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
-                  </TableRow>
-                ))
+                data.items.map((user: AdminUserListItem) => {
+                  const detailHref = currentQueryString
+                    ? `/users/${user.id}?${currentQueryString}`
+                    : `/users/${user.id}`;
+
+                  return (
+                    <TableRow key={user.id} className="hover:bg-muted/30">
+                      <TableCell className="font-medium text-foreground">
+                        <Link
+                          href={detailHref}
+                          className="hover:underline hover:text-primary transition-colors inline-block"
+                        >
+                          {user.name}
+                        </Link>
+                      </TableCell>
+                      <TableCell className="text-muted-foreground font-mono text-xs">
+                        {user.email}
+                      </TableCell>
+                      <TableCell>
+                        {user.role === 'ADMIN' ? (
+                          <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20 font-semibold">
+                            ADMIN
+                          </Badge>
+                        ) : (
+                          <Badge variant="secondary" className="font-normal">
+                            USER
+                          </Badge>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {user.emailVerifiedAt ? (
+                          <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950 dark:text-emerald-300 dark:border-emerald-800 text-xs">
+                            Terverifikasi
+                          </Badge>
+                        ) : (
+                          <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950 dark:text-amber-300 dark:border-amber-800 text-xs">
+                            Belum Verifikasi
+                          </Badge>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-muted-foreground text-xs whitespace-nowrap">
+                        {new Date(user.createdAt).toLocaleDateString('id-ID', {
+                          year: 'numeric',
+                          month: 'short',
+                          day: 'numeric',
+                        })}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 p-0">
+                              <span className="sr-only">Buka menu aksi</span>
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="w-44">
+                            <DropdownMenuItem asChild>
+                              <Link href={detailHref} className="cursor-pointer">
+                                <Eye className="mr-2 h-4 w-4" />
+                                <span>Lihat detail</span>
+                              </Link>
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() => handleCopy(user.email, `email-${user.id}`)}
+                              className="cursor-pointer"
+                            >
+                              {copiedKey === `email-${user.id}` ? (
+                                <Check className="mr-2 h-4 w-4 text-emerald-500" />
+                              ) : (
+                                <Copy className="mr-2 h-4 w-4" />
+                              )}
+                              <span>
+                                {copiedKey === `email-${user.id}` ? 'Email disalin' : 'Salin Email'}
+                              </span>
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() => handleCopy(user.id, `id-${user.id}`)}
+                              className="cursor-pointer"
+                            >
+                              {copiedKey === `id-${user.id}` ? (
+                                <Check className="mr-2 h-4 w-4 text-emerald-500" />
+                              ) : (
+                                <Copy className="mr-2 h-4 w-4" />
+                              )}
+                              <span>
+                                {copiedKey === `id-${user.id}` ? 'ID disalin' : 'Salin User ID'}
+                              </span>
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })
               ) : (
                 <TableRow>
                   <TableCell colSpan={6} className="h-40 text-center">
@@ -440,148 +529,14 @@ export default function AdminUsersPage() {
           </div>
         </div>
       </div>
-
-      {/* Edit & Detail Dialog */}
-      <Dialog open={!!detailUser} onOpenChange={(open) => !open && setDetailUser(null)}>
-        <DialogContent className="sm:max-w-[480px]">
-          <DialogHeader>
-            <DialogTitle>Detail Pengguna</DialogTitle>
-            <DialogDescription>
-              Informasi lengkap akun dan status keanggotaan pengguna.
-            </DialogDescription>
-          </DialogHeader>
-          {detailUser && (
-            <div className="space-y-3 py-2 text-sm">
-              <div className="grid grid-cols-3 gap-2 py-1 border-b border-border/60">
-                <span className="text-muted-foreground font-medium">Nama</span>
-                <span className="col-span-2 font-semibold text-foreground">{detailUser.name}</span>
-              </div>
-              <div className="grid grid-cols-3 gap-2 py-1 border-b border-border/60">
-                <span className="text-muted-foreground font-medium">Email</span>
-                <div className="col-span-2 flex items-center justify-between gap-2">
-                  <span className="font-mono text-xs">{detailUser.email}</span>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-6 px-2 text-xs gap-1"
-                    onClick={() => handleCopy(detailUser.email, 'email')}
-                  >
-                    {copiedField === 'email' ? <Check className="h-3 w-3 text-emerald-500" /> : <Copy className="h-3 w-3" />}
-                    {copiedField === 'email' ? 'Disalin' : 'Salin'}
-                  </Button>
-                </div>
-              </div>
-              <div className="grid grid-cols-3 gap-2 py-1 border-b border-border/60">
-                <span className="text-muted-foreground font-medium">ID Akun</span>
-                <div className="col-span-2 flex items-center justify-between gap-2">
-                  <span className="font-mono text-xs truncate max-w-[180px]">{detailUser.id}</span>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-6 px-2 text-xs gap-1"
-                    onClick={() => handleCopy(detailUser.id, 'id')}
-                  >
-                    {copiedField === 'id' ? <Check className="h-3 w-3 text-emerald-500" /> : <Copy className="h-3 w-3" />}
-                    {copiedField === 'id' ? 'Disalin' : 'Salin'}
-                  </Button>
-                </div>
-              </div>
-              <div className="grid grid-cols-3 gap-2 py-1 border-b border-border/60">
-                <span className="text-muted-foreground font-medium">Peran</span>
-                <span className="col-span-2">
-                  <Badge variant={detailUser.role === 'ADMIN' ? 'outline' : 'secondary'}>
-                    {detailUser.role}
-                  </Badge>
-                </span>
-              </div>
-              <div className="grid grid-cols-3 gap-2 py-1 border-b border-border/60">
-                <span className="text-muted-foreground font-medium">Status Verifikasi</span>
-                <span className="col-span-2">
-                  {detailUser.emailVerifiedAt ? (
-                    <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950 dark:text-emerald-300">
-                      Terverifikasi
-                    </Badge>
-                  ) : (
-                    <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950 dark:text-amber-300">
-                      Belum Verifikasi
-                    </Badge>
-                  )}
-                </span>
-              </div>
-              <div className="grid grid-cols-3 gap-2 py-1">
-                <span className="text-muted-foreground font-medium">Terdaftar Sejak</span>
-                <span className="col-span-2 text-muted-foreground text-xs">
-                  {new Date(detailUser.createdAt).toLocaleString('id-ID', {
-                    dateStyle: 'full',
-                    timeStyle: 'short',
-                  })}
-                </span>
-              </div>
-              <div className="rounded-md bg-muted/50 p-2.5 text-xs text-muted-foreground mt-2">
-                Penyuntingan data pengguna langsung dijadwalkan pada Tahap 2 sesuai batas scope PRD.
-              </div>
-            </div>
-          )}
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setDetailUser(null)}>
-              Tutup
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Duplicate Dialog */}
-      <Dialog open={!!duplicateUser} onOpenChange={(open) => !open && setDuplicateUser(null)}>
-        <DialogContent className="sm:max-w-[420px]">
-          <DialogHeader>
-            <DialogTitle>Duplikasi Pengguna</DialogTitle>
-            <DialogDescription>
-              Aksi duplikasi profil akun pengguna StudyFlow.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="py-2 text-sm text-muted-foreground leading-relaxed">
-            Duplikasi akun dinonaktifkan demi integritas data dan kebijakan privasi akun mahasiswa unik di StudyFlow.
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setDuplicateUser(null)}>
-              Mengerti
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Delete Dialog */}
-      <Dialog open={!!deleteUser} onOpenChange={(open) => !open && setDeleteUser(null)}>
-        <DialogContent className="sm:max-w-[420px]">
-          <DialogHeader>
-            <DialogTitle className="text-destructive flex items-center gap-2">
-              <AlertCircle className="h-5 w-5" />
-              Hapus Pengguna
-            </DialogTitle>
-            <DialogDescription>
-              Konfirmasi perlindungan penghapusan akun pengguna.
-            </DialogDescription>
-          </DialogHeader>
-          {deleteUser && (
-            <div className="py-2 text-sm space-y-2">
-              <p className="text-foreground">
-                Apakah Anda yakin ingin menghapus akun <span className="font-semibold">{deleteUser.name}</span> ({deleteUser.email})?
-              </p>
-              <div className="rounded-md border border-amber-500/20 bg-amber-500/10 p-2.5 text-xs text-amber-700 dark:text-amber-400">
-                Fitur penghapusan pengguna dinonaktifkan pada Tahap 1 (Read-Only) untuk menjaga integritas data akademik mahasiswa.
-              </div>
-            </div>
-          )}
-          <DialogFooter className="gap-2">
-            <Button variant="outline" onClick={() => setDeleteUser(null)}>
-              Batal
-            </Button>
-            <Button variant="destructive" disabled title="Tersedia di Tahap 2">
-              Hapus (Tahap 2)
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
+  );
+}
+
+export default function AdminUsersPage() {
+  return (
+    <React.Suspense fallback={<UsersTableSkeleton />}>
+      <AdminUsersContent />
+    </React.Suspense>
   );
 }

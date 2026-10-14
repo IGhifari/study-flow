@@ -6,6 +6,7 @@ import { usePathname } from 'next/navigation';
 import {
   LayoutDashboard,
   Users,
+  Activity,
   Shield,
   LogOut,
   ChevronUp,
@@ -44,6 +45,11 @@ const navItems = [
     title: 'Pengguna',
     url: '/users',
     icon: Users,
+  },
+  {
+    title: 'Pekerjaan',
+    url: '/jobs',
+    icon: Activity,
   },
 ];
 

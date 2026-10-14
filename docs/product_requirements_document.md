@@ -595,9 +595,48 @@ Referensi ini mendukung batas teknis rancangan; pilihan scope dan angka target m
   - Proyeksi aman: id, name, email, role, emailVerifiedAt, createdAt.
   - Secara ketat mengecualikan hash password, token sesi, token OAuth, token reset password, dan data konten privat pengguna.
 
+### 21.4 Halaman Detail Pengguna Read-Only (`/api/admin/users/:id` dan `/users/:id`)
+- **Akses dan Keamanan**:
+  - Dilindungi autentikasi admin dan validasi otoritatif basis data (`requireAdmin`).
+  - Mengembalikan 404 untuk ID pengguna yang tidak ditemukan.
+  - Header respon HTTP: `Cache-Control: no-store, private`.
+- **Proyeksi Akun Aman**:
+  - Kolom diizinkan: `id`, `name`, `email`, `role`, `emailVerifiedAt`, `createdAt`, `timezone`, dan `authMethods` (`hasPassword`, `hasGoogle`, `methods`).
+  - Secara mutlak melarang ekspos `passwordHash`, raw subject OAuth, token sesi, atau secret.
+- **Ringkasan Penggunaan Platform**:
+  - Agregasi efisien secara paralel: Semester, Mata Kuliah, Materi Aktif (`deletedAt: null`), Tugas Kuliah, Catatan Belajar, dan Penggunaan Penyimpanan (`storage_usages.usedBytes` dan format terbaca).
+  - Isolasi data pengguna: metrik pengguna lain tidak saling mencemari.
+  - Menjaga privasi: tidak menampilkan isi catatan, PDF, hasil generasi AI, jawaban kuis, atau link unduhan materi.
+- **Pengalaman Antarmuka UI (`apps/admin`)**:
+  - Breadcrumb jelas: `StudyFlow Admin / Pengguna / Detail`.
+  - Tombol kembali ke daftar pengguna yang mempertahankan status filter pencarian, pengurutan, dan paginasi URL.
+  - Kartu terstruktur dengan indikator badge peran, status verifikasi email, dan metode login.
+  - Penanganan state lengkap: loading skeleton, penanganan error dengan tombol coba lagi, penanganan 404 pengguna tidak ditemukan, serta pembatalan request basi (*stale request*) melalui AbortController.
+  - Pengurangan kebingungan pengguna: pembersihan menu dummy/tindakan palsu pada daftar pengguna, diganti aksi nyata (Lihat detail, Salin Email, Salin User ID).
+
+### 21.5 Monitoring Pekerjaan dan Antrean Operasional (Tahap 3)
+- **Sumber Data & Karakteristik Status**:
+  - **Basis Data (`ProcessingJob`)**: Sumber kebenaran definitif (*authoritative source*) untuk riwayat bisnis permanen (`PENDING`, `PROCESSING`, `COMPLETED`, `FAILED`). Jejak waktu eksplisit: `createdAt`, `startedAt`, `completedAt`, dan `failedAt`. `updatedAt` tidak diasumsikan sebagai waktu kegagalan.
+  - **BullMQ / Redis**: Status antrean transien (`waiting`, `active`, `delayed`, `completed`, `failed`). Memori dibatasi oleh retensi (100 sukses / 200 gagal). Pekerjaan yang telah dibersihkan dari Redis tetap utuh pada riwayat basis data (berstatus antrean *Dibersihkan dari Memori* / `not_found`).
+- **Endpoint API Terautentikasi (`requireAdmin`)**:
+  - `GET /api/admin/jobs`: Paginasi server-side, pengurutan stabil, filter jenis (`type`), status (`status`), ID pengguna (`userId`), ID pekerjaan (`jobId`), dan rentang tanggal (`startDate`, `endDate` maksimal 90 hari). Proyeksi aman: nama pengguna, ID, jenis, status, attempt, durasi valid, waktu dibuat/mulai/selesai/gagal, kode error, dan pesan error aman.
+  - `GET /api/admin/jobs/:id`: Rincian teknis operasional pekerjaan, pemetaan status antrean BullMQ saat ini, serta penjelasan aman yang dipetakan dari kode error (`safeErrorMessage`).
+  - `GET /api/admin/jobs/queues/summary`: Ringkasan metrik antrean dokumen dan AI saat ini. Jika Redis tidak terhubung, status ditampilkan sebagai *Tidak Tersedia* (`unavailable`) dengan nilai `null`, bukan angka nol palsu atau klaim worker sehat tanpa bukti heartbeat tepercaya.
+- **Batasan Privasi & Keamanan Ketat**:
+  - Mutlak dilarang mengekspos: isi PDF, teks hasil ekstraksi, prompt pengguna, respons model AI mentah, payload job mentah, stack trace, kredensial API key, URL penyimpanan bertanda tangan, dan pesan error provider mentah.
+  - Kueri monitoring murni bersifat *read-only*: tidak memicu ulang job, mutasi kuota, atau pemanggilan ke provider model AI.
+- **Antarmuka UI Shadcn/UI (`/jobs`)**:
+  - Navigasi menu samping "Pekerjaan".
+  - Kartu ringkasan antrean real-time BullMQ dengan catatan retensi transien.
+  - Tabel pekerjaan dengan filter interaktif, sinkronisasi parameter URL, dan pembatalan request basi.
+  - Sheet slide-over untuk detail operasional pekerjaan yang dipilih.
+  - Tanpa tombol aksi palsu (tidak ada tombol Retry, Batal, atau Hapus yang belum berfungsi).
+
 ## 22. Riwayat perubahan
 
 | Versi | Tanggal | Perubahan |
 | --- | --- | --- |
 | 1.0 | 3 Oktober 2026 | PRD awal; Next.js + Express; MVP personal dengan PDF, ringkasan, flashcard, kuis; chat/realtime menjadi v1.1 |
 | 1.1 | 14 Oktober 2026 | Penambahan spesifikasi Dashboard Administrator Tahap 1: peran USER/ADMIN, autentikasi & sesi cookie terisolasi, ringkasan metrik platform nyata, direktori pengguna read-only, bootstrap CLI, dan arsitektur apps/admin |
+| 1.2 | 14 Oktober 2026 | Penambahan spesifikasi Dashboard Administrator Tahap 2: halaman detail pengguna read-only (`GET /api/admin/users/:id` dan `/users/[id]`), agregasi metrik penggunaan platform, navigasi breadcrumb & retensi query URL, dan pembersihan aksi dummy |
+| 1.3 | 14 Oktober 2026 | Penambahan spesifikasi Dashboard Administrator Tahap 3: monitoring pekerjaan AI dan pemrosesan dokumen read-only (`GET /api/admin/jobs`, `/api/admin/jobs/:id`, `/api/admin/jobs/queues/summary`), ringkasan antrean BullMQ, sheet detail operasional aman, serta navigasi rute `/jobs` |

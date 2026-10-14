@@ -412,4 +412,204 @@ describe('Admin Endpoints & Authorization Invariants', () => {
       expect(res.body.error.code).toBe('VALIDATION_ERROR');
     });
   });
+
+  describe('Read-Only User Detail (GET /api/admin/users/:id)', () => {
+    it('rejects anonymous request with 401', async () => {
+      const res = await request(app).get(`/api/admin/users/${normalUserId}`);
+      expect(res.status).toBe(401);
+      expect(res.body.error.code).toBe('UNAUTHORIZED');
+    });
+
+    it('rejects non-admin USER with 403', async () => {
+      const res = await request(app)
+        .get(`/api/admin/users/${normalUserId}`)
+        .set('Cookie', normalUserCookie);
+      expect(res.status).toBe(403);
+      expect(res.body.error.code).toBe('FORBIDDEN');
+    });
+
+    it('returns 404 when target user does not exist', async () => {
+      const res = await request(app)
+        .get('/api/admin/users/cuid_non_existent_12345')
+        .set('Cookie', adminUserCookie);
+      expect(res.status).toBe(404);
+      expect(res.body.error.code).toBe('USER_NOT_FOUND');
+    });
+
+    it('allows ADMIN to fetch user detail with safe projection and no leaked secrets', async () => {
+      const res = await request(app)
+        .get(`/api/admin/users/${normalUserId}`)
+        .set('Cookie', adminUserCookie);
+
+      expect(res.status).toBe(200);
+      expect(res.headers['cache-control']).toBe('no-store, private');
+      expect(res.body.id).toBe(normalUserId);
+      expect(res.body.name).toBe('Normal User');
+      expect(res.body.email).toBe(normalUserEmail);
+      expect(res.body.role).toBe('USER');
+      expect(res.body.timezone).toBeDefined();
+      expect(res.body.createdAt).toBeDefined();
+
+      // Auth methods
+      expect(res.body.authMethods).toBeDefined();
+      expect(res.body.authMethods.hasPassword).toBe(true);
+      expect(res.body.authMethods.hasGoogle).toBe(false);
+      expect(res.body.authMethods.methods).toEqual(['password']);
+
+      // Usage summary structure
+      expect(res.body.usageSummary).toBeDefined();
+      expect(typeof res.body.usageSummary.semesters).toBe('number');
+      expect(typeof res.body.usageSummary.courses).toBe('number');
+      expect(typeof res.body.usageSummary.materials).toBe('number');
+      expect(typeof res.body.usageSummary.assignments).toBe('number');
+      expect(typeof res.body.usageSummary.notes).toBe('number');
+
+      // STRICT PROJECTION: Secrets MUST NEVER be exposed
+      expect((res.body as any).passwordHash).toBeUndefined();
+      expect((res.body as any).password_hash).toBeUndefined();
+      expect((res.body as any).tokenVersion).toBeUndefined();
+      expect((res.body as any).token_version).toBeUndefined();
+      expect((res.body as any).refreshSessions).toBeUndefined();
+      expect((res.body as any).federatedIdentities).toBeUndefined();
+    });
+
+    it('accurately reports Google OAuth in authMethods when present', async () => {
+      // Add a Google federated identity to normalUser
+      await prisma.federatedIdentity.create({
+        data: {
+          userId: normalUserId,
+          provider: 'google',
+          subject: 'google_sub_12345678',
+          email: normalUserEmail,
+        },
+      });
+
+      const res = await request(app)
+        .get(`/api/admin/users/${normalUserId}`)
+        .set('Cookie', adminUserCookie);
+
+      expect(res.status).toBe(200);
+      expect(res.body.authMethods.hasPassword).toBe(true);
+      expect(res.body.authMethods.hasGoogle).toBe(true);
+      expect(res.body.authMethods.methods).toContain('password');
+      expect(res.body.authMethods.methods).toContain('google');
+      // Ensure raw federated identity details (e.g. subject) are not exposed
+      expect((res.body as any).subject).toBeUndefined();
+    });
+
+    it('accurately aggregates user usage metrics and respects active materials scoping', async () => {
+      // 1. Create semester and course
+      const semester = await prisma.semester.create({
+        data: {
+          userId: normalUserId,
+          name: 'Semester 1 Test',
+          academicYear: '2025/2026',
+          isActive: true,
+        },
+      });
+
+      const course = await prisma.course.create({
+        data: {
+          userId: normalUserId,
+          semesterId: semester.id,
+          name: 'Kalkulus I Test',
+        },
+      });
+
+      // 2. Create 1 active material and 1 soft-deleted material
+      await prisma.material.create({
+        data: {
+          userId: normalUserId,
+          courseId: course.id,
+          title: 'Materi Aktif',
+          originalFilename: 'materi_aktif.pdf',
+          storageKey: `test/aktif_${Date.now()}.pdf`,
+          bytes: 1048576, // 1 MB
+          status: 'READY',
+        },
+      });
+
+      await prisma.material.create({
+        data: {
+          userId: normalUserId,
+          courseId: course.id,
+          title: 'Materi Terhapus',
+          originalFilename: 'materi_terhapus.pdf',
+          storageKey: `test/terhapus_${Date.now()}.pdf`,
+          bytes: 1048576,
+          status: 'READY',
+          deletedAt: new Date(),
+        },
+      });
+
+      // 3. Create assignment
+      await prisma.assignment.create({
+        data: {
+          userId: normalUserId,
+          courseId: course.id,
+          title: 'Tugas Kuliah Test',
+          dueDate: new Date(Date.now() + 86400000),
+        },
+      });
+
+      // 4. Create note
+      await prisma.note.create({
+        data: {
+          userId: normalUserId,
+          courseId: course.id,
+          title: 'Catatan Kuliah Test',
+          content: 'Catatan pribadi belajar kalkulus',
+        },
+      });
+
+      // 5. Create storage usage record (10.5 MB)
+      await prisma.storageUsage.upsert({
+        where: { userId: normalUserId },
+        create: {
+          userId: normalUserId,
+          usedBytes: BigInt(11010048), // ~10.5 MB
+        },
+        update: {
+          usedBytes: BigInt(11010048),
+        },
+      });
+
+      // Request user detail
+      const res = await request(app)
+        .get(`/api/admin/users/${normalUserId}`)
+        .set('Cookie', adminUserCookie);
+
+      expect(res.status).toBe(200);
+      const usage = res.body.usageSummary;
+      expect(usage.semesters).toBe(1);
+      expect(usage.courses).toBe(1);
+      // Soft-deleted material MUST NOT be included
+      expect(usage.materials).toBe(1);
+      expect(usage.assignments).toBe(1);
+      expect(usage.notes).toBe(1);
+      expect(usage.storageUsage).toBeDefined();
+      expect(usage.storageUsage.usedBytes).toBe(11010048);
+      expect(usage.storageUsage.formatted).toBe('10.5 MB');
+
+      // Verify privacy: no note text, no material file URLs, no assignment content leaked
+      expect((res.body as any).content).toBeUndefined();
+      expect((res.body as any).notesList).toBeUndefined();
+      expect((res.body as any).materialsList).toBeUndefined();
+    });
+
+    it('enforces tenant isolation: another user metrics do not bleed into target user summary', async () => {
+      // Admin should have 0 semesters/courses in their summary
+      const adminRes = await request(app)
+        .get(`/api/admin/users/${adminUserId}`)
+        .set('Cookie', adminUserCookie);
+
+      expect(adminRes.status).toBe(200);
+      expect(adminRes.body.usageSummary.semesters).toBe(0);
+      expect(adminRes.body.usageSummary.courses).toBe(0);
+      expect(adminRes.body.usageSummary.materials).toBe(0);
+      expect(adminRes.body.usageSummary.assignments).toBe(0);
+      expect(adminRes.body.usageSummary.notes).toBe(0);
+      expect(adminRes.body.usageSummary.storageUsage).toBeNull();
+    });
+  });
 });

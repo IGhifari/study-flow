@@ -3,6 +3,11 @@ import {
   AdminSummary,
   AdminUserListQuery,
   AdminUserListResponse,
+  AdminUserDetail,
+  AdminJobListQuery,
+  AdminJobListResponse,
+  AdminJobDetail,
+  AdminQueuesSummaryResponse,
   UserProfile,
 } from '@studyflow/shared';
 
@@ -89,3 +94,64 @@ export async function fetchAdminUsers(query: Partial<AdminUserListQuery> = {}): 
   });
   return handleResponse<AdminUserListResponse>(res);
 }
+
+export async function fetchAdminUserDetail(
+  userId: string,
+  options?: { signal?: AbortSignal }
+): Promise<AdminUserDetail> {
+  const res = await fetch(`/api/admin/users/${encodeURIComponent(userId)}`, {
+    method: 'GET',
+    cache: 'no-store',
+    signal: options?.signal,
+  });
+  return handleResponse<AdminUserDetail>(res);
+}
+
+export async function fetchAdminJobs(
+  query: Partial<AdminJobListQuery> = {},
+  options?: { signal?: AbortSignal }
+): Promise<AdminJobListResponse> {
+  const params = new URLSearchParams();
+  if (query.page) params.set('page', String(query.page));
+  if (query.limit) params.set('limit', String(query.limit));
+  if (query.type) params.set('type', query.type);
+  if (query.status) params.set('status', query.status);
+  if (query.userId) params.set('userId', query.userId);
+  if (query.jobId) params.set('jobId', query.jobId);
+  if (query.startDate) params.set('startDate', query.startDate);
+  if (query.endDate) params.set('endDate', query.endDate);
+  if (query.sortBy) params.set('sortBy', query.sortBy);
+  if (query.sortOrder) params.set('sortOrder', query.sortOrder);
+
+  const res = await fetch(`/api/admin/jobs?${params.toString()}`, {
+    method: 'GET',
+    cache: 'no-store',
+    signal: options?.signal,
+  });
+  return handleResponse<AdminJobListResponse>(res);
+}
+
+export async function fetchAdminJobDetail(
+  jobId: string,
+  options?: { signal?: AbortSignal }
+): Promise<AdminJobDetail> {
+  const res = await fetch(`/api/admin/jobs/${encodeURIComponent(jobId)}`, {
+    method: 'GET',
+    cache: 'no-store',
+    signal: options?.signal,
+  });
+  return handleResponse<AdminJobDetail>(res);
+}
+
+export async function fetchAdminQueuesSummary(
+  options?: { signal?: AbortSignal }
+): Promise<AdminQueuesSummaryResponse> {
+  const res = await fetch('/api/admin/jobs/queues/summary', {
+    method: 'GET',
+    cache: 'no-store',
+    signal: options?.signal,
+  });
+  return handleResponse<AdminQueuesSummaryResponse>(res);
+}
+
+

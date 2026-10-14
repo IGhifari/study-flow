@@ -3547,10 +3547,366 @@
           }
         }
       }
+    },
+    "/api/admin/users/{id}": {
+      "get": {
+        "summary": "Detail Pengguna Read-Only",
+        "description": "Mengambil detail akun dan ringkasan penggunaan platform untuk pengguna tertentu. Dilindungi oleh autentikasi admin dan requireAdmin. Menggunakan proyeksi aman tanpa mengekspos hash kata sandi, token, atau kredensial rahasia.",
+        "tags": [
+          "Admin"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "ID unik pengguna (CUID)",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Detail akun dan ringkasan penggunaan pengguna",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminUserDetail"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "ID pengguna tidak valid"
+          },
+          "401": {
+            "description": "Autentikasi admin diperlukan"
+          },
+          "403": {
+            "description": "Akses ditolak: Memerlukan peran ADMIN"
+          },
+          "404": {
+            "description": "Pengguna tidak ditemukan"
+          }
+        }
+      }
+    },
+    "/api/admin/jobs/queues/summary": {
+      "get": {
+        "summary": "Ringkasan Antrean BullMQ",
+        "description": "Mengambil kondisi antrean real-time BullMQ Redis (waiting, active, delayed, failed) untuk worker dokumen dan worker AI. Dilindungi requireAdmin.",
+        "tags": [
+          "Admin"
+        ],
+        "responses": {
+          "200": {
+            "description": "Ringkasan antrean dan status Redis",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminQueuesSummaryResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Autentikasi admin diperlukan"
+          },
+          "403": {
+            "description": "Akses ditolak: Memerlukan peran ADMIN"
+          }
+        }
+      }
+    },
+    "/api/admin/jobs": {
+      "get": {
+        "summary": "Daftar Pekerjaan Operasional Read-Only",
+        "description": "Mengambil daftar riwayat pekerjaan ekstraksi dokumen dan pembuatan AI dari basis data dengan filter tipe, status, pengguna, tanggal, dan paginasi server-side.",
+        "tags": [
+          "Admin"
+        ],
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "integer", "default": 1 }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "integer", "default": 20 }
+          },
+          {
+            "name": "type",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "DOCUMENT_EXTRACTION",
+                "DOCUMENT_CLEANUP",
+                "AI_SUMMARY_GENERATION",
+                "AI_FLASHCARD_GENERATION",
+                "AI_QUIZ_GENERATION"
+              ]
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": ["PENDING", "PROCESSING", "COMPLETED", "FAILED"]
+            }
+          },
+          {
+            "name": "userId",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "jobId",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "string" }
+          },
+          {
+            "name": "startDate",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "string", "format": "date-time" }
+          },
+          {
+            "name": "endDate",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "string", "format": "date-time" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Daftar pekerjaan dan metadata paginasi",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminJobListResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Parameter query atau rentang tanggal tidak valid"
+          },
+          "401": {
+            "description": "Autentikasi admin diperlukan"
+          },
+          "403": {
+            "description": "Akses ditolak: Memerlukan peran ADMIN"
+          }
+        }
+      }
+    },
+    "/api/admin/jobs/{id}": {
+      "get": {
+        "summary": "Detail Pekerjaan Operasional",
+        "description": "Mengambil detail pekerjaan operasional yang aman (ID, tipe, status database, status antrean BullMQ, durasi, dan penjelasan error yang dipetakan secara aman tanpa payload atau rahasia).",
+        "tags": [
+          "Admin"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "ID pekerjaan unik (CUID)",
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Rincian operasional pekerjaan",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminJobDetail"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "ID pekerjaan tidak valid"
+          },
+          "401": {
+            "description": "Autentikasi admin diperlukan"
+          },
+          "403": {
+            "description": "Akses ditolak: Memerlukan peran ADMIN"
+          },
+          "404": {
+            "description": "Pekerjaan tidak ditemukan"
+          }
+        }
+      }
     }
   },
   "components": {
     "schemas": {
+      "AdminQueuesSummaryResponse": {
+        "type": "object",
+        "required": ["queues", "redisStatus", "retentionNotice", "timestamp"],
+        "properties": {
+          "queues": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["name", "label", "status", "counts", "retentionNote"],
+              "properties": {
+                "name": { "type": "string" },
+                "label": { "type": "string" },
+                "status": { "type": "string", "enum": ["available", "unavailable"] },
+                "counts": {
+                  "type": "object",
+                  "nullable": true,
+                  "properties": {
+                    "waiting": { "type": "integer" },
+                    "active": { "type": "integer" },
+                    "delayed": { "type": "integer" },
+                    "failed": { "type": "integer" }
+                  }
+                },
+                "retentionNote": { "type": "string" }
+              }
+            }
+          },
+          "redisStatus": { "type": "string", "enum": ["connected", "unavailable"] },
+          "retentionNotice": { "type": "string" },
+          "timestamp": { "type": "string", "format": "date-time" }
+        }
+      },
+      "AdminJobListItem": {
+        "type": "object",
+        "required": ["id", "type", "status", "userId", "userName", "materialId", "attempts", "maxAttempts", "errorCode", "safeErrorMessage", "durationMs", "createdAt", "startedAt", "completedAt", "failedAt"],
+        "properties": {
+          "id": { "type": "string" },
+          "type": { "type": "string" },
+          "status": { "type": "string" },
+          "userId": { "type": "string" },
+          "userName": { "type": "string" },
+          "materialId": { "type": "string", "nullable": true },
+          "attempts": { "type": "integer" },
+          "maxAttempts": { "type": "integer" },
+          "errorCode": { "type": "string", "nullable": true },
+          "safeErrorMessage": { "type": "string", "nullable": true },
+          "durationMs": { "type": "number", "nullable": true },
+          "createdAt": { "type": "string", "format": "date-time" },
+          "startedAt": { "type": "string", "format": "date-time", "nullable": true },
+          "completedAt": { "type": "string", "format": "date-time", "nullable": true },
+          "failedAt": { "type": "string", "format": "date-time", "nullable": true }
+        }
+      },
+      "AdminJobListResponse": {
+        "type": "object",
+        "required": ["items", "pagination"],
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/AdminJobListItem" }
+          },
+          "pagination": {
+            "type": "object",
+            "required": ["page", "limit", "totalItems", "totalPages", "hasNext", "hasPrev"],
+            "properties": {
+              "page": { "type": "integer" },
+              "limit": { "type": "integer" },
+              "totalItems": { "type": "integer" },
+              "totalPages": { "type": "integer" },
+              "hasNext": { "type": "boolean" },
+              "hasPrev": { "type": "boolean" }
+            }
+          }
+        }
+      },
+      "AdminJobDetail": {
+        "type": "object",
+        "required": ["id", "type", "status", "queueStatus", "queueName", "userId", "userName", "materialId", "attempts", "maxAttempts", "errorCode", "safeErrorMessage", "durationMs", "createdAt", "startedAt", "completedAt", "failedAt"],
+        "properties": {
+          "id": { "type": "string" },
+          "type": { "type": "string" },
+          "status": { "type": "string" },
+          "queueStatus": { "type": "string" },
+          "queueName": { "type": "string", "nullable": true },
+          "userId": { "type": "string" },
+          "userName": { "type": "string" },
+          "materialId": { "type": "string", "nullable": true },
+          "attempts": { "type": "integer" },
+          "maxAttempts": { "type": "integer" },
+          "errorCode": { "type": "string", "nullable": true },
+          "safeErrorMessage": { "type": "string", "nullable": true },
+          "durationMs": { "type": "number", "nullable": true },
+          "createdAt": { "type": "string", "format": "date-time" },
+          "startedAt": { "type": "string", "format": "date-time", "nullable": true },
+          "completedAt": { "type": "string", "format": "date-time", "nullable": true },
+          "failedAt": { "type": "string", "format": "date-time", "nullable": true }
+        }
+      },
+      "AdminUserDetail": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "email",
+          "role",
+          "createdAt",
+          "authMethods",
+          "usageSummary"
+        ],
+        "properties": {
+          "id": { "type": "string" },
+          "name": { "type": "string" },
+          "email": { "type": "string", "format": "email" },
+          "role": { "type": "string", "enum": ["USER", "ADMIN"] },
+          "timezone": { "type": "string", "nullable": true },
+          "emailVerifiedAt": { "type": "string", "format": "date-time", "nullable": true },
+          "createdAt": { "type": "string", "format": "date-time" },
+          "authMethods": {
+            "type": "object",
+            "required": ["hasPassword", "hasGoogle", "methods"],
+            "properties": {
+              "hasPassword": { "type": "boolean" },
+              "hasGoogle": { "type": "boolean" },
+              "methods": {
+                "type": "array",
+                "items": { "type": "string", "enum": ["password", "google"] }
+              }
+            }
+          },
+          "usageSummary": {
+            "type": "object",
+            "required": ["semesters", "courses", "materials", "assignments", "notes", "storageUsage"],
+            "properties": {
+              "semesters": { "type": "integer" },
+              "courses": { "type": "integer" },
+              "materials": { "type": "integer" },
+              "assignments": { "type": "integer" },
+              "notes": { "type": "integer" },
+              "storageUsage": {
+                "type": "object",
+                "nullable": true,
+                "required": ["usedBytes", "formatted"],
+                "properties": {
+                  "usedBytes": { "type": "number" },
+                  "formatted": { "type": "string" }
+                }
+              }
+            }
+          }
+        }
+      },
       "DashboardSummary": {
         "type": "object",
         "properties": {

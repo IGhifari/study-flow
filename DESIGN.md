@@ -817,8 +817,46 @@ Ketentuan berikut menjadi arah awal saat milestone PRD terkait dikerjakan, bukan
   - Tabel semantik shadcn (`Table`, `TableHeader`, `TableRow`, `TableHead`, `TableBody`, `TableCell`) dengan wadah gulir horizontal aman tanpa *overflow* halaman.
   - Kolom: Nama, Email (font mono terukur), Peran (`Badge` ADMIN / USER), Status Verifikasi (`Badge` Terverifikasi / Belum Verifikasi), dan Tanggal Bergabung.
   - Header kolom mendukung pengurutan stabil (`ArrowUpDown`).
+  - Menu aksi baris: opsi langsung "Lihat detail", "Salin Email", dan "Salin User ID" (tanpa menu dummy atau tindakan destruktif palsu).
   - Bagian bawah menampilkan keterangan jumlah record terfilter dan tombol paginasi navigasi (Sebelumnya, Halaman X / Y, Berikutnya).
   - Pembedaan tegas antara state loading (`Skeleton`), error dengan retry, “Belum ada pengguna”, dan “Hasil pencarian tidak ditemukan”.
+- **Halaman Detail Pengguna Read-Only (`/users/[id]`)**:
+  - Breadcrumb dinamis pada header: `StudyFlow Admin > Pengguna > Detail` dengan tautan kembali ke daftar pengguna.
+  - Tombol aksi kembali di atas kartu detail yang mempertahankan query parameter pencarian, sorting, dan paginasi dari tabel sebelumnya.
+  - Kartu **Informasi Akun**:
+    - Kisi dua kolom berbasis kartu ringkas berlatar `bg-muted/20` dengan garis batas halus (`border-border/60`).
+    - Menyajikan: Nama Lengkap, Alamat Email (dengan tombol Salin interaktif), ID Pengguna (dengan tombol Salin), Peran Sistem (`Badge` ADMIN dengan perisai atau USER), Status Verifikasi Email (Badge emerald terverifikasi beserta stempel waktu verifikasi atau badge amber), Metode Login (Badge kata sandi dan/atau Google OAuth), Zona Waktu, dan Tanggal Bergabung.
+    - Banner informatif halus (`bg-primary/5 border-primary/20`) yang menjelaskan status hanya-baca akun demi perlindungan data akademik pengguna.
+  - Kartu **Ringkasan Penggunaan Platform**:
+    - Kisi 6 kartu metrik responsif (`grid-cols-2 sm:grid-cols-3 lg:grid-cols-6`) dengan ikon terpadu berlatar bulat `bg-primary/10`:
+      - Semester (`GraduationCap`)
+      - Mata Kuliah (`BookOpen`)
+      - Materi Aktif (`FileText` — mengecualikan soft-delete)
+      - Tugas Kuliah (`CheckSquare`)
+      - Catatan Belajar (`StickyNote`)
+      - Penggunaan Penyimpanan (`HardDrive` — format ukuran otomatis B/KB/MB/GB/TB dari catatan otoritatif).
+  - Penanganan state lengkap: Skeleton loader untuk seluruh bagian kartu, tampilan khusus 404 jika ID pengguna tidak ditemukan dengan ikon `UserX` dan tombol kembali, serta alert penanganan kesalahan jaringan dengan tombol coba lagi.
+- **Monitoring Pekerjaan dan Antrean (`/jobs`)**:
+  - Navigasi: Menu samping "Pekerjaan" dengan ikon `Activity`.
+  - Kartu Ringkasan Antrean:
+    - 2 kartu utama bergaris halus (`border-border`) untuk "Pemrosesan Dokumen" (`FileText`) dan "Generasi AI" (`Sparkles`).
+    - Badge status koneksi antrean: "Tersambung" (`bg-emerald-50 text-emerald-700`) atau "Tidak Tersedia" (`bg-rose-50 text-rose-700`).
+    - Kisi 4 metrik status: Menunggu (`muted`), Aktif (`text-blue-600`), Tertunda (`text-amber-600`), dan Gagal (`text-rose-600`).
+    - Banner informatif terkait sifat transien antrean BullMQ dan retensi memori.
+  - Kontrol Filter & Pencarian:
+    - Dropdown status: Semua, Menunggu, Diproses, Selesai, Gagal.
+    - Dropdown jenis: Ekstraksi Dokumen, Pembersihan Dokumen, Ringkasan AI, Flashcard AI, Kuis AI.
+    - Input pencarian ID Pekerjaan atau ID Pengguna dengan tombol reset cepat.
+    - Sinkronisasi URL query parameter otomatis untuk setiap filter.
+  - Tabel Pekerjaan:
+    - Kolom: ID Pekerjaan (font mono dengan klik detail), Jenis (`Badge` sekunder), Pengguna (tautan profil ke `/users/[id]`), Status DB (`Badge` status), Attempt, Durasi eksekusi, Waktu dibuat (format WIB), dan tombol aksi "Detail".
+    - Indikator status database terpadu: Menunggu (`amber`), Diproses (`blue` animasi denyut), Selesai (`emerald`), Gagal (`danger`).
+  - Slide-over Sheet Detail Operasional:
+    - Panel kanan responsif (`Sheet` shadcn) saat baris/aksi detail diklik.
+    - Penjelasan komparatif status: membedakan tegas antara Status Database Permanen dan Status Antrean BullMQ Transien.
+    - Jejak waktu lengkap: Dibuat, Mulai, Selesai, dan Gagal dengan penanda zona waktu `WIB`.
+    - Kartu kesalahan operasional aman (jika gagal): menampilkan kode error dan penjelasan aman dalam Bahasa Indonesia tanpa membocorkan pesan provider mentah atau stack trace.
+    - Catatan proteksi privasi: penegasan bahwa payload, PDF, dan prompt AI tidak diekspos ke portal admin.
 
 ## 18. Referensi
 
@@ -838,4 +876,6 @@ Palet, layout, ukuran, dan microcopy adalah keputusan desain StudyFlow. Dokument
 | 1.3 | 14 Oktober 2026 | Penambahan panduan desain fitur Pin/Favorit: widget dashboard "Disematkan", modal dialog interaktif, indikator ikon Pin pada baris materi dan catatan, serta toolbar halaman detail |
 | 1.4 | 14 Oktober 2026 | Penambahan panduan desain fitur Subtugas/Checklist pada Tugas: integrasi komponen checklist pada EditTaskDialog, input tambah cepat (Enter), edit/hapus inline aman, bilah progres & persentase langkah selesai, indikator ringkas pada tabel dan kartu daftar tugas (X/Y langkah), modal konfirmasi penyelesaian tugas ber-subtugas belum tuntas, serta state hanya-baca saat tugas selesai |
 | 1.5 | 14 Oktober 2026 | Penambahan panduan desain Dashboard Administrator (apps/admin): app shell sidebar-07, login admin terisolasi, kartu metrik statistik nyata, direktori pengguna read-only dengan paginasi/sorting/pencarian server-side, serta token shadcn/ui |
+| 1.6 | 14 Oktober 2026 | Penambahan panduan desain Halaman Detail Pengguna Read-Only (`/users/[id]`): breadcrumb rute detail, retensi query kembali ke daftar pengguna, kartu informasi akun & kredensial akses, kisi 6 kartu metrik penggunaan platform, penanganan 404 UserX, dan pembersihan aksi dummy tabel |
+| 1.7 | 14 Oktober 2026 | Penambahan panduan desain Monitoring Pekerjaan & Antrean (`/jobs`): navigasi Pekerjaan, kartu ringkasan antrean BullMQ, tabel pekerjaan terfilter dan tersinkronisasi URL, slide-over Sheet detail operasional aman, serta penjelasan komparatif status DB vs antrean |
 

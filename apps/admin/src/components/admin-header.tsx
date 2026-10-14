@@ -4,9 +4,11 @@ import * as React from 'react';
 import { usePathname } from 'next/navigation';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { Separator } from '@/components/ui/separator';
+import Link from 'next/link';
 import {
   Breadcrumb,
   BreadcrumbItem,
+  BreadcrumbLink,
   BreadcrumbList,
   BreadcrumbPage,
   BreadcrumbSeparator,
@@ -16,8 +18,12 @@ import { ThemeToggle } from '@/components/theme-toggle';
 export function AdminHeader() {
   const pathname = usePathname();
 
+  const isUserDetail = pathname.startsWith('/users/') && pathname !== '/users';
+
   const getPageTitle = (path: string) => {
     if (path === '/users') return 'Pengguna';
+    if (isUserDetail) return 'Detail Pengguna';
+    if (path === '/jobs') return 'Pekerjaan';
     if (path === '/dashboard' || path === '/') return 'Ringkasan';
     return 'Admin';
   };
@@ -35,9 +41,23 @@ export function AdminHeader() {
               StudyFlow Admin
             </BreadcrumbItem>
             <BreadcrumbSeparator className="hidden md:block" />
-            <BreadcrumbItem>
-              <BreadcrumbPage>{title}</BreadcrumbPage>
-            </BreadcrumbItem>
+            {isUserDetail ? (
+              <>
+                <BreadcrumbItem>
+                  <BreadcrumbLink asChild>
+                    <Link href="/users">Pengguna</Link>
+                  </BreadcrumbLink>
+                </BreadcrumbItem>
+                <BreadcrumbSeparator />
+                <BreadcrumbItem>
+                  <BreadcrumbPage>Detail</BreadcrumbPage>
+                </BreadcrumbItem>
+              </>
+            ) : (
+              <BreadcrumbItem>
+                <BreadcrumbPage>{title}</BreadcrumbPage>
+              </BreadcrumbItem>
+            )}
           </BreadcrumbList>
         </Breadcrumb>
       </div>
