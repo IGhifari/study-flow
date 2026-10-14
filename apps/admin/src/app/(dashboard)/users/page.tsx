@@ -10,6 +10,9 @@ import {
   AlertCircle,
   X,
   ArrowUpDown,
+  MoreHorizontal,
+  Copy,
+  Check,
 } from 'lucide-react';
 import {
   Table,
@@ -24,6 +27,20 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import {
   Select,
   SelectContent,
@@ -46,6 +63,18 @@ export default function AdminUsersPage() {
   const [limit, setLimit] = React.useState(20);
   const [sortBy, setSortBy] = React.useState<'createdAt' | 'name' | 'email'>('createdAt');
   const [sortOrder, setSortOrder] = React.useState<'asc' | 'desc'>('desc');
+
+  // Action dialog states
+  const [detailUser, setDetailUser] = React.useState<AdminUserListItem | null>(null);
+  const [duplicateUser, setDuplicateUser] = React.useState<AdminUserListItem | null>(null);
+  const [deleteUser, setDeleteUser] = React.useState<AdminUserListItem | null>(null);
+  const [copiedField, setCopiedField] = React.useState<string | null>(null);
+
+  const handleCopy = (text: string, field: string) => {
+    navigator.clipboard.writeText(text);
+    setCopiedField(field);
+    setTimeout(() => setCopiedField(null), 2000);
+  };
 
   // Debounce search input by 300ms
   React.useEffect(() => {
@@ -243,6 +272,7 @@ export default function AdminUsersPage() {
                     <ArrowUpDown className="h-3.5 w-3.5" />
                   </button>
                 </TableHead>
+                <TableHead className="text-right w-[80px]">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -263,6 +293,9 @@ export default function AdminUsersPage() {
                     </TableCell>
                     <TableCell>
                       <Skeleton className="h-4 w-28" />
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Skeleton className="h-8 w-8 rounded-md ml-auto" />
                     </TableCell>
                   </TableRow>
                 ))
@@ -304,11 +337,35 @@ export default function AdminUsersPage() {
                         day: 'numeric',
                       })}
                     </TableCell>
+                    <TableCell className="text-right">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-8 w-8 p-0">
+                            <span className="sr-only">Open menu</span>
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-36">
+                          <DropdownMenuItem onClick={() => setDetailUser(user)}>
+                            Edit
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => setDuplicateUser(user)}>
+                            Duplicate
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            className="text-destructive focus:text-destructive focus:bg-destructive/10"
+                            onClick={() => setDeleteUser(user)}
+                          >
+                            Delete
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </TableCell>
                   </TableRow>
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={5} className="h-40 text-center">
+                  <TableCell colSpan={6} className="h-40 text-center">
                     <div className="flex flex-col items-center justify-center gap-2">
                       <Users className="h-8 w-8 text-muted-foreground/50" />
                       {debouncedSearch ? (
@@ -383,6 +440,148 @@ export default function AdminUsersPage() {
           </div>
         </div>
       </div>
+
+      {/* Edit & Detail Dialog */}
+      <Dialog open={!!detailUser} onOpenChange={(open) => !open && setDetailUser(null)}>
+        <DialogContent className="sm:max-w-[480px]">
+          <DialogHeader>
+            <DialogTitle>Detail Pengguna</DialogTitle>
+            <DialogDescription>
+              Informasi lengkap akun dan status keanggotaan pengguna.
+            </DialogDescription>
+          </DialogHeader>
+          {detailUser && (
+            <div className="space-y-3 py-2 text-sm">
+              <div className="grid grid-cols-3 gap-2 py-1 border-b border-border/60">
+                <span className="text-muted-foreground font-medium">Nama</span>
+                <span className="col-span-2 font-semibold text-foreground">{detailUser.name}</span>
+              </div>
+              <div className="grid grid-cols-3 gap-2 py-1 border-b border-border/60">
+                <span className="text-muted-foreground font-medium">Email</span>
+                <div className="col-span-2 flex items-center justify-between gap-2">
+                  <span className="font-mono text-xs">{detailUser.email}</span>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-6 px-2 text-xs gap-1"
+                    onClick={() => handleCopy(detailUser.email, 'email')}
+                  >
+                    {copiedField === 'email' ? <Check className="h-3 w-3 text-emerald-500" /> : <Copy className="h-3 w-3" />}
+                    {copiedField === 'email' ? 'Disalin' : 'Salin'}
+                  </Button>
+                </div>
+              </div>
+              <div className="grid grid-cols-3 gap-2 py-1 border-b border-border/60">
+                <span className="text-muted-foreground font-medium">ID Akun</span>
+                <div className="col-span-2 flex items-center justify-between gap-2">
+                  <span className="font-mono text-xs truncate max-w-[180px]">{detailUser.id}</span>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-6 px-2 text-xs gap-1"
+                    onClick={() => handleCopy(detailUser.id, 'id')}
+                  >
+                    {copiedField === 'id' ? <Check className="h-3 w-3 text-emerald-500" /> : <Copy className="h-3 w-3" />}
+                    {copiedField === 'id' ? 'Disalin' : 'Salin'}
+                  </Button>
+                </div>
+              </div>
+              <div className="grid grid-cols-3 gap-2 py-1 border-b border-border/60">
+                <span className="text-muted-foreground font-medium">Peran</span>
+                <span className="col-span-2">
+                  <Badge variant={detailUser.role === 'ADMIN' ? 'outline' : 'secondary'}>
+                    {detailUser.role}
+                  </Badge>
+                </span>
+              </div>
+              <div className="grid grid-cols-3 gap-2 py-1 border-b border-border/60">
+                <span className="text-muted-foreground font-medium">Status Verifikasi</span>
+                <span className="col-span-2">
+                  {detailUser.emailVerifiedAt ? (
+                    <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950 dark:text-emerald-300">
+                      Terverifikasi
+                    </Badge>
+                  ) : (
+                    <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950 dark:text-amber-300">
+                      Belum Verifikasi
+                    </Badge>
+                  )}
+                </span>
+              </div>
+              <div className="grid grid-cols-3 gap-2 py-1">
+                <span className="text-muted-foreground font-medium">Terdaftar Sejak</span>
+                <span className="col-span-2 text-muted-foreground text-xs">
+                  {new Date(detailUser.createdAt).toLocaleString('id-ID', {
+                    dateStyle: 'full',
+                    timeStyle: 'short',
+                  })}
+                </span>
+              </div>
+              <div className="rounded-md bg-muted/50 p-2.5 text-xs text-muted-foreground mt-2">
+                Penyuntingan data pengguna langsung dijadwalkan pada Tahap 2 sesuai batas scope PRD.
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDetailUser(null)}>
+              Tutup
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Duplicate Dialog */}
+      <Dialog open={!!duplicateUser} onOpenChange={(open) => !open && setDuplicateUser(null)}>
+        <DialogContent className="sm:max-w-[420px]">
+          <DialogHeader>
+            <DialogTitle>Duplikasi Pengguna</DialogTitle>
+            <DialogDescription>
+              Aksi duplikasi profil akun pengguna StudyFlow.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-2 text-sm text-muted-foreground leading-relaxed">
+            Duplikasi akun dinonaktifkan demi integritas data dan kebijakan privasi akun mahasiswa unik di StudyFlow.
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDuplicateUser(null)}>
+              Mengerti
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Dialog */}
+      <Dialog open={!!deleteUser} onOpenChange={(open) => !open && setDeleteUser(null)}>
+        <DialogContent className="sm:max-w-[420px]">
+          <DialogHeader>
+            <DialogTitle className="text-destructive flex items-center gap-2">
+              <AlertCircle className="h-5 w-5" />
+              Hapus Pengguna
+            </DialogTitle>
+            <DialogDescription>
+              Konfirmasi perlindungan penghapusan akun pengguna.
+            </DialogDescription>
+          </DialogHeader>
+          {deleteUser && (
+            <div className="py-2 text-sm space-y-2">
+              <p className="text-foreground">
+                Apakah Anda yakin ingin menghapus akun <span className="font-semibold">{deleteUser.name}</span> ({deleteUser.email})?
+              </p>
+              <div className="rounded-md border border-amber-500/20 bg-amber-500/10 p-2.5 text-xs text-amber-700 dark:text-amber-400">
+                Fitur penghapusan pengguna dinonaktifkan pada Tahap 1 (Read-Only) untuk menjaga integritas data akademik mahasiswa.
+              </div>
+            </div>
+          )}
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setDeleteUser(null)}>
+              Batal
+            </Button>
+            <Button variant="destructive" disabled title="Tersedia di Tahap 2">
+              Hapus (Tahap 2)
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
