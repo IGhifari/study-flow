@@ -88,7 +88,7 @@ export async function rotateAdminRefreshToken(rawRefreshToken: string): Promise<
   accessToken: string;
   refreshToken?: string;
 }> {
-  const result = await rotateRefreshToken(rawRefreshToken);
+  const result = await rotateRefreshToken(rawRefreshToken, { allowAdmin: true });
   if (result.user.role !== 'ADMIN') {
     const error: AppError = new Error('Akses ditolak. Akun ini tidak memiliki hak administrator.');
     error.statusCode = 403;

@@ -53,13 +53,21 @@ export async function authenticate(
   // Verify user still exists and tokenVersion matches (handles immediate token revocation on password change)
   const user = await prisma.user.findUnique({
     where: { id: payload.userId },
-    select: { id: true, email: true, tokenVersion: true },
+    select: { id: true, email: true, role: true, tokenVersion: true },
   });
 
   if (!user || user.tokenVersion !== payload.tokenVersion) {
     const error: AppError = new Error('Sesi telah dicabut atau diubah. Silakan login kembali.');
     error.statusCode = 401;
     error.code = 'SESSION_REVOKED';
+    return next(error);
+  }
+
+  // Strict separation: Reject ADMIN users from accessing student endpoints
+  if (user.role === 'ADMIN') {
+    const error: AppError = new Error('Akun administrator tidak diizinkan mengakses portal mahasiswa.');
+    error.statusCode = 403;
+    error.code = 'ADMIN_PORTAL_ONLY';
     return next(error);
   }
 

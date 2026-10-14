@@ -157,6 +157,7 @@ export type EmailVerificationStatusResponse = z.infer<typeof EmailVerificationSt
 export interface AccessTokenPayload {
   userId: string;
   email: string;
+  role?: 'USER' | 'ADMIN';
   tokenVersion: number;
 }
 

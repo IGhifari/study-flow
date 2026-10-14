@@ -37,6 +37,19 @@ function isJwtExpired(token: string | undefined): boolean {
   }
 }
 
+function getJwtRole(token: string | undefined): string | null {
+  if (!token) return null;
+  try {
+    const parts = token.split('.');
+    if (parts.length !== 3) return null;
+    const jsonStr = Buffer.from(parts[1], 'base64url').toString('utf8');
+    const payload = JSON.parse(jsonStr);
+    return payload.role || null;
+  } catch {
+    return null;
+  }
+}
+
 export async function middleware(req: NextRequest) {
   const { pathname, search } = req.nextUrl;
   const accessToken = req.cookies.get(COOKIE_NAMES.accessToken)?.value;
@@ -44,6 +57,29 @@ export async function middleware(req: NextRequest) {
 
   const isProtectedRoute = PROTECTED_PREFIXES.some((prefix) => pathname.startsWith(prefix));
   const isAuthRoute = AUTH_PREFIXES.some((prefix) => pathname.startsWith(prefix));
+
+  // Strict separation: Reject ADMIN users immediately from student web portal
+  const tokenRole = getJwtRole(accessToken);
+  if (tokenRole === 'ADMIN') {
+    if (isProtectedRoute) {
+      const loginUrl = new URL(
+        `/login?error=${encodeURIComponent(
+          'Akun administrator tidak diizinkan masuk ke portal mahasiswa. Silakan gunakan portal administrator.'
+        )}`,
+        req.url
+      );
+      const redirectRes = NextResponse.redirect(loginUrl);
+      redirectRes.cookies.delete(COOKIE_NAMES.accessToken);
+      redirectRes.cookies.delete(COOKIE_NAMES.refreshToken);
+      return redirectRes;
+    }
+    if (isAuthRoute) {
+      const res = NextResponse.next();
+      res.cookies.delete(COOKIE_NAMES.accessToken);
+      res.cookies.delete(COOKIE_NAMES.refreshToken);
+      return res;
+    }
+  }
 
   // 1. Direct access to protected routes
   if (isProtectedRoute) {
