@@ -24,7 +24,7 @@ export function NavDocuments({
   }[]
 }) {
   return (
-    <SidebarGroup className="group-data-[collapsible=icon]:hidden">
+    <SidebarGroup className="group-data-[collapsible=icon]:hidden group-data-[state=collapsed]:hidden">
       <SidebarGroupLabel>Modul Platform</SidebarGroupLabel>
       <SidebarMenu>
         {items.map((item) => (

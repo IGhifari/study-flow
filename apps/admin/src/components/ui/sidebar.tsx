@@ -23,7 +23,7 @@ import {
 import { Separator } from '@/components/ui/separator';
 
 const SIDEBAR_WIDTH = '16rem'; // 256px
-const SIDEBAR_WIDTH_ICON = '4.5rem'; // ~72px
+const SIDEBAR_WIDTH_ICON = '3.5rem'; // 56px
 
 type SidebarContext = {
   state: 'expanded' | 'collapsed';
@@ -463,11 +463,12 @@ export const SidebarMenuButton = React.forwardRef<
         data-size={size}
         data-active={isActive}
         className={cn(
-          'peer/menu-button flex w-full items-center gap-3 overflow-hidden rounded-lg px-3 py-2 text-left text-sm font-medium outline-hidden transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2 focus-visible:ring-sidebar-ring disabled:pointer-events-none disabled:opacity-50 [&>svg]:size-5 [&>svg]:shrink-0',
+          'peer/menu-button flex w-full items-center gap-3 overflow-hidden rounded-lg px-3 py-2 text-left text-sm font-medium outline-hidden transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2 focus-visible:ring-sidebar-ring disabled:pointer-events-none disabled:opacity-50 [&>svg]:size-4 [&>svg]:shrink-0',
+          'group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0 group-data-[collapsible=icon]:h-9 group-data-[collapsible=icon]:w-9 group-data-[collapsible=icon]:mx-auto group-data-[collapsible=icon]:[&>span]:hidden',
+          'group-data-[state=collapsed]:justify-center group-data-[state=collapsed]:px-0 group-data-[state=collapsed]:h-9 group-data-[state=collapsed]:w-9 group-data-[state=collapsed]:mx-auto group-data-[state=collapsed]:[&>span]:hidden',
           isActive
-            ? 'bg-accent text-accent-foreground font-semibold shadow-xs'
+            ? 'bg-sidebar-accent text-sidebar-accent-foreground font-semibold shadow-xs'
             : 'text-sidebar-foreground',
-          state === 'collapsed' && !isMobile && 'justify-center px-0 h-10 w-10 mx-auto',
           className
         )}
         {...props}
