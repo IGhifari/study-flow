@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { RefreshCw, AlertCircle, Sparkles } from 'lucide-react';
+import { RefreshCw, AlertCircle, Sparkles, Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import {
@@ -14,12 +14,13 @@ import {
 import { SectionCards } from '@/components/section-cards';
 import { ChartAreaInteractive } from '@/components/chart-area-interactive';
 import { DataTable } from '@/components/data-table';
-import { fetchAdminSummary } from '@/lib/admin-api';
+import { fetchAdminSummary, fetchAdminSystemStatus } from '@/lib/admin-api';
 import type { AdminSummary } from '@studyflow/shared';
 
 export default function AdminDashboardPage() {
   const [summary, setSummary] = React.useState<AdminSummary | null>(null);
   const [isLoading, setIsLoading] = React.useState(true);
+  const [isExporting, setIsExporting] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
 
   const loadSummary = React.useCallback(async () => {
@@ -32,6 +33,68 @@ export default function AdminDashboardPage() {
       setError(err.message || 'Gagal memuat ringkasan statistik platform');
     } finally {
       setIsLoading(false);
+    }
+  }, []);
+
+  const handleExportCsv = React.useCallback(async () => {
+    setIsExporting(true);
+    try {
+      const [sum, sys] = await Promise.all([
+        fetchAdminSummary(),
+        fetchAdminSystemStatus(),
+      ]);
+
+      const now = new Date();
+      const dateStr = now.toISOString().replace(/[:.]/g, '-');
+
+      const rows: string[][] = [
+        ['LAPORAN OPERASIONAL PLATFORM STUDYFLOW'],
+        ['Waktu Ekspor', now.toISOString()],
+        [],
+        ['1. RINGKASAN METRIK PLATFORM'],
+        ['Metrik', 'Nilai', 'Keterangan'],
+        ['Total Pengguna', String(sum.totalUsers), 'Akun mahasiswa terdaftar'],
+        ['Total Materi Kuliah', String(sum.totalMaterials), 'Bahan ajar aktif'],
+        ['Total Tugas Akademik', String(sum.totalAssignments), 'Tugas perkuliahan terdistribusi'],
+        ['Pekerjaan AI Gagal (24 Jam)', String(sum.failedJobs24h), 'Kesalahan ekstraksi / AI'],
+        [],
+        ['2. STATUS KESEHATAN INFRASTRUKTUR & MODUL'],
+        ['ID Komponen', 'Nama Layanan', 'Kategori', 'Status', 'Engine / Runtime', 'Metrik Utama', 'Keterangan'],
+      ];
+
+      for (const m of sys.modules) {
+        rows.push([
+          m.id,
+          m.name,
+          m.category,
+          m.status,
+          m.engine,
+          `${m.metricLabel}: ${m.metricValue}`,
+          m.description,
+        ]);
+      }
+
+      const csvContent = rows
+        .map((row) =>
+          row
+            .map((cell) => `"${String(cell).replace(/"/g, '""')}"`)
+            .join(',')
+        )
+        .join('\r\n');
+
+      const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.setAttribute('href', url);
+      link.setAttribute('download', `studyflow-laporan-admin-${dateStr.slice(0, 10)}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } catch (err: any) {
+      alert('Gagal mengekspor laporan: ' + (err.message || 'Kesalahan tidak diketahui'));
+    } finally {
+      setIsExporting(false);
     }
   }, []);
 
@@ -57,16 +120,28 @@ export default function AdminDashboardPage() {
             Pantau pertumbuhan mahasiswa, dokumen materi kuliah, tugas akademik, dan kesehatan antrean AI.
           </p>
         </div>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={loadSummary}
-          disabled={isLoading}
-          className="self-start sm:self-auto gap-2 h-9 px-3 text-xs md:text-sm shadow-xs"
-        >
-          <RefreshCw className={`h-3.5 w-3.5 ${isLoading ? 'animate-spin' : ''}`} />
-          Perbarui Data
-        </Button>
+        <div className="flex items-center gap-2 self-start sm:self-auto">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleExportCsv}
+            disabled={isExporting}
+            className="gap-2 h-9 px-3 text-xs md:text-sm shadow-xs"
+          >
+            <Download className={`h-3.5 w-3.5 ${isExporting ? 'animate-bounce' : ''}`} />
+            Ekspor CSV
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={loadSummary}
+            disabled={isLoading}
+            className="gap-2 h-9 px-3 text-xs md:text-sm shadow-xs"
+          >
+            <RefreshCw className={`h-3.5 w-3.5 ${isLoading ? 'animate-spin' : ''}`} />
+            Perbarui Data
+          </Button>
+        </div>
       </div>
 
       {error && (
