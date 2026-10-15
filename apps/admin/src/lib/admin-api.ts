@@ -8,6 +8,10 @@ import {
   AdminJobListResponse,
   AdminJobDetail,
   AdminQueuesSummaryResponse,
+  AdminTrendRange,
+  AdminTrendsResponse,
+  AdminSystemStatusResponse,
+  AdminSystemModule,
   UserProfile,
 } from '@studyflow/shared';
 
@@ -153,5 +157,31 @@ export async function fetchAdminQueuesSummary(
   });
   return handleResponse<AdminQueuesSummaryResponse>(res);
 }
+
+export async function fetchAdminTrends(
+  range: AdminTrendRange = '30d',
+  options?: { signal?: AbortSignal }
+): Promise<AdminTrendsResponse> {
+  const params = new URLSearchParams({ range });
+  const res = await fetch(`/api/admin/trends?${params.toString()}`, {
+    method: 'GET',
+    cache: 'no-store',
+    signal: options?.signal,
+  });
+  return handleResponse<AdminTrendsResponse>(res);
+}
+
+export async function fetchAdminSystemStatus(
+  options?: { signal?: AbortSignal }
+): Promise<AdminSystemStatusResponse> {
+  const res = await fetch('/api/admin/system/status', {
+    method: 'GET',
+    cache: 'no-store',
+    signal: options?.signal,
+  });
+  return handleResponse<AdminSystemStatusResponse>(res);
+}
+
+
 
 

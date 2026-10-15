@@ -1,5 +1,9 @@
 import { Router, Request, Response, NextFunction } from 'express';
-import { AdminUserListQuerySchema, AdminJobListQuerySchema } from '@studyflow/shared';
+import {
+  AdminUserListQuerySchema,
+  AdminJobListQuerySchema,
+  AdminTrendsQuerySchema,
+} from '@studyflow/shared';
 import { requireAdmin } from '../middleware/requireAdmin.js';
 import {
   getAdminSummary,
@@ -8,6 +12,8 @@ import {
   listAdminJobs,
   getAdminJobDetail,
   getAdminQueuesSummary,
+  getAdminTrends,
+  getAdminSystemStatus,
 } from '../services/admin.service.js';
 
 export const adminRouter = Router();
@@ -124,5 +130,41 @@ adminRouter.get('/jobs/:id', async (req: Request, res: Response, next: NextFunct
     next(err);
   }
 });
+
+// GET /api/admin/trends
+adminRouter.get('/trends', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const parseResult = AdminTrendsQuerySchema.safeParse(req.query);
+    if (!parseResult.success) {
+      res.status(400).json({
+        error: {
+          code: 'VALIDATION_ERROR',
+          message: 'Parameter query rentang waktu tidak valid (gunakan 7d, 30d, atau 90d)',
+          details: parseResult.error.flatten().fieldErrors,
+        },
+      });
+      return;
+    }
+
+    const trends = await getAdminTrends(parseResult.data.range);
+    res.setHeader('Cache-Control', 'no-store, private');
+    res.status(200).json(trends);
+  } catch (err) {
+    next(err);
+  }
+});
+
+// GET /api/admin/system/status
+adminRouter.get('/system/status', async (_req: Request, res: Response, next: NextFunction) => {
+  try {
+    const status = await getAdminSystemStatus();
+    res.setHeader('Cache-Control', 'no-store, private');
+    res.status(200).json(status);
+  } catch (err) {
+    next(err);
+  }
+});
+
+
 
 

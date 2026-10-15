@@ -14,10 +14,18 @@ import type {
   AdminQueueStatus,
   AdminQueueSummaryItem,
   AdminQueuesSummaryResponse,
+  AdminTrendRange,
+  AdminTrendsResponse,
+  AdminTrendDataPoint,
+  AdminModuleStatus,
+  AdminSystemModule,
+  AdminSystemStatusResponse,
   UserProfile,
   Role,
 } from '@studyflow/shared';
 import { QUEUE_NAMES } from '@studyflow/shared';
+import { env } from '../config/env.js';
+import { getStorageAdapter, StorageUnavailableAdapter } from './storage.service.js';
 import { getDocumentProcessingQueue, getAiGenerationQueue } from './outbox.service.js';
 import { verifyPassword } from './password.service.js';
 import {
@@ -552,5 +560,272 @@ export async function getAdminQueuesSummary(): Promise<AdminQueuesSummaryRespons
     timestamp: new Date().toISOString(),
   };
 }
+
+export async function getAdminTrends(range: AdminTrendRange = '30d'): Promise<AdminTrendsResponse> {
+  const daysMap: Record<AdminTrendRange, number> = {
+    '7d': 7,
+    '30d': 30,
+    '90d': 90,
+  };
+  const days = daysMap[range] ?? 30;
+
+  const now = new Date();
+  const startDate = new Date(now);
+  startDate.setUTCDate(startDate.getUTCDate() - (days - 1));
+  startDate.setUTCHours(0, 0, 0, 0);
+
+  // Prepopulate dateMap to ensure all dates are present in chronological order
+  const dateMap = new Map<string, { materi: number; tugas: number }>();
+  for (let i = 0; i < days; i++) {
+    const d = new Date(startDate);
+    d.setUTCDate(startDate.getUTCDate() + i);
+    const key = d.toISOString().slice(0, 10);
+    dateMap.set(key, { materi: 0, tugas: 0 });
+  }
+
+  const [materials, assignments] = await Promise.all([
+    prisma.material.findMany({
+      where: {
+        createdAt: { gte: startDate },
+        deletedAt: null,
+      },
+      select: { createdAt: true },
+    }),
+    prisma.assignment.findMany({
+      where: {
+        createdAt: { gte: startDate },
+      },
+      select: { createdAt: true },
+    }),
+  ]);
+
+  let totalMateri = 0;
+  for (const m of materials) {
+    const dateKey = m.createdAt.toISOString().slice(0, 10);
+    const item = dateMap.get(dateKey);
+    if (item) {
+      item.materi += 1;
+      totalMateri += 1;
+    }
+  }
+
+  let totalTugas = 0;
+  for (const a of assignments) {
+    const dateKey = a.createdAt.toISOString().slice(0, 10);
+    const item = dateMap.get(dateKey);
+    if (item) {
+      item.tugas += 1;
+      totalTugas += 1;
+    }
+  }
+
+  const data: AdminTrendDataPoint[] = Array.from(dateMap.entries()).map(([date, counts]) => ({
+    date,
+    materi: counts.materi,
+    tugas: counts.tugas,
+  }));
+
+  return {
+    range,
+    startDate: startDate.toISOString(),
+    endDate: now.toISOString(),
+    data,
+    totals: {
+      materi: totalMateri,
+      tugas: totalTugas,
+    },
+  };
+}
+
+export async function getAdminSystemStatus(): Promise<AdminSystemStatusResponse> {
+  const now = new Date().toISOString();
+  const modules: AdminSystemModule[] = [];
+
+  // 1. PostgreSQL Database
+  let dbStatus: AdminModuleStatus = 'HEALTHY';
+  let dbLatencyMs = 0;
+  let dbDescription = 'Koneksi basis data PostgreSQL aktif dan merespons query dengan normal.';
+  try {
+    const t0 = Date.now();
+    await prisma.$queryRaw`SELECT 1`;
+    dbLatencyMs = Date.now() - t0;
+    if (dbLatencyMs > 1000) {
+      dbStatus = 'DEGRADED';
+      dbDescription = 'Latensi basis data PostgreSQL tinggi (> 1000ms).';
+    }
+  } catch {
+    dbStatus = 'UNAVAILABLE';
+    dbDescription = 'Basis data PostgreSQL tidak dapat diakses atau menolak koneksi.';
+  }
+
+  modules.push({
+    id: 'postgres-db',
+    name: 'Basis Data PostgreSQL & Prisma ORM',
+    category: 'DATABASE',
+    status: dbStatus,
+    engine: 'PostgreSQL / Prisma',
+    metricLabel: 'Latensi Query',
+    metricValue: dbStatus === 'HEALTHY' || dbStatus === 'DEGRADED' ? `${dbLatencyMs} ms` : 'Tidak tersedia',
+    description: dbDescription,
+    updatedAt: now,
+  });
+
+  // 2. Redis & Queues
+  const queuesSummary = await getAdminQueuesSummary();
+  const redisHealthy = queuesSummary.redisStatus === 'connected';
+
+  modules.push({
+    id: 'redis-broker',
+    name: 'Redis In-Memory Broker',
+    category: 'QUEUE_WORKER',
+    status: redisHealthy ? 'HEALTHY' : 'UNAVAILABLE',
+    engine: 'Redis BullMQ',
+    metricLabel: 'Koneksi Broker',
+    metricValue: redisHealthy ? 'Terhubung' : 'Terputus',
+    description: redisHealthy
+      ? 'Koneksi ke broker Redis aktif untuk manajemen antrean background job.'
+      : 'Broker Redis tidak dapat dihubungi. Antrean background job tidak beroperasi.',
+    updatedAt: now,
+  });
+
+  // Document Processing Worker / Queue
+  const docQueue = queuesSummary.queues.find((q) => q.name.includes('document'));
+  const docAvailable = docQueue?.status === 'available';
+  const docCounts = docQueue?.counts;
+  const docActiveTotal = (docCounts?.waiting ?? 0) + (docCounts?.active ?? 0);
+  const docFailedTotal = docCounts?.failed ?? 0;
+
+  let docStatus: AdminModuleStatus = 'HEALTHY';
+  if (!redisHealthy || !docAvailable) {
+    docStatus = 'UNAVAILABLE';
+  } else if (docFailedTotal > 20 || docActiveTotal > 100) {
+    docStatus = 'DEGRADED';
+  }
+
+  modules.push({
+    id: 'worker-document',
+    name: 'Worker Pemrosesan Dokumen',
+    category: 'QUEUE_WORKER',
+    status: docStatus,
+    engine: 'BullMQ Worker',
+    metricLabel: 'Antrean Dokumen',
+    metricValue: docAvailable && docCounts ? `${docActiveTotal} aktif / waiting (${docFailedTotal} gagal)` : 'Tidak tersedia',
+    description: 'Menangani ekstraksi teks PDF perkuliahan, pemrosesan halaman, dan pembersihan file sementara.',
+    updatedAt: now,
+    details: docCounts ? { ...docCounts } : undefined,
+  });
+
+  // AI Generation Worker / Queue
+  const aiQueue = queuesSummary.queues.find((q) => q.name.includes('ai'));
+  const aiAvailable = aiQueue?.status === 'available';
+  const aiCounts = aiQueue?.counts;
+  const aiActiveTotal = (aiCounts?.waiting ?? 0) + (aiCounts?.active ?? 0);
+  const aiFailedTotal = aiCounts?.failed ?? 0;
+
+  let aiQueueStatus: AdminModuleStatus = 'HEALTHY';
+  if (!redisHealthy || !aiAvailable) {
+    aiQueueStatus = 'UNAVAILABLE';
+  } else if (aiFailedTotal > 20 || aiActiveTotal > 100) {
+    aiQueueStatus = 'DEGRADED';
+  }
+
+  modules.push({
+    id: 'worker-ai',
+    name: 'Worker Generasi AI (Ringkasan, Flashcard, Kuis)',
+    category: 'QUEUE_WORKER',
+    status: aiQueueStatus,
+    engine: 'BullMQ AI Worker',
+    metricLabel: 'Antrean AI',
+    metricValue: aiAvailable && aiCounts ? `${aiActiveTotal} aktif / waiting (${aiFailedTotal} gagal)` : 'Tidak tersedia',
+    description: 'Menjalankan pipeline pembuatan materi ringkasan, kartu belajar flashcard, dan kuis akademik.',
+    updatedAt: now,
+    details: aiCounts ? { ...aiCounts } : undefined,
+  });
+
+  // 3. Storage
+  const storageAdapter = getStorageAdapter();
+  const isStorageUnavailable = storageAdapter instanceof StorageUnavailableAdapter;
+  const storageDriver = env.STORAGE_DRIVER;
+  let storageStatus: AdminModuleStatus = 'HEALTHY';
+  let storageMetric = 'Aktif (Signed URL)';
+  let storageDesc = `Penyimpanan berkas aktif menggunakan driver ${storageDriver}.`;
+
+  if (isStorageUnavailable || storageDriver === 'none') {
+    storageStatus = 'UNCONFIGURED';
+    storageMetric = 'Belum Dikonfigurasi';
+    storageDesc = 'Layanan penyimpanan berkas materi belum dikonfigurasi.';
+  } else if (storageDriver === 'local') {
+    storageStatus = 'HEALTHY';
+    storageMetric = 'Local Disk Driver';
+    storageDesc = 'Penyimpanan berkas materi berjalan pada filesystem lokal sistem.';
+  } else if (storageDriver === 'supabase') {
+    storageStatus = 'HEALTHY';
+    storageMetric = 'Supabase S3 Bucket';
+    storageDesc = 'Penyimpanan materi privat tersimpan aman pada bucket Supabase Storage.';
+  }
+
+  modules.push({
+    id: 'storage-service',
+    name: 'Penyimpanan Berkas Materi (Object Storage)',
+    category: 'STORAGE',
+    status: storageStatus,
+    engine: `Storage Driver: ${storageDriver}`,
+    metricLabel: 'Status Driver',
+    metricValue: storageMetric,
+    description: storageDesc,
+    updatedAt: now,
+  });
+
+  // 4. AI Engine (Gemini / Mock)
+  const aiProvider = env.AI_PROVIDER;
+  const isAiConfigured = aiProvider === 'mock' || Boolean(env.GEMINI_API_KEY);
+  let aiStatus: AdminModuleStatus = 'HEALTHY';
+  let aiMetric = `${env.GEMINI_MODEL}`;
+  let aiDesc = `Pipeline AI menggunakan model ${env.GEMINI_MODEL}. Kuota harian diproteksi transaksi atomik Postgres.`;
+
+  if (!isAiConfigured && aiProvider === 'gemini') {
+    aiStatus = 'UNCONFIGURED';
+    aiMetric = 'API Key Kosong';
+    aiDesc = 'GEMINI_API_KEY belum dikonfigurasi di environment server.';
+  } else if (aiProvider === 'none') {
+    aiStatus = 'UNAVAILABLE';
+    aiMetric = 'Dinonaktifkan';
+    aiDesc = 'Fitur AI generasi dinonaktifkan pada konfigurasi server.';
+  } else if (aiProvider === 'mock') {
+    aiMetric = 'Mock Deterministic AI';
+    aiDesc = 'Pipeline AI berjalan dalam mode mock deterministik (pengujian/development).';
+  }
+
+  modules.push({
+    id: 'ai-pipeline',
+    name: 'Pipeline Generasi AI & Kuota Atomik',
+    category: 'AI_PIPELINE',
+    status: aiStatus,
+    engine: `Provider: ${aiProvider}`,
+    metricLabel: 'Model / Status',
+    metricValue: aiMetric,
+    description: aiDesc,
+    updatedAt: now,
+  });
+
+  // 5. Autentikasi & Security
+  modules.push({
+    id: 'security-auth',
+    name: 'Autentikasi & Isolasi Sesi Admin',
+    category: 'SECURITY',
+    status: 'HEALTHY',
+    engine: 'Express JWT & HttpOnly Cookie',
+    metricLabel: 'Isolasi Sesi',
+    metricValue: 'Role DB Enforced',
+    description: 'Pemisahan sesi admin dan mahasiswa dengan verifikasi peran berbasis database pada setiap request.',
+    updatedAt: now,
+  });
+
+  return {
+    modules,
+    timestamp: now,
+  };
+}
+
 
 

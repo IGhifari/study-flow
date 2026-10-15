@@ -97,18 +97,8 @@ export default function AdminDashboardPage() {
         <ChartAreaInteractive />
       </div>
 
-      {/* 3. Platform Modules & Health Table (dashboard-01 TanStack DataTable) */}
-      <div className="flex flex-col gap-3">
-        <div className="px-4 lg:px-6">
-          <h2 className="text-lg font-semibold tracking-tight text-foreground">
-            Status Modul & Layanan Platform
-          </h2>
-          <p className="text-xs text-muted-foreground mt-0.5">
-            Daftar komponen arsitektur, kapasitas batas, dan status kesehatan operasional StudyFlow.
-          </p>
-        </div>
-        <DataTable />
-      </div>
+      {/* 3. Platform Modules & Health Table */}
+      <DataTable />
 
       {/* 4. Technical Policy & Metrics Scope */}
       <div className="px-4 lg:px-6">

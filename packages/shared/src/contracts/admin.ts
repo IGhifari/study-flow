@@ -213,4 +213,78 @@ export const AdminQueuesSummaryResponseSchema = z.object({
 });
 export type AdminQueuesSummaryResponse = z.infer<typeof AdminQueuesSummaryResponseSchema>;
 
+// ==========================================
+// Admin Trends & Activity Metrics Contracts
+// ==========================================
+
+export const AdminTrendRangeEnum = z.enum(['7d', '30d', '90d']);
+export type AdminTrendRange = z.infer<typeof AdminTrendRangeEnum>;
+
+export const AdminTrendDataPointSchema = z.object({
+  date: z.string(), // YYYY-MM-DD
+  materi: z.number().int().nonnegative(),
+  tugas: z.number().int().nonnegative(),
+});
+export type AdminTrendDataPoint = z.infer<typeof AdminTrendDataPointSchema>;
+
+export const AdminTrendsQuerySchema = z.object({
+  range: AdminTrendRangeEnum.default('30d'),
+});
+export type AdminTrendsQuery = z.infer<typeof AdminTrendsQuerySchema>;
+
+export const AdminTrendsResponseSchema = z.object({
+  range: AdminTrendRangeEnum,
+  startDate: z.string().datetime(),
+  endDate: z.string().datetime(),
+  data: z.array(AdminTrendDataPointSchema),
+  totals: z.object({
+    materi: z.number().int().nonnegative(),
+    tugas: z.number().int().nonnegative(),
+  }),
+});
+export type AdminTrendsResponse = z.infer<typeof AdminTrendsResponseSchema>;
+
+// ==========================================
+// Admin System Infrastructure & Health Status
+// ==========================================
+
+export const AdminModuleStatusEnum = z.enum([
+  'HEALTHY',
+  'DEGRADED',
+  'UNAVAILABLE',
+  'UNCONFIGURED',
+]);
+export type AdminModuleStatus = z.infer<typeof AdminModuleStatusEnum>;
+
+export const AdminModuleCategoryEnum = z.enum([
+  'DATABASE',
+  'QUEUE_WORKER',
+  'STORAGE',
+  'AI_PIPELINE',
+  'SECURITY',
+]);
+export type AdminModuleCategory = z.infer<typeof AdminModuleCategoryEnum>;
+
+export const AdminSystemModuleSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  category: AdminModuleCategoryEnum,
+  status: AdminModuleStatusEnum,
+  engine: z.string(),
+  metricLabel: z.string(),
+  metricValue: z.string(),
+  description: z.string(),
+  updatedAt: z.string().datetime(),
+  details: z.record(z.unknown()).optional(),
+});
+export type AdminSystemModule = z.infer<typeof AdminSystemModuleSchema>;
+
+export const AdminSystemStatusResponseSchema = z.object({
+  modules: z.array(AdminSystemModuleSchema),
+  timestamp: z.string().datetime(),
+});
+export type AdminSystemStatusResponse = z.infer<typeof AdminSystemStatusResponseSchema>;
+
+
+
 

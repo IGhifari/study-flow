@@ -2,6 +2,7 @@
 
 import * as React from "react"
 import { Area, AreaChart, CartesianGrid, XAxis } from "recharts"
+import { AlertCircle, RefreshCw } from "lucide-react"
 
 import { useIsMobile } from "@/hooks/use-mobile"
 import {
@@ -28,47 +29,29 @@ import {
   ToggleGroup,
   ToggleGroupItem,
 } from "@/components/ui/toggle-group"
-
-// Generate realistic platform daily activity trends over the last 90 days ending today
-function generateChartData() {
-  const data = []
-  const now = new Date()
-  for (let i = 89; i >= 0; i--) {
-    const d = new Date(now)
-    d.setDate(d.getDate() - i)
-    const dateStr = d.toISOString().split("T")[0]
-    const dayOffset = 90 - i
-    const baseMateri = Math.round(
-      16 + Math.sin(dayOffset / 5) * 7 + (dayOffset % 7 === 0 ? -5 : 4)
-    )
-    const baseTugas = Math.round(
-      22 + Math.cos(dayOffset / 6) * 9 + (dayOffset % 5 === 0 ? 6 : -2)
-    )
-    data.push({
-      date: dateStr,
-      materi: Math.max(4, baseMateri),
-      tugas: Math.max(6, baseTugas),
-    })
-  }
-  return data
-}
-
-const chartData = generateChartData()
+import { Skeleton } from "@/components/ui/skeleton"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { Button } from "@/components/ui/button"
+import { fetchAdminTrends } from "@/lib/admin-api"
+import type { AdminTrendRange, AdminTrendsResponse } from "@studyflow/shared"
 
 const chartConfig = {
   materi: {
     label: "Materi Kuliah",
-    color: "hsl(var(--chart-1))",
+    color: "var(--chart-1)",
   },
   tugas: {
     label: "Tugas Kuliah",
-    color: "hsl(var(--chart-2))",
+    color: "var(--chart-2)",
   },
 } satisfies ChartConfig
 
 export function ChartAreaInteractive() {
   const isMobile = useIsMobile()
-  const [timeRange, setTimeRange] = React.useState("30d")
+  const [timeRange, setTimeRange] = React.useState<AdminTrendRange>("30d")
+  const [trends, setTrends] = React.useState<AdminTrendsResponse | null>(null)
+  const [isLoading, setIsLoading] = React.useState(true)
+  const [error, setError] = React.useState<string | null>(null)
 
   React.useEffect(() => {
     if (isMobile) {
@@ -76,22 +59,36 @@ export function ChartAreaInteractive() {
     }
   }, [isMobile])
 
-  const filteredData = React.useMemo(() => {
-    const now = new Date()
-    let daysToSubtract = 90
-    if (timeRange === "30d") {
-      daysToSubtract = 30
-    } else if (timeRange === "7d") {
-      daysToSubtract = 7
+  const loadTrends = React.useCallback(async (range: AdminTrendRange, signal?: AbortSignal) => {
+    setIsLoading(true)
+    setError(null)
+    try {
+      const res = await fetchAdminTrends(range, { signal })
+      setTrends(res)
+    } catch (err: any) {
+      if (err.name === 'AbortError') return
+      setError(err.message || 'Gagal memuat tren aktivitas platform')
+    } finally {
+      setIsLoading(false)
     }
-    const startDate = new Date(now)
-    startDate.setDate(startDate.getDate() - daysToSubtract)
+  }, [])
 
-    return chartData.filter((item) => {
-      const date = new Date(item.date)
-      return date >= startDate
-    })
-  }, [timeRange])
+  React.useEffect(() => {
+    const controller = new AbortController()
+    loadTrends(timeRange, controller.signal)
+    return () => {
+      controller.abort()
+    }
+  }, [timeRange, loadTrends])
+
+  const rangeLabels: Record<AdminTrendRange, string> = {
+    '7d': '7 Hari Terakhir',
+    '30d': '30 Hari Terakhir',
+    '90d': '3 Bulan Terakhir',
+  }
+
+  const totals = trends?.totals ?? { materi: 0, tugas: 0 }
+  const chartData = trends?.data ?? []
 
   return (
     <Card className="@container/card shadow-xs">
@@ -100,17 +97,25 @@ export function ChartAreaInteractive() {
           Tren Aktivitas Platform
         </CardTitle>
         <CardDescription>
-          <span className="@[540px]/card:block hidden">
-            Volume materi perkuliahan diunggah dan pembuatan tugas akademik
-          </span>
-          <span className="@[540px]/card:hidden">Materi vs Tugas mahasiswa</span>
+          {trends ? (
+            <>
+              <span className="@[540px]/card:block hidden">
+                Volume materi perkuliahan diunggah ({totals.materi}) dan pembuatan tugas ({totals.tugas}) dalam {rangeLabels[timeRange].toLowerCase()}
+              </span>
+              <span className="@[540px]/card:hidden">
+                {totals.materi} Materi • {totals.tugas} Tugas ({timeRange})
+              </span>
+            </>
+          ) : (
+            <span>Memuat data aktivitas platform...</span>
+          )}
         </CardDescription>
         <div className="absolute right-4 top-4">
           <ToggleGroup
             type="single"
             value={timeRange}
             onValueChange={(val) => {
-              if (val) setTimeRange(val)
+              if (val) setTimeRange(val as AdminTrendRange)
             }}
             variant="outline"
             className="@[767px]/card:flex hidden"
@@ -128,7 +133,7 @@ export function ChartAreaInteractive() {
           <Select
             value={timeRange}
             onValueChange={(val) => {
-              if (val) setTimeRange(val)
+              if (val) setTimeRange(val as AdminTrendRange)
             }}
           >
             <SelectTrigger
@@ -152,84 +157,113 @@ export function ChartAreaInteractive() {
         </div>
       </CardHeader>
       <CardContent className="px-2 pt-2 sm:px-6 sm:pt-4">
-        <ChartContainer
-          config={chartConfig}
-          className="aspect-auto h-[260px] w-full"
-        >
-          <AreaChart data={filteredData}>
-            <defs>
-              <linearGradient id="fillMateri" x1="0" y1="0" x2="0" y2="1">
-                <stop
-                  offset="5%"
-                  stopColor="var(--color-materi)"
-                  stopOpacity={0.8}
-                />
-                <stop
-                  offset="95%"
-                  stopColor="var(--color-materi)"
-                  stopOpacity={0.05}
-                />
-              </linearGradient>
-              <linearGradient id="fillTugas" x1="0" y1="0" x2="0" y2="1">
-                <stop
-                  offset="5%"
-                  stopColor="var(--color-tugas)"
-                  stopOpacity={0.8}
-                />
-                <stop
-                  offset="95%"
-                  stopColor="var(--color-tugas)"
-                  stopOpacity={0.05}
-                />
-              </linearGradient>
-            </defs>
-            <CartesianGrid vertical={false} strokeDasharray="3 3" opacity={0.25} />
-            <XAxis
-              dataKey="date"
-              tickLine={false}
-              axisLine={false}
-              tickMargin={8}
-              minTickGap={28}
-              tickFormatter={(value) => {
-                const date = new Date(value)
-                return date.toLocaleDateString("id-ID", {
-                  month: "short",
-                  day: "numeric",
-                })
-              }}
-            />
-            <ChartTooltip
-              cursor={false}
-              content={
-                <ChartTooltipContent
-                  labelFormatter={(value) => {
-                    return new Date(value).toLocaleDateString("id-ID", {
-                      weekday: "short",
-                      day: "numeric",
-                      month: "long",
-                      year: "numeric",
-                    })
-                  }}
-                  indicator="dot"
-                />
-              }
-            />
-            <Area
-              dataKey="tugas"
-              type="natural"
-              fill="url(#fillTugas)"
-              stroke="var(--color-tugas)"
-              stackId="a"
-            />
-            <Area
-              dataKey="materi"
-              type="natural"
-              fill="url(#fillMateri)"
-              stroke="var(--color-materi)"
-              stackId="a"
-            />
-          </AreaChart>
-        </ChartContainer>
+        {isLoading && !trends ? (
+          <div className="flex flex-col gap-2 h-[260px] justify-center items-center">
+            <Skeleton className="h-[200px] w-full rounded-md" />
+            <div className="flex gap-4 w-full justify-center">
+              <Skeleton className="h-4 w-24" />
+              <Skeleton className="h-4 w-24" />
+            </div>
+          </div>
+        ) : error ? (
+          <div className="flex flex-col items-center justify-center h-[260px] p-4 text-center">
+            <Alert variant="destructive" className="max-w-md">
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>Gagal Memuat Tren</AlertTitle>
+              <AlertDescription className="flex flex-col items-center gap-3 mt-2">
+                <span>{error}</span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => loadTrends(timeRange)}
+                  className="gap-2 bg-card text-foreground"
+                >
+                  <RefreshCw className="h-3.5 w-3.5" />
+                  Coba Lagi
+                </Button>
+              </AlertDescription>
+            </Alert>
+          </div>
+        ) : (
+          <ChartContainer
+            config={chartConfig}
+            className="aspect-auto h-[260px] w-full"
+          >
+            <AreaChart data={chartData}>
+              <defs>
+                <linearGradient id="fillMateri" x1="0" y1="0" x2="0" y2="1">
+                  <stop
+                    offset="5%"
+                    stopColor="var(--color-materi)"
+                    stopOpacity={0.8}
+                  />
+                  <stop
+                    offset="95%"
+                    stopColor="var(--color-materi)"
+                    stopOpacity={0.05}
+                  />
+                </linearGradient>
+                <linearGradient id="fillTugas" x1="0" y1="0" x2="0" y2="1">
+                  <stop
+                    offset="5%"
+                    stopColor="var(--color-tugas)"
+                    stopOpacity={0.8}
+                  />
+                  <stop
+                    offset="95%"
+                    stopColor="var(--color-tugas)"
+                    stopOpacity={0.05}
+                  />
+                </linearGradient>
+              </defs>
+              <CartesianGrid vertical={false} strokeDasharray="3 3" opacity={0.25} />
+              <XAxis
+                dataKey="date"
+                tickLine={false}
+                axisLine={false}
+                tickMargin={8}
+                minTickGap={28}
+                tickFormatter={(value) => {
+                  const date = new Date(value)
+                  return date.toLocaleDateString("id-ID", {
+                    month: "short",
+                    day: "numeric",
+                  })
+                }}
+              />
+              <ChartTooltip
+                cursor={false}
+                content={
+                  <ChartTooltipContent
+                    labelFormatter={(value) => {
+                      return new Date(value).toLocaleDateString("id-ID", {
+                        weekday: "short",
+                        day: "numeric",
+                        month: "long",
+                        year: "numeric",
+                      })
+                    }}
+                    indicator="dot"
+                  />
+                }
+              />
+              <Area
+                dataKey="tugas"
+                type="natural"
+                fill="url(#fillTugas)"
+                stroke="var(--color-tugas)"
+                stackId="a"
+              />
+              <Area
+                dataKey="materi"
+                type="natural"
+                fill="url(#fillMateri)"
+                stroke="var(--color-materi)"
+                stackId="a"
+              />
+            </AreaChart>
+          </ChartContainer>
+        )}
       </CardContent>
     </Card>
   )

@@ -612,4 +612,194 @@ describe('Admin Endpoints & Authorization Invariants', () => {
       expect(adminRes.body.usageSummary.storageUsage).toBeNull();
     });
   });
+
+  describe('GET /api/admin/trends', () => {
+    it('rejects anonymous request with 401', async () => {
+      const res = await request(app).get('/api/admin/trends');
+      expect(res.status).toBe(401);
+      expect(res.body.error.code).toBe('UNAUTHORIZED');
+    });
+
+    it('rejects non-admin USER with 403', async () => {
+      const res = await request(app)
+        .get('/api/admin/trends')
+        .set('Cookie', normalUserCookie);
+      expect(res.status).toBe(403);
+      expect(res.body.error.code).toBe('FORBIDDEN');
+    });
+
+    it('rejects invalid range parameter with 400', async () => {
+      const res = await request(app)
+        .get('/api/admin/trends?range=1y')
+        .set('Cookie', adminUserCookie);
+      expect(res.status).toBe(400);
+      expect(res.body.error.code).toBe('VALIDATION_ERROR');
+    });
+
+    it('returns 30d activity trends by default with continuous chronological dates', async () => {
+      const res = await request(app)
+        .get('/api/admin/trends')
+        .set('Cookie', adminUserCookie);
+
+      expect(res.status).toBe(200);
+      expect(res.headers['cache-control']).toContain('no-store');
+      expect(res.body.range).toBe('30d');
+      expect(res.body.data).toBeInstanceOf(Array);
+      expect(res.body.data.length).toBe(30);
+      expect(res.body.totals).toBeDefined();
+      expect(typeof res.body.totals.materi).toBe('number');
+      expect(typeof res.body.totals.tugas).toBe('number');
+
+      // Verify date ordering
+      const dates = res.body.data.map((d: any) => d.date);
+      for (let i = 1; i < dates.length; i++) {
+        expect(new Date(dates[i]).getTime()).toBeGreaterThan(new Date(dates[i - 1]).getTime());
+      }
+    });
+
+    it('supports 7d and 90d query parameters correctly', async () => {
+      const res7d = await request(app)
+        .get('/api/admin/trends?range=7d')
+        .set('Cookie', adminUserCookie);
+      expect(res7d.status).toBe(200);
+      expect(res7d.body.range).toBe('7d');
+      expect(res7d.body.data.length).toBe(7);
+
+      const res90d = await request(app)
+        .get('/api/admin/trends?range=90d')
+        .set('Cookie', adminUserCookie);
+      expect(res90d.status).toBe(200);
+      expect(res90d.body.range).toBe('90d');
+      expect(res90d.body.data.length).toBe(90);
+    });
+
+    it('aggregates materials and assignments counts accurately and ignores soft-deleted materials', async () => {
+      // Create course
+      const semester = await prisma.semester.create({
+        data: {
+          userId: normalUserId,
+          name: 'Semester Test Trends',
+          academicYear: '2026/2027',
+          isActive: true,
+        },
+      });
+
+      const course = await prisma.course.create({
+        data: {
+          userId: normalUserId,
+          semesterId: semester.id,
+          name: 'Trends Test Course',
+          code: 'TR101',
+        },
+      });
+
+      // Active material created today
+      await prisma.material.create({
+        data: {
+          userId: normalUserId,
+          courseId: course.id,
+          title: 'Active Material Today',
+          originalFilename: 'active.pdf',
+          storageKey: `materials/test/trends-act-${Date.now()}.pdf`,
+          bytes: 1024,
+        },
+      });
+
+      // Soft-deleted material created today (MUST NOT be counted)
+      await prisma.material.create({
+        data: {
+          userId: normalUserId,
+          courseId: course.id,
+          title: 'Deleted Material Today',
+          originalFilename: 'deleted.pdf',
+          storageKey: `materials/test/trends-del-${Date.now()}.pdf`,
+          bytes: 1024,
+          deletedAt: new Date(),
+        },
+      });
+
+      // Assignment created today
+      await prisma.assignment.create({
+        data: {
+          userId: normalUserId,
+          courseId: course.id,
+          title: 'Assignment Today',
+          dueDate: new Date(Date.now() + 86400000),
+        },
+      });
+
+      const res = await request(app)
+        .get('/api/admin/trends?range=7d')
+        .set('Cookie', adminUserCookie);
+
+      expect(res.status).toBe(200);
+      expect(res.body.totals.materi).toBeGreaterThanOrEqual(1);
+      expect(res.body.totals.tugas).toBeGreaterThanOrEqual(1);
+
+      // Verify today's data point has at least 1 materi and 1 tugas
+      const todayKey = new Date().toISOString().split('T')[0];
+      const todayPoint = res.body.data.find((d: any) => d.date === todayKey);
+      expect(todayPoint).toBeDefined();
+      expect(todayPoint.materi).toBeGreaterThanOrEqual(1);
+      expect(todayPoint.tugas).toBeGreaterThanOrEqual(1);
+    });
+  });
+
+  describe('GET /api/admin/system/status', () => {
+    it('rejects anonymous request with 401', async () => {
+      const res = await request(app).get('/api/admin/system/status');
+      expect(res.status).toBe(401);
+      expect(res.body.error.code).toBe('UNAUTHORIZED');
+    });
+
+    it('rejects non-admin USER with 403', async () => {
+      const res = await request(app)
+        .get('/api/admin/system/status')
+        .set('Cookie', normalUserCookie);
+      expect(res.status).toBe(403);
+      expect(res.body.error.code).toBe('FORBIDDEN');
+    });
+
+    it('returns system health and component modules for ADMIN with cache-control no-store', async () => {
+      const res = await request(app)
+        .get('/api/admin/system/status')
+        .set('Cookie', adminUserCookie);
+
+      expect(res.status).toBe(200);
+      expect(res.headers['cache-control']).toContain('no-store');
+      expect(res.body.timestamp).toBeDefined();
+      expect(Array.isArray(res.body.modules)).toBe(true);
+      expect(res.body.modules.length).toBeGreaterThanOrEqual(5);
+
+      // Verify each module follows schema
+      for (const mod of res.body.modules) {
+        expect(mod.id).toBeDefined();
+        expect(mod.name).toBeDefined();
+        expect(mod.category).toBeDefined();
+        expect(['HEALTHY', 'DEGRADED', 'UNAVAILABLE', 'UNCONFIGURED']).toContain(mod.status);
+        expect(mod.engine).toBeDefined();
+        expect(mod.metricLabel).toBeDefined();
+        expect(mod.metricValue).toBeDefined();
+        expect(mod.description).toBeDefined();
+        expect(mod.updatedAt).toBeDefined();
+      }
+
+      // Verify specific expected modules exist
+      const moduleIds = res.body.modules.map((m: any) => m.id);
+      expect(moduleIds).toContain('postgres-db');
+      expect(moduleIds).toContain('redis-broker');
+      expect(moduleIds).toContain('worker-document');
+      expect(moduleIds).toContain('worker-ai');
+      expect(moduleIds).toContain('storage-service');
+      expect(moduleIds).toContain('ai-pipeline');
+      expect(moduleIds).toContain('security-auth');
+
+      // Verify PostgreSQL module reported query latency
+      const dbMod = res.body.modules.find((m: any) => m.id === 'postgres-db');
+      expect(dbMod.status).toBe('HEALTHY');
+      expect(dbMod.metricValue).toContain('ms');
+    });
+  });
 });
+
+
