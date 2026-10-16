@@ -261,8 +261,8 @@ StudyFlow dibangun menggunakan arsitektur modular terpisah untuk memisahkan logi
    - Kegagalan sementara (network/timeout) dicoba ulang otomatis maksimal 3 kali dengan exponential backoff.
    - Kegagalan validasi permanen (file rusak, file scan tanpa teks, password-encrypted) tidak di-retry dan langsung ditandai `FAILED` dengan kode kesalahan aman.
 4. **Perlindungan Invarian Relasi & Penghapusan**:
-   - Mata kuliah yang memiliki materi PDF dilarang dihapus (`COURSE_HAS_MATERIALS`, HTTP 409).
-   - Penghapusan materi PDF (`DELETE /api/materials/:id`) mengosongkan relasi `materialId` pada catatan terkait (`onDelete: SetNull`) tanpa menghapus catatan kuliah pengguna.
+   - Mata kuliah yang masih memiliki materi PDF aktif (`deletedAt: null`), tugas, atau catatan dilarang dihapus (`COURSE_HAS_MATERIALS` / `COURSE_HAS_ASSIGNMENTS` / `COURSE_HAS_NOTES`, HTTP 409). Apabila seluruh materi pada mata kuliah telah berstatus soft-delete (`deletedAt !== null`) dan tidak ada tugas maupun catatan tersisa, `DELETE /api/courses/:id` membersihkan permanen baris materi berstatus soft-delete tersebut lalu menghapus mata kuliah dalam satu transaksi terkunci (`FOR UPDATE`), sementara riwayat `ProcessingJob` tetap utuh (`onDelete: SetNull`).
+   - Penghapusan materi PDF (`DELETE /api/materials/:id`) mengosongkan relasi `materialId` pada catatan terkait (`onDelete: SetNull`) tanpa menghapus catatan kuliah pengguna, serta menghapus entri sematan terkait pada `pinned_items` agar tidak menahan kuota pin pengguna.
    - Objek di storage dihapus dan kuota penyimpanan pengguna dikembalikan secara atomik. Jika materi dihapus saat sedang diproses (`UPLOADING`, `QUEUED`, `PROCESSING`), reservasi kuota segera dilepas dan worker membatalkan penulisan hasil.
 
 #### 3.7.1 Arsitektur Driver Penyimpanan & Pemulihan Pipeline:

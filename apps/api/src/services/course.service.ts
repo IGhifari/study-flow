@@ -264,54 +264,84 @@ export async function unarchiveCourse(userId: string, id: string): Promise<Cours
 }
 
 export async function deleteCourse(userId: string, id: string): Promise<void> {
-  const course = await prisma.course.findFirst({
-    where: { id, userId },
-    include: {
-      _count: {
-        select: {
-          assignments: true,
-          notes: true,
-          materials: true,
+  await prisma.$transaction(async (tx) => {
+    const courseRows = await tx.$queryRaw<Array<{ id: string }>>`
+      SELECT id
+      FROM courses
+      WHERE id = ${id} AND user_id = ${userId}
+      FOR UPDATE
+    `;
+
+    if (courseRows.length === 0) {
+      const error: AppError = new Error('Mata kuliah tidak ditemukan');
+      error.statusCode = 404;
+      error.code = 'NOT_FOUND';
+      throw error;
+    }
+
+    const [activeMaterialsCount, assignmentsCount, notesCount] = await Promise.all([
+      tx.material.count({
+        where: {
+          userId,
+          courseId: id,
+          deletedAt: null,
         },
+      }),
+      tx.assignment.count({
+        where: {
+          userId,
+          courseId: id,
+        },
+      }),
+      tx.note.count({
+        where: {
+          userId,
+          courseId: id,
+        },
+      }),
+    ]);
+
+    if (activeMaterialsCount > 0) {
+      const error: AppError = new Error(
+        'Mata kuliah tidak dapat dihapus karena masih memiliki materi PDF. Silakan arsipkan mata kuliah atau hapus materi di dalamnya terlebih dahulu.'
+      );
+      error.statusCode = 409;
+      error.code = 'COURSE_HAS_MATERIALS';
+      throw error;
+    }
+
+    if (assignmentsCount > 0) {
+      const error: AppError = new Error(
+        'Mata kuliah tidak dapat dihapus karena masih memiliki tugas. Silakan arsipkan mata kuliah atau hapus tugas di dalamnya terlebih dahulu.'
+      );
+      error.statusCode = 409;
+      error.code = 'COURSE_HAS_ASSIGNMENTS';
+      throw error;
+    }
+
+    if (notesCount > 0) {
+      const error: AppError = new Error(
+        'Mata kuliah tidak dapat dihapus karena masih memiliki catatan. Silakan arsipkan mata kuliah atau hapus catatan di dalamnya terlebih dahulu.'
+      );
+      error.statusCode = 409;
+      error.code = 'COURSE_HAS_NOTES';
+      throw error;
+    }
+
+    // Hard-delete soft-deleted materials belonging to this course so the
+    // ON DELETE RESTRICT foreign key (materials_course_id_user_id_fkey) does not block deletion.
+    // ProcessingJob history remains intact via ON DELETE SET NULL on processing_jobs.material_id.
+    await tx.material.deleteMany({
+      where: {
+        userId,
+        courseId: id,
+        deletedAt: { not: null },
       },
-    },
-  });
+    });
 
-  if (!course) {
-    const error: AppError = new Error('Mata kuliah tidak ditemukan');
-    error.statusCode = 404;
-    error.code = 'NOT_FOUND';
-    throw error;
-  }
-
-  if (course._count.materials > 0) {
-    const error: AppError = new Error(
-      'Mata kuliah tidak dapat dihapus karena masih memiliki materi PDF. Silakan arsipkan mata kuliah atau hapus materi di dalamnya terlebih dahulu.'
-    );
-    error.statusCode = 409;
-    error.code = 'COURSE_HAS_MATERIALS';
-    throw error;
-  }
-
-  if (course._count.assignments > 0) {
-    const error: AppError = new Error(
-      'Mata kuliah tidak dapat dihapus karena masih memiliki tugas. Silakan arsipkan mata kuliah atau hapus tugas di dalamnya terlebih dahulu.'
-    );
-    error.statusCode = 409;
-    error.code = 'COURSE_HAS_ASSIGNMENTS';
-    throw error;
-  }
-
-  if (course._count.notes > 0) {
-    const error: AppError = new Error(
-      'Mata kuliah tidak dapat dihapus karena masih memiliki catatan. Silakan arsipkan mata kuliah atau hapus catatan di dalamnya terlebih dahulu.'
-    );
-    error.statusCode = 409;
-    error.code = 'COURSE_HAS_NOTES';
-    throw error;
-  }
-
-  await prisma.course.delete({
-    where: { id },
+    await tx.course.delete({
+      where: { id },
+    });
   });
 }
+

@@ -14,9 +14,11 @@ import {
   BreadcrumbSeparator,
 } from '@/components/ui/breadcrumb';
 import { ThemeToggle } from '@/components/theme-toggle';
+import { AdminCommandPalette, CommandPaletteTrigger } from '@/components/admin-command-palette';
 
 export function AdminHeader() {
   const pathname = usePathname();
+  const [commandOpen, setCommandOpen] = React.useState(false);
 
   const isUserDetail = pathname.startsWith('/users/') && pathname !== '/users';
 
@@ -62,9 +64,12 @@ export function AdminHeader() {
         </Breadcrumb>
       </div>
 
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2 sm:gap-3">
+        <CommandPaletteTrigger onClick={() => setCommandOpen(true)} />
         <ThemeToggle />
       </div>
+
+      <AdminCommandPalette open={commandOpen} onOpenChange={setCommandOpen} />
     </header>
   );
 }

@@ -283,33 +283,41 @@ export async function unarchiveSemester(userId: string, id: string): Promise<Sem
 }
 
 export async function deleteSemester(userId: string, id: string): Promise<void> {
-  const semester = await prisma.semester.findFirst({
-    where: { id, userId },
-    include: {
-      _count: {
-        select: { courses: true },
+  await prisma.$transaction(async (tx) => {
+    const semesterRows = await tx.$queryRaw<Array<{ id: string }>>`
+      SELECT id
+      FROM semesters
+      WHERE id = ${id} AND user_id = ${userId}
+      FOR UPDATE
+    `;
+
+    if (semesterRows.length === 0) {
+      const error: AppError = new Error('Semester tidak ditemukan');
+      error.statusCode = 404;
+      error.code = 'NOT_FOUND';
+      throw error;
+    }
+
+    const coursesCount = await tx.course.count({
+      where: {
+        userId,
+        semesterId: id,
       },
-    },
-  });
+    });
 
-  if (!semester) {
-    const error: AppError = new Error('Semester tidak ditemukan');
-    error.statusCode = 404;
-    error.code = 'NOT_FOUND';
-    throw error;
-  }
+    // Invariant: Semester containing courses cannot be deleted
+    if (coursesCount > 0) {
+      const error: AppError = new Error(
+        'Semester tidak dapat dihapus karena masih memiliki mata kuliah. Silakan arsipkan semester atau hapus mata kuliah di dalamnya terlebih dahulu.'
+      );
+      error.statusCode = 409;
+      error.code = 'SEMESTER_HAS_COURSES';
+      throw error;
+    }
 
-  // Invariant: Semester containing courses cannot be deleted
-  if (semester._count.courses > 0) {
-    const error: AppError = new Error(
-      'Semester tidak dapat dihapus karena masih memiliki mata kuliah. Silakan arsipkan semester atau hapus mata kuliah di dalamnya terlebih dahulu.'
-    );
-    error.statusCode = 409;
-    error.code = 'SEMESTER_HAS_COURSES';
-    throw error;
-  }
-
-  await prisma.semester.delete({
-    where: { id },
+    await tx.semester.delete({
+      where: { id },
+    });
   });
 }
+

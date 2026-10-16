@@ -659,6 +659,11 @@ export async function deleteMaterial(userId: string, id: string): Promise<void> 
       },
     });
 
+    // Remove any pin entries referencing this material so soft-deleted materials do not consume pin quota
+    await tx.pinnedItem.deleteMany({
+      where: { materialId: material.id },
+    });
+
     // Unlink notes attached to this material
     await tx.note.updateMany({
       where: { materialId: material.id },
@@ -822,6 +827,7 @@ export async function sweepAbandonedUploads(
   const abandoned = await prisma.material.findMany({
     where: {
       status: 'UPLOADING',
+      deletedAt: null,
       createdAt: { lt: cutoff },
     },
     take: 50,

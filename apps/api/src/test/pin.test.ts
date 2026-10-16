@@ -455,4 +455,82 @@ describe('Pinned Items Endpoints & Business Invariants', () => {
       .send({ pinned: true });
     expect(resRePin.status).toBe(404);
   });
+
+  it('7. Deleting a pinned material via DELETE /api/materials/:id removes its pinned_items entry and frees pin quota slot', async () => {
+    // Create 1 pinned material + 19 pinned notes = 20 pinned items (max quota)
+    const pinnedMat = await prisma.material.create({
+      data: {
+        userId: userAId,
+        courseId: courseA1Id,
+        title: 'Materi Pinned Akan Dihapus via API',
+        originalFilename: 'pinned-del.pdf',
+        storageKey: `materials/${userAId}/pinned-del-${Date.now()}.pdf`,
+        bytes: 2048,
+        status: 'READY',
+      },
+    });
+
+    const pinMatRes = await request(app)
+      .patch(`/api/materials/${pinnedMat.id}/pin`)
+      .set('Origin', TRUSTED_ORIGIN)
+      .set('Cookie', cookieA)
+      .send({ pinned: true });
+    expect(pinMatRes.status).toBe(200);
+
+    for (let i = 0; i < 19; i++) {
+      const note = await prisma.note.create({
+        data: {
+          userId: userAId,
+          courseId: courseA1Id,
+          title: `Note Quota Filler ${i + 1}`,
+        },
+      });
+      const pinNoteRes = await request(app)
+        .patch(`/api/notes/${note.id}/pin`)
+        .set('Origin', TRUSTED_ORIGIN)
+        .set('Cookie', cookieA)
+        .send({ pinned: true });
+      expect(pinNoteRes.status).toBe(200);
+    }
+
+    // 21st candidate note cannot be pinned while quota is full (20/20)
+    const extraNote = await prisma.note.create({
+      data: {
+        userId: userAId,
+        courseId: courseA1Id,
+        title: 'Note Ke-21',
+      },
+    });
+
+    const blockedPinRes = await request(app)
+      .patch(`/api/notes/${extraNote.id}/pin`)
+      .set('Origin', TRUSTED_ORIGIN)
+      .set('Cookie', cookieA)
+      .send({ pinned: true });
+    expect(blockedPinRes.status).toBe(400);
+    expect(blockedPinRes.body.error.code).toBe('PIN_LIMIT_EXCEEDED');
+
+    // Delete the pinned material via DELETE /api/materials/:id
+    const delMatRes = await request(app)
+      .delete(`/api/materials/${pinnedMat.id}`)
+      .set('Origin', TRUSTED_ORIGIN)
+      .set('Cookie', cookieA);
+    expect(delMatRes.status).toBe(200);
+
+    // Verify the pinned_items row for pinnedMat is removed from database
+    const orphanPin = await prisma.pinnedItem.findFirst({
+      where: { materialId: pinnedMat.id },
+    });
+    expect(orphanPin).toBeNull();
+
+    // Now the 20th slot is free and extraNote can be pinned (200 OK)
+    const freedPinRes = await request(app)
+      .patch(`/api/notes/${extraNote.id}/pin`)
+      .set('Origin', TRUSTED_ORIGIN)
+      .set('Cookie', cookieA)
+      .send({ pinned: true });
+    expect(freedPinRes.status).toBe(200);
+    expect(freedPinRes.body.pinned).toBe(true);
+  });
 });
+
