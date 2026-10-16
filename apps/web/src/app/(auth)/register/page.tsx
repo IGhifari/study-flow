@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Eye, EyeOff, Loader2, AlertCircle } from 'lucide-react';
+import { Eye, EyeOff, Loader2 } from 'lucide-react';
 import { RegisterFormInput, RegisterInput, RegisterInputSchema } from '@studyflow/shared';
 import { apiRegister } from '@/lib/auth-client';
 import { GoogleSignInButton } from '@/components/auth/google-sign-in-button';
@@ -21,8 +21,8 @@ import {
   CardContent,
   CardFooter,
 } from '@/components/ui/card';
-import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { Separator } from '@/components/ui/separator';
+import { toast } from '@/components/ui/sonner';
 import {
   RadixSelect as Select,
   SelectContent,
@@ -52,6 +52,7 @@ function RegisterForm(): React.JSX.Element {
   React.useEffect(() => {
     if (urlError) {
       setServerError(urlError);
+      toast.error(urlError);
     }
   }, [urlError]);
 
@@ -89,14 +90,16 @@ function RegisterForm(): React.JSX.Element {
     setServerError(null);
     try {
       await apiRegister(data);
+      toast.success('Pendaftaran berhasil! Mengalihkan ke halaman masuk...');
       const target = returnUrl
         ? `/login?registered=true&returnUrl=${encodeURIComponent(returnUrl)}`
         : '/login?registered=true';
       router.push(target);
     } catch (err) {
-      setServerError(
-        err instanceof Error ? err.message : 'Terjadi kesalahan saat mendaftar. Silakan coba lagi.'
-      );
+      const errorMessage =
+        err instanceof Error ? err.message : 'Terjadi kesalahan saat mendaftar. Silakan coba lagi.';
+      setServerError(errorMessage);
+      toast.error(errorMessage);
       // Reset Turnstile token on failure to ensure fresh verification
       setTurnstileToken('');
       setValue('turnstileToken', '');
@@ -117,15 +120,6 @@ function RegisterForm(): React.JSX.Element {
 
       <form onSubmit={handleSubmit(onSubmit)} noValidate>
         <CardContent className="space-y-4 pt-0">
-          {/* Server Error Alert */}
-          {serverError && (
-            <Alert variant="destructive" role="alert" aria-live="polite">
-              <AlertCircle className="h-4 w-4" />
-              <AlertTitle className="text-sm font-semibold">Pendaftaran Gagal</AlertTitle>
-              <AlertDescription className="text-xs break-words">{serverError}</AlertDescription>
-            </Alert>
-          )}
-
           {/* Google Sign-In Button */}
           <div className="space-y-3">
             <GoogleSignInButton returnUrl={returnUrl} disabled={isSubmitting} />

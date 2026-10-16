@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Eye, EyeOff, Loader2, CheckCircle2, AlertCircle } from 'lucide-react';
+import { Eye, EyeOff, Loader2 } from 'lucide-react';
 import { LoginInput, LoginInputSchema } from '@studyflow/shared';
 import { apiLogin, getSafeReturnUrl, isApiError } from '@/lib/auth-client';
 import { GoogleSignInButton } from '@/components/auth/google-sign-in-button';
@@ -21,8 +21,8 @@ import {
   CardContent,
   CardFooter,
 } from '@/components/ui/card';
-import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { Separator } from '@/components/ui/separator';
+import { toast } from '@/components/ui/sonner';
 
 function LoginForm(): React.JSX.Element {
   const router = useRouter();
@@ -40,8 +40,15 @@ function LoginForm(): React.JSX.Element {
   React.useEffect(() => {
     if (urlError) {
       setServerError(urlError);
+      toast.error(urlError);
     }
   }, [urlError]);
+
+  React.useEffect(() => {
+    if (isRegisteredSuccess) {
+      toast.success('Pendaftaran berhasil! Silakan masuk menggunakan akun baru Anda.');
+    }
+  }, [isRegisteredSuccess]);
 
   const {
     register,
@@ -72,13 +79,15 @@ function LoginForm(): React.JSX.Element {
     setServerError(null);
     try {
       await apiLogin(data);
+      toast.success('Berhasil masuk! Mengalihkan ke dashboard...');
       const safeTarget = getSafeReturnUrl(returnUrl, '/dashboard');
       router.push(safeTarget);
       router.refresh();
     } catch (err: unknown) {
-      setServerError(
-        err instanceof Error ? err.message : 'Terjadi kesalahan saat masuk. Silakan coba lagi.'
-      );
+      const errorMessage =
+        err instanceof Error ? err.message : 'Terjadi kesalahan saat masuk. Silakan coba lagi.';
+      setServerError(errorMessage);
+      toast.error(errorMessage);
 
       // Adaptive CAPTCHA: backend signals when verification is needed for the next attempt
       if (isApiError(err)) {
@@ -107,26 +116,6 @@ function LoginForm(): React.JSX.Element {
 
       <form onSubmit={handleSubmit(onSubmit)} noValidate>
         <CardContent className="space-y-4 pt-0">
-          {/* Registration Success Banner */}
-          {isRegisteredSuccess && (
-            <Alert className="border-emerald-500/40 bg-emerald-50/50 dark:bg-emerald-950/20 text-emerald-900 dark:text-emerald-300">
-              <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
-              <AlertTitle className="text-sm font-semibold">Pendaftaran Berhasil</AlertTitle>
-              <AlertDescription className="text-xs">
-                Akun berhasil dibuat. Silakan masuk menggunakan akun baru Anda.
-              </AlertDescription>
-            </Alert>
-          )}
-
-          {/* Server Error Alert */}
-          {serverError && (
-            <Alert variant="destructive" role="alert" aria-live="polite">
-              <AlertCircle className="h-4 w-4" />
-              <AlertTitle className="text-sm font-semibold">Gagal Masuk</AlertTitle>
-              <AlertDescription className="text-xs break-words">{serverError}</AlertDescription>
-            </Alert>
-          )}
-
           {/* Google Sign-In Button */}
           <div className="space-y-3">
             <GoogleSignInButton returnUrl={returnUrl} disabled={isSubmitting} />
