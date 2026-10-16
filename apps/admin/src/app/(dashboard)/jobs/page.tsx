@@ -268,16 +268,12 @@ function AdminJobsContent() {
       let hasMore = true;
 
       while (hasMore && allJobs.length < 1000) {
-        const isSearchJobId = debouncedSearch.length > 20 && !debouncedSearch.startsWith('usr_');
-        const isSearchUserId = debouncedSearch.startsWith('usr_') || debouncedSearch.length > 20;
-
         const response = await fetchAdminJobs({
           page: currentPage,
           limit: 100,
           status: (status as AdminJobStatus) || undefined,
           type: (type as AdminJobType) || undefined,
-          jobId: isSearchJobId ? debouncedSearch : undefined,
-          userId: !isSearchJobId && isSearchUserId ? debouncedSearch : undefined,
+          search: debouncedSearch.trim() || undefined,
         });
 
         allJobs.push(...response.items);
@@ -411,18 +407,13 @@ function AdminJobsContent() {
     setIsJobsLoading(true);
     setJobsError(null);
 
-    // If search looks like a CUID / ID, we can query by jobId or userId
-    const isSearchJobId = debouncedSearch.length > 20 && !debouncedSearch.startsWith('usr_');
-    const isSearchUserId = debouncedSearch.startsWith('usr_') || debouncedSearch.length > 20;
-
     fetchAdminJobs(
       {
         page,
         limit,
         status: (status as AdminJobStatus) || undefined,
         type: (type as AdminJobType) || undefined,
-        jobId: isSearchJobId ? debouncedSearch : undefined,
-        userId: !isSearchJobId && isSearchUserId ? debouncedSearch : undefined,
+        search: debouncedSearch.trim() || undefined,
       },
       { signal }
     )
@@ -681,19 +672,25 @@ function AdminJobsContent() {
           )}
         </div>
 
-        {/* Search by Job ID or User ID */}
+        {/* Search by Job ID, User ID, or User Name */}
         <div className="relative w-full md:max-w-xs">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Cari ID Pekerjaan / ID Pengguna..."
+            placeholder="Cari ID Pekerjaan, ID Pengguna, atau Nama..."
             value={searchInput}
-            onChange={(e) => setSearchInput(e.target.value)}
+            onChange={(e) => {
+              setSearchInput(e.target.value);
+              setPage(1);
+            }}
             className="pl-9 pr-8 text-xs h-9"
           />
           {searchInput && (
             <button
               type="button"
-              onClick={() => setSearchInput('')}
+              onClick={() => {
+                setSearchInput('');
+                setPage(1);
+              }}
               className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
             >
               <X className="h-4 w-4" />

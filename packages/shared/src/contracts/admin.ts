@@ -147,6 +147,7 @@ export const AdminJobListQuerySchema = z.object({
   status: AdminJobStatusEnum.optional(),
   userId: z.string().trim().max(100).optional(),
   jobId: z.string().trim().max(100).optional(),
+  search: z.string().trim().max(100).optional(),
   startDate: z.string().datetime().optional(),
   endDate: z.string().datetime().optional(),
   sortBy: z.enum(['createdAt', 'startedAt', 'completedAt']).default('createdAt'),

@@ -293,6 +293,7 @@ export async function getAdminUserDetail(userId: string): Promise<AdminUserDetai
 export function formatSafeErrorMessage(errorCode: string | null): string | null {
   if (!errorCode) return null;
   const errorMap: Record<string, string> = {
+    // Legacy mapping
     PDF_ENCRYPTED: 'Dokumen PDF terkunci dengan kata sandi.',
     PDF_CORRUPT: 'Format berkas PDF rusak atau tidak dapat dibaca.',
     PDF_EMPTY: 'Berkas PDF tidak memuat halaman yang dapat diekstraksi.',
@@ -314,6 +315,27 @@ export function formatSafeErrorMessage(errorCode: string | null): string | null 
     AI_OUTPUT_TRUNCATED: 'Keluaran AI terpotong karena mencapai batas token maksimum.',
     DOCUMENT_TOO_LARGE: 'Dokumen terlalu panjang untuk diproses oleh model AI.',
     QUOTA_EXCEEDED: 'Kuota harian pembuatan konten AI pengguna telah tercapai.',
+
+    // Worker & API error codes
+    FILE_ENCRYPTED: 'Dokumen PDF terkunci dengan kata sandi.',
+    FILE_CORRUPTED: 'Format berkas PDF rusak atau tidak dapat dibaca.',
+    INVALID_FILE_SIGNATURE: 'Header berkas tidak valid atau bukan dokumen PDF standar.',
+    SCANNED_PDF_NO_TEXT: 'Berkas PDF hasil pindaian (scan) tidak memiliki lapisan teks yang dapat diekstraksi.',
+    EXCEEDS_PAGE_LIMIT: 'Jumlah halaman dokumen melebihi batas maksimum (100 halaman).',
+    PARSING_TIMEOUT: 'Waktu ekstraksi teks dokumen melampaui batas waktu (timeout).',
+    EXTRACTION_FAILED: 'Gagal mengekstraksi teks dari dokumen PDF.',
+    MATERIAL_NOT_READY: 'Materi belum selesai diekstraksi sehingga belum siap diproses AI.',
+    INSUFFICIENT_TEXT: 'Teks dokumen terlalu pendek atau tidak memadai untuk diproses AI.',
+    UPLOAD_ABANDONED: 'Unggahan berkas tidak diselesaikan oleh pengguna hingga melewati batas waktu.',
+    MANUALLY_RELEASED: 'Slot pekerjaan AI dilepaskan karena melewati batas waktu pemrosesan.',
+    DAILY_QUOTA_EXHAUSTED: 'Kuota harian penyedia layanan AI telah habis.',
+    AI_DAILY_QUOTA_EXCEEDED: 'Kuota harian pembuatan konten AI pengguna telah tercapai.',
+    AI_CONCURRENT_LIMIT_EXCEEDED: 'Batas pekerjaan AI paralel pengguna sedang penuh.',
+    AI_NETWORK_ERROR: 'Gagal terhubung ke jaringan penyedia layanan AI.',
+    AI_JOB_CALL_LIMIT_EXCEEDED: 'Pekerjaan melampaui batas maksimum panggilan ke penyedia AI.',
+    AI_REDIS_UNAVAILABLE: 'Layanan antrean dan pembatas laju AI (Redis) sedang tidak tersedia.',
+    AI_INVALID_RESPONSE: 'Format respons dari penyedia layanan AI tidak dapat dibaca.',
+    AI_GENERATION_FAILED: 'Gagal menghasilkan konten pembelajaran AI.',
   };
   return errorMap[errorCode] || 'Terjadi kesalahan operasional saat memproses pekerjaan.';
 }
@@ -333,7 +355,7 @@ export function calculateDurationMs(
 export async function listAdminJobs(query: AdminJobListQuery): Promise<AdminJobListResponse> {
   const page = query.page || 1;
   const limit = query.limit || 20;
-  const { type, status, userId, jobId, startDate, endDate, sortBy = 'createdAt', sortOrder = 'desc' } = query;
+  const { type, status, userId, jobId, search, startDate, endDate, sortBy = 'createdAt', sortOrder = 'desc' } = query;
 
   if (startDate && endDate) {
     const start = new Date(startDate).getTime();
@@ -358,6 +380,15 @@ export async function listAdminJobs(query: AdminJobListQuery): Promise<AdminJobL
   if (status) where.status = status;
   if (userId) where.userId = userId;
   if (jobId) where.id = jobId;
+
+  const trimmedSearch = search?.trim();
+  if (trimmedSearch) {
+    where.OR = [
+      { id: { contains: trimmedSearch, mode: 'insensitive' } },
+      { userId: { contains: trimmedSearch, mode: 'insensitive' } },
+      { user: { name: { contains: trimmedSearch, mode: 'insensitive' } } },
+    ];
+  }
 
   if (startDate || endDate) {
     where.createdAt = {};

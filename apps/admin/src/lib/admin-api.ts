@@ -219,6 +219,7 @@ export async function fetchAdminJobs(
   if (query.status) params.set('status', query.status);
   if (query.userId) params.set('userId', query.userId);
   if (query.jobId) params.set('jobId', query.jobId);
+  if (query.search) params.set('search', query.search);
   if (query.startDate) params.set('startDate', query.startDate);
   if (query.endDate) params.set('endDate', query.endDate);
   if (query.sortBy) params.set('sortBy', query.sortBy);

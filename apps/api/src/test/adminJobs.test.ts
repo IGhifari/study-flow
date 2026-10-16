@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach, afterAll } from 'vitest';
 import request from 'supertest';
 import { createApp } from '../app.js';
 import { prisma } from '@studyflow/database';
+import { formatSafeErrorMessage } from '../services/admin.service.js';
 
 describe('Admin Job Monitoring & Queue Endpoints (GET /api/admin/jobs*)', () => {
   const app = createApp();
@@ -259,6 +260,56 @@ describe('Admin Job Monitoring & Queue Endpoints (GET /api/admin/jobs*)', () => 
       expect(resJob.body.items[0].id).toBe(sampleJobId);
     });
 
+    it('searches jobs using unified search parameter (jobId, CUID userId, and user name)', async () => {
+      // 1. Search by exact Job ID
+      const resJobId = await request(app)
+        .get(`/api/admin/jobs?search=${sampleJobId}`)
+        .set('Cookie', adminUserCookie);
+      expect(resJobId.status).toBe(200);
+      expect(resJobId.body.items.length).toBe(1);
+      expect(resJobId.body.items[0].id).toBe(sampleJobId);
+
+      // 2. Search by CUID User ID (without usr_ prefix)
+      const resUserId = await request(app)
+        .get(`/api/admin/jobs?search=${normalUserId}`)
+        .set('Cookie', adminUserCookie);
+      expect(resUserId.status).toBe(200);
+      expect(resUserId.body.items.length).toBe(2);
+      expect(resUserId.body.items.every((j: any) => j.userId === normalUserId)).toBe(true);
+
+      // 3. Search by User Name substring (case-insensitive)
+      const resNameCaseInsensitive = await request(app)
+        .get('/api/admin/jobs?search=biasa')
+        .set('Cookie', adminUserCookie);
+      expect(resNameCaseInsensitive.status).toBe(200);
+      expect(resNameCaseInsensitive.body.items.length).toBe(2);
+      expect(resNameCaseInsensitive.body.items.every((j: any) => j.userName === 'Mahasiswa Biasa')).toBe(true);
+
+      const resAdminName = await request(app)
+        .get('/api/admin/jobs?search=BOSS')
+        .set('Cookie', adminUserCookie);
+      expect(resAdminName.status).toBe(200);
+      expect(resAdminName.body.items.length).toBe(1);
+      expect(resAdminName.body.items[0].userName).toBe('Admin Boss');
+
+      // 4. Search combined with status filter
+      const resSearchAndStatus = await request(app)
+        .get('/api/admin/jobs?search=BIASA&status=FAILED')
+        .set('Cookie', adminUserCookie);
+      expect(resSearchAndStatus.status).toBe(200);
+      expect(resSearchAndStatus.body.items.length).toBe(1);
+      expect(resSearchAndStatus.body.items[0].id).toBe(failedJobId);
+      expect(resSearchAndStatus.body.items[0].status).toBe('FAILED');
+
+      // 5. Search with no matches returns empty list
+      const resEmpty = await request(app)
+        .get('/api/admin/jobs?search=non_existent_cuid_or_name_xyz')
+        .set('Cookie', adminUserCookie);
+      expect(resEmpty.status).toBe(200);
+      expect(resEmpty.body.items.length).toBe(0);
+      expect(resEmpty.body.pagination.totalItems).toBe(0);
+    });
+
     it('enforces maximum 90-day date range and validates startDate <= endDate', async () => {
       // 1. startDate > endDate -> 400
       const resReversed = await request(app)
@@ -376,6 +427,73 @@ describe('Admin Job Monitoring & Queue Endpoints (GET /api/admin/jobs*)', () => 
       expect(res.body.retentionNotice).toBeDefined();
       expect(res.body.retentionNotice).toContain('retensi');
       expect(res.body.timestamp).toBeDefined();
+    });
+  });
+
+  describe('Error Code Mapping Dictionary (formatSafeErrorMessage)', () => {
+    it('returns null when errorCode is null or undefined', () => {
+      expect(formatSafeErrorMessage(null)).toBeNull();
+      expect(formatSafeErrorMessage(undefined as any)).toBeNull();
+    });
+
+    it('correctly maps Worker document extraction error codes', () => {
+      expect(formatSafeErrorMessage('FILE_ENCRYPTED')).toBe('Dokumen PDF terkunci dengan kata sandi.');
+      expect(formatSafeErrorMessage('FILE_CORRUPTED')).toBe('Format berkas PDF rusak atau tidak dapat dibaca.');
+      expect(formatSafeErrorMessage('INVALID_FILE_SIGNATURE')).toBe(
+        'Header berkas tidak valid atau bukan dokumen PDF standar.'
+      );
+      expect(formatSafeErrorMessage('SCANNED_PDF_NO_TEXT')).toBe(
+        'Berkas PDF hasil pindaian (scan) tidak memiliki lapisan teks yang dapat diekstraksi.'
+      );
+      expect(formatSafeErrorMessage('EXCEEDS_PAGE_LIMIT')).toBe(
+        'Jumlah halaman dokumen melebihi batas maksimum (100 halaman).'
+      );
+      expect(formatSafeErrorMessage('PARSING_TIMEOUT')).toBe(
+        'Waktu ekstraksi teks dokumen melampaui batas waktu (timeout).'
+      );
+      expect(formatSafeErrorMessage('EXTRACTION_FAILED')).toBe('Gagal mengekstraksi teks dari dokumen PDF.');
+      expect(formatSafeErrorMessage('MATERIAL_NOT_READY')).toBe(
+        'Materi belum selesai diekstraksi sehingga belum siap diproses AI.'
+      );
+      expect(formatSafeErrorMessage('INSUFFICIENT_TEXT')).toBe(
+        'Teks dokumen terlalu pendek atau tidak memadai untuk diproses AI.'
+      );
+      expect(formatSafeErrorMessage('UPLOAD_ABANDONED')).toBe(
+        'Unggahan berkas tidak diselesaikan oleh pengguna hingga melewati batas waktu.'
+      );
+      expect(formatSafeErrorMessage('MANUALLY_RELEASED')).toBe(
+        'Slot pekerjaan AI dilepaskan karena melewati batas waktu pemrosesan.'
+      );
+    });
+
+    it('correctly maps AI worker & rate limiting error codes', () => {
+      expect(formatSafeErrorMessage('DAILY_QUOTA_EXHAUSTED')).toBe('Kuota harian penyedia layanan AI telah habis.');
+      expect(formatSafeErrorMessage('AI_DAILY_QUOTA_EXCEEDED')).toBe(
+        'Kuota harian pembuatan konten AI pengguna telah tercapai.'
+      );
+      expect(formatSafeErrorMessage('AI_CONCURRENT_LIMIT_EXCEEDED')).toBe(
+        'Batas pekerjaan AI paralel pengguna sedang penuh.'
+      );
+      expect(formatSafeErrorMessage('AI_NETWORK_ERROR')).toBe('Gagal terhubung ke jaringan penyedia layanan AI.');
+      expect(formatSafeErrorMessage('AI_JOB_CALL_LIMIT_EXCEEDED')).toBe(
+        'Pekerjaan melampaui batas maksimum panggilan ke penyedia AI.'
+      );
+      expect(formatSafeErrorMessage('AI_REDIS_UNAVAILABLE')).toBe(
+        'Layanan antrean dan pembatas laju AI (Redis) sedang tidak tersedia.'
+      );
+      expect(formatSafeErrorMessage('AI_INVALID_RESPONSE')).toBe(
+        'Format respons dari penyedia layanan AI tidak dapat dibaca.'
+      );
+      expect(formatSafeErrorMessage('AI_GENERATION_FAILED')).toBe('Gagal menghasilkan konten pembelajaran AI.');
+    });
+
+    it('retains legacy error codes and provides fallback for unknown codes', () => {
+      expect(formatSafeErrorMessage('PDF_ENCRYPTED')).toBe('Dokumen PDF terkunci dengan kata sandi.');
+      expect(formatSafeErrorMessage('PDF_CORRUPT')).toBe('Format berkas PDF rusak atau tidak dapat dibaca.');
+      expect(formatSafeErrorMessage('PAGE_LIMIT_EXCEEDED')).toBe('Jumlah halaman dokumen melebihi batas yang diizinkan.');
+      expect(formatSafeErrorMessage('SOME_FUTURE_UNKNOWN_CODE')).toBe(
+        'Terjadi kesalahan operasional saat memproses pekerjaan.'
+      );
     });
   });
 });
