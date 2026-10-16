@@ -118,7 +118,7 @@ describe('Assignment Endpoints & Invariants', () => {
 
   it('creates assignment and defaults date-only input to 23:59:00 in user timezone', async () => {
     // User A timezone is Asia/Jakarta (+07:00).
-    // Date "2026-10-15" at 23:59:00 WIB is 2026-10-15T16:59:00.000Z.
+    // Date "2099-10-15" at 23:59:00 WIB is 2099-10-15T16:59:00.000Z.
     const res = await request(app)
       .post('/api/assignments')
       .set('Origin', TRUSTED_ORIGIN)
@@ -126,7 +126,7 @@ describe('Assignment Endpoints & Invariants', () => {
       .send({
         courseId: courseAId,
         title: 'Tugas 1: Linked List',
-        dueDate: '2026-10-15',
+        dueDate: '2099-10-15',
         priority: 'HIGH',
       });
 
@@ -134,7 +134,7 @@ describe('Assignment Endpoints & Invariants', () => {
     expect(res.body.assignment.title).toBe('Tugas 1: Linked List');
     expect(res.body.assignment.priority).toBe('HIGH');
     expect(res.body.assignment.status).toBe('TODO');
-    expect(res.body.assignment.dueDate).toBe('2026-10-15T16:59:00.000Z');
+    expect(res.body.assignment.dueDate).toBe('2099-10-15T16:59:00.000Z');
     expect(res.body.assignment.completedAt).toBeNull();
     expect(res.body.assignment.isOverdue).toBe(false);
   });
@@ -163,7 +163,7 @@ describe('Assignment Endpoints & Invariants', () => {
       .send({
         courseId: courseAId,
         title: 'Tugas Status Transition',
-        dueDate: '2026-11-01T17:00:00.000Z',
+        dueDate: '2099-11-01T17:00:00.000Z',
       });
 
     const assignmentId = createRes.body.assignment.id;
@@ -238,7 +238,7 @@ describe('Assignment Endpoints & Invariants', () => {
       .send({
         courseId: courseAId,
         title: 'Tugas Course Change',
-        dueDate: '2026-11-01T17:00:00.000Z',
+        dueDate: '2099-11-01T17:00:00.000Z',
       });
 
     const editRes = await request(app)
@@ -283,7 +283,7 @@ describe('Assignment Endpoints & Invariants', () => {
       .send({
         courseId: courseAId,
         title: 'Rahasia User A',
-        dueDate: '2026-11-01T17:00:00.000Z',
+        dueDate: '2099-11-01T17:00:00.000Z',
       });
 
     // User B tries to read User A assignment -> 404
@@ -316,7 +316,7 @@ describe('Assignment Endpoints & Invariants', () => {
       .send({
         courseId: courseAId,
         title: 'Tugas Ilegal',
-        dueDate: '2026-11-01T17:00:00.000Z',
+        dueDate: '2099-11-01T17:00:00.000Z',
       });
     expect(createBwithACourse.status).toBe(404);
     expect(createBwithACourse.body.error.code).toBe('COURSE_NOT_FOUND');
@@ -331,7 +331,7 @@ describe('Assignment Endpoints & Invariants', () => {
       .send({
         courseId: courseAId,
         title: 'Tugas Pencegah Hapus',
-        dueDate: '2026-11-01T17:00:00.000Z',
+        dueDate: '2099-11-01T17:00:00.000Z',
       });
 
     const deleteCourseRes = await request(app)
@@ -353,7 +353,7 @@ describe('Assignment Endpoints & Invariants', () => {
       .send({
         courseId: courseAId,
         title: 'Tugas Sebelum Arsip',
-        dueDate: '2026-11-01T17:00:00.000Z',
+        dueDate: '2099-11-01T17:00:00.000Z',
       });
     const assignmentId = asgRes.body.assignment.id;
 
@@ -371,7 +371,7 @@ describe('Assignment Endpoints & Invariants', () => {
       .send({
         courseId: courseAId,
         title: 'Tugas Baru Di Arsip',
-        dueDate: '2026-11-01T17:00:00.000Z',
+        dueDate: '2099-11-01T17:00:00.000Z',
       });
     expect(newAsgRes.status).toBe(400);
     expect(newAsgRes.body.error.code).toBe('COURSE_ARCHIVED');
@@ -425,7 +425,7 @@ describe('Assignment Endpoints & Invariants', () => {
       .send({
         courseId: courseAId,
         title: 'Tugas Matematika 1',
-        dueDate: '2026-11-01',
+        dueDate: '2099-11-01',
         priority: 'LOW',
       });
 
