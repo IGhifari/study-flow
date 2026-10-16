@@ -2,6 +2,10 @@ import Link from 'next/link';
 import { getServerSessionUser } from '@/lib/auth-server';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { PublicMobileNav } from '@/components/landing/public-mobile-nav';
+import { ProductShowcase } from '@/components/landing/product-showcase';
+import { FaqSection } from '@/components/landing/faq-section';
 import {
   BookOpen,
   CalendarRange,
@@ -9,7 +13,9 @@ import {
   FileText,
   Layers,
   ArrowRight,
-  Info,
+  ShieldCheck,
+  CheckCircle2,
+  Clock,
   Sparkles,
 } from 'lucide-react';
 
@@ -44,9 +50,17 @@ export default async function HomePage(): Promise<React.JSX.Element> {
               <Link href="#cara-kerja" className="hover:text-foreground transition-colors">
                 Cara Kerja
               </Link>
+              <Link href="#faq" className="hover:text-foreground transition-colors">
+                FAQ
+              </Link>
             </nav>
 
-            <ThemeToggle />
+            {/* Mobile Drawer Trigger (Sheet) */}
+            <PublicMobileNav user={user} />
+
+            <div className="hidden sm:inline-flex">
+              <ThemeToggle />
+            </div>
 
             {user ? (
               <Link href="/dashboard">
@@ -79,6 +93,10 @@ export default async function HomePage(): Promise<React.JSX.Element> {
           {/* Hero Section */}
           <section className="py-14 sm:py-20 lg:py-24 border-b border-border/60">
             <div className="max-w-3xl">
+              <Badge variant="outline" className="mb-4 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-primary border-primary/30 bg-primary/5">
+                Platform Belajar Pribadi Mahasiswa
+              </Badge>
+
               <h1 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl lg:text-5xl leading-tight sm:leading-tight">
                 Materi, tugas, dan catatan kuliah lebih teratur.
               </h1>
@@ -123,6 +141,9 @@ export default async function HomePage(): Promise<React.JSX.Element> {
               </div>
             </div>
           </section>
+
+          {/* Interactive Product UI Showcase */}
+          <ProductShowcase />
 
           {/* Section: Fitur Inti */}
           <section id="fitur" className="py-14 sm:py-20 border-b border-border/60 scroll-mt-20">
@@ -269,24 +290,67 @@ export default async function HomePage(): Promise<React.JSX.Element> {
             </div>
           </section>
 
-          {/* Transparansi AI Card */}
-          <section className="py-10">
-            <div className="rounded-xl border border-border bg-muted/20 p-5 sm:p-6 flex items-start gap-3.5">
-              <Info className="h-5 w-5 text-primary shrink-0 mt-0.5" aria-hidden="true" />
-              <div className="space-y-1 text-sm leading-relaxed text-muted-foreground">
-                <p className="font-semibold text-foreground">
-                  Prinsip Pembelajaran Berbasis Sumber Dokumen
+          {/* Section FAQ Accordion Interaktif */}
+          <FaqSection />
+
+          {/* Pilar Transparansi & Privasi Data Akademik */}
+          <section className="py-14 sm:py-20 border-b border-border/60">
+            <div className="max-w-2xl mx-auto text-center mb-10">
+              <Badge variant="outline" className="mb-3 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-primary border-primary/30 bg-primary/5">
+                Kedaulatan Data & Integritas
+              </Badge>
+              <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground">
+                Prinsip Belajar yang Transparan & Bertanggung Jawab
+              </h2>
+              <p className="mt-2.5 text-sm sm:text-base text-muted-foreground leading-relaxed">
+                Kami membangun StudyFlow dengan komitmen teguh terhadap kejujuran akademik dan keamanan data pribadi mahasiswa.
+              </p>
+            </div>
+
+            <div className="grid gap-6 md:grid-cols-3">
+              {/* Pilar 1 */}
+              <div className="rounded-xl border border-border bg-card p-6 shadow-xs space-y-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                  <CheckCircle2 className="h-5 w-5" aria-hidden="true" />
+                </div>
+                <h3 className="text-base font-bold text-foreground">
+                  Verifiable AI (Bukan Chatbot Halusinasi)
+                </h3>
+                <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
+                  Seluruh bantuan belajar merujuk langsung ke nomor halaman dokumen PDF Anda. Anda tidak perlu menebak apakah ringkasan akurat karena rujukan aslinya dapat diperiksa dalam satu klik.
                 </p>
-                <p>
-                  Ringkasan materi, set flashcard, dan latihan kuis dihasilkan oleh kecerdasan buatan untuk membantu proses belajar mandiri.
-                  Seluruh hasil latihan menyertakan referensi nomor halaman dokumen, sehingga mahasiswa didorong untuk selalu memeriksa dan memverifikasi kebenaran konsep langsung dari dokumen materi kuliah aslinya.
+              </div>
+
+              {/* Pilar 2 */}
+              <div className="rounded-xl border border-border bg-card p-6 shadow-xs space-y-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                  <ShieldCheck className="h-5 w-5" aria-hidden="true" />
+                </div>
+                <h3 className="text-base font-bold text-foreground">
+                  Privasi Penuh & Data Terisolasi
+                </h3>
+                <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
+                  Ruang belajar pribadi tanpa pelacak iklan pihak ketiga atau penggunaan data mahasiswa untuk pelatihan model AI publik. Materi kuliah Anda sepenuhnya milik Anda.
+                </p>
+              </div>
+
+              {/* Pilar 3 */}
+              <div className="rounded-xl border border-border bg-card p-6 shadow-xs space-y-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                  <Clock className="h-5 w-5" aria-hidden="true" />
+                </div>
+                <h3 className="text-base font-bold text-foreground">
+                  Sinkronisasi Zona Waktu Nyata
+                </h3>
+                <p className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
+                  Pengingat deadline H-1 dan pemantauan tugas disesuaikan dengan zona waktu kampus Anda (WIB, WITA, WIT, atau UTC). Mencegah keterlambatan tugas akibat salah konversi waktu.
                 </p>
               </div>
             </div>
           </section>
 
           {/* Bottom CTA */}
-          <section className="py-14 sm:py-20 text-center border-t border-border/60">
+          <section className="py-14 sm:py-20 text-center">
             <div className="mx-auto max-w-2xl space-y-4">
               <h2 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
                 Mulai Rapikan Perkuliahan Anda
@@ -339,6 +403,9 @@ export default async function HomePage(): Promise<React.JSX.Element> {
             </Link>
             <Link href="#cara-kerja" className="hover:text-foreground transition-colors">
               Cara Kerja
+            </Link>
+            <Link href="#faq" className="hover:text-foreground transition-colors">
+              FAQ
             </Link>
             {user ? (
               <Link href="/dashboard" className="text-primary hover:underline">
