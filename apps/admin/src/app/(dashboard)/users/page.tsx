@@ -16,6 +16,7 @@ import {
   Copy,
   Check,
   Eye,
+  Download,
 } from 'lucide-react';
 import {
   Table,
@@ -95,6 +96,75 @@ function AdminUsersContent() {
 
   // Copy feedback state
   const [copiedKey, setCopiedKey] = React.useState<string | null>(null);
+  const [isExporting, setIsExporting] = React.useState(false);
+
+  const handleExportUsersCsv = async () => {
+    try {
+      setIsExporting(true);
+      const allUsers: AdminUserListItem[] = [];
+      let currentPage = 1;
+      let hasMore = true;
+
+      while (hasMore && allUsers.length < 1000) {
+        const response = await fetchAdminUsers({
+          page: currentPage,
+          limit: 100,
+          search: debouncedSearch || undefined,
+          sortBy,
+          sortOrder,
+        });
+
+        allUsers.push(...response.items);
+        if (currentPage >= response.pagination.totalPages || response.items.length === 0) {
+          hasMore = false;
+        } else {
+          currentPage += 1;
+        }
+      }
+
+      const headers = [
+        'ID Pengguna',
+        'Nama Lengkap',
+        'Email',
+        'Peran',
+        'Status Verifikasi',
+        'Tanggal Verifikasi',
+        'Tanggal Bergabung',
+      ];
+
+      const escapeCsv = (str: string | null | undefined) => {
+        if (str === null || str === undefined) return '""';
+        const escaped = String(str).replace(/"/g, '""');
+        return `"${escaped}"`;
+      };
+
+      const rows = allUsers.map((u) => [
+        escapeCsv(u.id),
+        escapeCsv(u.name),
+        escapeCsv(u.email),
+        escapeCsv(u.role),
+        escapeCsv(u.emailVerifiedAt ? 'Terverifikasi' : 'Belum Verifikasi'),
+        escapeCsv(u.emailVerifiedAt ? new Date(u.emailVerifiedAt).toLocaleString('id-ID') : '-'),
+        escapeCsv(new Date(u.createdAt).toLocaleString('id-ID')),
+      ]);
+
+      const csvContent =
+        '\uFEFF' + [headers.join(','), ...rows.map((r) => r.join(','))].join('\r\n');
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `studyflow-pengguna-${new Date().toISOString().split('T')[0]}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (err: any) {
+      console.error('Failed to export users CSV:', err);
+    } finally {
+      setIsExporting(false);
+    }
+  };
 
   const handleCopy = (text: string, key: string) => {
     navigator.clipboard.writeText(text);
@@ -216,6 +286,16 @@ function AdminUsersContent() {
           </p>
         </div>
         <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleExportUsersCsv}
+            disabled={isExporting || isLoading}
+            className="gap-2"
+          >
+            <Download className={`h-4 w-4 ${isExporting ? 'animate-bounce' : ''}`} />
+            {isExporting ? 'Mengekspor...' : 'Ekspor CSV'}
+          </Button>
           <Button
             variant="outline"
             size="sm"

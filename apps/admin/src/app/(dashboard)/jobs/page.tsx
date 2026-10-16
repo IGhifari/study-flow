@@ -23,6 +23,7 @@ import {
   FileText,
   Sparkles,
   User,
+  Download,
 } from 'lucide-react';
 import {
   Table,
@@ -257,6 +258,99 @@ function AdminJobsContent() {
 
   // Copy feedback state
   const [copiedKey, setCopiedKey] = React.useState<string | null>(null);
+  const [isExporting, setIsExporting] = React.useState(false);
+
+  const handleExportJobsCsv = async () => {
+    try {
+      setIsExporting(true);
+      const allJobs: AdminJobListItem[] = [];
+      let currentPage = 1;
+      let hasMore = true;
+
+      while (hasMore && allJobs.length < 1000) {
+        const isSearchJobId = debouncedSearch.length > 20 && !debouncedSearch.startsWith('usr_');
+        const isSearchUserId = debouncedSearch.startsWith('usr_') || debouncedSearch.length > 20;
+
+        const response = await fetchAdminJobs({
+          page: currentPage,
+          limit: 100,
+          status: (status as AdminJobStatus) || undefined,
+          type: (type as AdminJobType) || undefined,
+          jobId: isSearchJobId ? debouncedSearch : undefined,
+          userId: !isSearchJobId && isSearchUserId ? debouncedSearch : undefined,
+        });
+
+        allJobs.push(...response.items);
+        if (currentPage >= response.pagination.totalPages || response.items.length === 0) {
+          hasMore = false;
+        } else {
+          currentPage += 1;
+        }
+      }
+
+      const headers = [
+        'ID Pekerjaan',
+        'Jenis Pekerjaan',
+        'Status',
+        'Pengguna ID',
+        'Nama Pengguna',
+        'Materi ID',
+        'Percobaan',
+        'Batas Percobaan',
+        'Durasi (ms)',
+        'Kode Error',
+        'Pesan Error',
+        'Waktu Dibuat',
+        'Waktu Mulai',
+        'Waktu Selesai',
+      ];
+
+      const escapeCsv = (str: string | number | null | undefined) => {
+        if (str === null || str === undefined) return '""';
+        const escaped = String(str).replace(/"/g, '""');
+        return `"${escaped}"`;
+      };
+
+      const rows = allJobs.map((j) => [
+        escapeCsv(j.id),
+        escapeCsv(j.type),
+        escapeCsv(j.status),
+        escapeCsv(j.userId),
+        escapeCsv(j.userName),
+        escapeCsv(j.materialId || '-'),
+        escapeCsv(j.attempts),
+        escapeCsv(j.maxAttempts),
+        escapeCsv(j.durationMs !== null ? j.durationMs : '-'),
+        escapeCsv(j.errorCode || '-'),
+        escapeCsv(j.safeErrorMessage || '-'),
+        escapeCsv(new Date(j.createdAt).toLocaleString('id-ID')),
+        escapeCsv(j.startedAt ? new Date(j.startedAt).toLocaleString('id-ID') : '-'),
+        escapeCsv(
+          j.completedAt
+            ? new Date(j.completedAt).toLocaleString('id-ID')
+            : j.failedAt
+            ? new Date(j.failedAt).toLocaleString('id-ID')
+            : '-'
+        ),
+      ]);
+
+      const csvContent =
+        '\uFEFF' + [headers.join(','), ...rows.map((r) => r.join(','))].join('\r\n');
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `studyflow-jobs-${new Date().toISOString().split('T')[0]}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (err: any) {
+      console.error('Failed to export jobs CSV:', err);
+    } finally {
+      setIsExporting(false);
+    }
+  };
 
   const handleCopy = (text: string, key: string) => {
     navigator.clipboard.writeText(text);
@@ -411,6 +505,16 @@ function AdminJobsContent() {
           </p>
         </div>
         <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleExportJobsCsv}
+            disabled={isExporting || isJobsLoading}
+            className="gap-2"
+          >
+            <Download className={`h-4 w-4 ${isExporting ? 'animate-bounce' : ''}`} />
+            <span>{isExporting ? 'Mengekspor...' : 'Ekspor CSV'}</span>
+          </Button>
           <Button
             variant="outline"
             size="sm"
