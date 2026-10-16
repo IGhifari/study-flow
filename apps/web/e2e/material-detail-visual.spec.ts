@@ -53,7 +53,8 @@ test.describe('Material Detail, PDF Reader & Summary Tab Visual Inspection', () 
     // 3. Tambah Mata Kuliah
     await page.goto('/courses');
     await page.click('button:has-text("Tambah Mata Kuliah")');
-    await page.selectOption('#create-course-sem', { index: 1 });
+    await page.click('#create-course-sem');
+    await page.locator('[role="option"]').first().click();
     await page.fill('#create-course-name', 'Sistem Terdistribusi dan Komputasi Awan Tingkat Lanjut');
     await page.fill('#create-course-code', 'CS401');
     await page.click('button:has-text("Simpan Mata Kuliah")');
@@ -102,6 +103,13 @@ test.describe('Material Detail, PDF Reader & Summary Tab Visual Inspection', () 
     // Tunggu iframe viewer siap
     await expect(page.locator('iframe[title^="Pratinjau PDF"]')).toBeVisible({ timeout: 15000 });
 
+    const takeScreenshot = async (options: { path: string; fullPage?: boolean }) => {
+      if (process.env.PW_NO_CAPTURE === '1') {
+        return;
+      }
+      await page.screenshot(options);
+    };
+
     // =========================================================================
     // 6. SCREENSHOTS: TAB DOKUMEN PDF (DESKTOP & MOBILE, LIGHT & DARK)
     // =========================================================================
@@ -109,14 +117,14 @@ test.describe('Material Detail, PDF Reader & Summary Tab Visual Inspection', () 
     // Desktop Light (1440x900)
     await page.setViewportSize({ width: 1440, height: 900 });
     await setTheme('light');
-    await page.screenshot({
+    await takeScreenshot({
       path: path.join(screenshotsDir, 'material-detail-pdf-desktop-light.png'),
       fullPage: true,
     });
 
     // Desktop Dark (1440x900)
     await setTheme('dark');
-    await page.screenshot({
+    await takeScreenshot({
       path: path.join(screenshotsDir, 'material-detail-pdf-desktop-dark.png'),
       fullPage: true,
     });
@@ -124,14 +132,14 @@ test.describe('Material Detail, PDF Reader & Summary Tab Visual Inspection', () 
     // Mobile Light (375x812)
     await page.setViewportSize({ width: 375, height: 812 });
     await setTheme('light');
-    await page.screenshot({
+    await takeScreenshot({
       path: path.join(screenshotsDir, 'material-detail-pdf-mobile-light.png'),
       fullPage: true,
     });
 
     // Mobile Dark (375x812)
     await setTheme('dark');
-    await page.screenshot({
+    await takeScreenshot({
       path: path.join(screenshotsDir, 'material-detail-pdf-mobile-dark.png'),
       fullPage: true,
     });
@@ -165,14 +173,14 @@ test.describe('Material Detail, PDF Reader & Summary Tab Visual Inspection', () 
 
     // Desktop Light (1440x900)
     await setTheme('light');
-    await page.screenshot({
+    await takeScreenshot({
       path: path.join(screenshotsDir, 'material-detail-summary-desktop-light.png'),
       fullPage: true,
     });
 
     // Desktop Dark (1440x900)
     await setTheme('dark');
-    await page.screenshot({
+    await takeScreenshot({
       path: path.join(screenshotsDir, 'material-detail-summary-desktop-dark.png'),
       fullPage: true,
     });
@@ -180,14 +188,14 @@ test.describe('Material Detail, PDF Reader & Summary Tab Visual Inspection', () 
     // Mobile Light (375x812)
     await page.setViewportSize({ width: 375, height: 812 });
     await setTheme('light');
-    await page.screenshot({
+    await takeScreenshot({
       path: path.join(screenshotsDir, 'material-detail-summary-mobile-light.png'),
       fullPage: true,
     });
 
     // Mobile Dark (375x812)
     await setTheme('dark');
-    await page.screenshot({
+    await takeScreenshot({
       path: path.join(screenshotsDir, 'material-detail-summary-mobile-dark.png'),
       fullPage: true,
     });

@@ -36,7 +36,8 @@ test.describe('Notes List & Dialog Management Flow', () => {
     // 2. Course
     await page.goto('/courses');
     await page.click('button:has-text("Tambah Mata Kuliah")');
-    await page.selectOption('#create-course-sem', { index: 1 });
+    await page.click('#create-course-sem');
+    await page.locator('[role="option"]').first().click();
     await page.fill('#create-course-name', 'Sistem Operasi');
     await page.click('button:has-text("Simpan Mata Kuliah")');
     await expect(page.locator('main').getByText('Sistem Operasi')).toBeVisible({ timeout: 10000 });

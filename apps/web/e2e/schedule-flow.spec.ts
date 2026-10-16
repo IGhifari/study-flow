@@ -498,10 +498,8 @@ test.describe('Schedule Management Flow (/schedule & Course Detail Integration)'
     const courseSem2 = 'Kimia Dasar 2';
     await page.fill('#create-course-name', courseSem2);
     await page.fill('#create-course-code', 'KM102');
-    const sem2Option = await page.locator('#create-course-sem option', { hasText: sem2Name }).getAttribute('value');
-    if (sem2Option) {
-      await page.selectOption('#create-course-sem', sem2Option);
-    }
+    await page.click('#create-course-sem');
+    await page.locator('[role="option"]', { hasText: sem2Name }).click();
     await page.locator('div[role="dialog"] button:has-text("Simpan Mata Kuliah")').click();
     await expect(page.locator('div[role="dialog"]')).not.toBeVisible({ timeout: 10000 });
 
@@ -542,14 +540,26 @@ test.describe('Schedule Management Flow (/schedule & Course Detail Integration)'
     const sem1Name = `Semester Early ${Date.now()}`;
     await page.fill('#create-sem-name', sem1Name);
     await page.fill('#create-sem-year', '2026/2027');
+    const sem1CreateResponsePromise = page.waitForResponse(
+      (res) => res.url().includes('/api/semesters') && res.request().method() === 'POST'
+    );
     await page.locator('div[role="dialog"] button:has-text("Simpan Semester")').click();
+    const sem1CreateResponse = await sem1CreateResponsePromise;
+    const sem1Json = await sem1CreateResponse.json();
+    const sem1Opt: string = sem1Json.semester.id;
     await expect(page.locator('div[role="dialog"]')).not.toBeVisible({ timeout: 10000 });
 
     await page.click('button:has-text("Tambah Semester")');
     const sem2Name = `Semester Late ${Date.now()}`;
     await page.fill('#create-sem-name', sem2Name);
     await page.fill('#create-sem-year', '2027/2028');
+    const sem2CreateResponsePromise = page.waitForResponse(
+      (res) => res.url().includes('/api/semesters') && res.request().method() === 'POST'
+    );
     await page.locator('div[role="dialog"] button:has-text("Simpan Semester")').click();
+    const sem2CreateResponse = await sem2CreateResponsePromise;
+    const sem2Json = await sem2CreateResponse.json();
+    const sem2Opt: string = sem2Json.semester.id;
     await expect(page.locator('div[role="dialog"]')).not.toBeVisible({ timeout: 10000 });
 
     // Tambah Course 1 di Semester 1
@@ -557,8 +567,8 @@ test.describe('Schedule Management Flow (/schedule & Course Detail Integration)'
     await page.click('button:has-text("Tambah mata kuliah")');
     const course1 = 'Matematika Diskrit 1';
     await page.fill('#create-course-name', course1);
-    const sem1Opt = await page.locator('#create-course-sem option', { hasText: sem1Name }).getAttribute('value');
-    await page.selectOption('#create-course-sem', sem1Opt!);
+    await page.click('#create-course-sem');
+    await page.locator('[role="option"]', { hasText: sem1Name }).click();
     await page.locator('div[role="dialog"] button:has-text("Simpan Mata Kuliah")').click();
     await expect(page.locator('div[role="dialog"]')).not.toBeVisible({ timeout: 10000 });
 
@@ -566,8 +576,8 @@ test.describe('Schedule Management Flow (/schedule & Course Detail Integration)'
     await page.click('button:has-text("Tambah mata kuliah")');
     const course2 = 'Kalkulus Lanjut 2';
     await page.fill('#create-course-name', course2);
-    const sem2Opt = await page.locator('#create-course-sem option', { hasText: sem2Name }).getAttribute('value');
-    await page.selectOption('#create-course-sem', sem2Opt!);
+    await page.click('#create-course-sem');
+    await page.locator('[role="option"]', { hasText: sem2Name }).click();
     await page.locator('div[role="dialog"] button:has-text("Simpan Mata Kuliah")').click();
     await expect(page.locator('div[role="dialog"]')).not.toBeVisible({ timeout: 10000 });
 

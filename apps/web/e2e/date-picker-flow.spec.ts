@@ -1,44 +1,46 @@
 import { test, expect } from '@playwright/test';
 
 test.describe('E2E: Date Picker Basic (Shadcn Popover + Calendar)', () => {
-  const testEmail = `datepicker.test.${Date.now()}@example.com`;
   const testPassword = 'Password123456!';
   const testName = 'Mahasiswa Test DatePicker';
 
   test.beforeEach(async ({ page }) => {
-    // 1. Registrasi akun baru
+    const testEmail = `datepicker.test.${Date.now()}.${Math.floor(Math.random() * 1000000)}@studyflow.test`;
+
+    // 1. Registrasi & Login akun baru
     await page.goto('/register');
     await page.fill('#name', testName);
     await page.fill('#email', testEmail);
     await page.fill('#password', testPassword);
-    await page.click('button:has-text("Daftar Akun")');
+    await page.click('button:has-text("Buat Akun")');
+    await page.waitForURL('**/login?registered=true', { timeout: 15000 });
 
-    await page.waitForURL('**/dashboard', { timeout: 15000 });
+    await page.fill('#email', testEmail);
+    await page.fill('#password', testPassword);
+    await page.click('button:has-text("Masuk")');
+    await page.waitForURL('**/dashboard', { timeout: 20000 });
 
     // 2. Buat Semester aktif & Mata Kuliah
-    await page.click('button:has-text("Kelola semester")');
-    await expect(page.locator('text=Daftar Semester')).toBeVisible();
-    await page.click('button:has-text("Tambah semester")');
-    await page.fill('input#name', 'Semester Ganjil 2026/2027');
-    await page.fill('input#academicYear', '2026/2027');
-    await page.check('input#makeActive');
+    await page.goto('/semesters');
+    await page.click('button:has-text("Tambah Semester")');
+    await page.fill('#create-sem-name', 'Semester Ganjil 2026/2027');
+    await page.fill('#create-sem-year', '2026/2027');
     await page.click('button:has-text("Simpan Semester")');
-    await expect(page.locator('text=Semester Ganjil 2026/2027')).toBeVisible();
+    await expect(page.locator('main').getByText('Semester Ganjil 2026/2027')).toBeVisible({ timeout: 10000 });
 
-    await page.keyboard.press('Escape');
-    await page.click('a[href="/courses"], button:has-text("Mata Kuliah")');
-    await page.waitForURL('**/courses');
-    await page.click('button:has-text("Tambah mata kuliah")');
-    await page.fill('input#course-name', 'Pemrograman Lanjut');
-    await page.fill('input#course-code', 'IF2101');
+    await page.goto('/courses');
+    await page.click('button:has-text("Tambah Mata Kuliah")');
+    await page.click('#create-course-sem');
+    await page.locator('[role="option"]').first().click();
+    await page.fill('#create-course-name', 'Pemrograman Lanjut');
+    await page.fill('#create-course-code', 'IF2101');
     await page.click('button:has-text("Simpan Mata Kuliah")');
-    await expect(page.locator('text=Pemrograman Lanjut')).toBeVisible();
+    await expect(page.locator('main').getByText('Pemrograman Lanjut')).toBeVisible({ timeout: 10000 });
   });
 
   test('menguji interaksi Date Picker Basic: buka kalender, pilih tanggal, format Indonesia, tutup otomatis, dan simpan form', async ({ page }) => {
     // Buka halaman tugas
-    await page.click('a[href="/assignments"], button:has-text("Tugas")');
-    await page.waitForURL('**/assignments');
+    await page.goto('/assignments');
     await expect(page.locator('text=Belum ada tugas kuliah')).toBeVisible();
 
     // Buka Dialog Tambah Tugas Baru
@@ -84,8 +86,8 @@ test.describe('E2E: Date Picker Basic (Shadcn Popover + Calendar)', () => {
     await expect(page.locator('table').getByText('Tugas Uji Validasi')).toBeVisible({ timeout: 10000 });
 
     // 5. Uji Edit Nilai Existing: Buka modal edit
-    await page.click('button[aria-label*="Aksi untuk Tugas Uji Validasi"]');
-    await page.click('div[role="menuitem"]:has-text("Edit tugas")');
+    await page.click('table button[aria-label*="Menu aksi"]');
+    await page.click('text=Edit tugas');
     await expect(page.locator('text=Edit Tugas')).toBeVisible();
 
     // Trigger edit harus menampilkan tanggal tersimpan

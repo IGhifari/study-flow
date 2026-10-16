@@ -37,14 +37,16 @@ test.describe('Dashboard Visual Inspection & Polish Screenshots', () => {
     // 3. Tambah Mata Kuliah 1 & 2
     await page.goto('/courses');
     await page.click('button:has-text("Tambah Mata Kuliah")');
-    await page.selectOption('#create-course-sem', { index: 1 });
+    await page.click('#create-course-sem');
+    await page.locator('[role="option"]').first().click();
     await page.fill('#create-course-name', 'Jaringan Komputer dan Komunikasi Data Tingkat Lanjut');
     await page.fill('#create-course-code', 'IF3110');
     await page.click('button:has-text("Simpan Mata Kuliah")');
     await expect(page.locator('text=Jaringan Komputer')).toBeVisible({ timeout: 10000 });
 
     await page.click('button:has-text("Tambah Mata Kuliah")');
-    await page.selectOption('#create-course-sem', { index: 1 });
+    await page.click('#create-course-sem');
+    await page.locator('[role="option"]').first().click();
     await page.fill('#create-course-name', 'Sistem Operasi');
     await page.fill('#create-course-code', 'IF2220');
     await page.click('button:has-text("Simpan Mata Kuliah")');

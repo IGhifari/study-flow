@@ -38,7 +38,8 @@ test.describe('StudyFlow Flashcard and Quiz Functional Verification (Stage 13)',
     // 3. Tambah Mata Kuliah
     await page.goto('/courses');
     await page.click('button:has-text("Tambah Mata Kuliah")');
-    await page.selectOption('#create-course-sem', { index: 1 });
+    await page.click('#create-course-sem');
+    await page.locator('[role="option"]').first().click();
     await page.fill('#create-course-name', 'Algoritma dan Struktur Data Lanjutan');
     await page.fill('#create-course-code', 'IF2110');
     await page.click('button:has-text("Simpan Mata Kuliah")');

@@ -37,7 +37,8 @@ test.describe('Materials Visual Inspection & Upload Screenshots', () => {
     // 3. Tambah Mata Kuliah
     await page.goto('/courses');
     await page.click('button:has-text("Tambah Mata Kuliah")');
-    await page.selectOption('#create-course-sem', { index: 1 });
+    await page.click('#create-course-sem');
+    await page.locator('[role="option"]').first().click();
     await page.fill('#create-course-name', 'Jaringan Komputer dan Komunikasi Data Tingkat Lanjut');
     await page.fill('#create-course-code', 'IF3110');
     await page.click('button:has-text("Simpan Mata Kuliah")');
@@ -56,6 +57,13 @@ test.describe('Materials Visual Inspection & Upload Screenshots', () => {
       await page.waitForTimeout(250);
     };
 
+    const takeScreenshot = async (options: { path: string; fullPage?: boolean }) => {
+      if (process.env.PW_NO_CAPTURE === '1') {
+        return;
+      }
+      await page.screenshot(options);
+    };
+
     // =========================================================================
     // 4. SCREENSHOT: EMPTY STATE DAFTAR MATERI
     // =========================================================================
@@ -65,7 +73,7 @@ test.describe('Materials Visual Inspection & Upload Screenshots', () => {
 
     await page.setViewportSize({ width: 1440, height: 900 });
     await setTheme('light');
-    await page.screenshot({
+    await takeScreenshot({
       path: path.join(screenshotsDir, 'materials-empty-desktop-light.png'),
       fullPage: true,
     });
@@ -77,25 +85,25 @@ test.describe('Materials Visual Inspection & Upload Screenshots', () => {
     await expect(page.locator('div[role="dialog"] h2:has-text("Unggah Materi PDF")')).toBeVisible();
 
     // Dialog Desktop Light
-    await page.screenshot({
+    await takeScreenshot({
       path: path.join(screenshotsDir, 'material-upload-dialog-desktop-light.png'),
     });
 
     // Dialog Desktop Dark
     await setTheme('dark');
-    await page.screenshot({
+    await takeScreenshot({
       path: path.join(screenshotsDir, 'material-upload-dialog-desktop-dark.png'),
     });
 
     // Dialog Mobile 375px Dark
     await page.setViewportSize({ width: 375, height: 812 });
-    await page.screenshot({
+    await takeScreenshot({
       path: path.join(screenshotsDir, 'material-upload-dialog-mobile-dark.png'),
     });
 
     // Dialog Mobile 375px Light
     await setTheme('light');
-    await page.screenshot({
+    await takeScreenshot({
       path: path.join(screenshotsDir, 'material-upload-dialog-mobile-light.png'),
     });
 
@@ -169,14 +177,14 @@ test.describe('Materials Visual Inspection & Upload Screenshots', () => {
     // Desktop Light (1440x900)
     await page.setViewportSize({ width: 1440, height: 900 });
     await setTheme('light');
-    await page.screenshot({
+    await takeScreenshot({
       path: path.join(screenshotsDir, 'materials-desktop-light.png'),
       fullPage: true,
     });
 
     // Desktop Dark (1440x900)
     await setTheme('dark');
-    await page.screenshot({
+    await takeScreenshot({
       path: path.join(screenshotsDir, 'materials-desktop-dark.png'),
       fullPage: true,
     });
@@ -184,14 +192,14 @@ test.describe('Materials Visual Inspection & Upload Screenshots', () => {
     // Mobile Light (375x812)
     await page.setViewportSize({ width: 375, height: 812 });
     await setTheme('light');
-    await page.screenshot({
+    await takeScreenshot({
       path: path.join(screenshotsDir, 'materials-mobile-light.png'),
       fullPage: true,
     });
 
     // Mobile Dark (375x812)
     await setTheme('dark');
-    await page.screenshot({
+    await takeScreenshot({
       path: path.join(screenshotsDir, 'materials-mobile-dark.png'),
       fullPage: true,
     });

@@ -45,7 +45,7 @@ test.describe('StudyFlow End-to-End Suite', () => {
   }
 
   test('Flow 1: Lifecycle Manajemen (Semester → Course → Assignment → Note → Reload → Logout)', async ({ page }) => {
-    const userEmail = `flow1-${timestamp}@studyflow.test`;
+    const userEmail = `flow1-${Date.now()}-${Math.floor(Math.random() * 1000000)}@studyflow.test`;
     await registerAndLogin(page, 'User Flow One', userEmail);
 
     // 1. Buat Semester Baru
@@ -61,7 +61,8 @@ test.describe('StudyFlow End-to-End Suite', () => {
     await page.click('a[href="/courses"], button:has-text("Mata Kuliah")');
     await page.waitForURL('**/courses');
     await page.click('button:has-text("Tambah Mata Kuliah")');
-    await page.selectOption('#create-course-sem', { index: 1 });
+    await page.click('#create-course-sem');
+    await page.locator('[role="option"]').first().click();
     await page.fill('#create-course-name', 'Struktur Data & Algoritma');
     await page.fill('#create-course-code', 'IF2110');
     await page.click('button:has-text("Simpan Mata Kuliah")');
@@ -87,7 +88,8 @@ test.describe('StudyFlow End-to-End Suite', () => {
     await page.waitForURL('**/notes');
     await page.click('button:has-text("Buat Catatan")');
     await page.fill('#create-note-title', 'Catatan Tree dan Graph');
-    await page.selectOption('#create-note-course', { index: 1 });
+    await page.click('#create-note-course');
+    await page.locator('[role="option"]').first().click();
     await page.fill('#create-note-content', '# Struktur Pohon Biner\n\n- Binary Search Tree (BST)\n- AVL Tree\n\n*Catatan penting untuk UAS.*');
     await page.click('button:has-text("Buat & Buka Editor")');
     await page.waitForURL('**/notes/**', { timeout: 15000 });
@@ -114,7 +116,7 @@ test.describe('StudyFlow End-to-End Suite', () => {
 
   test('Flow 2: AI Pipeline & Latihan (Upload → Extract → Summary → Flashcards → Quiz Draft & Submission → Jump)', async ({ page }) => {
     test.setTimeout(180000); // 3 menit untuk seluruh pipeline
-    const userEmail = `flow2-${timestamp}@studyflow.test`;
+    const userEmail = `flow2-${Date.now()}-${Math.floor(Math.random() * 1000000)}@studyflow.test`;
     await registerAndLogin(page, 'User AI Flow', userEmail);
 
     // Setup Semester & Course
@@ -127,7 +129,8 @@ test.describe('StudyFlow End-to-End Suite', () => {
     await page.click('a[href="/courses"], button:has-text("Mata Kuliah")');
     await page.click('button:has-text("Tambah Mata Kuliah")');
     await page.fill('#create-course-name', 'Kecerdasan Buatan Terapan');
-    await page.selectOption('#create-course-sem', { index: 1 });
+    await page.click('#create-course-sem');
+    await page.locator('[role="option"]').first().click();
     await page.click('button:has-text("Simpan Mata Kuliah")');
 
     // 1. Upload Materi PDF
@@ -225,8 +228,8 @@ test.describe('StudyFlow End-to-End Suite', () => {
     const pageA = await contextA.newPage();
     const pageB = await contextB.newPage();
 
-    const emailA = `tenant-a-${timestamp}@studyflow.test`;
-    const emailB = `tenant-b-${timestamp}@studyflow.test`;
+    const emailA = `tenant-a-${Date.now()}-${Math.floor(Math.random() * 1000000)}@studyflow.test`;
+    const emailB = `tenant-b-${Date.now()}-${Math.floor(Math.random() * 1000000)}@studyflow.test`;
 
     // Daftarkan Pengguna A dan buat Semester & Mata Kuliah
     await pageA.goto('/register');
@@ -251,7 +254,8 @@ test.describe('StudyFlow End-to-End Suite', () => {
     await pageA.click('a[href="/courses"], button:has-text("Mata Kuliah")');
     await pageA.waitForURL('**/courses');
     await pageA.click('button:has-text("Tambah Mata Kuliah")');
-    await pageA.selectOption('#create-course-sem', { index: 1 });
+    await pageA.click('#create-course-sem');
+    await pageA.locator('[role="option"]').first().click();
     await pageA.fill('#create-course-name', 'Mata Kuliah Rahasia A');
     await pageA.fill('#create-course-code', 'SEC101');
     await pageA.click('button:has-text("Simpan Mata Kuliah")');
@@ -262,7 +266,8 @@ test.describe('StudyFlow End-to-End Suite', () => {
     await pageA.waitForURL('**/notes');
     await pageA.click('button:has-text("Buat Catatan")');
     await pageA.fill('#create-note-title', 'Catatan Rahasia A');
-    await pageA.selectOption('#create-note-course', { index: 1 });
+    await pageA.click('#create-note-course');
+    await pageA.locator('[role="option"]').first().click();
     await pageA.fill('#create-note-content', '# Dokumen Rahasia Milik User A');
     await pageA.click('button:has-text("Buat & Buka Editor")');
     await pageA.waitForURL('**/notes/**', { timeout: 15000 });
@@ -360,7 +365,7 @@ test.describe('StudyFlow End-to-End Suite', () => {
   });
 
   test('Flow 5: Dashboard Redesign, Checkbox Aksesibel, & Pemisahan State', async ({ page }) => {
-    const userEmail = `dash-${timestamp}@studyflow.test`;
+    const userEmail = `dash-${Date.now()}-${Math.floor(Math.random() * 1000000)}@studyflow.test`;
     await registerAndLogin(page, 'User Dashboard Test', userEmail);
 
     // 1. Verifikasi Empty State A: "Mulai dari semester pertamamu" (karena user baru belum punya semester)
@@ -387,7 +392,8 @@ test.describe('StudyFlow End-to-End Suite', () => {
     await page.click('a[href="/courses"]:has-text("Tambah Mata Kuliah")');
     await page.waitForURL('**/courses');
     await page.click('button:has-text("Tambah Mata Kuliah")');
-    await page.selectOption('#create-course-sem', { index: 1 });
+    await page.click('#create-course-sem');
+    await page.locator('[role="option"]').first().click();
     await page.fill('#create-course-name', 'Jaringan Komputer');
     await page.fill('#create-course-code', 'IF3110');
     await page.click('button:has-text("Simpan Mata Kuliah")');

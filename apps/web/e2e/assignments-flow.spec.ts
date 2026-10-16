@@ -36,7 +36,8 @@ test.describe('Assignments Redesign & Interactions Flow', () => {
     // 2. Course
     await page.goto('/courses');
     await page.click('button:has-text("Tambah Mata Kuliah")');
-    await page.selectOption('#create-course-sem', { index: 1 });
+    await page.click('#create-course-sem');
+    await page.locator('[role="option"]').first().click();
     await page.fill('#create-course-name', 'Algoritma & Struktur Data');
     await page.click('button:has-text("Simpan Mata Kuliah")');
     await expect(page.locator('main').getByText('Algoritma & Struktur Data')).toBeVisible({ timeout: 10000 });
@@ -148,7 +149,8 @@ test.describe('Assignments Redesign & Interactions Flow', () => {
     await page.fill('#create-title', 'Tugas 2: Struktur Data Heap');
     await page.click('#create-due');
     await page.locator('[data-slot="calendar"] button:not([disabled])').getByText('25', { exact: true }).first().click();
-    await page.selectOption('#create-priority', 'LOW');
+    await page.click('#create-priority');
+    await page.click('[role="option"]:has-text("Rendah")');
     await page.click('button:has-text("Simpan Tugas")');
     await expect(page.locator('table').getByText('Tugas 2: Struktur Data Heap')).toBeVisible({ timeout: 10000 });
 

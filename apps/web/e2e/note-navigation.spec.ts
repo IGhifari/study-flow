@@ -38,7 +38,8 @@ test.describe('Note Editor Unsaved Changes & Navigation Guard', () => {
     // 2. Course
     await page.goto('/courses');
     await page.click('button:has-text("Tambah Mata Kuliah")');
-    await page.selectOption('#create-course-sem', { index: 1 });
+    await page.click('#create-course-sem');
+    await page.locator('[role="option"]').first().click();
     await page.fill('#create-course-name', 'Logika Komputasi');
     await page.click('button:has-text("Simpan Mata Kuliah")');
     await expect(page.locator('text=Logika Komputasi')).toBeVisible({ timeout: 10000 });
@@ -47,7 +48,8 @@ test.describe('Note Editor Unsaved Changes & Navigation Guard', () => {
     await page.goto('/notes');
     await page.click('button:has-text("Buat Catatan")');
     await page.fill('#create-note-title', 'Catatan Proposisi');
-    await page.selectOption('#create-note-course', { index: 1 });
+    await page.click('#create-note-course');
+    await page.locator('[role="option"]').first().click();
     await page.fill('#create-note-content', 'Konten awal catatan');
     await page.click('button:has-text("Buat & Buka Editor")');
     await page.waitForURL('**/notes/**', { timeout: 15000 });

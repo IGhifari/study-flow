@@ -112,17 +112,17 @@ test.describe('Landing Page & Settings Verification Flow', () => {
     await page.goto('/settings');
     await expect(page.locator('h1:has-text("Pengaturan Akun")')).toBeVisible();
 
-    // Verifikasi label email adalah 'Email'
+    // Verifikasi label email mengandung 'Email'
     const emailLabel = page.locator('label[for="profile-email"]');
-    await expect(emailLabel).toHaveText('Email');
+    await expect(emailLabel).toContainText('Email');
 
     // Verifikasi input email disabled/read-only
     const emailInput = page.locator('#profile-email');
     await expect(emailInput).toBeDisabled();
 
-    // Verifikasi klaim 'terverifikasi' TIDAK ada di dalam kartu profil
-    const profileCard = page.locator('.space-y-4').first();
-    await expect(profileCard.locator('text=terverifikasi')).toHaveCount(0);
+    // Verifikasi user baru berstatus Belum Terverifikasi dan klaim 'Akun Terverifikasi' TIDAK muncul
+    await expect(page.locator('text=Belum Terverifikasi')).toBeVisible();
+    await expect(page.locator('text=Alamat email ini telah terverifikasi.')).toHaveCount(0);
     await expect(page.locator('text=Akun Terverifikasi')).toHaveCount(0);
   });
 });
