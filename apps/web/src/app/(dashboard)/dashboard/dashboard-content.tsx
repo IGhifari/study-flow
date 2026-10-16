@@ -305,7 +305,7 @@ export function DashboardContent({ user }: DashboardContentProps): React.JSX.Ele
           <div className="mt-0.5 sm:mt-1 flex flex-wrap items-center gap-x-2.5 gap-y-1 text-xs sm:text-sm text-muted-foreground">
             <span className="font-medium text-foreground">{summary.activeSemester.name}</span>
             <span>•</span>
-            <span>{todayFormatted}</span>
+            <span className="tabular-nums">{todayFormatted}</span>
             <span className="text-xs text-muted-foreground">({timezone})</span>
             {isRefreshing && (
               <span className="inline-flex items-center gap-1 text-xs text-primary ml-1">
@@ -375,7 +375,7 @@ export function DashboardContent({ user }: DashboardContentProps): React.JSX.Ele
               Tugas Hari Ini
             </h3>
             <div className="flex items-baseline gap-1.5 sm:mt-1">
-              <span className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">
+              <span className="text-xl sm:text-2xl font-bold tracking-tight text-foreground tabular-nums">
                 {summary.assignmentsToday.length}
               </span>
               <span className="text-xs text-muted-foreground">belum selesai</span>
@@ -401,7 +401,7 @@ export function DashboardContent({ user }: DashboardContentProps): React.JSX.Ele
             </h3>
             <div className="flex items-baseline gap-1.5 sm:mt-1">
               <span
-                className={`text-xl sm:text-2xl font-bold tracking-tight ${
+                className={`text-xl sm:text-2xl font-bold tracking-tight tabular-nums ${
                   summary.overdueCount > 0 ? 'text-danger-foreground' : 'text-foreground'
                 }`}
               >
@@ -440,13 +440,13 @@ export function DashboardContent({ user }: DashboardContentProps): React.JSX.Ele
               Tugas Selesai
             </h3>
             <div className="flex items-baseline gap-1.5 sm:mt-1">
-              <span className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">
+              <span className="text-xl sm:text-2xl font-bold tracking-tight text-foreground tabular-nums">
                 {summary.completedCount}
               </span>
               {summary.totalAssignments === 0 ? (
                 <span className="text-xs text-muted-foreground">Belum ada tugas</span>
               ) : (
-                <span className="text-xs text-muted-foreground">
+                <span className="text-xs text-muted-foreground tabular-nums">
                   dari {summary.totalAssignments} ({summary.completionPercentage}%)
                 </span>
               )}
@@ -460,12 +460,6 @@ export function DashboardContent({ user }: DashboardContentProps): React.JSX.Ele
           </div>
         </div>
       </div>
-
-      {/* Grafik Aktivitas Belajar & Beban Tugas (Data Nyata) */}
-      <DashboardCharts
-        activeSemesterId={summary.activeSemester.id}
-        refreshTrigger={fetchRequestIdRef.current}
-      />
 
       {/* Tata Letak Konten: Desktop 2/3 Tugas + 1/3 Jadwal; Mobile Kolom Tunggal */}
       <div className="grid grid-cols-1 gap-4 sm:gap-6 lg:grid-cols-3 items-stretch">
@@ -575,16 +569,17 @@ export function DashboardContent({ user }: DashboardContentProps): React.JSX.Ele
                                 />
                               </div>
                               <div className="min-w-0">
-                                <label
-                                  htmlFor={`task-${asg.id}`}
-                                  className={`text-sm font-medium leading-snug cursor-pointer select-none block truncate ${
+                                <Link
+                                  href="/assignments"
+                                  className={`text-sm font-medium leading-snug block truncate hover:underline ${
                                     asg.status === 'DONE'
                                       ? 'line-through text-muted-foreground'
                                       : 'text-foreground hover:text-primary transition-colors'
                                   }`}
+                                  title={asg.title}
                                 >
                                   {asg.title}
-                                </label>
+                                </Link>
                                 <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-muted-foreground">
                                   {asg.course && (
                                     <span className="font-medium text-foreground/80">
@@ -592,7 +587,7 @@ export function DashboardContent({ user }: DashboardContentProps): React.JSX.Ele
                                     </span>
                                   )}
                                   <span>•</span>
-                                  <span>{formatUserDateTime(asg.dueDate, timezone)}</span>
+                                  <span className="tabular-nums">{formatUserDateTime(asg.dueDate, timezone)}</span>
                                   {asg.subtaskCount && asg.subtaskCount.total > 0 && (
                                     <>
                                       <span>•</span>
@@ -601,7 +596,7 @@ export function DashboardContent({ user }: DashboardContentProps): React.JSX.Ele
                                         title={`${asg.subtaskCount.completed} dari ${asg.subtaskCount.total} subtugas selesai`}
                                       >
                                         <ListTodo className="h-3 w-3 text-primary shrink-0" />
-                                        <span>
+                                        <span className="tabular-nums">
                                           {asg.subtaskCount.completed}/{asg.subtaskCount.total}
                                         </span>
                                       </span>
@@ -687,16 +682,17 @@ export function DashboardContent({ user }: DashboardContentProps): React.JSX.Ele
                                 />
                               </div>
                               <div className="min-w-0">
-                                <label
-                                  htmlFor={`task-${asg.id}`}
-                                  className={`text-sm font-medium leading-snug cursor-pointer select-none block truncate ${
+                                <Link
+                                  href="/assignments"
+                                  className={`text-sm font-medium leading-snug block truncate hover:underline ${
                                     asg.status === 'DONE'
                                       ? 'line-through text-muted-foreground'
                                       : 'text-foreground hover:text-primary transition-colors'
                                   }`}
+                                  title={asg.title}
                                 >
                                   {asg.title}
-                                </label>
+                                </Link>
                                 <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-muted-foreground">
                                   {asg.course && (
                                     <span className="font-medium text-foreground/80">
@@ -704,7 +700,7 @@ export function DashboardContent({ user }: DashboardContentProps): React.JSX.Ele
                                     </span>
                                   )}
                                   <span>•</span>
-                                  <span>{formatUserDateTime(asg.dueDate, timezone)}</span>
+                                  <span className="tabular-nums">{formatUserDateTime(asg.dueDate, timezone)}</span>
                                   {asg.subtaskCount && asg.subtaskCount.total > 0 && (
                                     <>
                                       <span>•</span>
@@ -713,7 +709,7 @@ export function DashboardContent({ user }: DashboardContentProps): React.JSX.Ele
                                         title={`${asg.subtaskCount.completed} dari ${asg.subtaskCount.total} subtugas selesai`}
                                       >
                                         <ListTodo className="h-3 w-3 text-primary shrink-0" />
-                                        <span>
+                                        <span className="tabular-nums">
                                           {asg.subtaskCount.completed}/{asg.subtaskCount.total}
                                         </span>
                                       </span>
@@ -868,6 +864,12 @@ export function DashboardContent({ user }: DashboardContentProps): React.JSX.Ele
               </div>
             )}
           </div>
+
+      {/* Bagian Paling Bawah: Visualisasi Aktivitas Belajar & Beban Tugas (Data Nyata) */}
+      <DashboardCharts
+        activeSemesterId={summary.activeSemester.id}
+        refreshTrigger={fetchRequestIdRef.current}
+      />
 
       {/* Modal Dialog: Tambah Tugas */}
       <CreateTaskDialog

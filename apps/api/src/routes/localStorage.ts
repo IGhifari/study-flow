@@ -54,7 +54,7 @@ localStorageRouter.put(
         res.status(500).json({
           error: {
             code: 'STORAGE_WRITE_ERROR',
-            message: uploadRes.error.message,
+            message: 'Gagal menyimpan berkas ke penyimpanan lokal.',
           },
         });
         return;
@@ -109,10 +109,10 @@ localStorageRouter.get(
         ? downloadRes.data
         : Buffer.from(downloadRes.data as any);
 
-      const filename = path.basename(storageKey) || 'document.pdf';
+      const safeFilename = (path.basename(storageKey) || 'document.pdf').replace(/["\\\r\n]/g, '_');
 
       res.setHeader('Content-Type', 'application/pdf');
-      res.setHeader('Content-Disposition', `inline; filename="${filename}"`);
+      res.setHeader('Content-Disposition', `inline; filename="${safeFilename}"`);
       res.setHeader('Content-Length', buffer.length);
       res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
       res.setHeader('Cache-Control', 'private, max-age=300');

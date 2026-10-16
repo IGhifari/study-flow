@@ -344,6 +344,14 @@ export function AppShell({ user, children }: AppShellProps): React.JSX.Element {
 
         {/* Main Content Area using shadcn SidebarInset */}
         <SidebarInset className="flex flex-col min-w-0">
+          {/* Skip to Content accessibility link per WCAG 2.1 & DESIGN.md section 13 */}
+          <a
+            href="#main-content"
+            className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-50 focus:rounded-md focus:bg-primary focus:px-3.5 focus:py-2 focus:text-xs focus:font-semibold focus:text-primary-foreground focus:shadow-md focus:outline-hidden focus:ring-2 focus:ring-ring"
+          >
+            Lewati ke konten utama
+          </a>
+
           {/* Header (64px) per DESIGN.md section 7.1 */}
           <header className="sticky top-0 z-20 flex h-16 shrink-0 items-center justify-between border-b border-border bg-background/95 px-3 backdrop-blur-xs sm:px-6">
             <div className="flex items-center gap-2 sm:gap-3 min-w-0">
@@ -431,9 +439,9 @@ export function AppShell({ user, children }: AppShellProps): React.JSX.Element {
           </header>
 
           {/* Main Dashboard Canvas - Max 1200px centered per DESIGN.md section 7.1 */}
-          <div className="flex-1 p-3.5 sm:p-6 lg:p-8">
+          <main id="main-content" className="flex-1 p-3.5 sm:p-6 lg:p-8" tabIndex={-1}>
             <div className="mx-auto max-w-[1200px]">{children}</div>
-          </div>
+          </main>
         </SidebarInset>
 
         {/* Global Search Dialog Modal */}

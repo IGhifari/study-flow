@@ -180,10 +180,14 @@ export async function dispatchOutboxEvents(): Promise<{ dispatched: number; fail
         err instanceof Error ? err.message : err
       );
 
+      const nextAttempts = event.attempts + 1;
+      const nextStatus = nextAttempts >= 5 ? 'FAILED' : 'PENDING';
+
       await prisma.outboxEvent.update({
         where: { id: event.id },
         data: {
           attempts: { increment: 1 },
+          status: nextStatus,
           lastError: err instanceof Error ? err.message : String(err),
         },
       });
