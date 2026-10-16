@@ -410,7 +410,8 @@ test.describe('StudyFlow End-to-End Suite', () => {
     await expect(page.locator('h2:has-text("Tambah Tugas Baru")')).toBeVisible();
     await page.fill('#task-title', 'Laporan Praktikum Socket TCP');
     await page.click('#task-duedate');
-    await page.locator('[data-slot="calendar"] button:not([disabled])').getByText('15', { exact: true }).first().click();
+    const todayDate = new Date().getDate().toString();
+    await page.locator('[data-slot="calendar"] button:not([disabled])').getByText(todayDate, { exact: true }).first().click();
     await page.click('#task-priority');
     await page.locator('[role="option"]:has-text("Tinggi")').click();
     await page.click('button:has-text("Simpan Tugas")');

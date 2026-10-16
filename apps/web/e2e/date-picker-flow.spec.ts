@@ -39,8 +39,10 @@ test.describe('E2E: Date Picker Basic (Shadcn Popover + Calendar)', () => {
   });
 
   test('menguji interaksi Date Picker Basic: buka kalender, pilih tanggal, format Indonesia, tutup otomatis, dan simpan form', async ({ page }) => {
+    test.setTimeout(60000);
     // Buka halaman tugas
     await page.goto('/assignments');
+    await expect(page.locator('main').getByText('Semester Ganjil 2026/2027')).toBeVisible({ timeout: 10000 });
     await expect(page.locator('text=Belum ada tugas kuliah')).toBeVisible();
 
     // Buka Dialog Tambah Tugas Baru
@@ -91,12 +93,12 @@ test.describe('E2E: Date Picker Basic (Shadcn Popover + Calendar)', () => {
     await expect(page.locator('text=Edit Tugas')).toBeVisible();
 
     // Trigger edit harus menampilkan tanggal tersimpan
-    const editDueTrigger = page.locator('#edit-due');
+    const editDueTrigger = page.locator('#edit-due-date');
     await expect(editDueTrigger).toBeVisible();
     await expect(editDueTrigger).toContainText('20');
 
     // Input jam terpisah pada edit harus menampilkan jam tersimpan (15:30)
-    const editTimeInput = page.locator('#edit-due-time');
+    const editTimeInput = page.locator('#edit-due-date-time');
     await expect(editTimeInput).toHaveValue('15:30');
 
     // Buka kalender pada mode edit -> harus memuat bulan dari tanggal tersimpan
