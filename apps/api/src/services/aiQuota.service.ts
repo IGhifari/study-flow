@@ -6,6 +6,8 @@ export const AI_QUOTA_CONFIG = {
 };
 
 export class AiQuotaError extends Error {
+  public statusCode = 429;
+
   constructor(
     public code: 'AI_DAILY_QUOTA_EXCEEDED' | 'AI_CONCURRENT_LIMIT_EXCEEDED',
     message: string,

@@ -355,6 +355,30 @@ export async function reconcileAssignmentReminders(options?: {
 }
 
 /**
+ * Creates a BullMQ Queue instance for scheduling assignment reminder jobs during reconciliation.
+ */
+export function createAssignmentReminderQueue(
+  redisConnection: Redis
+): Queue<AssignmentReminderJobData> {
+  return new Queue<AssignmentReminderJobData>(QUEUE_NAMES.assignmentReminder, {
+    connection: redisConnection,
+    defaultJobOptions: {
+      attempts: 3,
+      backoff: {
+        type: 'exponential',
+        delay: 5000,
+      },
+      removeOnComplete: {
+        count: 100,
+      },
+      removeOnFail: {
+        count: 200,
+      },
+    },
+  });
+}
+
+/**
  * Creates and starts the BullMQ Worker for Assignment Deadline Reminders.
  */
 export function createAssignmentReminderWorker(redisConnection: Redis): Worker {

@@ -7,14 +7,22 @@ import {
   QuizAttemptResponse,
   StartQuizAttemptResponse,
 } from '@studyflow/shared';
-import { checkAndReserveAiQuota } from './aiQuota.service.js';
+import { checkAndReserveAiQuota, AiQuotaError } from './aiQuota.service.js';
 import { dispatchOutboxEvents } from './outbox.service.js';
 import crypto from 'node:crypto';
 
-function createError(statusCode: number, code: string, message: string) {
+function createError(
+  statusCode: number,
+  code: string,
+  message: string,
+  details?: Record<string, unknown>
+) {
   const err = new Error(message) as any;
   err.statusCode = statusCode;
   err.code = code;
+  if (details !== undefined) {
+    err.details = details;
+  }
   return err;
 }
 
@@ -79,7 +87,7 @@ async function validateMaterialForLearningGeneration(userId: string, materialId:
     throw createError(
       400,
       'DOCUMENT_TOO_LARGE',
-      `Dokumen terlalu panjang untuk diproses (maksimal ${AI_SUMMARY_LIMITS.maxPages} halaman).`
+      `Dokumen terlalu panjang untuk diproses (maksimal ${AI_SUMMARY_LIMITS.maxPages} halaman, terdeteksi: ${material.pageCount} halaman). Silakan bagi dokumen menjadi berkas yang lebih kecil.`
     );
   }
 
@@ -95,8 +103,47 @@ async function validateMaterialForLearningGeneration(userId: string, materialId:
   });
   const totalChars = pages.reduce((acc, p) => acc + p.characterCount, 0);
 
-  if (totalChars < 50) {
+  if (totalChars < AI_SUMMARY_LIMITS.minCharacters) {
     throw createError(400, 'INSUFFICIENT_TEXT', 'Teks hasil ekstraksi materi terlalu pendek untuk dibuatkan konten AI.');
+  }
+
+  // Enforce total document length limit (max 100 pages, max 120,000 characters processable across max 3 chunks)
+  if (pageCount > AI_SUMMARY_LIMITS.maxPages || totalChars > AI_SUMMARY_LIMITS.maxTotalCharacters) {
+    throw createError(
+      400,
+      'DOCUMENT_TOO_LARGE',
+      `Dokumen terlalu panjang untuk diproses (maksimal ${AI_SUMMARY_LIMITS.maxPages} halaman atau ${AI_SUMMARY_LIMITS.maxTotalCharacters.toLocaleString('id-ID')} karakter, terdeteksi: ${pageCount} halaman, ${totalChars.toLocaleString('id-ID')} karakter). Silakan bagi dokumen menjadi berkas yang lebih kecil.`
+    );
+  }
+
+  // Enforce single-page limit against chunk capacity (each page must fit in a 40,000 char chunk)
+  const oversizedPage = pages.find((p) => p.characterCount > AI_SUMMARY_LIMITS.maxChunkCharacters);
+  if (oversizedPage) {
+    throw createError(
+      400,
+      'DOCUMENT_TOO_LARGE',
+      `Halaman ${oversizedPage.pageNumber} memiliki ${oversizedPage.characterCount.toLocaleString('id-ID')} karakter, melampaui batas maksimal ${AI_SUMMARY_LIMITS.maxChunkCharacters.toLocaleString('id-ID')} karakter per halaman/bagian.`
+    );
+  }
+
+  // Enforce total chunks capacity (max 3 chunks)
+  let chunkCount = 0;
+  let currentChunkChars = 0;
+  for (const p of pages) {
+    if (currentChunkChars + p.characterCount > AI_SUMMARY_LIMITS.maxChunkCharacters && currentChunkChars > 0) {
+      chunkCount++;
+      currentChunkChars = p.characterCount;
+    } else {
+      currentChunkChars += p.characterCount;
+    }
+  }
+  if (currentChunkChars > 0) chunkCount++;
+  if (chunkCount > AI_SUMMARY_LIMITS.maxChunks) {
+    throw createError(
+      400,
+      'DOCUMENT_TOO_LARGE',
+      `Dokumen membutuhkan lebih dari ${AI_SUMMARY_LIMITS.maxChunks} bagian pemrosesan (terdeteksi: ${chunkCount} bagian). Silakan bagi dokumen menjadi berkas yang lebih kecil.`
+    );
   }
 
   return { material, pages, totalChars, pageCount };
@@ -161,82 +208,91 @@ export async function requestFlashcardGeneration(
 ) {
   const { material } = await validateMaterialForLearningGeneration(userId, materialId);
 
-  return await prisma.$transaction(async (tx) => {
-    // Serialize per material
-    await tx.$executeRaw`SELECT id FROM materials WHERE id = ${materialId} FOR UPDATE`;
+  try {
+    const result = await prisma.$transaction(async (tx) => {
+      // Serialize per material
+      await tx.$executeRaw`SELECT id FROM materials WHERE id = ${materialId} FOR UPDATE`;
 
-    // Check existing active sets
-    const existingActive = await tx.flashcardSet.findFirst({
-      where: {
-        materialId,
-        userId,
-        status: { in: ['QUEUED', 'PROCESSING'] },
-      },
-    });
-    if (existingActive) {
+      // Check existing active sets
+      const existingActive = await tx.flashcardSet.findFirst({
+        where: {
+          materialId,
+          userId,
+          status: { in: ['QUEUED', 'PROCESSING'] },
+        },
+      });
+      if (existingActive) {
+        return {
+          setId: existingActive.id,
+          jobId: existingActive.activeJobId || existingActive.id,
+          message: 'Pembuatan flashcard sedang berjalan',
+        };
+      }
+
+      // Check & reserve user shared AI quota
+      await checkAndReserveAiQuota(tx, userId);
+
+      const setId = crypto.randomUUID();
+      const job = await tx.processingJob.create({
+        data: {
+          userId,
+          materialId,
+          type: 'AI_FLASHCARD_GENERATION',
+          status: 'PENDING',
+          attempts: 0,
+          maxAttempts: 3,
+          payload: {
+            setId,
+            materialId,
+            userId,
+            targetCount,
+          },
+        },
+      });
+
+      const set = await tx.flashcardSet.create({
+        data: {
+          id: setId,
+          userId,
+          materialId,
+          title: `Flashcard: ${material.title}`,
+          status: 'QUEUED',
+          targetCount,
+          activeJobId: job.id,
+        },
+      });
+
+      await tx.outboxEvent.create({
+        data: {
+          eventType: 'AI_FLASHCARD_REQUESTED',
+          aggregateId: job.id,
+          payload: {
+            jobId: job.id,
+            setId: set.id,
+            materialId,
+            userId,
+            targetCount,
+          },
+        },
+      });
+
       return {
-        setId: existingActive.id,
-        jobId: existingActive.activeJobId || existingActive.id,
-        message: 'Pembuatan flashcard sedang berjalan',
+        setId: set.id,
+        jobId: job.id,
+        message: 'Pembuatan flashcard sedang diproses',
       };
-    }
-
-    // Check & reserve user shared AI quota
-    await checkAndReserveAiQuota(tx, userId);
-
-    const setId = crypto.randomUUID();
-    const job = await tx.processingJob.create({
-      data: {
-        userId,
-        materialId,
-        type: 'AI_FLASHCARD_GENERATION',
-        status: 'PENDING',
-        attempts: 0,
-        maxAttempts: 3,
-        payload: {
-          setId,
-          materialId,
-          userId,
-          targetCount,
-        },
-      },
     });
 
-    const set = await tx.flashcardSet.create({
-      data: {
-        id: setId,
-        userId,
-        materialId,
-        title: `Flashcard: ${material.title}`,
-        status: 'QUEUED',
-        targetCount,
-        activeJobId: job.id,
-      },
-    });
-
-    await tx.outboxEvent.create({
-      data: {
-        eventType: 'AI_FLASHCARD_REQUESTED',
-        aggregateId: job.id,
-        payload: {
-          jobId: job.id,
-          setId: set.id,
-          materialId,
-          userId,
-          targetCount,
-        },
-      },
-    });
-
-    // Non-blocking immediate outbox dispatch
+    // Non-blocking immediate outbox dispatch after transaction commit
     dispatchOutboxEvents().catch(() => {});
 
-    return {
-      setId: set.id,
-      jobId: job.id,
-      message: 'Pembuatan flashcard sedang diproses',
-    };
-  });
+    return result;
+  } catch (err: unknown) {
+    if (err instanceof AiQuotaError) {
+      throw createError(429, err.code, err.message, err.details);
+    }
+    throw err;
+  }
 }
 
 export async function updateFlashcardMastery(
@@ -324,80 +380,90 @@ export async function requestQuizGeneration(
 ) {
   const { material } = await validateMaterialForLearningGeneration(userId, materialId);
 
-  return await prisma.$transaction(async (tx) => {
-    // Serialize per material
-    await tx.$executeRaw`SELECT id FROM materials WHERE id = ${materialId} FOR UPDATE`;
+  try {
+    const result = await prisma.$transaction(async (tx) => {
+      // Serialize per material
+      await tx.$executeRaw`SELECT id FROM materials WHERE id = ${materialId} FOR UPDATE`;
 
-    const existingActive = await tx.quiz.findFirst({
-      where: {
-        materialId,
-        userId,
-        status: { in: ['QUEUED', 'PROCESSING'] },
-      },
-    });
-    if (existingActive) {
+      const existingActive = await tx.quiz.findFirst({
+        where: {
+          materialId,
+          userId,
+          status: { in: ['QUEUED', 'PROCESSING'] },
+        },
+      });
+      if (existingActive) {
+        return {
+          quizId: existingActive.id,
+          jobId: existingActive.activeJobId || existingActive.id,
+          message: 'Pembuatan kuis sedang berjalan',
+        };
+      }
+
+      // Check & reserve user shared AI quota
+      await checkAndReserveAiQuota(tx, userId);
+
+      const quizId = crypto.randomUUID();
+      const job = await tx.processingJob.create({
+        data: {
+          userId,
+          materialId,
+          type: 'AI_QUIZ_GENERATION',
+          status: 'PENDING',
+          attempts: 0,
+          maxAttempts: 3,
+          payload: {
+            quizId,
+            materialId,
+            userId,
+            targetCount,
+          },
+        },
+      });
+
+      const quiz = await tx.quiz.create({
+        data: {
+          id: quizId,
+          userId,
+          materialId,
+          title: `Kuis: ${material.title}`,
+          status: 'QUEUED',
+          targetCount,
+          activeJobId: job.id,
+        },
+      });
+
+      await tx.outboxEvent.create({
+        data: {
+          eventType: 'AI_QUIZ_REQUESTED',
+          aggregateId: job.id,
+          payload: {
+            jobId: job.id,
+            quizId: quiz.id,
+            materialId,
+            userId,
+            targetCount,
+          },
+        },
+      });
+
       return {
-        quizId: existingActive.id,
-        jobId: existingActive.activeJobId || existingActive.id,
-        message: 'Pembuatan kuis sedang berjalan',
+        quizId: quiz.id,
+        jobId: job.id,
+        message: 'Pembuatan kuis sedang diproses',
       };
-    }
-
-    // Check & reserve user shared AI quota
-    await checkAndReserveAiQuota(tx, userId);
-
-    const quizId = crypto.randomUUID();
-    const job = await tx.processingJob.create({
-      data: {
-        userId,
-        materialId,
-        type: 'AI_QUIZ_GENERATION',
-        status: 'PENDING',
-        attempts: 0,
-        maxAttempts: 3,
-        payload: {
-          quizId,
-          materialId,
-          userId,
-          targetCount,
-        },
-      },
     });
 
-    const quiz = await tx.quiz.create({
-      data: {
-        id: quizId,
-        userId,
-        materialId,
-        title: `Kuis: ${material.title}`,
-        status: 'QUEUED',
-        targetCount,
-        activeJobId: job.id,
-      },
-    });
-
-    await tx.outboxEvent.create({
-      data: {
-        eventType: 'AI_QUIZ_REQUESTED',
-        aggregateId: job.id,
-        payload: {
-          jobId: job.id,
-          quizId: quiz.id,
-          materialId,
-          userId,
-          targetCount,
-        },
-      },
-    });
-
+    // Non-blocking immediate outbox dispatch after transaction commit
     dispatchOutboxEvents().catch(() => {});
 
-    return {
-      quizId: quiz.id,
-      jobId: job.id,
-      message: 'Pembuatan kuis sedang diproses',
-    };
-  });
+    return result;
+  } catch (err: unknown) {
+    if (err instanceof AiQuotaError) {
+      throw createError(429, err.code, err.message, err.details);
+    }
+    throw err;
+  }
 }
 
 export async function startOrResumeQuizAttempt(

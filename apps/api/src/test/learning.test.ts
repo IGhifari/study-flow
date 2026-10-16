@@ -677,4 +677,253 @@ describe('Material AI Flashcard & Quiz Endpoints Verification', () => {
       expect(attemptAnswersAccess.status).toBe(404);
     });
   });
+
+  // ==========================================
+  // AI Quota, Document Size Limits & CSRF Protection
+  // ==========================================
+  describe('Quota 429, Document Size Validation & CSRF Protection', () => {
+    it('should return 429 AI_DAILY_QUOTA_EXCEEDED for flashcard-sets and quizzes when daily quota (20) is exhausted', async () => {
+      await prisma.aiUsage.upsert({
+        where: { userId: userAId },
+        create: {
+          userId: userAId,
+          dailyGenerationCount: 20,
+          activeJobsCount: 0,
+        },
+        update: {
+          dailyGenerationCount: 20,
+          activeJobsCount: 0,
+        },
+      });
+
+      const flashcardRes = await request(app)
+        .post(`/api/materials/${readyMaterialAId}/flashcard-sets`)
+        .set('Origin', TRUSTED_ORIGIN)
+        .set('Cookie', cookieA)
+        .send({ targetCount: 10 });
+
+      expect(flashcardRes.status).toBe(429);
+      expect(flashcardRes.body.error.code).toBe('AI_DAILY_QUOTA_EXCEEDED');
+      expect(flashcardRes.body.error.details).toEqual({
+        dailyCount: 20,
+        dailyLimit: 20,
+      });
+
+      const quizRes = await request(app)
+        .post(`/api/materials/${readyMaterialAId}/quizzes`)
+        .set('Origin', TRUSTED_ORIGIN)
+        .set('Cookie', cookieA)
+        .send({ targetCount: 5 });
+
+      expect(quizRes.status).toBe(429);
+      expect(quizRes.body.error.code).toBe('AI_DAILY_QUOTA_EXCEEDED');
+      expect(quizRes.body.error.details).toEqual({
+        dailyCount: 20,
+        dailyLimit: 20,
+      });
+    });
+
+    it('should return 429 AI_CONCURRENT_LIMIT_EXCEEDED for flashcard-sets and quizzes when active jobs limit (2) is full', async () => {
+      await prisma.aiUsage.upsert({
+        where: { userId: userAId },
+        create: {
+          userId: userAId,
+          dailyGenerationCount: 5,
+          activeJobsCount: 2,
+        },
+        update: {
+          dailyGenerationCount: 5,
+          activeJobsCount: 2,
+        },
+      });
+
+      const flashcardRes = await request(app)
+        .post(`/api/materials/${readyMaterialAId}/flashcard-sets`)
+        .set('Origin', TRUSTED_ORIGIN)
+        .set('Cookie', cookieA)
+        .send({ targetCount: 10 });
+
+      expect(flashcardRes.status).toBe(429);
+      expect(flashcardRes.body.error.code).toBe('AI_CONCURRENT_LIMIT_EXCEEDED');
+      expect(flashcardRes.body.error.details).toEqual({
+        activeJobs: 2,
+        maxConcurrent: 2,
+      });
+
+      const quizRes = await request(app)
+        .post(`/api/materials/${readyMaterialAId}/quizzes`)
+        .set('Origin', TRUSTED_ORIGIN)
+        .set('Cookie', cookieA)
+        .send({ targetCount: 5 });
+
+      expect(quizRes.status).toBe(429);
+      expect(quizRes.body.error.code).toBe('AI_CONCURRENT_LIMIT_EXCEEDED');
+      expect(quizRes.body.error.details).toEqual({
+        activeJobs: 2,
+        maxConcurrent: 2,
+      });
+    });
+
+    it('should reject documents exceeding single-page character limit (> 40,000) upfront with 400 DOCUMENT_TOO_LARGE without deducting AI quota', async () => {
+      const matWithHugePage = await prisma.material.create({
+        data: {
+          userId: userAId,
+          courseId: courseAId,
+          title: 'Materi Satu Halaman 45rb Karakter',
+          originalFilename: 'huge-page.pdf',
+          storageKey: `materials/${userAId}/huge-page-learning.pdf`,
+          mimeType: 'application/pdf',
+          bytes: 60000,
+          pageCount: 1,
+          status: 'READY',
+        },
+      });
+
+      await prisma.materialPage.create({
+        data: {
+          materialId: matWithHugePage.id,
+          pageNumber: 1,
+          extractedText: 'A'.repeat(45000),
+          characterCount: 45000,
+        },
+      });
+
+      const flashcardRes = await request(app)
+        .post(`/api/materials/${matWithHugePage.id}/flashcard-sets`)
+        .set('Origin', TRUSTED_ORIGIN)
+        .set('Cookie', cookieA)
+        .send({ targetCount: 10 });
+
+      expect(flashcardRes.status).toBe(400);
+      expect(flashcardRes.body.error.code).toBe('DOCUMENT_TOO_LARGE');
+
+      const quizRes = await request(app)
+        .post(`/api/materials/${matWithHugePage.id}/quizzes`)
+        .set('Origin', TRUSTED_ORIGIN)
+        .set('Cookie', cookieA)
+        .send({ targetCount: 5 });
+
+      expect(quizRes.status).toBe(400);
+      expect(quizRes.body.error.code).toBe('DOCUMENT_TOO_LARGE');
+
+      // Verify user AI quota was NOT touched
+      const usage = await prisma.aiUsage.findUnique({ where: { userId: userAId } });
+      expect(usage?.dailyGenerationCount ?? 0).toBe(0);
+      expect(usage?.activeJobsCount ?? 0).toBe(0);
+    });
+
+    it('should reject documents exceeding total character limit (> 120,000) upfront with 400 DOCUMENT_TOO_LARGE without deducting AI quota', async () => {
+      const matOverLimit = await prisma.material.create({
+        data: {
+          userId: userAId,
+          courseId: courseAId,
+          title: 'Materi Total 140rb Karakter',
+          originalFilename: 'huge-total.pdf',
+          storageKey: `materials/${userAId}/huge-total-learning.pdf`,
+          mimeType: 'application/pdf',
+          bytes: 150000,
+          pageCount: 4,
+          status: 'READY',
+        },
+      });
+
+      await prisma.materialPage.createMany({
+        data: [
+          { materialId: matOverLimit.id, pageNumber: 1, extractedText: 'A'.repeat(35000), characterCount: 35000 },
+          { materialId: matOverLimit.id, pageNumber: 2, extractedText: 'B'.repeat(35000), characterCount: 35000 },
+          { materialId: matOverLimit.id, pageNumber: 3, extractedText: 'C'.repeat(35000), characterCount: 35000 },
+          { materialId: matOverLimit.id, pageNumber: 4, extractedText: 'D'.repeat(35000), characterCount: 35000 },
+        ],
+      });
+
+      const flashcardRes = await request(app)
+        .post(`/api/materials/${matOverLimit.id}/flashcard-sets`)
+        .set('Origin', TRUSTED_ORIGIN)
+        .set('Cookie', cookieA)
+        .send({ targetCount: 10 });
+
+      expect(flashcardRes.status).toBe(400);
+      expect(flashcardRes.body.error.code).toBe('DOCUMENT_TOO_LARGE');
+
+      const quizRes = await request(app)
+        .post(`/api/materials/${matOverLimit.id}/quizzes`)
+        .set('Origin', TRUSTED_ORIGIN)
+        .set('Cookie', cookieA)
+        .send({ targetCount: 5 });
+
+      expect(quizRes.status).toBe(400);
+      expect(quizRes.body.error.code).toBe('DOCUMENT_TOO_LARGE');
+
+      // Verify user AI quota was NOT touched
+      const usage = await prisma.aiUsage.findUnique({ where: { userId: userAId } });
+      expect(usage?.dailyGenerationCount ?? 0).toBe(0);
+      expect(usage?.activeJobsCount ?? 0).toBe(0);
+    });
+
+    it('should reject mutations to flashcards, quizzes/attempts, attempts/answers, and attempts/submit without Origin/Referer or with foreign Origin with 403 CSRF_ORIGIN_INVALID', async () => {
+      const FOREIGN_ORIGIN = 'https://evil-attacker.example.com';
+
+      // Missing Origin/Referer
+      const patchFlashcardNoOrigin = await request(app)
+        .patch('/api/flashcards/00000000-0000-0000-0000-000000000001')
+        .set('Cookie', cookieA)
+        .send({ masteryStatus: 'MASTERED' });
+      expect(patchFlashcardNoOrigin.status).toBe(403);
+      expect(patchFlashcardNoOrigin.body.error.code).toBe('CSRF_ORIGIN_INVALID');
+
+      const startAttemptNoOrigin = await request(app)
+        .post('/api/quizzes/00000000-0000-0000-0000-000000000001/attempts')
+        .set('Cookie', cookieA)
+        .send();
+      expect(startAttemptNoOrigin.status).toBe(403);
+      expect(startAttemptNoOrigin.body.error.code).toBe('CSRF_ORIGIN_INVALID');
+
+      const patchAnswersNoOrigin = await request(app)
+        .patch('/api/attempts/00000000-0000-0000-0000-000000000001/answers')
+        .set('Cookie', cookieA)
+        .send({ answers: [] });
+      expect(patchAnswersNoOrigin.status).toBe(403);
+      expect(patchAnswersNoOrigin.body.error.code).toBe('CSRF_ORIGIN_INVALID');
+
+      const submitAttemptNoOrigin = await request(app)
+        .post('/api/attempts/00000000-0000-0000-0000-000000000001/submit')
+        .set('Cookie', cookieA)
+        .send({ answers: [] });
+      expect(submitAttemptNoOrigin.status).toBe(403);
+      expect(submitAttemptNoOrigin.body.error.code).toBe('CSRF_ORIGIN_INVALID');
+
+      // Foreign Origin
+      const patchFlashcardForeign = await request(app)
+        .patch('/api/flashcards/00000000-0000-0000-0000-000000000001')
+        .set('Origin', FOREIGN_ORIGIN)
+        .set('Cookie', cookieA)
+        .send({ masteryStatus: 'MASTERED' });
+      expect(patchFlashcardForeign.status).toBe(403);
+      expect(patchFlashcardForeign.body.error.code).toBe('CSRF_ORIGIN_INVALID');
+
+      const startAttemptForeign = await request(app)
+        .post('/api/quizzes/00000000-0000-0000-0000-000000000001/attempts')
+        .set('Origin', FOREIGN_ORIGIN)
+        .set('Cookie', cookieA)
+        .send();
+      expect(startAttemptForeign.status).toBe(403);
+      expect(startAttemptForeign.body.error.code).toBe('CSRF_ORIGIN_INVALID');
+
+      const patchAnswersForeign = await request(app)
+        .patch('/api/attempts/00000000-0000-0000-0000-000000000001/answers')
+        .set('Origin', FOREIGN_ORIGIN)
+        .set('Cookie', cookieA)
+        .send({ answers: [] });
+      expect(patchAnswersForeign.status).toBe(403);
+      expect(patchAnswersForeign.body.error.code).toBe('CSRF_ORIGIN_INVALID');
+
+      const submitAttemptForeign = await request(app)
+        .post('/api/attempts/00000000-0000-0000-0000-000000000001/submit')
+        .set('Origin', FOREIGN_ORIGIN)
+        .set('Cookie', cookieA)
+        .send({ answers: [] });
+      expect(submitAttemptForeign.status).toBe(403);
+      expect(submitAttemptForeign.body.error.code).toBe('CSRF_ORIGIN_INVALID');
+    });
+  });
 });

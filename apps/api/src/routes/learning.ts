@@ -12,9 +12,11 @@ import {
   getQuizAttemptResult,
 } from '../services/learning.service.js';
 import { authenticate } from '../middleware/authenticate.js';
+import { originCheckMiddleware } from '../middleware/originCheck.js';
 
 export const flashcardRouter = Router();
 flashcardRouter.use(authenticate);
+flashcardRouter.use(originCheckMiddleware);
 
 // PATCH /api/flashcards/:id — Update mastery status ('UNRATED' | 'NEED_REVIEW' | 'MASTERED')
 flashcardRouter.patch('/:id', async (req: Request, res: Response, next: NextFunction) => {
@@ -41,6 +43,7 @@ flashcardRouter.patch('/:id', async (req: Request, res: Response, next: NextFunc
 
 export const quizRouter = Router();
 quizRouter.use(authenticate);
+quizRouter.use(originCheckMiddleware);
 
 // POST /api/quizzes/:id/attempts — Start or resume quiz attempt (does NOT leak correct answers)
 quizRouter.post('/:id/attempts', async (req: Request, res: Response, next: NextFunction) => {
@@ -55,6 +58,7 @@ quizRouter.post('/:id/attempts', async (req: Request, res: Response, next: NextF
 
 export const attemptRouter = Router();
 attemptRouter.use(authenticate);
+attemptRouter.use(originCheckMiddleware);
 
 // PATCH /api/attempts/:id/answers — Save draft answers before submit
 attemptRouter.patch('/:id/answers', async (req: Request, res: Response, next: NextFunction) => {
