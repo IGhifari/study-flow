@@ -137,42 +137,63 @@ export class LocalStorageAdapter implements StorageAdapter {
   }
 
   private resolvePath(storageKey: string): string {
+    if (!storageKey || typeof storageKey !== 'string' || storageKey.includes('\0')) {
+      throw new Error('Invalid storage key: path traversal detected');
+    }
     const sanitizedKey = storageKey.replace(/^[/\\]+/, '');
-    return path.resolve(this.baseDir, sanitizedKey);
+    if (!sanitizedKey) {
+      throw new Error('Invalid storage key: path traversal detected');
+    }
+    const base = path.resolve(this.baseDir);
+    const resolved = path.resolve(base, sanitizedKey);
+    if (!resolved.startsWith(base + path.sep)) {
+      throw new Error('Invalid storage key: path traversal detected');
+    }
+    return resolved;
   }
 
   async createSignedUploadUrl(
     storageKey: string
   ): Promise<{ data: { url: string; signedUrl: string; token: string } | null; error: Error | null }> {
-    const token = generateLocalStorageToken(storageKey, 7200); // 2 hours
-    const encodedKey = encodeURIComponent(storageKey);
-    const url = `${env.API_BASE_URL}/api/storage/local/upload/${encodedKey}?token=${token}`;
-    return {
-      data: {
-        url,
-        signedUrl: url,
-        token,
-      },
-      error: null,
-    };
+    try {
+      this.resolvePath(storageKey);
+      const token = generateLocalStorageToken(storageKey, 7200); // 2 hours
+      const encodedKey = encodeURIComponent(storageKey);
+      const url = `${env.API_BASE_URL}/api/storage/local/upload/${encodedKey}?token=${token}`;
+      return {
+        data: {
+          url,
+          signedUrl: url,
+          token,
+        },
+        error: null,
+      };
+    } catch (err: any) {
+      return { data: null, error: err instanceof Error ? err : new Error(String(err)) };
+    }
   }
 
   async createSignedUrl(
     storageKey: string,
     expiresIn = 300
   ): Promise<{ data: { signedUrl: string } | null; error: Error | null }> {
-    const token = generateLocalStorageToken(storageKey, expiresIn);
-    const encodedKey = encodeURIComponent(storageKey);
-    const signedUrl = `${env.API_BASE_URL}/api/storage/local/download/${encodedKey}?token=${token}`;
-    return {
-      data: { signedUrl },
-      error: null,
-    };
+    try {
+      this.resolvePath(storageKey);
+      const token = generateLocalStorageToken(storageKey, expiresIn);
+      const encodedKey = encodeURIComponent(storageKey);
+      const signedUrl = `${env.API_BASE_URL}/api/storage/local/download/${encodedKey}?token=${token}`;
+      return {
+        data: { signedUrl },
+        error: null,
+      };
+    } catch (err: any) {
+      return { data: null, error: err instanceof Error ? err : new Error(String(err)) };
+    }
   }
 
   async download(storageKey: string): Promise<{ data: Buffer | null; error: Error | null }> {
-    const fullPath = this.resolvePath(storageKey);
     try {
+      const fullPath = this.resolvePath(storageKey);
       if (!fs.existsSync(fullPath)) {
         return { data: null, error: new Error('File not found in local storage') };
       }
@@ -185,23 +206,23 @@ export class LocalStorageAdapter implements StorageAdapter {
 
   async remove(paths: string[]): Promise<{ data: any; error: Error | null }> {
     let count = 0;
-    for (const p of paths) {
-      const fullPath = this.resolvePath(p);
-      try {
+    try {
+      for (const p of paths) {
+        const fullPath = this.resolvePath(p);
         if (fs.existsSync(fullPath)) {
           await fs.promises.unlink(fullPath);
           count++;
         }
-      } catch (err) {
-        console.warn(`[LocalStorage] Failed to remove ${fullPath}:`, err);
       }
+      return { data: { count }, error: null };
+    } catch (err: any) {
+      return { data: null, error: err instanceof Error ? err : new Error(String(err)) };
     }
-    return { data: { count }, error: null };
   }
 
   async info(storageKey: string): Promise<{ data: any; error: Error | null }> {
-    const fullPath = this.resolvePath(storageKey);
     try {
+      const fullPath = this.resolvePath(storageKey);
       if (!fs.existsSync(fullPath)) {
         return { data: null, error: new Error('File not found') };
       }
@@ -223,8 +244,8 @@ export class LocalStorageAdapter implements StorageAdapter {
     fileBody: Buffer | Uint8Array,
     _options?: { contentType?: string; upsert?: boolean }
   ): Promise<{ data: any; error: Error | null }> {
-    const fullPath = this.resolvePath(storageKey);
     try {
+      const fullPath = this.resolvePath(storageKey);
       const dir = path.dirname(fullPath);
       if (!fs.existsSync(dir)) {
         await fs.promises.mkdir(dir, { recursive: true });

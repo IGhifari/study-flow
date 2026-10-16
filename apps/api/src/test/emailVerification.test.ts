@@ -155,6 +155,49 @@ describe('Email Verification Integration & Security Tests', () => {
       expect(sentEmails[0].to).not.toBe('victim@otherdomain.com');
     });
 
+    it('melakukan escape HTML pada nama pengguna di template email untuk mencegah XSS/injection', async () => {
+      const maliciousName = 'Budi <b>Peretas</b> <script>alert(1)</script>';
+      const email = `verify.xss.${Date.now()}@example.com`;
+      const password = 'SecurePassword123!';
+
+      const regRes = await request(app)
+        .post('/api/auth/register')
+        .set('Origin', TRUSTED_ORIGIN)
+        .send({
+          name: maliciousName,
+          email,
+          password,
+        });
+      expect(regRes.status).toBe(201);
+
+      const loginRes = await request(app)
+        .post('/api/auth/login')
+        .set('Origin', TRUSTED_ORIGIN)
+        .send({ email, password });
+      expect(loginRes.status).toBe(200);
+
+      const cookies = loginRes.headers['set-cookie'] as unknown as string[];
+
+      const reqRes = await request(app)
+        .post('/api/auth/verify-email/request')
+        .set('Origin', TRUSTED_ORIGIN)
+        .set('Cookie', cookies);
+      expect(reqRes.status).toBe(200);
+
+      const sentEmails = __getSentTestEmails();
+      expect(sentEmails.length).toBeGreaterThanOrEqual(1);
+      const emailObj = sentEmails[sentEmails.length - 1];
+
+      // HTML body must be escaped
+      expect(emailObj.html).toBeDefined();
+      expect(emailObj.html).toContain('&lt;b&gt;Peretas&lt;/b&gt; &lt;script&gt;alert(1)&lt;/script&gt;');
+      expect(emailObj.html).not.toContain('<script>alert(1)</script>');
+      expect(emailObj.html).not.toContain('<b>Peretas</b>');
+
+      // Plain text must remain as unescaped raw string
+      expect(emailObj.text).toContain(maliciousName);
+    });
+
     it('menerapkan cooldown 60 detik jika meminta ulang terlalu cepat (429)', async () => {
       const { cookies } = await createLoggedInUser();
 

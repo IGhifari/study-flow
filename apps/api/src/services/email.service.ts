@@ -91,7 +91,7 @@ export async function sendPasswordResetEmail(params: PasswordResetEmailParams): 
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>${subject}</title>
+  <title>${escapeHtml(subject)}</title>
 </head>
 <body style="margin: 0; padding: 0; background-color: #f8fafc; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #1e293b; line-height: 1.6;">
   <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color: #f8fafc; padding: 40px 16px;">
@@ -109,7 +109,7 @@ export async function sendPasswordResetEmail(params: PasswordResetEmailParams): 
                 Atur Ulang Kata Sandi
               </h1>
               <p style="margin-top: 0; margin-bottom: 16px; font-size: 14px; color: #334155;">
-                Halo <strong>${name || 'Pengguna'}</strong>, kami menerima permintaan untuk mengatur ulang kata sandi akun StudyFlow Anda.
+                Halo <strong>${escapeHtml(name || 'Pengguna')}</strong>, kami menerima permintaan untuk mengatur ulang kata sandi akun StudyFlow Anda.
               </p>
               <p style="margin-top: 0; margin-bottom: 24px; font-size: 14px; color: #334155;">
                 Silakan klik tombol di bawah ini untuk membuat kata sandi baru Anda:
@@ -215,7 +215,7 @@ export async function sendVerificationEmail(params: VerificationEmailParams): Pr
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>${subject}</title>
+  <title>${escapeHtml(subject)}</title>
 </head>
 <body style="margin: 0; padding: 0; background-color: #f8fafc; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #1e293b; line-height: 1.6;">
   <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color: #f8fafc; padding: 40px 16px;">
@@ -233,7 +233,7 @@ export async function sendVerificationEmail(params: VerificationEmailParams): Pr
                 Verifikasi Alamat Email
               </h1>
               <p style="margin-top: 0; margin-bottom: 16px; font-size: 14px; color: #334155;">
-                Halo <strong>${name || 'Pengguna'}</strong>, silakan verifikasi alamat email Anda untuk memastikan kepemilikan akun StudyFlow.
+                Halo <strong>${escapeHtml(name || 'Pengguna')}</strong>, silakan verifikasi alamat email Anda untuk memastikan kepemilikan akun StudyFlow.
               </p>
               <p style="margin-top: 0; margin-bottom: 24px; font-size: 14px; color: #334155;">
                 Klik tombol di bawah ini untuk mengonfirmasi alamat email Anda:
@@ -307,7 +307,7 @@ export async function sendVerificationEmail(params: VerificationEmailParams): Pr
   });
 }
 
-function escapeHtml(str: string): string {
+export function escapeHtml(str: string): string {
   return str
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')

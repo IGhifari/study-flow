@@ -64,13 +64,24 @@ export class LocalWorkerStorageAdapter implements StorageAdapter {
   }
 
   private resolvePath(storageKey: string): string {
+    if (!storageKey || typeof storageKey !== 'string' || storageKey.includes('\0')) {
+      throw new Error('Invalid storage key: path traversal detected');
+    }
     const sanitizedKey = storageKey.replace(/^[/\\]+/, '');
-    return path.resolve(this.baseDir, sanitizedKey);
+    if (!sanitizedKey) {
+      throw new Error('Invalid storage key: path traversal detected');
+    }
+    const base = path.resolve(this.baseDir);
+    const resolved = path.resolve(base, sanitizedKey);
+    if (!resolved.startsWith(base + path.sep)) {
+      throw new Error('Invalid storage key: path traversal detected');
+    }
+    return resolved;
   }
 
   async download(storageKey: string): Promise<{ data: Buffer | null; error: Error | null }> {
-    const fullPath = this.resolvePath(storageKey);
     try {
+      const fullPath = this.resolvePath(storageKey);
       if (!fs.existsSync(fullPath)) {
         return { data: null, error: new Error(`File not found in local storage: ${fullPath}`) };
       }
@@ -83,23 +94,23 @@ export class LocalWorkerStorageAdapter implements StorageAdapter {
 
   async remove(paths: string[]): Promise<{ data: any; error: Error | null }> {
     let count = 0;
-    for (const p of paths) {
-      const fullPath = this.resolvePath(p);
-      try {
+    try {
+      for (const p of paths) {
+        const fullPath = this.resolvePath(p);
         if (fs.existsSync(fullPath)) {
           await fs.promises.unlink(fullPath);
           count++;
         }
-      } catch (err) {
-        console.warn(`[WorkerLocalStorage] Failed to remove ${fullPath}:`, err);
       }
+      return { data: { count }, error: null };
+    } catch (err: any) {
+      return { data: null, error: err instanceof Error ? err : new Error(String(err)) };
     }
-    return { data: { count }, error: null };
   }
 
   async info(storageKey: string): Promise<{ data: any; error: Error | null }> {
-    const fullPath = this.resolvePath(storageKey);
     try {
+      const fullPath = this.resolvePath(storageKey);
       if (!fs.existsSync(fullPath)) {
         return { data: null, error: new Error('File not found') };
       }

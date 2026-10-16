@@ -119,6 +119,42 @@ const EnvSchema = z.object({
 
 export type Env = z.infer<typeof EnvSchema>;
 
+export function assertProductionSecrets(
+  config: Pick<Env, 'NODE_ENV' | 'JWT_ACCESS_SECRET' | 'JWT_REFRESH_SECRET' | 'COOKIE_SECRET'>
+): void {
+  if (config.NODE_ENV !== 'production') {
+    return;
+  }
+
+  const insecureKeys: string[] = [];
+  if (
+    config.JWT_ACCESS_SECRET === 'studyflow_dev_jwt_access_secret_key_123456' ||
+    config.JWT_ACCESS_SECRET.startsWith('studyflow_dev_')
+  ) {
+    insecureKeys.push('JWT_ACCESS_SECRET');
+  }
+  if (
+    config.JWT_REFRESH_SECRET === 'studyflow_dev_jwt_refresh_secret_key_123456' ||
+    config.JWT_REFRESH_SECRET.startsWith('studyflow_dev_')
+  ) {
+    insecureKeys.push('JWT_REFRESH_SECRET');
+  }
+  if (
+    config.COOKIE_SECRET === 'studyflow_dev_cookie_signing_secret_123456' ||
+    config.COOKIE_SECRET.startsWith('studyflow_dev_')
+  ) {
+    insecureKeys.push('COOKIE_SECRET');
+  }
+
+  if (insecureKeys.length > 0) {
+    throw new Error(
+      `Insecure default development secrets detected in production for: ${insecureKeys.join(
+        ', '
+      )}. Please provide strong custom secrets in production environment variables.`
+    );
+  }
+}
+
 function loadEnv(): Env {
   const result = EnvSchema.safeParse(process.env);
   if (!result.success) {
@@ -130,6 +166,7 @@ function loadEnv(): Env {
     // Throws (never prints credentials) if a test-mode process targets a non-test database
     assertTestDatabaseUrl(result.data.DATABASE_URL, 'DATABASE_URL');
   }
+  assertProductionSecrets(result.data);
   return result.data;
 }
 

@@ -374,6 +374,32 @@ describe('Google OAuth Integration & Security Tests', () => {
     expect(res1.status).toBe(400);
     expect(res1.body.error.code).toBe('OAUTH_NONCE_MISMATCH');
 
+    // 1b. Missing Nonce in Google ID Token (nonce: undefined)
+    __setTestGoogleAuthMock(async () => ({
+      iss: 'https://accounts.google.com',
+      sub: 'sub-missing-nonce-test',
+      aud: 'test-client-id',
+      iat: Math.floor(Date.now() / 1000),
+      exp: Math.floor(Date.now() / 1000) + 3600,
+      email: 'missing-nonce@example.com',
+      email_verified: true,
+      nonce: undefined as any,
+    }));
+
+    const resMissingNonce = await request(app)
+      .post('/api/auth/google/exchange')
+      .set('Origin', TRUSTED_ORIGIN)
+      .send({
+        code: 'code',
+        codeVerifier: 'verifier',
+        nonce: 'expected-nonce',
+        redirectUri: 'http://localhost:3000/api/auth/google/callback',
+        intent: 'login',
+      });
+
+    expect(resMissingNonce.status).toBe(400);
+    expect(resMissingNonce.body.error.code).toBe('OAUTH_NONCE_MISMATCH');
+
     // 2. Unverified email
     __setTestGoogleAuthMock(async () => ({
       iss: 'https://accounts.google.com',

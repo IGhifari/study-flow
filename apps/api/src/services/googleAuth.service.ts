@@ -169,7 +169,7 @@ export async function exchangeGoogleCode(
   }
 
   // 1. Validate Nonce (ID Token Replay Protection)
-  if (verifiedPayload.nonce && verifiedPayload.nonce !== input.nonce) {
+  if (!verifiedPayload.nonce || verifiedPayload.nonce !== input.nonce) {
     const error: AppError = new Error('Nonce ID token Google tidak sesuai dengan transaksi');
     error.statusCode = 400;
     error.code = 'OAUTH_NONCE_MISMATCH';

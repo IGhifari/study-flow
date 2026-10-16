@@ -98,6 +98,38 @@ describe('Password Reset Integration & Security Tests', () => {
       expect(new Date(dbToken!.expiresAt).getTime()).toBeGreaterThan(Date.now());
     });
 
+    it('melakukan escape HTML pada nama pengguna di template email reset kata sandi', async () => {
+      const maliciousName = 'Budi <b>Peretas</b> <script>alert(1)</script>';
+      const email = `pwreset.xss.${Date.now()}@example.com`;
+      await prisma.user.create({
+        data: {
+          name: maliciousName,
+          email,
+          passwordHash: await hashPassword('ValidPassword123!'),
+        },
+      });
+
+      const res = await request(app)
+        .post('/api/auth/forgot-password')
+        .set('Origin', TRUSTED_ORIGIN)
+        .send({ email });
+
+      expect(res.status).toBe(200);
+
+      const sentEmails = __getSentTestEmails();
+      expect(sentEmails.length).toBeGreaterThanOrEqual(1);
+      const emailObj = sentEmails[sentEmails.length - 1];
+
+      // HTML body must be escaped
+      expect(emailObj.html).toBeDefined();
+      expect(emailObj.html).toContain('&lt;b&gt;Peretas&lt;/b&gt; &lt;script&gt;alert(1)&lt;/script&gt;');
+      expect(emailObj.html).not.toContain('<script>alert(1)</script>');
+      expect(emailObj.html).not.toContain('<b>Peretas</b>');
+
+      // Plain text must remain as unescaped raw string
+      expect(emailObj.text).toContain(maliciousName);
+    });
+
     it('mengembalikan respons identik untuk email yang tidak terdaftar tanpa mengirim email', async () => {
       const res = await request(app)
         .post('/api/auth/forgot-password')
