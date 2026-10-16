@@ -35,6 +35,8 @@ export function originCheckMiddleware(
   if (env.NODE_ENV !== 'production') {
     allowedOrigins.add('http://localhost:3000');
     allowedOrigins.add('http://127.0.0.1:3000');
+    allowedOrigins.add('http://localhost:3002');
+    allowedOrigins.add('http://127.0.0.1:3002');
   }
 
   let requestOrigin: string | null = null;

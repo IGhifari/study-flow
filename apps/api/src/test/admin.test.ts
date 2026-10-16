@@ -3,6 +3,7 @@ import request from 'supertest';
 import { createApp } from '../app.js';
 import { prisma } from '@studyflow/database';
 import { ADMIN_COOKIE_NAMES, COOKIE_NAMES } from '@studyflow/shared';
+import { verifyAccessToken } from '../services/token.service.js';
 
 describe('Admin Endpoints & Authorization Invariants', () => {
   const app = createApp();
@@ -210,6 +211,91 @@ describe('Admin Endpoints & Authorization Invariants', () => {
       expect(cookies.some((c) => c.includes(ADMIN_COOKIE_NAMES.refreshToken))).toBe(true);
       // Ensure web cookies are NOT set
       expect(cookies.some((c) => c.includes(`${COOKIE_NAMES.accessToken}=`))).toBe(false);
+    });
+
+    it('issues access token containing role ADMIN claim on successful login', async () => {
+      const res = await request(app)
+        .post('/api/admin/auth/login')
+        .set('Origin', TRUSTED_ORIGIN)
+        .send({
+          email: adminUserEmail,
+          password: 'PasswordAdmin123!',
+        });
+
+      expect(res.status).toBe(200);
+      const cookies = (res.headers['set-cookie'] || []) as string[];
+      const accessCookie = cookies.find((c) => c.includes(ADMIN_COOKIE_NAMES.accessToken));
+      expect(accessCookie).toBeDefined();
+      const token = accessCookie!.split(';')[0].split('=')[1];
+      const decoded = verifyAccessToken(token);
+      expect(decoded).toBeDefined();
+      expect(decoded?.role).toBe('ADMIN');
+      expect(decoded?.userId).toBe(adminUserId);
+    });
+
+    it('rejects mutations to /api/admin/auth/login without Origin or Referer with 403 CSRF_ORIGIN_INVALID', async () => {
+      const res = await request(app)
+        .post('/api/admin/auth/login')
+        .send({
+          email: adminUserEmail,
+          password: 'PasswordAdmin123!',
+        });
+
+      expect(res.status).toBe(403);
+      expect(res.body.error.code).toBe('CSRF_ORIGIN_INVALID');
+    });
+
+    it('rejects mutations to /api/admin/auth/refresh without Origin or Referer with 403 CSRF_ORIGIN_INVALID', async () => {
+      const res = await request(app)
+        .post('/api/admin/auth/refresh')
+        .send({});
+
+      expect(res.status).toBe(403);
+      expect(res.body.error.code).toBe('CSRF_ORIGIN_INVALID');
+    });
+
+    it('rejects mutations to /api/admin/auth/logout without Origin or Referer with 403 CSRF_ORIGIN_INVALID', async () => {
+      const res = await request(app)
+        .post('/api/admin/auth/logout')
+        .send({});
+
+      expect(res.status).toBe(403);
+      expect(res.body.error.code).toBe('CSRF_ORIGIN_INVALID');
+    });
+
+    it('rejects mutations with untrusted foreign Origin with 403 CSRF_ORIGIN_INVALID', async () => {
+      const res = await request(app)
+        .post('/api/admin/auth/login')
+        .set('Origin', 'https://evil-attacker.example.com')
+        .send({
+          email: adminUserEmail,
+          password: 'PasswordAdmin123!',
+        });
+
+      expect(res.status).toBe(403);
+      expect(res.body.error.code).toBe('CSRF_ORIGIN_INVALID');
+    });
+
+    it('allows requests from http://localhost:3002 and http://127.0.0.1:3002 in non-production environment', async () => {
+      // 1. Test http://localhost:3002
+      const resLocalhost = await request(app)
+        .post('/api/admin/auth/login')
+        .set('Origin', 'http://localhost:3002')
+        .send({
+          email: adminUserEmail,
+          password: 'PasswordAdmin123!',
+        });
+      expect(resLocalhost.status).toBe(200);
+
+      // 2. Test http://127.0.0.1:3002
+      const resLoopback = await request(app)
+        .post('/api/admin/auth/login')
+        .set('Origin', 'http://127.0.0.1:3002')
+        .send({
+          email: adminUserEmail,
+          password: 'PasswordAdmin123!',
+        });
+      expect(resLoopback.status).toBe(200);
     });
 
     it('returns admin profile on /api/admin/auth/me', async () => {

@@ -92,6 +92,7 @@ export async function loginAdmin(input: AdminLoginInput): Promise<{
   const accessToken = createAccessToken({
     userId: user.id,
     email: user.email,
+    role: user.role,
     tokenVersion: user.tokenVersion,
   });
 

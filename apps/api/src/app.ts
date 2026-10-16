@@ -51,14 +51,17 @@ export function createApp(): Express {
     origin: (origin, callback) => {
       // Allow requests with no origin (like mobile apps, curl, or server-to-server)
       if (!origin) return callback(null, true);
-      const allowedOrigins = [
-        env.CORS_ORIGIN,
-        'http://localhost:3000',
-        'http://127.0.0.1:3000',
-        'http://localhost:3002',
-        'http://127.0.0.1:3002',
-      ];
-      if (allowedOrigins.includes(origin)) {
+      const configuredOrigins = env.CORS_ORIGIN
+        ? env.CORS_ORIGIN.split(',').map((o) => o.trim()).filter(Boolean)
+        : [];
+      const allowedOrigins = new Set<string>(configuredOrigins);
+      if (env.NODE_ENV !== 'production') {
+        allowedOrigins.add('http://localhost:3000');
+        allowedOrigins.add('http://127.0.0.1:3000');
+        allowedOrigins.add('http://localhost:3002');
+        allowedOrigins.add('http://127.0.0.1:3002');
+      }
+      if (allowedOrigins.has(origin)) {
         return callback(null, true);
       }
       return callback(null, false);

@@ -15,9 +15,13 @@ import {
 import { toUserProfile } from '../services/auth.service.js';
 import { requireAdmin } from '../middleware/requireAdmin.js';
 import { adminLoginRateLimiter } from '../middleware/rateLimiter.js';
+import { originCheckMiddleware } from '../middleware/originCheck.js';
 import { prisma } from '@studyflow/database';
 
 export const adminAuthRouter = Router();
+
+// Apply CSRF/Origin check to all state-changing endpoints in admin auth
+adminAuthRouter.use(originCheckMiddleware);
 
 // POST /api/admin/auth/login
 adminAuthRouter.post('/login', adminLoginRateLimiter, async (req: Request, res: Response, next: NextFunction) => {

@@ -15,8 +15,12 @@ import {
   getAdminTrends,
   getAdminSystemStatus,
 } from '../services/admin.service.js';
+import { originCheckMiddleware } from '../middleware/originCheck.js';
 
 export const adminRouter = Router();
+
+// Apply CSRF/Origin check to all state-changing endpoints in admin
+adminRouter.use(originCheckMiddleware);
 
 // Enforce requireAdmin on all /api/admin routes
 adminRouter.use(requireAdmin);

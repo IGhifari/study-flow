@@ -5,7 +5,7 @@ import { resolveForwardedClientIp } from '@/lib/clientIp';
 const INTERNAL_API_URL =
   process.env.INTERNAL_API_URL ||
   process.env.NEXT_PUBLIC_API_URL ||
-  'http://localhost:3001';
+  'http://localhost:4000';
 
 const STATE_CHANGING_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
 
@@ -80,6 +80,18 @@ async function handleProxy(
   }
 
   const { path } = await params;
+  if (!path || path.length === 0 || path[0] !== 'admin') {
+    return NextResponse.json(
+      {
+        error: {
+          code: 'NOT_FOUND',
+          message: 'Rute tidak ditemukan pada portal administrator',
+        },
+      },
+      { status: 404 }
+    );
+  }
+
   const targetPath = path.join('/');
   const search = req.nextUrl.search;
   const targetUrl = `${INTERNAL_API_URL}/api/${targetPath}${search}`;
