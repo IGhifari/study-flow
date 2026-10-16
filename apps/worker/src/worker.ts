@@ -6,10 +6,12 @@ import {
   processAiQuizJob,
 } from './queues/aiQueue.js';
 import {
+  createAssignmentReminderQueue,
   createAssignmentReminderWorker,
   reconcileAssignmentReminders,
 } from './queues/assignmentReminderQueue.js';
 import { Worker, Job } from 'bullmq';
+import { prisma } from '@studyflow/database';
 import { QUEUE_NAMES } from '@studyflow/shared';
 import { env } from './config/env.js';
 
@@ -25,10 +27,11 @@ console.log(JSON.stringify({
 const redisConnection = createRedisConnection();
 globalAiRateLimiter.setRedisClient(redisConnection);
 const smokeWorker = createSmokeWorker(redisConnection);
+const reminderQueue = createAssignmentReminderQueue(redisConnection);
 const reminderWorker = createAssignmentReminderWorker(redisConnection);
 
 // Initial non-blocking reconciliation on startup
-reconcileAssignmentReminders().catch((err) => {
+reconcileAssignmentReminders({ queue: reminderQueue }).catch((err) => {
   console.error(JSON.stringify({
     level: 'error',
     timestamp: new Date().toISOString(),
@@ -39,7 +42,7 @@ reconcileAssignmentReminders().catch((err) => {
 
 // Periodic reconciliation every 15 minutes
 const reconciliationInterval = setInterval(() => {
-  reconcileAssignmentReminders().catch((err) => {
+  reconcileAssignmentReminders({ queue: reminderQueue }).catch((err) => {
     console.error(JSON.stringify({
       level: 'error',
       timestamp: new Date().toISOString(),
@@ -144,13 +147,15 @@ async function gracefulShutdown(signal: string): Promise<void> {
       documentWorker.close(),
       aiWorker.close(),
       reminderWorker.close(),
+      reminderQueue.close(),
     ]);
     await redisConnection.quit();
+    await prisma.$disconnect();
 
     console.log(JSON.stringify({
       level: 'info',
       timestamp: new Date().toISOString(),
-      message: 'Worker and Redis connection closed cleanly. Goodbye.',
+      message: 'Worker, Redis, and Database connections closed cleanly. Goodbye.',
     }));
 
     clearTimeout(forceExit);

@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { prisma } from '@studyflow/database';
 import {
   processAssignmentReminderJob,
@@ -606,5 +606,52 @@ describe('Worker Assignment Deadline Reminder (H-1) Queue & Reconciliation', () 
     });
     expect(log2?.status).toBe('SKIPPED');
     expect(log2?.error).toContain('Keterlambatan melebihi batas toleransi 1 jam');
+  });
+
+  it('13. Reconciliation runner enqueues future eligible assignments (targetSendTime > now within 72h window) to queue', async () => {
+    const now = new Date('2026-10-20T12:00:00.000Z');
+    // Due in 48 hours -> targetSendTime is in 24 hours (targetSendTime > now, within 72h window)
+    const deadline = new Date(now.getTime() + 48 * 60 * 60 * 1000);
+    const targetSendTime = deadline.getTime() - 24 * 60 * 60 * 1000;
+
+    const assignment = await prisma.assignment.create({
+      data: {
+        userId: testUserId,
+        courseId: testCourseId,
+        title: 'Tugas Masa Depan Reconcile Queue',
+        dueDate: deadline,
+        status: 'TODO',
+      },
+    });
+
+    const mockQueue = {
+      add: vi.fn().mockResolvedValue({}),
+    } as any;
+
+    const report = await reconcileAssignmentReminders({
+      now,
+      queue: mockQueue,
+    });
+
+    expect(report.enqueued).toBe(1);
+    expect(report.processed).toBe(0);
+    expect(report.skipped).toBe(0);
+
+    const expectedJobId = `reminder-${assignment.id}-D_MINUS_1-${deadline.getTime()}`;
+    const expectedDelay = targetSendTime - now.getTime();
+
+    expect(mockQueue.add).toHaveBeenCalledTimes(1);
+    expect(mockQueue.add).toHaveBeenCalledWith(
+      'send-assignment-reminder',
+      {
+        assignmentId: assignment.id,
+        reminderType: 'D_MINUS_1',
+        deadline: deadline.toISOString(),
+      },
+      {
+        jobId: expectedJobId,
+        delay: expectedDelay,
+      }
+    );
   });
 });

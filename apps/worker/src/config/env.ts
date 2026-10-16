@@ -43,6 +43,7 @@ if (isTestMode) {
 
 const WorkerEnvSchema = z.object({
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
+  DATABASE_URL: z.string().min(1, 'DATABASE_URL is required'),
   REDIS_URL: z.string().min(1, 'REDIS_URL is required').default('redis://localhost:6379'),
   // Storage configuration (M5)
   STORAGE_DRIVER: z
@@ -93,12 +94,36 @@ const WorkerEnvSchema = z.object({
 
 export type WorkerEnv = z.infer<typeof WorkerEnvSchema>;
 
+function getDatabaseName(url: string | undefined): string | null {
+  if (!url) return null;
+  try {
+    const parsed = new URL(url);
+    const name = decodeURIComponent(parsed.pathname.replace(/^\//, ''));
+    return name.length > 0 ? name : null;
+  } catch {
+    return null;
+  }
+}
+
+function assertTestDatabaseUrl(url: string | undefined, variableName: string): void {
+  const name = getDatabaseName(url);
+  if (!name || !/_test$/.test(name)) {
+    throw new Error(
+      `[TEST DB GUARD] ${variableName} harus menunjuk database yang namanya berakhiran "_test" ` +
+        `(saat ini: ${name ?? 'tidak diset/tidak valid'}). Pengujian dibatalkan untuk melindungi data development.`
+    );
+  }
+}
+
 function loadWorkerEnv(): WorkerEnv {
   const result = WorkerEnvSchema.safeParse(process.env);
   if (!result.success) {
     const missingKeys = result.error.errors.map((err) => err.path.join('.')).join(', ');
     console.error(`[FATAL] Worker environment validation failed. Invalid or missing variables: ${missingKeys}`);
     process.exit(1);
+  }
+  if (result.data.NODE_ENV === 'test') {
+    assertTestDatabaseUrl(result.data.DATABASE_URL, 'DATABASE_URL');
   }
   return result.data;
 }

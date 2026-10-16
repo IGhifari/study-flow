@@ -171,4 +171,31 @@ describe('Assignment Reminder User Preference API Tests', () => {
 
     expect(meRes.body.user.reminderEmailDeadline).toBe(false);
   });
+
+  it('5. Rotasi refresh token (POST /api/auth/refresh) tetap mempertahankan user.reminderEmailDeadline === true', async () => {
+    const { cookieHeader } = await createLoggedInUser(true);
+
+    // Enable reminderEmailDeadline via PATCH /api/auth/me
+    const updateRes = await request(app)
+      .patch('/api/auth/me')
+      .set('Origin', TRUSTED_ORIGIN)
+      .set('Cookie', cookieHeader)
+      .send({
+        reminderEmailDeadline: true,
+      });
+
+    expect(updateRes.status).toBe(200);
+    expect(updateRes.body.user.reminderEmailDeadline).toBe(true);
+
+    // Call POST /api/auth/refresh with current session cookies
+    const refreshRes = await request(app)
+      .post('/api/auth/refresh')
+      .set('Origin', TRUSTED_ORIGIN)
+      .set('Cookie', cookieHeader)
+      .send({});
+
+    expect(refreshRes.status).toBe(200);
+    expect(refreshRes.body.user).toBeDefined();
+    expect(refreshRes.body.user.reminderEmailDeadline).toBe(true);
+  });
 });

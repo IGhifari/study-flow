@@ -225,11 +225,12 @@ export async function rotateRefreshToken(
       timezone: string;
       role: 'USER' | 'ADMIN';
       email_verified_at: Date | null;
+      reminder_email_deadline: boolean;
       token_version: number;
       created_at: Date;
       updated_at: Date;
     }>>`
-      SELECT id, name, email, password_hash, timezone, role, email_verified_at, token_version, created_at, updated_at
+      SELECT id, name, email, password_hash, timezone, role, email_verified_at, reminder_email_deadline, token_version, created_at, updated_at
       FROM users
       WHERE id = ${initialSession.userId}
       LIMIT 1
@@ -293,6 +294,7 @@ export async function rotateRefreshToken(
       timezone: user.timezone,
       role: user.role,
       emailVerifiedAt: user.email_verified_at,
+      reminderEmailDeadline: user.reminder_email_deadline,
       createdAt: user.created_at,
       updatedAt: user.updated_at,
       passwordHash: user.password_hash,

@@ -86,3 +86,14 @@ export async function scheduleAssignmentReminder(assignment: {
     }
   }
 }
+
+export async function closeAssignmentReminderQueue(): Promise<void> {
+  if (reminderQueue) {
+    await reminderQueue.close();
+    reminderQueue = null;
+  }
+  if (redisConnection) {
+    await redisConnection.quit().catch(() => redisConnection?.disconnect());
+    redisConnection = null;
+  }
+}
