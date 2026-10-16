@@ -37,6 +37,13 @@ import {
   DialogDescription,
   DialogFooter,
 } from '@/components/ui/dialog';
+import {
+  RadixSelect as Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 interface MaterialQuizTabProps {
   materialId: string;
@@ -242,23 +249,29 @@ export function MaterialQuizTab({
 
         <div className="flex items-center gap-2">
           {quizzes.length > 0 && !activeAttempt && !completedAttempt && (
-            <select
+            <Select
               value={selectedQuiz?.id || ''}
-              onChange={(e) => {
-                const found = quizzes.find((q) => q.id === e.target.value);
+              onValueChange={(val) => {
+                const found = quizzes.find((q) => q.id === val);
                 if (found) {
                   setSelectedQuiz(found);
                 }
               }}
-              className="h-9 rounded-lg border border-border bg-background px-3 text-xs font-medium text-foreground focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-primary"
-              aria-label="Pilih set kuis"
             >
-              {quizzes.map((q) => (
-                <option key={q.id} value={q.id}>
-                  {q.title} ({q.questionCount || q.targetCount} soal)
-                </option>
-              ))}
-            </select>
+              <SelectTrigger
+                className="h-9 min-w-[200px] sm:min-w-[240px] text-xs font-medium"
+                aria-label="Pilih set kuis"
+              >
+                <SelectValue placeholder="Pilih set kuis" />
+              </SelectTrigger>
+              <SelectContent>
+                {quizzes.map((q) => (
+                  <SelectItem key={q.id} value={q.id} className="text-xs">
+                    {q.title} ({q.questionCount || q.targetCount} soal)
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           )}
 
           {!activeAttempt && (
@@ -317,7 +330,7 @@ export function MaterialQuizTab({
           </p>
           <div className="mt-4 inline-flex items-center gap-2 rounded-full border border-border bg-muted/40 px-3.5 py-1 text-xs text-muted-foreground">
             <span className="h-2 w-2 rounded-full bg-primary animate-pulse" />
-            <span>Memproses di antrean background worker</span>
+            <span>Merancang soal kuis...</span>
           </div>
         </Card>
       ) : completedAttempt ? (
@@ -335,19 +348,19 @@ export function MaterialQuizTab({
 
             <div className="mt-5 flex items-center justify-center gap-8 py-3 px-6 rounded-xl bg-muted/30 border border-border w-fit mx-auto">
               <div>
-                <span className="text-3xl font-extrabold text-primary">
+                <span className="text-3xl font-extrabold text-primary tabular-nums">
                   {completedAttempt.score}
                 </span>
-                <span className="block text-[11px] font-medium text-muted-foreground mt-0.5">
+                <span className="block text-xs font-medium text-muted-foreground mt-0.5">
                   Nilai (0-100)
                 </span>
               </div>
               <div className="h-8 w-px bg-border" />
               <div>
-                <span className="text-2xl font-bold text-foreground">
+                <span className="text-2xl font-bold text-foreground tabular-nums">
                   {completedAttempt.correctAnswersCount} / {completedAttempt.totalQuestions}
                 </span>
-                <span className="block text-[11px] font-medium text-muted-foreground mt-0.5">
+                <span className="block text-xs font-medium text-muted-foreground mt-0.5">
                   Jawaban Benar
                 </span>
               </div>
@@ -400,7 +413,7 @@ export function MaterialQuizTab({
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex items-start gap-2.5">
-                      <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-muted text-[11px] font-bold text-foreground mt-0.5">
+                      <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-muted text-xs font-bold text-foreground mt-0.5">
                         {idx + 1}
                       </span>
                       <p className="text-xs sm:text-sm font-semibold text-foreground leading-snug">
@@ -432,7 +445,7 @@ export function MaterialQuizTab({
                       if (isOptionCorrect && isUserChoice) {
                         optClass = 'border-emerald-500/60 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 font-semibold';
                         statusBadge = (
-                          <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
+                          <span className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-600 dark:text-emerald-400">
                             <CheckCircle2 className="h-3.5 w-3.5" />
                             <span>Pilihan Anda (Benar)</span>
                           </span>
@@ -440,7 +453,7 @@ export function MaterialQuizTab({
                       } else if (isOptionCorrect) {
                         optClass = 'border-emerald-500/60 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 font-semibold';
                         statusBadge = (
-                          <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
+                          <span className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-600 dark:text-emerald-400">
                             <CheckCircle2 className="h-3.5 w-3.5" />
                             <span>Kunci Jawaban</span>
                           </span>
@@ -448,7 +461,7 @@ export function MaterialQuizTab({
                       } else if (isUserChoice && !isCorrect) {
                         optClass = 'border-destructive/60 bg-destructive/10 text-destructive font-semibold';
                         statusBadge = (
-                          <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-destructive">
+                          <span className="inline-flex items-center gap-1 text-xs font-semibold text-destructive">
                             <XCircle className="h-3.5 w-3.5" />
                             <span>Pilihan Anda (Salah)</span>
                           </span>
@@ -503,17 +516,18 @@ export function MaterialQuizTab({
           {/* Header Progres Soal & Status Draft */}
           <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground px-1">
             <span className="font-semibold text-foreground">
-              Soal {currentQuestionIndex + 1} dari {activeAttempt.questions.length}
+              Soal <span className="tabular-nums">{currentQuestionIndex + 1}</span> dari{' '}
+              <span className="tabular-nums">{activeAttempt.questions.length}</span>
             </span>
 
             <div className="flex items-center gap-3">
               {draftSaveStatus === 'saving' ? (
-                <span className="inline-flex items-center gap-1.5 text-muted-foreground text-[11px]">
+                <span className="inline-flex items-center gap-1.5 text-muted-foreground text-xs">
                   <Loader2 className="h-3 w-3 animate-spin text-primary" />
                   <span>Menyimpan jawaban...</span>
                 </span>
               ) : draftSaveStatus === 'saved' ? (
-                <span className="inline-flex items-center gap-1 text-emerald-600 dark:text-emerald-400 text-[11px] font-medium">
+                <span className="inline-flex items-center gap-1 text-emerald-600 dark:text-emerald-400 text-xs font-medium">
                   <Check className="h-3 w-3" />
                   <span>Tersimpan</span>
                 </span>
@@ -521,7 +535,7 @@ export function MaterialQuizTab({
                 <button
                   type="button"
                   onClick={handleRetrySaveDraft}
-                  className="inline-flex items-center gap-1 text-destructive text-[11px] font-semibold hover:underline"
+                  className="inline-flex items-center gap-1 text-destructive text-xs font-semibold hover:underline"
                   title="Klik untuk mencoba simpan kembali"
                 >
                   <AlertCircle className="h-3 w-3" />
@@ -529,7 +543,7 @@ export function MaterialQuizTab({
                 </button>
               ) : null}
 
-              <span className="text-primary font-bold">
+              <span className="text-primary font-bold tabular-nums">
                 {answeredCount} / {activeAttempt.questions.length} Terjawab
               </span>
             </div>
@@ -798,14 +812,14 @@ export function MaterialQuizTab({
                   }`}
                 >
                   <span className="text-base sm:text-lg">{count}</span>
-                  <span className="block text-[11px] font-normal text-muted-foreground mt-0.5">
+                  <span className="block text-xs font-normal text-muted-foreground mt-0.5">
                     Soal Pilihan Ganda
                   </span>
                 </button>
               ))}
             </div>
 
-            <p className="text-[11px] text-muted-foreground leading-relaxed pt-1">
+            <p className="text-xs text-muted-foreground leading-relaxed pt-1">
               Pembuatan kuis menggunakan kuota AI harian Anda. Setiap soal memiliki 4 opsi jawaban dan dilengkapi rujukan pembahasan ke dokumen PDF asli.
             </p>
           </div>

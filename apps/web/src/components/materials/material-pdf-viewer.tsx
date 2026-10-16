@@ -13,9 +13,22 @@ import {
   Loader2,
   FileText,
   Maximize2,
+  Minimize2,
+  Columns2,
+  ChevronDown,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { cn } from '@/lib/utils';
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+} from '@/components/ui/dropdown-menu';
+
+export type PdfZoomMode = number | 'fit-width' | 'fit-page';
 
 interface MaterialPdfViewerProps {
   materialTitle: string;
@@ -23,13 +36,15 @@ interface MaterialPdfViewerProps {
   totalPages: number;
   currentPage: number;
   onPageChange: (page: number) => void;
-  zoom: number;
-  onZoomChange: (zoom: number) => void;
+  zoom: PdfZoomMode;
+  onZoomChange: (zoom: PdfZoomMode) => void;
   isLoading: boolean;
   error: string | null;
   onRefreshSignedUrl: () => void;
   onDownload: () => void;
   highlightedPage?: number | null;
+  isSplitView?: boolean;
+  onToggleSplitView?: () => void;
 }
 
 export function MaterialPdfViewer({
@@ -45,12 +60,42 @@ export function MaterialPdfViewer({
   onRefreshSignedUrl,
   onDownload,
   highlightedPage,
+  isSplitView,
+  onToggleSplitView,
 }: MaterialPdfViewerProps): React.JSX.Element {
   const [pageInput, setPageInput] = React.useState<string>(String(currentPage));
 
   React.useEffect(() => {
     setPageInput(String(currentPage));
   }, [currentPage]);
+
+  const containerRef = React.useRef<HTMLDivElement>(null);
+  const [isFullscreen, setIsFullscreen] = React.useState(false);
+
+  React.useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(Boolean(document.fullscreenElement));
+    };
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
+  }, []);
+
+  const handleToggleFullscreen = () => {
+    if (!containerRef.current) return;
+    if (!document.fullscreenElement) {
+      if (containerRef.current.requestFullscreen) {
+        containerRef.current.requestFullscreen().catch(() => {
+          handleOpenInNewTab();
+        });
+      } else {
+        handleOpenInNewTab();
+      }
+    } else {
+      if (document.exitFullscreen) {
+        document.exitFullscreen().catch(() => {});
+      }
+    }
+  };
 
   const handlePageInputCommit = () => {
     const val = parseInt(pageInput, 10);
@@ -66,6 +111,39 @@ export function MaterialPdfViewer({
       window.open(previewUrl, '_blank', 'noopener,noreferrer');
     }
   };
+
+  const pdfFragment = React.useMemo(() => {
+    if (zoom === 'fit-width') {
+      return `#page=${currentPage}&view=FitH`;
+    }
+    if (zoom === 'fit-page') {
+      return `#page=${currentPage}&view=Fit`;
+    }
+    return `#page=${currentPage}&zoom=${zoom}`;
+  }, [currentPage, zoom]);
+
+  const handleZoomIn = () => {
+    if (typeof zoom === 'number') {
+      onZoomChange(Math.min(250, zoom + 15));
+    } else {
+      onZoomChange(125);
+    }
+  };
+
+  const handleZoomOut = () => {
+    if (typeof zoom === 'number') {
+      onZoomChange(Math.max(50, zoom - 15));
+    } else {
+      onZoomChange(75);
+    }
+  };
+
+  const zoomLabel =
+    zoom === 'fit-width'
+      ? 'Pas Lebar'
+      : zoom === 'fit-page'
+        ? 'Pas Halaman'
+        : `${zoom}%`;
 
   if (error) {
     return (
@@ -141,7 +219,7 @@ export function MaterialPdfViewer({
           </div>
           <button
             onClick={() => onPageChange(highlightedPage)}
-            className="text-[11px] underline hover:opacity-80 font-medium"
+            className="text-xs underline hover:opacity-80 font-medium"
           >
             Fokus halaman
           </button>
@@ -149,7 +227,13 @@ export function MaterialPdfViewer({
       )}
 
       {/* Frame Reader Utama */}
-      <Card className="overflow-hidden border border-border bg-card shadow-xs">
+      <Card
+        ref={containerRef}
+        className={cn(
+          "overflow-hidden border border-border bg-card shadow-xs transition-all",
+          isFullscreen && "fixed inset-0 z-50 rounded-none border-none h-screen w-screen flex flex-col bg-background"
+        )}
+      >
         {/* Toolbar Kontrol Pembaca */}
         <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border bg-muted/30 px-3 py-2 text-xs">
           {/* Sisi Kiri: Navigasi Halaman */}
@@ -176,10 +260,10 @@ export function MaterialPdfViewer({
                 onChange={(e) => setPageInput(e.target.value)}
                 onBlur={handlePageInputCommit}
                 onKeyDown={(e) => e.key === 'Enter' && handlePageInputCommit()}
-                className="w-12 h-7 text-center rounded-md border border-input bg-background text-foreground text-xs font-semibold focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-primary"
+                className="w-12 h-7 text-center rounded-md border border-input bg-background text-foreground text-xs font-semibold focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-primary tabular-nums"
                 aria-label="Nomor halaman PDF saat ini"
               />
-              <span>/ {totalPages}</span>
+              <span className="tabular-nums">/ {totalPages}</span>
             </div>
 
             <Button
@@ -200,8 +284,8 @@ export function MaterialPdfViewer({
             <Button
               variant="ghost"
               size="icon-sm"
-              onClick={() => onZoomChange(Math.max(50, zoom - 15))}
-              disabled={zoom <= 50 || isLoading}
+              onClick={handleZoomOut}
+              disabled={zoom === 50 || isLoading}
               className="h-8 w-8 text-muted-foreground hover:text-foreground"
               title="Perkecil Tampilan"
               aria-label="Perkecil Zoom"
@@ -209,21 +293,45 @@ export function MaterialPdfViewer({
               <ZoomOut className="h-3.5 w-3.5" />
             </Button>
 
-            <button
-              type="button"
-              onClick={() => onZoomChange(100)}
-              className="h-7 px-2 text-xs font-semibold text-muted-foreground hover:text-foreground transition-colors rounded hover:bg-accent"
-              title="Kembalikan ke 100%"
-              aria-label="Reset zoom ke 100%"
-            >
-              {zoom}%
-            </button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button
+                  type="button"
+                  className="h-7 px-2 text-xs font-semibold text-muted-foreground hover:text-foreground transition-colors rounded hover:bg-accent flex items-center gap-1"
+                  title="Pilih skala tampilan"
+                  aria-label="Pilih skala zoom dokumen"
+                >
+                  <span className="tabular-nums">{zoomLabel}</span>
+                  <ChevronDown className="h-3 w-3 opacity-60" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="center" className="w-36 text-xs">
+                <DropdownMenuItem onClick={() => onZoomChange('fit-width')}>
+                  <span className={zoom === 'fit-width' ? 'font-bold text-primary' : ''}>
+                    Pas Lebar (Fit)
+                  </span>
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => onZoomChange('fit-page')}>
+                  <span className={zoom === 'fit-page' ? 'font-bold text-primary' : ''}>
+                    Pas Halaman
+                  </span>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                {[50, 75, 100, 125, 150, 200].map((val) => (
+                  <DropdownMenuItem key={val} onClick={() => onZoomChange(val)}>
+                    <span className={zoom === val ? 'font-bold text-primary tabular-nums' : 'tabular-nums'}>
+                      {val}% {val === 100 ? '(Asli)' : ''}
+                    </span>
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
 
             <Button
               variant="ghost"
               size="icon-sm"
-              onClick={() => onZoomChange(Math.min(200, zoom + 15))}
-              disabled={zoom >= 200 || isLoading}
+              onClick={handleZoomIn}
+              disabled={zoom === 250 || isLoading}
               className="h-8 w-8 text-muted-foreground hover:text-foreground"
               title="Perbesar Tampilan"
               aria-label="Perbesar Zoom"
@@ -232,8 +340,40 @@ export function MaterialPdfViewer({
             </Button>
           </div>
 
-          {/* Sisi Kanan: Quick Actions */}
+          {/* Sisi Kanan: Quick Actions & Tampilan Penuh */}
           <div className="flex items-center gap-1.5 ml-auto sm:ml-0">
+            {onToggleSplitView && (
+              <Button
+                variant={isSplitView ? "outline" : "secondary"}
+                size="sm"
+                onClick={onToggleSplitView}
+                className="h-8 px-2 text-xs gap-1 hidden xl:inline-flex"
+                title={isSplitView ? "Perluas tampilan PDF tanpa panel kanan" : "Kembali ke tampilan belajar berdampingan"}
+                aria-label={isSplitView ? "Perluas tampilan PDF tanpa panel kanan" : "Kembali ke tampilan belajar berdampingan"}
+              >
+                <Columns2 className="h-3.5 w-3.5" />
+                <span>{isSplitView ? "Panel Penuh" : "Bagi Layar"}</span>
+              </Button>
+            )}
+
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleToggleFullscreen}
+              className="h-8 px-2 text-xs gap-1 text-muted-foreground hover:text-foreground"
+              title={isFullscreen ? "Keluar dari layar penuh monitor" : "Tampilkan PDF di seluruh layar monitor"}
+              aria-label={isFullscreen ? "Keluar dari layar penuh" : "Mode layar penuh"}
+            >
+              {isFullscreen ? (
+                <Minimize2 className="h-3.5 w-3.5" />
+              ) : (
+                <Maximize2 className="h-3.5 w-3.5" />
+              )}
+              <span className="hidden sm:inline">
+                {isFullscreen ? "Keluar Penuh" : "Layar Penuh"}
+              </span>
+            </Button>
+
             <Button
               variant="ghost"
               size="sm"
@@ -272,7 +412,12 @@ export function MaterialPdfViewer({
         </div>
 
         {/* Viewport Iframe PDF */}
-        <div className="relative h-[620px] sm:h-[800px] lg:h-[860px] w-full bg-muted/15">
+        <div
+          className={cn(
+            "relative w-full bg-muted/15 flex-1 transition-all",
+            isFullscreen ? "h-[calc(100vh-84px)]" : "h-[620px] sm:h-[800px] lg:h-[860px]"
+          )}
+        >
           {isLoading && (
             <div className="absolute inset-0 flex flex-col items-center justify-center bg-background/60 backdrop-blur-xs z-10 gap-2">
               <Loader2 className="h-7 w-7 animate-spin text-primary" />
@@ -285,7 +430,7 @@ export function MaterialPdfViewer({
           {previewUrl && (
             <iframe
               key={`${previewUrl}-${currentPage}-${zoom}`}
-              src={`${previewUrl}#page=${currentPage}&zoom=${zoom}`}
+              src={`${previewUrl}${pdfFragment}`}
               className="h-full w-full border-none"
               title={`Pratinjau PDF: ${materialTitle}`}
             />
@@ -293,17 +438,26 @@ export function MaterialPdfViewer({
         </div>
 
         {/* Footer Ringkas */}
-        <div className="flex items-center justify-between border-t border-border bg-muted/20 px-3.5 py-2 text-[11px] text-muted-foreground">
+        <div className="flex items-center justify-between border-t border-border bg-muted/20 px-3.5 py-2 text-xs text-muted-foreground">
           <span className="truncate max-w-[280px] sm:max-w-none">
             Pratinjau dokumen PDF terenkripsi aman.
           </span>
           <button
             type="button"
-            onClick={handleOpenInNewTab}
+            onClick={handleToggleFullscreen}
             className="inline-flex items-center gap-1 font-medium text-primary hover:underline shrink-0 ml-2"
           >
-            <Maximize2 className="h-3 w-3" />
-            <span>Layar Penuh</span>
+            {isFullscreen ? (
+              <>
+                <Minimize2 className="h-3 w-3" />
+                <span>Keluar Layar Penuh</span>
+              </>
+            ) : (
+              <>
+                <Maximize2 className="h-3 w-3" />
+                <span>Layar Penuh</span>
+              </>
+            )}
           </button>
         </div>
       </Card>

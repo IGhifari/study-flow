@@ -18,6 +18,7 @@ import {
   Search,
 } from 'lucide-react';
 import { UserProfile } from '@studyflow/shared';
+import { cn } from '@/lib/utils';
 import { apiLogout } from '@/lib/auth-client';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { GlobalSearchDialog } from '@/components/search/global-search-dialog';
@@ -288,6 +289,8 @@ function HeaderBreadcrumbs(): React.JSX.Element {
 
 export function AppShell({ user, children }: AppShellProps): React.JSX.Element {
   const router = useRouter();
+  const pathname = usePathname();
+  const isWidePage = Boolean(pathname?.startsWith('/materials/') && pathname !== '/materials');
   const [currentUser, setCurrentUser] = React.useState<UserProfile>(user);
   const [isSearchOpen, setIsSearchOpen] = React.useState(false);
   const searchTriggerRef = React.useRef<HTMLButtonElement | null>(null);
@@ -438,9 +441,11 @@ export function AppShell({ user, children }: AppShellProps): React.JSX.Element {
             </div>
           </header>
 
-          {/* Main Dashboard Canvas - Max 1200px centered per DESIGN.md section 7.1 */}
+          {/* Main Dashboard Canvas - Max 1200px (or 1440px for wide materials split-view) centered per DESIGN.md section 7.1 */}
           <main id="main-content" className="flex-1 p-3.5 sm:p-6 lg:p-8" tabIndex={-1}>
-            <div className="mx-auto max-w-[1200px]">{children}</div>
+            <div className={cn("mx-auto", isWidePage ? "max-w-[1440px]" : "max-w-[1200px]")}>
+              {children}
+            </div>
           </main>
         </SidebarInset>
 

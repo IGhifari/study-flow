@@ -24,11 +24,19 @@ import {
   HelpCircle,
   MoreVertical,
   Pin,
+  Columns2,
 } from 'lucide-react';
+import {
+  RadixSelect as Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { pinMaterial } from '@/lib/pin-client';
 import { MaterialFlashcardTab } from '@/components/materials/material-flashcard-tab';
 import { MaterialQuizTab } from '@/components/materials/material-quiz-tab';
-import { MaterialPdfViewer } from '@/components/materials/material-pdf-viewer';
+import { MaterialPdfViewer, PdfZoomMode } from '@/components/materials/material-pdf-viewer';
 import { MaterialSummaryTab } from '@/components/materials/material-summary-tab';
 import {
   Material,
@@ -89,11 +97,24 @@ export default function MaterialDetailPage(): React.JSX.Element {
   // Tab View Mode: 'pdf' | 'summary' | 'flashcards' | 'quiz' | 'text'
   const [activeTab, setActiveTab] = React.useState<'pdf' | 'summary' | 'flashcards' | 'quiz' | 'text'>('pdf');
 
+  // Side-by-Side Split View (Desktop >= 1280px)
+  const [isSplitView, setIsSplitView] = React.useState(true);
+  const [isLargeScreen, setIsLargeScreen] = React.useState(false);
+
+  React.useEffect(() => {
+    const checkScreen = () => {
+      setIsLargeScreen(window.innerWidth >= 1280);
+    };
+    checkScreen();
+    window.addEventListener('resize', checkScreen);
+    return () => window.removeEventListener('resize', checkScreen);
+  }, []);
+
   // PDF Preview & Controls State
   const [previewUrl, setPreviewUrl] = React.useState<string | null>(null);
   const [isPreviewLoading, setIsPreviewLoading] = React.useState(false);
   const [previewError, setPreviewError] = React.useState<string | null>(null);
-  const [zoom, setZoom] = React.useState(100);
+  const [zoom, setZoom] = React.useState<PdfZoomMode>('fit-width');
   const [currentPage, setCurrentPage] = React.useState(1);
   const [highlightedPage, setHighlightedPage] = React.useState<number | null>(null);
   const [copiedPageIndex, setCopiedPageIndex] = React.useState<number | null>(null);
@@ -316,10 +337,14 @@ export default function MaterialDetailPage(): React.JSX.Element {
     }
   };
 
+  const isSplitActive = isSplitView && isLargeScreen && material?.status === 'READY';
+
   const handleJumpToPdfPage = (pageNumber: number) => {
     setCurrentPage(pageNumber);
     setHighlightedPage(pageNumber);
-    setActiveTab('pdf');
+    if (!isSplitActive) {
+      setActiveTab('pdf');
+    }
     setTimeout(() => {
       const elem = document.getElementById('material-pdf-viewer-container');
       if (elem) {
@@ -499,7 +524,7 @@ export default function MaterialDetailPage(): React.JSX.Element {
             variant="ghost"
             size="sm"
             onClick={() => setActionError(null)}
-            className="h-6 px-1.5 text-[11px] text-destructive hover:bg-destructive/10"
+            className="h-6 px-1.5 text-xs text-destructive hover:bg-destructive/10"
           >
             Tutup
           </Button>
@@ -518,11 +543,11 @@ export default function MaterialDetailPage(): React.JSX.Element {
               {material.originalFilename}
             </span>
             <span>•</span>
-            <span>{sizeMb} MB</span>
+            <span className="tabular-nums">{sizeMb} MB</span>
             {material.pageCount ? (
               <>
                 <span>•</span>
-                <span className="font-medium text-foreground">{material.pageCount} hal.</span>
+                <span className="font-medium text-foreground tabular-nums">{material.pageCount} hal.</span>
               </>
             ) : null}
             <span>•</span>
@@ -532,6 +557,20 @@ export default function MaterialDetailPage(): React.JSX.Element {
 
         {/* Aksi Utama & Dropdown Aksi Sekunder */}
         <div className="flex items-center gap-2 shrink-0 self-start sm:self-auto">
+          {material.status === 'READY' && (
+            <Button
+              variant="outline"
+              size="standard"
+              onClick={() => setIsSplitView((prev) => !prev)}
+              className="hidden xl:inline-flex gap-1.5 text-xs"
+              title={isSplitView ? 'Fokus Satu Panel' : 'Tampilan Berdampingan'}
+              aria-label={isSplitView ? 'Fokus Satu Panel' : 'Tampilan Berdampingan'}
+            >
+              <Columns2 className="h-4 w-4" />
+              <span>{isSplitView ? 'Fokus Satu Panel' : 'Tampilan Berdampingan'}</span>
+            </Button>
+          )}
+
           <Button
             variant="outline"
             size="standard"
@@ -655,7 +694,7 @@ export default function MaterialDetailPage(): React.JSX.Element {
               : 'Membaca dan mengekstrak isi PDF...'}
           </h3>
           <p className="mt-1.5 text-xs sm:text-sm text-muted-foreground max-w-md mx-auto leading-relaxed">
-            Dokumen sedang dianalisis dan diekstrak teks halamannya di worker background. Halaman akan otomatis diperbarui begitu proses selesai.
+            Dokumen sedang dianalisis dan diekstrak teks halamannya. Halaman akan otomatis diperbarui begitu proses selesai.
           </p>
         </Card>
       ) : material.status === 'FAILED' ? (
@@ -684,110 +723,46 @@ export default function MaterialDetailPage(): React.JSX.Element {
             </Button>
           </div>
         </Card>
-      ) : material.status === 'READY' ? (
-        /* 4. Tab Navigasi Konten Utama */
-        <Tabs
-          value={activeTab}
-          onValueChange={(val) =>
-            setActiveTab(val as 'pdf' | 'summary' | 'flashcards' | 'quiz' | 'text')
-          }
-          className="space-y-4"
-        >
-          {/* List Tab Navigasi */}
-          <TabsList className="w-full justify-start h-auto p-1 bg-muted/40 border border-border rounded-xl overflow-x-auto flex-nowrap gap-1">
-            <TabsTrigger
-              value="pdf"
-              className="gap-2 text-xs shrink-0 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-xs min-h-[36px]"
-            >
-              <FileText className="h-4 w-4" />
-              <span>Dokumen PDF</span>
-            </TabsTrigger>
+      ) : material.status === 'READY' ? (() => {
+        const pdfViewerElement = (
+          <MaterialPdfViewer
+            materialTitle={material.title}
+            previewUrl={previewUrl}
+            totalPages={totalPages}
+            currentPage={currentPage}
+            onPageChange={(pg) => {
+              setCurrentPage(pg);
+              setHighlightedPage(null);
+            }}
+            zoom={zoom}
+            onZoomChange={setZoom}
+            isLoading={isPreviewLoading}
+            error={previewError}
+            onRefreshSignedUrl={handleRefreshSignedUrl}
+            onDownload={handleDownload}
+            highlightedPage={highlightedPage}
+            isSplitView={isSplitView}
+            onToggleSplitView={() => setIsSplitView((prev) => !prev)}
+          />
+        );
 
-            <TabsTrigger
-              value="summary"
-              className="gap-2 text-xs shrink-0 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-xs min-h-[36px]"
-            >
-              <Sparkles className="h-4 w-4 text-primary" />
-              <span>Ringkasan AI</span>
-              {summary?.status === 'READY' && (
-                <span className="ml-1 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 px-1.5 py-0.2 text-[10px] font-semibold">
-                  Siap
-                </span>
-              )}
-              {isAiWorking && (
-                <Loader2 className="h-3 w-3 animate-spin text-primary ml-1" />
-              )}
-            </TabsTrigger>
+        const summaryElement = (
+          <MaterialSummaryTab
+            summary={summary}
+            quota={quota}
+            isGenerating={isGeneratingSummary}
+            error={summaryError}
+            isArchived={isArchived}
+            onGenerate={(regen) => handleTriggerSummary(Boolean(regen))}
+            onOpenRegenerateDialog={() => setIsRegenerateConfirmOpen(true)}
+            onJumpToPage={handleJumpToPdfPage}
+            onCopySummary={handleCopySummary}
+            copiedSummary={copiedSummary}
+          />
+        );
 
-            <TabsTrigger
-              value="flashcards"
-              className="gap-2 text-xs shrink-0 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-xs min-h-[36px]"
-            >
-              <Layers className="h-4 w-4 text-primary" />
-              <span>Flashcards</span>
-            </TabsTrigger>
-
-            <TabsTrigger
-              value="quiz"
-              className="gap-2 text-xs shrink-0 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-xs min-h-[36px]"
-            >
-              <HelpCircle className="h-4 w-4 text-primary" />
-              <span>Kuis</span>
-            </TabsTrigger>
-
-            <TabsTrigger
-              value="text"
-              className="gap-2 text-xs shrink-0 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-xs min-h-[36px]"
-            >
-              <BookOpen className="h-4 w-4" />
-              <span>Teks Ekstraksi</span>
-              {extractedPages.length > 0 && (
-                <span className="ml-1 rounded-full bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground">
-                  {extractedPages.length} hal
-                </span>
-              )}
-            </TabsTrigger>
-          </TabsList>
-
-          {/* TAB 1: Pembaca PDF Interaktif */}
-          <TabsContent value="pdf" className="mt-0" id="material-pdf-viewer-container">
-            <MaterialPdfViewer
-              materialTitle={material.title}
-              previewUrl={previewUrl}
-              totalPages={totalPages}
-              currentPage={currentPage}
-              onPageChange={(pg) => {
-                setCurrentPage(pg);
-                setHighlightedPage(null);
-              }}
-              zoom={zoom}
-              onZoomChange={setZoom}
-              isLoading={isPreviewLoading}
-              error={previewError}
-              onRefreshSignedUrl={handleRefreshSignedUrl}
-              onDownload={handleDownload}
-              highlightedPage={highlightedPage}
-            />
-          </TabsContent>
-
-          {/* TAB 2: Ringkasan AI */}
-          <TabsContent value="summary" className="mt-0">
-            <MaterialSummaryTab
-              summary={summary}
-              quota={quota}
-              isGenerating={isGeneratingSummary}
-              error={summaryError}
-              isArchived={isArchived}
-              onGenerate={(regen) => handleTriggerSummary(Boolean(regen))}
-              onOpenRegenerateDialog={() => setIsRegenerateConfirmOpen(true)}
-              onJumpToPage={handleJumpToPdfPage}
-              onCopySummary={handleCopySummary}
-              copiedSummary={copiedSummary}
-            />
-          </TabsContent>
-
-          {/* TAB 3: Teks Hasil Ekstraksi */}
-          <TabsContent value="text" className="mt-0 space-y-4">
+        const textExtractionElement = (
+          <div className="space-y-4">
             {extractedPages.length === 0 ? (
               <Card className="p-8 text-center bg-card border border-border shadow-xs">
                 <BookOpen className="h-8 w-8 text-muted-foreground mx-auto" />
@@ -815,18 +790,24 @@ export default function MaterialDetailPage(): React.JSX.Element {
                       <ChevronLeft className="h-4 w-4" />
                     </Button>
 
-                    <select
-                      value={selectedTextPage}
-                      onChange={(e) => setSelectedTextPage(parseInt(e.target.value, 10))}
-                      className="h-8 rounded-lg border border-input bg-background px-2 text-xs font-semibold text-foreground focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-primary"
-                      aria-label="Pilih nomor halaman teks"
+                    <Select
+                      value={String(selectedTextPage)}
+                      onValueChange={(val) => setSelectedTextPage(parseInt(val, 10))}
                     >
-                      {extractedPages.map((p) => (
-                        <option key={p.pageNumber} value={p.pageNumber}>
-                          Halaman {p.pageNumber} ({p.characterCount} karakter)
-                        </option>
-                      ))}
-                    </select>
+                      <SelectTrigger
+                        className="h-8 text-xs font-semibold min-w-[150px] w-auto gap-2"
+                        aria-label="Pilih nomor halaman teks"
+                      >
+                        <SelectValue placeholder="Pilih Halaman" />
+                      </SelectTrigger>
+                      <SelectContent className="max-h-60">
+                        {extractedPages.map((p) => (
+                          <SelectItem key={p.pageNumber} value={String(p.pageNumber)} className="text-xs">
+                            Halaman {p.pageNumber} ({p.characterCount} karakter)
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
 
                     <Button
                       variant="outline"
@@ -842,7 +823,7 @@ export default function MaterialDetailPage(): React.JSX.Element {
                   </div>
 
                   <div className="flex items-center gap-2">
-                    <span className="text-xs text-muted-foreground font-medium">
+                    <span className="text-xs text-muted-foreground font-medium tabular-nums">
                       {currentExtractedPage?.characterCount || 0} Karakter
                     </span>
                     <Button
@@ -881,27 +862,203 @@ export default function MaterialDetailPage(): React.JSX.Element {
                 </div>
               </Card>
             )}
-          </TabsContent>
+          </div>
+        );
 
-          {/* TAB 4: Flashcards */}
-          <TabsContent value="flashcards" forceMount className="mt-0">
-            <MaterialFlashcardTab
-              materialId={material.id}
-              isArchived={isArchived}
-              onNavigateToPage={handleJumpToPdfPage}
-            />
-          </TabsContent>
+        const flashcardsElement = (
+          <MaterialFlashcardTab
+            materialId={material.id}
+            isArchived={isArchived}
+            onNavigateToPage={handleJumpToPdfPage}
+          />
+        );
 
-          {/* TAB 5: Kuis */}
-          <TabsContent value="quiz" forceMount className="mt-0">
-            <MaterialQuizTab
-              materialId={material.id}
-              isArchived={isArchived}
-              onNavigateToPage={handleJumpToPdfPage}
-            />
-          </TabsContent>
-        </Tabs>
-      ) : null}
+        const quizElement = (
+          <MaterialQuizTab
+            materialId={material.id}
+            isArchived={isArchived}
+            onNavigateToPage={handleJumpToPdfPage}
+          />
+        );
+
+        if (isSplitActive) {
+          const splitRightTab = activeTab === 'pdf' ? 'summary' : activeTab;
+          return (
+            <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 items-start">
+              {/* Panel Kiri: Pembaca Dokumen PDF */}
+              <div className="xl:col-span-6 xl:sticky xl:top-20" id="material-pdf-viewer-container">
+                {pdfViewerElement}
+              </div>
+
+              {/* Panel Kanan: Fitur Pendukung Belajar */}
+              <div className="xl:col-span-6 space-y-4">
+                <Tabs
+                  value={splitRightTab}
+                  onValueChange={(val) =>
+                    setActiveTab(val as 'summary' | 'flashcards' | 'quiz' | 'text')
+                  }
+                  className="space-y-4"
+                >
+                  <TabsList className="w-full justify-start h-auto p-1 bg-muted/40 border border-border rounded-xl overflow-x-auto flex-nowrap gap-1">
+                    <TabsTrigger
+                      value="summary"
+                      className="gap-2 text-xs shrink-0 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-xs min-h-[36px]"
+                    >
+                      <Sparkles className="h-4 w-4 text-primary" />
+                      <span>Ringkasan AI</span>
+                      {summary?.status === 'READY' && (
+                        <span className="ml-1 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 px-1.5 py-0.2 text-xs font-semibold tabular-nums">
+                          Siap
+                        </span>
+                      )}
+                      {isAiWorking && (
+                        <Loader2 className="h-3 w-3 animate-spin text-primary ml-1" />
+                      )}
+                    </TabsTrigger>
+
+                    <TabsTrigger
+                      value="flashcards"
+                      className="gap-2 text-xs shrink-0 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-xs min-h-[36px]"
+                    >
+                      <Layers className="h-4 w-4 text-primary" />
+                      <span>Flashcards</span>
+                    </TabsTrigger>
+
+                    <TabsTrigger
+                      value="quiz"
+                      className="gap-2 text-xs shrink-0 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-xs min-h-[36px]"
+                    >
+                      <HelpCircle className="h-4 w-4 text-primary" />
+                      <span>Kuis</span>
+                    </TabsTrigger>
+
+                    <TabsTrigger
+                      value="text"
+                      className="gap-2 text-xs shrink-0 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-xs min-h-[36px]"
+                    >
+                      <BookOpen className="h-4 w-4" />
+                      <span>Teks Ekstraksi</span>
+                      {extractedPages.length > 0 && (
+                        <span className="ml-1 rounded-full bg-muted px-1.5 py-0.5 text-xs text-muted-foreground tabular-nums">
+                          {extractedPages.length} hal
+                        </span>
+                      )}
+                    </TabsTrigger>
+                  </TabsList>
+
+                  <TabsContent value="summary" className="mt-0">
+                    {summaryElement}
+                  </TabsContent>
+
+                  <TabsContent value="flashcards" forceMount className="mt-0">
+                    {flashcardsElement}
+                  </TabsContent>
+
+                  <TabsContent value="quiz" forceMount className="mt-0">
+                    {quizElement}
+                  </TabsContent>
+
+                  <TabsContent value="text" className="mt-0">
+                    {textExtractionElement}
+                  </TabsContent>
+                </Tabs>
+              </div>
+            </div>
+          );
+        }
+
+        return (
+          /* Tab Navigasi Konten Utama (Mode Standar/Mobile) */
+          <Tabs
+            value={activeTab}
+            onValueChange={(val) =>
+              setActiveTab(val as 'pdf' | 'summary' | 'flashcards' | 'quiz' | 'text')
+            }
+            className="space-y-4"
+          >
+            {/* List Tab Navigasi */}
+            <TabsList className="w-full justify-start h-auto p-1 bg-muted/40 border border-border rounded-xl overflow-x-auto flex-nowrap gap-1">
+              <TabsTrigger
+                value="pdf"
+                className="gap-2 text-xs shrink-0 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-xs min-h-[36px]"
+              >
+                <FileText className="h-4 w-4" />
+                <span>Dokumen PDF</span>
+              </TabsTrigger>
+
+              <TabsTrigger
+                value="summary"
+                className="gap-2 text-xs shrink-0 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-xs min-h-[36px]"
+              >
+                <Sparkles className="h-4 w-4 text-primary" />
+                <span>Ringkasan AI</span>
+                {summary?.status === 'READY' && (
+                  <span className="ml-1 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 px-1.5 py-0.2 text-xs font-semibold tabular-nums">
+                    Siap
+                  </span>
+                )}
+                {isAiWorking && (
+                  <Loader2 className="h-3 w-3 animate-spin text-primary ml-1" />
+                )}
+              </TabsTrigger>
+
+              <TabsTrigger
+                value="flashcards"
+                className="gap-2 text-xs shrink-0 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-xs min-h-[36px]"
+              >
+                <Layers className="h-4 w-4 text-primary" />
+                <span>Flashcards</span>
+              </TabsTrigger>
+
+              <TabsTrigger
+                value="quiz"
+                className="gap-2 text-xs shrink-0 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-xs min-h-[36px]"
+              >
+                <HelpCircle className="h-4 w-4 text-primary" />
+                <span>Kuis</span>
+              </TabsTrigger>
+
+              <TabsTrigger
+                value="text"
+                className="gap-2 text-xs shrink-0 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-xs min-h-[36px]"
+              >
+                <BookOpen className="h-4 w-4" />
+                <span>Teks Ekstraksi</span>
+                {extractedPages.length > 0 && (
+                  <span className="ml-1 rounded-full bg-muted px-1.5 py-0.5 text-xs text-muted-foreground tabular-nums">
+                    {extractedPages.length} hal
+                  </span>
+                )}
+              </TabsTrigger>
+            </TabsList>
+
+            {/* TAB 1: Pembaca PDF Interaktif */}
+            <TabsContent value="pdf" className="mt-0" id="material-pdf-viewer-container">
+              {pdfViewerElement}
+            </TabsContent>
+
+            {/* TAB 2: Ringkasan AI */}
+            <TabsContent value="summary" className="mt-0">
+              {summaryElement}
+            </TabsContent>
+
+            {/* TAB 3: Teks Hasil Ekstraksi */}
+            <TabsContent value="text" className="mt-0">
+              {textExtractionElement}
+            </TabsContent>
+
+            {/* TAB 4: Flashcards */}
+            <TabsContent value="flashcards" forceMount className="mt-0">
+              {flashcardsElement}
+            </TabsContent>
+
+            {/* TAB 5: Kuis */}
+            <TabsContent value="quiz" forceMount className="mt-0">
+              {quizElement}
+            </TabsContent>
+          </Tabs>
+        );
+      })() : null}
 
       {/* Dialog Konfirmasi Regenerasi Ringkasan */}
       <Dialog open={isRegenerateConfirmOpen} onOpenChange={setIsRegenerateConfirmOpen}>

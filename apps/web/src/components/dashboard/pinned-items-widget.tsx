@@ -182,7 +182,7 @@ export function PinnedItemsWidget({
                       <div className="mt-1 flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
                         <Badge
                           variant={item.type === 'MATERIAL' ? 'secondary' : 'outline'}
-                          className="text-[10px] py-0 px-1 font-normal"
+                          className="text-xs py-0.5 px-1.5 font-normal"
                         >
                           {item.type === 'MATERIAL' ? 'Materi' : 'Catatan'}
                         </Badge>
@@ -190,7 +190,7 @@ export function PinnedItemsWidget({
                         {item.isGeneralNote ? (
                           <Badge
                             variant="outline"
-                            className="text-[10px] py-0 px-1 text-muted-foreground"
+                            className="text-xs py-0.5 px-1.5 text-muted-foreground"
                           >
                             Catatan Umum
                           </Badge>
@@ -201,7 +201,7 @@ export function PinnedItemsWidget({
                         ) : null}
 
                         <span>•</span>
-                        <span className="text-[11px] text-muted-foreground/80">
+                        <span className="text-xs text-muted-foreground/80 tabular-nums">
                           {formatUserDateTime(item.pinnedAt, timezone)}
                         </span>
                       </div>

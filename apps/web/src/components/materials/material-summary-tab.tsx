@@ -277,7 +277,7 @@ export function MaterialSummaryTab({
                               key={pg}
                               type="button"
                               onClick={() => onJumpToPage(pg)}
-                              className="text-[11px] text-primary hover:underline font-medium"
+                              className="text-xs text-primary hover:underline font-medium tabular-nums"
                               title={`Buka halaman ${pg}`}
                               aria-label={`Buka halaman ${pg} untuk istilah ${t.term}`}
                             >

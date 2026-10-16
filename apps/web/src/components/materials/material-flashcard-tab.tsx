@@ -31,6 +31,13 @@ import {
   DialogDescription,
   DialogFooter,
 } from '@/components/ui/dialog';
+import {
+  RadixSelect as Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 interface MaterialFlashcardTabProps {
   materialId: string;
@@ -122,36 +129,99 @@ export function MaterialFlashcardTab({
     }
   };
 
-  const handleUpdateMastery = async (cardId: string, status: 'NEED_REVIEW' | 'MASTERED') => {
-    if (!selectedSet || !selectedSet.cards) return;
-    setIsUpdatingMastery(true);
-    setMasteryError(null);
-    try {
-      const updatedCard = await updateFlashcardMastery(cardId, status);
-      setSelectedSet((prev) => {
-        if (!prev || !prev.cards) return prev;
-        return {
-          ...prev,
-          cards: prev.cards.map((c) => (c.id === cardId ? updatedCard : c)),
-        };
-      });
-      // Pindah ke kartu berikutnya secara otomatis jika belum di ujung
-      if (currentIndex < selectedSet.cards.length - 1) {
-        setCurrentIndex((i) => i + 1);
-        setIsFlipped(false);
+  const handleUpdateMastery = React.useCallback(
+    async (cardId: string, status: 'NEED_REVIEW' | 'MASTERED') => {
+      if (!selectedSet || !selectedSet.cards) return;
+      setIsUpdatingMastery(true);
+      setMasteryError(null);
+      try {
+        const updatedCard = await updateFlashcardMastery(cardId, status);
+        setSelectedSet((prev) => {
+          if (!prev || !prev.cards) return prev;
+          return {
+            ...prev,
+            cards: prev.cards.map((c) => (c.id === cardId ? updatedCard : c)),
+          };
+        });
+        // Pindah ke kartu berikutnya secara otomatis jika belum di ujung
+        if (currentIndex < selectedSet.cards.length - 1) {
+          setCurrentIndex((i) => i + 1);
+          setIsFlipped(false);
+        }
+      } catch (err: any) {
+        setMasteryError(err.message || 'Gagal memperbarui status pemahaman');
+      } finally {
+        setIsUpdatingMastery(false);
       }
-    } catch (err: any) {
-      setMasteryError(err.message || 'Gagal memperbarui status pemahaman');
-    } finally {
-      setIsUpdatingMastery(false);
-    }
-  };
+    },
+    [selectedSet, currentIndex]
+  );
 
-  const cards: Flashcard[] = selectedSet?.cards || [];
+  const cards: Flashcard[] = React.useMemo(() => selectedSet?.cards || [], [selectedSet?.cards]);
   const currentCard: Flashcard | undefined = cards[currentIndex];
 
   const masteredCount = cards.filter((c) => c.masteryStatus === 'MASTERED').length;
   const reviewCount = cards.filter((c) => c.masteryStatus === 'NEED_REVIEW').length;
+
+  // Keyboard navigation & mastery evaluation for active flashcard player
+  React.useEffect(() => {
+    if (selectedSet?.status !== 'READY' || !cards || cards.length === 0) return;
+
+    const handleGlobalKeyDown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement | null;
+      if (
+        target &&
+        (target.tagName === 'INPUT' ||
+          target.tagName === 'TEXTAREA' ||
+          target.isContentEditable ||
+          target.getAttribute('role') === 'combobox')
+      ) {
+        return;
+      }
+      if (isGenerateDialogOpen) return;
+
+      if (e.key === 'ArrowLeft') {
+        e.preventDefault();
+        if (currentIndex > 0) {
+          setCurrentIndex((i) => i - 1);
+          setIsFlipped(false);
+        }
+      } else if (e.key === 'ArrowRight') {
+        e.preventDefault();
+        if (currentIndex < cards.length - 1) {
+          setCurrentIndex((i) => i + 1);
+          setIsFlipped(false);
+        }
+      } else if (e.key === '1') {
+        e.preventDefault();
+        if (currentCard && !isUpdatingMastery && !isArchived) {
+          handleUpdateMastery(currentCard.id, 'NEED_REVIEW');
+        }
+      } else if (e.key === '2') {
+        e.preventDefault();
+        if (currentCard && !isUpdatingMastery && !isArchived) {
+          handleUpdateMastery(currentCard.id, 'MASTERED');
+        }
+      } else if (e.key === ' ' || e.key === 'Enter') {
+        if (target?.tagName !== 'BUTTON') {
+          e.preventDefault();
+          setIsFlipped((f) => !f);
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleGlobalKeyDown);
+    return () => window.removeEventListener('keydown', handleGlobalKeyDown);
+  }, [
+    selectedSet?.status,
+    cards,
+    currentIndex,
+    isGenerateDialogOpen,
+    currentCard,
+    isUpdatingMastery,
+    isArchived,
+    handleUpdateMastery,
+  ]);
 
   if (isLoading) {
     return (
@@ -178,25 +248,31 @@ export function MaterialFlashcardTab({
 
         <div className="flex items-center gap-2">
           {sets.length > 0 && (
-            <select
+            <Select
               value={selectedSet?.id || ''}
-              onChange={(e) => {
-                const found = sets.find((s) => s.id === e.target.value);
+              onValueChange={(val) => {
+                const found = sets.find((s) => s.id === val);
                 if (found) {
                   setSelectedSet(found);
                   setCurrentIndex(0);
                   setIsFlipped(false);
                 }
               }}
-              className="h-9 rounded-lg border border-border bg-background px-3 text-xs font-medium text-foreground focus-visible:outline-hidden focus-visible:ring-1 focus-visible:ring-primary"
-              aria-label="Pilih set flashcard"
             >
-              {sets.map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.title} ({s.cards?.length || s.cardCount} kartu)
-                </option>
-              ))}
-            </select>
+              <SelectTrigger
+                className="h-9 min-w-[200px] sm:min-w-[240px] text-xs font-medium"
+                aria-label="Pilih set flashcard"
+              >
+                <SelectValue placeholder="Pilih set flashcard" />
+              </SelectTrigger>
+              <SelectContent>
+                {sets.map((s) => (
+                  <SelectItem key={s.id} value={s.id} className="text-xs">
+                    {s.title} ({s.cards?.length || s.cardCount} kartu)
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           )}
 
           <Button
@@ -253,7 +329,7 @@ export function MaterialFlashcardTab({
           </p>
           <div className="mt-4 inline-flex items-center gap-2 rounded-full border border-border bg-muted/40 px-3.5 py-1 text-xs text-muted-foreground">
             <span className="h-2 w-2 rounded-full bg-primary animate-pulse" />
-            <span>Memproses di antrean background worker</span>
+            <span>Menyusun kartu belajar...</span>
           </div>
         </Card>
       ) : selectedSet?.status === 'FAILED' ? (
@@ -283,14 +359,15 @@ export function MaterialFlashcardTab({
           <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground px-1">
             <div className="flex items-center gap-2.5">
               <span className="font-semibold text-foreground">
-                Kartu {currentIndex + 1} dari {cards.length}
+                Kartu <span className="tabular-nums">{currentIndex + 1}</span> dari{' '}
+                <span className="tabular-nums">{cards.length}</span>
               </span>
               <span>•</span>
-              <span className="text-emerald-600 dark:text-emerald-400 font-medium">
+              <span className="text-emerald-600 dark:text-emerald-400 font-medium tabular-nums">
                 {masteredCount} Paham
               </span>
               <span>•</span>
-              <span className="text-amber-600 dark:text-amber-400 font-medium">
+              <span className="text-amber-600 dark:text-amber-400 font-medium tabular-nums">
                 {reviewCount} Perlu Diulang
               </span>
             </div>
@@ -327,7 +404,7 @@ export function MaterialFlashcardTab({
             }`}
           >
             {/* Header Sisi Kartu */}
-            <div className="flex items-center justify-between text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+            <div className="flex items-center justify-between text-xs font-semibold text-muted-foreground uppercase tracking-wider">
               <span>{isFlipped ? 'Jawaban / Penjelasan' : 'Pertanyaan / Istilah'}</span>
               <span className="flex items-center gap-1.5 normal-case font-normal text-muted-foreground">
                 <RotateCw className="h-3 w-3" />
@@ -358,7 +435,7 @@ export function MaterialFlashcardTab({
                 )}
               </div>
 
-              <span className="text-[11px] hidden sm:inline">Tekan Spasi atau klik kartu</span>
+              <span className="text-xs hidden sm:inline">Tekan Spasi atau klik kartu</span>
             </div>
           </div>
 
@@ -438,7 +515,7 @@ export function MaterialFlashcardTab({
               <span>Sebelumnya</span>
             </Button>
 
-            <span className="text-xs font-semibold text-foreground">
+            <span className="text-xs font-semibold text-foreground tabular-nums">
               {currentIndex + 1} / {cards.length}
             </span>
 
@@ -458,6 +535,11 @@ export function MaterialFlashcardTab({
               <ChevronRight className="h-4 w-4" />
             </Button>
           </div>
+
+          {/* Petunjuk Pintasan Keyboard */}
+          <p className="text-center text-xs text-muted-foreground pt-1">
+            Pintasan: Spasi (Balik) • ←/→ (Pindah) • 1 (Ulang) • 2 (Paham)
+          </p>
         </div>
       ) : null}
 
@@ -488,14 +570,14 @@ export function MaterialFlashcardTab({
                   }`}
                 >
                   <span className="text-base sm:text-lg">{count}</span>
-                  <span className="block text-[11px] font-normal text-muted-foreground mt-0.5">
+                  <span className="block text-xs font-normal text-muted-foreground mt-0.5">
                     Kartu
                   </span>
                 </button>
               ))}
             </div>
 
-            <p className="text-[11px] text-muted-foreground leading-relaxed pt-1">
+            <p className="text-xs text-muted-foreground leading-relaxed pt-1">
               Pembuatan flashcard menggunakan kuota AI harian Anda. Kartu dilengkapi rujukan halaman PDF asli untuk memverifikasi materi.
             </p>
           </div>
