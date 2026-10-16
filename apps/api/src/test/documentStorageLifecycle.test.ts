@@ -7,6 +7,7 @@ import {
   failDocumentJobAtomically,
 } from '@studyflow/database';
 import { deleteMaterial, retryMaterialProcessing } from '../services/material.service.js';
+import { checkAndReserveUploadQuota } from '../services/quota.service.js';
 
 describe('Document Processing Idempotency & Storage Quota Invariants', () => {
   let testUserId: string;
@@ -445,5 +446,30 @@ describe('Document Processing Idempotency & Storage Quota Invariants', () => {
     const finalUsage = await prisma.storageUsage.findUnique({ where: { userId: testUserId } });
     expect(Number(finalUsage?.reservedBytes)).toBe(bytes2);
     expect(Number(finalUsage?.usedBytes)).toBe(0);
+  });
+
+  it('8. Konkurensi paralel checkAndReserveUploadQuota: row-level locking mencegah over-reservation kuota', async () => {
+    // 5 panggilan paralel masing-masing 60 MB untuk testUserId (batas 200 MB)
+    // Tepat 3 panggilan harus berhasil (3 * 60 = 180 MB <= 200 MB), dan 2 panggilan harus ditolak (180 + 60 = 240 MB > 200 MB)
+    const sixtyMb = 60 * 1024 * 1024;
+    const calls = Array.from({ length: 5 }, () => checkAndReserveUploadQuota(testUserId, sixtyMb));
+
+    const settled = await Promise.allSettled(calls);
+    const successes = settled.filter((s) => s.status === 'fulfilled');
+    const failures = settled.filter((s) => s.status === 'rejected');
+
+    expect(successes).toHaveLength(3);
+    expect(failures).toHaveLength(2);
+
+    for (const f of failures) {
+      if (f.status === 'rejected') {
+        expect(f.reason?.code).toBe('STORAGE_LIMIT_EXCEEDED');
+      }
+    }
+
+    // Invarian basis data: reservedBytes harus tepat 180 MB (3 * 60 MB), tidak melampaui 200 MB
+    const usage = await prisma.storageUsage.findUnique({ where: { userId: testUserId } });
+    expect(Number(usage?.reservedBytes)).toBe(3 * sixtyMb);
+    expect(Number(usage?.usedBytes)).toBe(0);
   });
 });

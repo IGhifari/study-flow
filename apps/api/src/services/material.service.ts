@@ -518,18 +518,33 @@ export async function retryMaterialProcessing(
   const idempotencyKey = `extract-${material.id}-retry-${previousJobsCount + 1}`;
 
   await prisma.$transaction(async (tx) => {
-    // Check and re-reserve storage quota for retried material under lock
-    const usage = await tx.storageUsage.upsert({
-      where: { userId },
-      create: {
-        userId,
-        usedBytes: BigInt(0),
-        reservedBytes: BigInt(0),
-      },
-      update: {},
-    });
+    const now = new Date();
+    // 1. Ensure storage_usages row exists
+    await tx.$executeRaw`
+      INSERT INTO storage_usages (id, user_id, used_bytes, reserved_bytes, created_at, updated_at)
+      VALUES (gen_random_uuid(), ${userId}, 0, 0, ${now}, ${now})
+      ON CONFLICT (user_id) DO NOTHING
+    `;
 
-    const currentTotal = Number(usage.usedBytes) + Number(usage.reservedBytes);
+    // 2. Lock storage_usages row exclusively with SELECT ... FOR UPDATE
+    const lockedStorage = await tx.$queryRaw<
+      Array<{
+        used_bytes: bigint | number;
+        reserved_bytes: bigint | number;
+      }>
+    >`
+      SELECT used_bytes, reserved_bytes
+      FROM storage_usages
+      WHERE user_id = ${userId}
+      FOR UPDATE
+    `;
+
+    if (!lockedStorage || lockedStorage.length === 0) {
+      throw new Error('Gagal mengunci catatan penggunaan penyimpanan');
+    }
+    const storage = lockedStorage[0]!;
+
+    const currentTotal = Number(storage.used_bytes) + Number(storage.reserved_bytes);
     if (currentTotal + material.bytes > AI_QUOTA_LIMITS.storageLimitBytes) {
       const remainingBytes = Math.max(0, AI_QUOTA_LIMITS.storageLimitBytes - currentTotal);
       const remainingMb = (remainingBytes / (1024 * 1024)).toFixed(1);

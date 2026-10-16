@@ -14,6 +14,8 @@ const PROTECTED_PREFIXES = [
   '/notes',
   '/semesters',
   '/settings',
+  '/calendar',
+  '/schedule',
 ];
 const AUTH_PREFIXES = ['/login', '/register', '/forgot-password', '/reset-password'];
 
@@ -178,6 +180,8 @@ export const config = {
     '/notes/:path*',
     '/semesters/:path*',
     '/settings/:path*',
+    '/calendar/:path*',
+    '/schedule/:path*',
     '/login',
     '/register',
     '/forgot-password',

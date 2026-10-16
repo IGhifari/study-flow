@@ -615,40 +615,44 @@ export async function getAdminTrends(range: AdminTrendRange = '30d'): Promise<Ad
     dateMap.set(key, { materi: 0, tugas: 0 });
   }
 
-  const [materials, assignments] = await Promise.all([
-    prisma.material.findMany({
-      where: {
-        createdAt: { gte: startDate },
-        deletedAt: null,
-      },
-      select: { createdAt: true },
-    }),
-    prisma.assignment.findMany({
-      where: {
-        createdAt: { gte: startDate },
-      },
-      select: { createdAt: true },
-    }),
+  type TrendAggregationRow = {
+    date: string;
+    count: number | bigint;
+  };
+
+  const [materialRows, assignmentRows] = await Promise.all([
+    prisma.$queryRaw<TrendAggregationRow[]>`
+      SELECT TO_CHAR(created_at AT TIME ZONE 'UTC', 'YYYY-MM-DD') AS date, COUNT(*)::int AS count
+      FROM materials
+      WHERE created_at >= ${startDate} AND deleted_at IS NULL
+      GROUP BY TO_CHAR(created_at AT TIME ZONE 'UTC', 'YYYY-MM-DD')
+    `,
+    prisma.$queryRaw<TrendAggregationRow[]>`
+      SELECT TO_CHAR(created_at AT TIME ZONE 'UTC', 'YYYY-MM-DD') AS date, COUNT(*)::int AS count
+      FROM assignments
+      WHERE created_at >= ${startDate}
+      GROUP BY TO_CHAR(created_at AT TIME ZONE 'UTC', 'YYYY-MM-DD')
+    `,
   ]);
 
   let totalMateri = 0;
-  for (const m of materials) {
-    const dateKey = m.createdAt.toISOString().slice(0, 10);
-    const item = dateMap.get(dateKey);
+  for (const m of materialRows) {
+    const item = dateMap.get(m.date);
+    const count = Number(m.count);
     if (item) {
-      item.materi += 1;
-      totalMateri += 1;
+      item.materi = count;
     }
+    totalMateri += count;
   }
 
   let totalTugas = 0;
-  for (const a of assignments) {
-    const dateKey = a.createdAt.toISOString().slice(0, 10);
-    const item = dateMap.get(dateKey);
+  for (const a of assignmentRows) {
+    const item = dateMap.get(a.date);
+    const count = Number(a.count);
     if (item) {
-      item.tugas += 1;
-      totalTugas += 1;
+      item.tugas = count;
     }
+    totalTugas += count;
   }
 
   const data: AdminTrendDataPoint[] = Array.from(dateMap.entries()).map(([date, counts]) => ({

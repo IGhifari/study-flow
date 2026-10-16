@@ -239,20 +239,62 @@ export async function listSchedules(
     },
   });
 
-  // Hitung konflik untuk setiap jadwal terhadap jadwal lain milik pengguna dalam semester yang sama
-  const schedulesWithConflicts: CourseSchedule[] = await Promise.all(
-    records.map(async (rec) => {
-      const conflicts = await findScheduleConflicts(
-        userId,
-        rec.course.semesterId,
-        rec.dayOfWeek,
-        rec.startTime,
-        rec.endTime,
-        rec.id
-      );
-      return toCourseScheduleResponse(rec, conflicts);
-    })
-  );
+  if (records.length === 0) {
+    return {
+      schedules: [],
+      total: 0,
+    };
+  }
+
+  // Ambil seluruh kandidat jadwal aktif pada semester-semester terkait dalam satu kali query (eliminasi N+1)
+  const semesterIds = Array.from(new Set(records.map((r) => r.course.semesterId)));
+  const allCandidates = await prisma.courseSchedule.findMany({
+    where: {
+      userId,
+      course: {
+        semesterId: { in: semesterIds },
+        archivedAt: null,
+      },
+    },
+    include: {
+      course: {
+        select: {
+          id: true,
+          name: true,
+          code: true,
+          semesterId: true,
+        },
+      },
+    },
+  });
+
+  // Hitung konflik di memori untuk setiap record secara konsisten
+  const schedulesWithConflicts: CourseSchedule[] = records.map((rec) => {
+    const conflicts: CourseScheduleConflict[] = [];
+
+    for (const candidate of allCandidates) {
+      if (
+        candidate.course.semesterId === rec.course.semesterId &&
+        candidate.dayOfWeek === rec.dayOfWeek &&
+        candidate.id !== rec.id &&
+        rec.startTime < candidate.endTime &&
+        rec.endTime > candidate.startTime
+      ) {
+        conflicts.push({
+          id: candidate.id,
+          courseId: candidate.courseId,
+          courseName: candidate.course.name,
+          courseCode: candidate.course.code,
+          dayOfWeek: candidate.dayOfWeek,
+          startTime: candidate.startTime,
+          endTime: candidate.endTime,
+          room: candidate.room,
+        });
+      }
+    }
+
+    return toCourseScheduleResponse(rec, conflicts);
+  });
 
   return {
     schedules: schedulesWithConflicts,

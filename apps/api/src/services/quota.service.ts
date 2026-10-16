@@ -10,26 +10,61 @@ export async function checkAndReserveUploadQuota(
   dailyCount: number;
 }> {
   const todayUtc = getUtcDateString(new Date());
+  const now = new Date();
 
-  // 1. Transaction to atomically verify daily counter and reserve storage
+  // 1. Transaction to atomically verify daily counter and reserve storage with row-level locks
   const result = await prisma.$transaction(async (tx) => {
-    // A. Daily upload counter
-    const counter = await tx.dailyUploadCounter.upsert({
-      where: {
-        userId_uploadDate: {
-          userId,
-          uploadDate: todayUtc,
-        },
-      },
-      create: {
-        userId,
-        uploadDate: todayUtc,
-        uploadCount: 0,
-      },
-      update: {},
-    });
+    // A. Ensure rows exist in consistent order
+    await tx.$executeRaw`
+      INSERT INTO daily_upload_counters (id, user_id, upload_date, upload_count, created_at, updated_at)
+      VALUES (gen_random_uuid(), ${userId}, ${todayUtc}, 0, ${now}, ${now})
+      ON CONFLICT (user_id, upload_date) DO NOTHING
+    `;
 
-    if (counter.uploadCount >= AI_QUOTA_LIMITS.dailyUploads) {
+    await tx.$executeRaw`
+      INSERT INTO storage_usages (id, user_id, used_bytes, reserved_bytes, created_at, updated_at)
+      VALUES (gen_random_uuid(), ${userId}, 0, 0, ${now}, ${now})
+      ON CONFLICT (user_id) DO NOTHING
+    `;
+
+    // B. Lock both rows in consistent order using SELECT ... FOR UPDATE
+    const lockedCounters = await tx.$queryRaw<
+      Array<{
+        id: string;
+        upload_count: number;
+      }>
+    >`
+      SELECT id, upload_count
+      FROM daily_upload_counters
+      WHERE user_id = ${userId} AND upload_date = ${todayUtc}
+      FOR UPDATE
+    `;
+
+    if (!lockedCounters || lockedCounters.length === 0) {
+      throw new Error('Gagal mengunci catatan kuota harian unggahan');
+    }
+    const counter = lockedCounters[0]!;
+
+    const lockedStorage = await tx.$queryRaw<
+      Array<{
+        id: string;
+        used_bytes: bigint | number;
+        reserved_bytes: bigint | number;
+      }>
+    >`
+      SELECT id, used_bytes, reserved_bytes
+      FROM storage_usages
+      WHERE user_id = ${userId}
+      FOR UPDATE
+    `;
+
+    if (!lockedStorage || lockedStorage.length === 0) {
+      throw new Error('Gagal mengunci catatan penggunaan penyimpanan');
+    }
+    const storage = lockedStorage[0]!;
+
+    // C. Evaluate limits under lock
+    if (counter.upload_count >= AI_QUOTA_LIMITS.dailyUploads) {
       const error: AppError = new Error(
         `Batas unggahan harian tercapai (${AI_QUOTA_LIMITS.dailyUploads} file/hari). Kuota akan direset pada pukul 00.00 UTC.`
       );
@@ -38,18 +73,7 @@ export async function checkAndReserveUploadQuota(
       throw error;
     }
 
-    // B. Storage usage (usedBytes + reservedBytes)
-    const usage = await tx.storageUsage.upsert({
-      where: { userId },
-      create: {
-        userId,
-        usedBytes: BigInt(0),
-        reservedBytes: BigInt(0),
-      },
-      update: {},
-    });
-
-    const currentTotal = Number(usage.usedBytes) + Number(usage.reservedBytes);
+    const currentTotal = Number(storage.used_bytes) + Number(storage.reserved_bytes);
     if (currentTotal + declaredSizeBytes > AI_QUOTA_LIMITS.storageLimitBytes) {
       const remainingBytes = Math.max(0, AI_QUOTA_LIMITS.storageLimitBytes - currentTotal);
       const remainingMb = (remainingBytes / (1024 * 1024)).toFixed(1);
