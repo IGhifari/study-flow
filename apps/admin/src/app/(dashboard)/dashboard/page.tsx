@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { RefreshCw, AlertCircle, Sparkles, Download } from 'lucide-react';
+import { RefreshCw, AlertCircle, Download, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import {
@@ -92,7 +92,7 @@ export default function AdminDashboardPage() {
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
     } catch (err: any) {
-      alert('Gagal mengekspor laporan: ' + (err.message || 'Kesalahan tidak diketahui'));
+      setError('Gagal mengekspor laporan: ' + (err.message || 'Kesalahan tidak diketahui'));
     } finally {
       setIsExporting(false);
     }
@@ -111,10 +111,6 @@ export default function AdminDashboardPage() {
             <h1 className="text-2xl font-bold tracking-tight text-foreground md:text-3xl">
               Dashboard Administrator
             </h1>
-            <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
-              <Sparkles className="h-3 w-3" />
-              v1.0
-            </span>
           </div>
           <p className="text-sm text-muted-foreground mt-1">
             Pantau pertumbuhan mahasiswa, dokumen materi kuliah, tugas akademik, dan kesehatan antrean AI.
@@ -128,7 +124,11 @@ export default function AdminDashboardPage() {
             disabled={isExporting}
             className="gap-2 h-9 px-3 text-xs md:text-sm shadow-xs"
           >
-            <Download className={`h-3.5 w-3.5 ${isExporting ? 'animate-bounce' : ''}`} />
+            {isExporting ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <Download className="h-3.5 w-3.5" />
+            )}
             Ekspor CSV
           </Button>
           <Button

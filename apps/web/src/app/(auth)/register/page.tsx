@@ -23,6 +23,13 @@ import {
 } from '@/components/ui/card';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { Separator } from '@/components/ui/separator';
+import {
+  RadixSelect as Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 const COMMON_TIMEZONES = [
   { value: 'Asia/Jakarta', label: 'WIB — Asia/Jakarta (UTC+7, Indonesia Barat)' },
@@ -52,6 +59,7 @@ function RegisterForm(): React.JSX.Element {
     register,
     handleSubmit,
     setValue,
+    watch,
     formState: { errors, isSubmitting },
   } = useForm<RegisterFormInput, unknown, RegisterInput>({
     resolver: zodResolver(RegisterInputSchema),
@@ -63,6 +71,8 @@ function RegisterForm(): React.JSX.Element {
       turnstileToken: '',
     },
   });
+
+  const selectedTimezone = watch('timezone') || 'Asia/Jakarta';
 
   const handleTurnstileVerify = (token: string) => {
     setTurnstileToken(token);
@@ -221,18 +231,22 @@ function RegisterForm(): React.JSX.Element {
             <Label htmlFor="timezone" className="text-xs font-semibold text-foreground">
               Zona Waktu Akademik
             </Label>
-            <select
-              id="timezone"
+            <Select
+              value={selectedTimezone}
+              onValueChange={(val) => setValue('timezone', val, { shouldValidate: true })}
               disabled={isSubmitting}
-              className="flex h-10 w-full rounded-md border border-input bg-card px-3 py-2 text-sm text-foreground transition-colors focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
-              {...register('timezone')}
             >
-              {COMMON_TIMEZONES.map((tz) => (
-                <option key={tz.value} value={tz.value}>
-                  {tz.label}
-                </option>
-              ))}
-            </select>
+              <SelectTrigger id="timezone" className="h-10 w-full text-sm">
+                <SelectValue placeholder="Pilih zona waktu" />
+              </SelectTrigger>
+              <SelectContent>
+                {COMMON_TIMEZONES.map((tz) => (
+                  <SelectItem key={tz.value} value={tz.value} className="text-xs sm:text-sm">
+                    {tz.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
             <p className="text-xs text-muted-foreground">
               Digunakan untuk menyesuaikan kalender jadwal kuliah dan tenggat tugas Anda.
             </p>

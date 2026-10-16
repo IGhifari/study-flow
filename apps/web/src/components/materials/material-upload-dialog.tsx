@@ -408,7 +408,7 @@ export function MaterialUploadDialog({
               </div>
             )}
 
-            <p className="text-[11px] text-muted-foreground leading-relaxed">
+            <p className="text-xs text-muted-foreground leading-relaxed">
               Setelah upload selesai, kamu boleh meninggalkan halaman. Pemrosesan ekstraksi tetap
               berjalan di antrean sistem.
             </p>

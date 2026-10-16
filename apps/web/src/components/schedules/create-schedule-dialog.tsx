@@ -13,7 +13,13 @@ import { createSchedule } from '@/lib/schedule-client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { NativeSelect } from '@/components/ui/select';
+import {
+  RadixSelect as Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertCircle, Loader2 } from 'lucide-react';
 import {
@@ -167,29 +173,31 @@ export function CreateScheduleDialog({
                 className="h-9 bg-muted/40 font-medium"
               />
             ) : (
-              <NativeSelect
-                id="schedule-course"
+              <Select
                 value={courseId}
-                onChange={(e) => setCourseId(e.target.value)}
+                onValueChange={(val) => setCourseId(val)}
                 disabled={isSubmitting || courses.length === 0}
-                className="h-9"
-                required
               >
-                {courses.length === 0 ? (
-                  <option value="" disabled>
-                    Belum ada mata kuliah aktif di semester ini
-                  </option>
-                ) : (
-                  courses.map((crs) => (
-                    <option key={crs.id} value={crs.id}>
+                <SelectTrigger id="schedule-course" className="h-9 w-full">
+                  <SelectValue
+                    placeholder={
+                      courses.length === 0
+                        ? 'Belum ada mata kuliah aktif di semester ini'
+                        : 'Pilih mata kuliah aktif'
+                    }
+                  />
+                </SelectTrigger>
+                <SelectContent>
+                  {courses.map((crs) => (
+                    <SelectItem key={crs.id} value={crs.id}>
                       {crs.name}
                       {crs.code ? ` (${crs.code})` : ''}
-                    </option>
-                  ))
-                )}
-              </NativeSelect>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             )}
-            <p className="text-[11px] text-muted-foreground">
+            <p className="text-xs text-muted-foreground">
               Semester mengikuti semester mata kuliah terpilih secara otomatis.
             </p>
           </div>
@@ -199,20 +207,22 @@ export function CreateScheduleDialog({
             <Label htmlFor="schedule-day" className="text-xs font-semibold text-foreground">
               Hari Perkuliahan <span className="text-destructive">*</span>
             </Label>
-            <NativeSelect
-              id="schedule-day"
+            <Select
               value={dayOfWeek}
-              onChange={(e) => setDayOfWeek(e.target.value)}
+              onValueChange={(val) => setDayOfWeek(val)}
               disabled={isSubmitting}
-              className="h-9"
-              required
             >
-              {dayOptions.map((opt) => (
-                <option key={opt.value} value={opt.value}>
-                  {opt.label}
-                </option>
-              ))}
-            </NativeSelect>
+              <SelectTrigger id="schedule-day" className="h-9 w-full">
+                <SelectValue placeholder="Pilih hari perkuliahan" />
+              </SelectTrigger>
+              <SelectContent>
+                {dayOptions.map((opt) => (
+                  <SelectItem key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           {/* Rentang Jam (Mulai & Selesai) */}
@@ -247,7 +257,7 @@ export function CreateScheduleDialog({
               />
             </div>
           </div>
-          <p className="text-[11px] text-muted-foreground">
+          <p className="text-xs text-muted-foreground">
             Waktu lokal mingguan berulang (24 jam). Sesi harus selesai di hari yang sama.
           </p>
 

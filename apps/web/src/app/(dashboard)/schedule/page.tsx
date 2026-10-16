@@ -35,7 +35,13 @@ import { listSemesters } from '@/lib/semester-client';
 import { getProfile } from '@/lib/auth-client';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { NativeSelect } from '@/components/ui/select';
+import {
+  RadixSelect as Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -364,22 +370,27 @@ export default function SchedulePage(): React.JSX.Element {
             <label htmlFor="course-filter" className="text-xs font-medium text-muted-foreground shrink-0">
               Filter Kuliah:
             </label>
-            <NativeSelect
-              id="course-filter"
+            <Select
               value={selectedCourseFilter}
-              onChange={(e) => setSelectedCourseFilter(e.target.value)}
-              className="h-9 text-xs"
+              onValueChange={(val) => setSelectedCourseFilter(val)}
             >
-              <option value="all">Semua Mata Kuliah ({schedules.length} Sesi)</option>
-              {courses.map((crs) => {
-                const count = schedules.filter((s) => s.courseId === crs.id).length;
-                return (
-                  <option key={crs.id} value={crs.id}>
-                    {crs.name} ({count} sesi)
-                  </option>
-                );
-              })}
-            </NativeSelect>
+              <SelectTrigger id="course-filter" aria-label="Filter Mata Kuliah" className="h-9 text-xs">
+                <SelectValue placeholder="Semua Mata Kuliah" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all" className="text-xs">
+                  Semua Mata Kuliah ({schedules.length} Sesi)
+                </SelectItem>
+                {courses.map((crs) => {
+                  const count = schedules.filter((s) => s.courseId === crs.id).length;
+                  return (
+                    <SelectItem key={crs.id} value={crs.id} className="text-xs">
+                      {crs.name} ({count} sesi)
+                    </SelectItem>
+                  );
+                })}
+              </SelectContent>
+            </Select>
           </div>
 
           {selectedCourseFilter !== 'all' && (

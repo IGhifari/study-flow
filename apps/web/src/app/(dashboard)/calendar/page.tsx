@@ -38,7 +38,13 @@ import {
 } from '@/lib/calendar-utils';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { NativeSelect } from '@/components/ui/select';
+import {
+  RadixSelect as Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -388,52 +394,70 @@ export default function CalendarPage(): React.JSX.Element {
         <div className="flex flex-wrap items-center gap-2.5">
           {/* Semester Selector */}
           <div className="w-[170px] sm:w-[190px]">
-            <NativeSelect
-              aria-label="Pilih Semester"
-              value={activeSemester?.id || ''}
-              onChange={(e) => {
-                const found = semesters.find((s) => s.id === e.target.value);
+            <Select
+              value={activeSemester?.id}
+              onValueChange={(val) => {
+                const found = semesters.find((s) => s.id === val);
                 if (found) setActiveSemester(found);
               }}
-              className="h-9 text-xs font-medium"
+              disabled={semesters.length === 0}
             >
-              {semesters.map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.name} {s.isActive ? '(Aktif)' : ''}
-                </option>
-              ))}
-            </NativeSelect>
+              <SelectTrigger aria-label="Pilih Semester" className="h-9 text-xs font-medium">
+                <SelectValue placeholder="Pilih Semester" />
+              </SelectTrigger>
+              <SelectContent>
+                {semesters.map((s) => (
+                  <SelectItem key={s.id} value={s.id} className="text-xs">
+                    {s.name} {s.isActive ? '(Aktif)' : ''}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           {/* Course Filter */}
           <div className="w-[160px] sm:w-[180px]">
-            <NativeSelect
-              aria-label="Filter Mata Kuliah"
+            <Select
               value={selectedCourseFilter}
-              onChange={(e) => setSelectedCourseFilter(e.target.value)}
-              className="h-9 text-xs font-medium"
+              onValueChange={(val) => setSelectedCourseFilter(val)}
             >
-              <option value="all">Semua Mata Kuliah</option>
-              {courses.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name}
-                </option>
-              ))}
-            </NativeSelect>
+              <SelectTrigger aria-label="Filter Mata Kuliah" className="h-9 text-xs font-medium">
+                <SelectValue placeholder="Semua Mata Kuliah" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all" className="text-xs">
+                  Semua Mata Kuliah
+                </SelectItem>
+                {courses.map((c) => (
+                  <SelectItem key={c.id} value={c.id} className="text-xs">
+                    {c.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           {/* Type Filter */}
           <div className="w-[120px]">
-            <NativeSelect
-              aria-label="Filter Tipe Acara"
+            <Select
               value={selectedTypeFilter}
-              onChange={(e) => setSelectedTypeFilter(e.target.value as CalendarFilterType)}
-              className="h-9 text-xs font-medium"
+              onValueChange={(val) => setSelectedTypeFilter(val as CalendarFilterType)}
             >
-              <option value="all">Semua Tipe</option>
-              <option value="schedule">Kuliah Saja</option>
-              <option value="assignment">Tugas Saja</option>
-            </NativeSelect>
+              <SelectTrigger aria-label="Filter Tipe Acara" className="h-9 text-xs font-medium">
+                <SelectValue placeholder="Semua Tipe" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all" className="text-xs">
+                  Semua Tipe
+                </SelectItem>
+                <SelectItem value="schedule" className="text-xs">
+                  Kuliah Saja
+                </SelectItem>
+                <SelectItem value="assignment" className="text-xs">
+                  Tugas Saja
+                </SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
           {/* View Mode Toggle (Tabs) */}

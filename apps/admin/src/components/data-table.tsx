@@ -86,30 +86,30 @@ function getStatusBadge(status: AdminModuleStatus) {
       return (
         <Badge
           variant="outline"
-          className="gap-1 border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 font-medium text-xs px-2 py-0.5"
+          className="gap-1.5 border-emerald-200 bg-emerald-50 text-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-300 dark:border-emerald-800 font-medium text-xs px-2.5 py-0.5"
         >
-          <CheckCircle2Icon className="h-3 w-3 text-emerald-600 dark:text-emerald-400" />
-          Normal
+          <CheckCircle2Icon className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+          <span>Normal</span>
         </Badge>
       )
     case "DEGRADED":
       return (
         <Badge
           variant="outline"
-          className="gap-1 border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-400 font-medium text-xs px-2 py-0.5"
+          className="gap-1.5 border-amber-200 bg-amber-50 text-amber-800 dark:bg-amber-950/50 dark:text-amber-300 dark:border-amber-800 font-medium text-xs px-2.5 py-0.5"
         >
-          <AlertTriangleIcon className="h-3 w-3 text-amber-600 dark:text-amber-400" />
-          Degradasi
+          <AlertTriangleIcon className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400 shrink-0" />
+          <span>Degradasi</span>
         </Badge>
       )
     case "UNAVAILABLE":
       return (
         <Badge
           variant="outline"
-          className="gap-1 border-destructive/30 bg-destructive/10 text-destructive font-medium text-xs px-2 py-0.5"
+          className="gap-1.5 border-destructive/20 bg-destructive/10 text-destructive font-medium text-xs px-2.5 py-0.5"
         >
-          <XCircleIcon className="h-3 w-3 text-destructive" />
-          Terputus
+          <XCircleIcon className="h-3.5 w-3.5 text-destructive shrink-0" />
+          <span>Terputus</span>
         </Badge>
       )
     case "UNCONFIGURED":
@@ -117,10 +117,10 @@ function getStatusBadge(status: AdminModuleStatus) {
       return (
         <Badge
           variant="outline"
-          className="gap-1 border-muted-foreground/30 bg-muted text-muted-foreground font-medium text-xs px-2 py-0.5"
+          className="gap-1.5 border-border bg-muted/60 text-muted-foreground font-medium text-xs px-2.5 py-0.5"
         >
-          <HelpCircleIcon className="h-3 w-3" />
-          Belum Dikonfigurasi
+          <HelpCircleIcon className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+          <span>Belum Dikonfigurasi</span>
         </Badge>
       )
   }
@@ -207,7 +207,7 @@ function ModuleDetailSheet({ module }: { module: AdminSystemModule }) {
           )}
 
           <Separator />
-          <div className="flex items-center justify-between text-[11px] text-muted-foreground">
+          <div className="flex items-center justify-between text-xs text-muted-foreground">
             <span>Diperbarui pada</span>
             <span>
               {new Date(module.updatedAt).toLocaleTimeString("id-ID", {
@@ -282,7 +282,7 @@ const columns: ColumnDef<AdminSystemModule>[] = [
     cell: ({ row }) => (
       <div className="flex flex-col">
         <span className="text-xs font-medium text-foreground">{row.original.metricValue}</span>
-        <span className="text-[11px] text-muted-foreground">{row.original.metricLabel}</span>
+        <span className="text-xs text-muted-foreground">{row.original.metricLabel}</span>
       </div>
     ),
   },
@@ -438,25 +438,25 @@ export function DataTable() {
           <TabsList className="hidden sm:flex h-9 p-1">
             <TabsTrigger value="all" className="gap-1.5 text-xs">
               Semua Komponen
-              <Badge variant="secondary" className="px-1.5 py-0 text-[10px] h-4">
+              <Badge variant="secondary" className="px-1.5 py-0 text-xs font-semibold tabular-nums h-4">
                 {tabCounts.all}
               </Badge>
             </TabsTrigger>
             <TabsTrigger value="workers" className="gap-1.5 text-xs">
               Worker & Antrean
-              <Badge variant="secondary" className="px-1.5 py-0 text-[10px] h-4">
+              <Badge variant="secondary" className="px-1.5 py-0 text-xs font-semibold tabular-nums h-4">
                 {tabCounts.workers}
               </Badge>
             </TabsTrigger>
             <TabsTrigger value="data" className="gap-1.5 text-xs">
               Basis Data & Storage
-              <Badge variant="secondary" className="px-1.5 py-0 text-[10px] h-4">
+              <Badge variant="secondary" className="px-1.5 py-0 text-xs font-semibold tabular-nums h-4">
                 {tabCounts.data}
               </Badge>
             </TabsTrigger>
             <TabsTrigger value="ai-security" className="gap-1.5 text-xs">
               AI & Keamanan
-              <Badge variant="secondary" className="px-1.5 py-0 text-[10px] h-4">
+              <Badge variant="secondary" className="px-1.5 py-0 text-xs font-semibold tabular-nums h-4">
                 {tabCounts.aiSecurity}
               </Badge>
             </TabsTrigger>
@@ -510,7 +510,7 @@ export function DataTable() {
         </div>
 
         <TabsContent value={activeTab} className="px-4 lg:px-6 mt-0">
-          <div className="rounded-lg border bg-card overflow-hidden shadow-xs">
+          <div className="rounded-lg border bg-card overflow-x-auto shadow-xs">
             {isLoading && modules.length === 0 ? (
               <div className="p-4 flex flex-col gap-3">
                 <Skeleton className="h-10 w-full" />

@@ -11,7 +11,13 @@ import { updateSchedule } from '@/lib/schedule-client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { NativeSelect } from '@/components/ui/select';
+import {
+  RadixSelect as Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertCircle, Loader2 } from 'lucide-react';
 import {
@@ -149,20 +155,22 @@ export function EditScheduleDialog({
             <Label htmlFor="edit-schedule-day" className="text-xs font-semibold text-foreground">
               Hari Perkuliahan <span className="text-destructive">*</span>
             </Label>
-            <NativeSelect
-              id="edit-schedule-day"
+            <Select
               value={dayOfWeek}
-              onChange={(e) => setDayOfWeek(e.target.value)}
+              onValueChange={(val) => setDayOfWeek(val)}
               disabled={isSubmitting}
-              className="h-9"
-              required
             >
-              {dayOptions.map((opt) => (
-                <option key={opt.value} value={opt.value}>
-                  {opt.label}
-                </option>
-              ))}
-            </NativeSelect>
+              <SelectTrigger id="edit-schedule-day" className="h-9 w-full">
+                <SelectValue placeholder="Pilih hari perkuliahan" />
+              </SelectTrigger>
+              <SelectContent>
+                {dayOptions.map((opt) => (
+                  <SelectItem key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           {/* Rentang Jam (Mulai & Selesai) */}
@@ -197,7 +205,7 @@ export function EditScheduleDialog({
               />
             </div>
           </div>
-          <p className="text-[11px] text-muted-foreground">
+          <p className="text-xs text-muted-foreground">
             Waktu lokal mingguan berulang (24 jam). Sesi harus selesai di hari yang sama.
           </p>
 

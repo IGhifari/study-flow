@@ -8,15 +8,9 @@ import {
   Users,
   Activity,
   Shield,
-  Layers,
-  FileText,
-  HelpCircle,
-  ShieldAlert,
 } from "lucide-react"
 
-import { NavDocuments } from "@/components/nav-documents"
 import { NavMain } from "@/components/nav-main"
-import { NavSecondary } from "@/components/nav-secondary"
 import { NavUser } from "@/components/nav-user"
 import {
   Sidebar,
@@ -51,37 +45,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       url: "/jobs",
       icon: Activity,
       isActive: pathname.startsWith("/jobs"),
-    },
-  ]
-
-  const navPlatform = [
-    {
-      name: "Antrean BullMQ",
-      url: "/jobs",
-      icon: Layers,
-    },
-    {
-      name: "Daftar Akun Mahasiswa",
-      url: "/users",
-      icon: Users,
-    },
-    {
-      name: "Ringkasan Platform",
-      url: "/dashboard",
-      icon: FileText,
-    },
-  ]
-
-  const navSecondary = [
-    {
-      title: "Audit Keamanan",
-      url: "/dashboard",
-      icon: ShieldAlert,
-    },
-    {
-      title: "Bantuan & SLA",
-      url: "/dashboard",
-      icon: HelpCircle,
     },
   ]
 
@@ -121,8 +84,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 
       <SidebarContent>
         <NavMain items={navMain} />
-        <NavDocuments items={navPlatform} />
-        <NavSecondary items={navSecondary} className="mt-auto" />
       </SidebarContent>
 
       <SidebarFooter>
