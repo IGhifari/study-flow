@@ -179,7 +179,7 @@ function ModuleDetailSheet({ module }: { module: AdminSystemModule }) {
           <Separator />
           <div className="flex flex-col gap-1.5">
             <span className="text-xs text-muted-foreground">{module.metricLabel}</span>
-            <span className="text-sm font-semibold text-foreground">{module.metricValue}</span>
+            <span className="text-sm font-semibold text-foreground tabular-nums">{module.metricValue}</span>
           </div>
           <Separator />
           <div className="flex flex-col gap-1.5">
@@ -198,7 +198,7 @@ function ModuleDetailSheet({ module }: { module: AdminSystemModule }) {
                   {Object.entries(module.details).map(([key, val]) => (
                     <div key={key} className="flex justify-between bg-muted/40 p-2 rounded border">
                       <span className="capitalize text-muted-foreground">{key}:</span>
-                      <span className="font-medium font-mono">{String(val)}</span>
+                      <span className="font-medium font-mono tabular-nums">{String(val)}</span>
                     </div>
                   ))}
                 </div>
@@ -209,7 +209,7 @@ function ModuleDetailSheet({ module }: { module: AdminSystemModule }) {
           <Separator />
           <div className="flex items-center justify-between text-xs text-muted-foreground">
             <span>Diperbarui pada</span>
-            <span>
+            <span className="tabular-nums">
               {new Date(module.updatedAt).toLocaleTimeString("id-ID", {
                 hour: "2-digit",
                 minute: "2-digit",
@@ -281,7 +281,7 @@ const columns: ColumnDef<AdminSystemModule>[] = [
     header: "Metrik Operasional",
     cell: ({ row }) => (
       <div className="flex flex-col">
-        <span className="text-xs font-medium text-foreground">{row.original.metricValue}</span>
+        <span className="text-xs font-medium text-foreground tabular-nums">{row.original.metricValue}</span>
         <span className="text-xs text-muted-foreground">{row.original.metricLabel}</span>
       </div>
     ),
@@ -297,36 +297,58 @@ const columns: ColumnDef<AdminSystemModule>[] = [
   },
 ]
 
-export function DataTable() {
-  const [modules, setModules] = React.useState<AdminSystemModule[]>([])
-  const [isLoading, setIsLoading] = React.useState(true)
-  const [error, setError] = React.useState<string | null>(null)
+interface DataTableProps {
+  externalModules?: AdminSystemModule[] | null
+  externalLoading?: boolean
+  externalError?: string | null
+  onRefresh?: () => void
+}
+
+export function DataTable({
+  externalModules,
+  externalLoading,
+  externalError,
+  onRefresh,
+}: DataTableProps = {}) {
+  const isControlled = externalModules !== undefined || onRefresh !== undefined
+  const [internalModules, setInternalModules] = React.useState<AdminSystemModule[]>([])
+  const [internalLoading, setInternalLoading] = React.useState(!isControlled)
+  const [internalError, setInternalError] = React.useState<string | null>(null)
   const [activeTab, setActiveTab] = React.useState<string>("all")
   const [searchQuery, setSearchQuery] = React.useState("")
   const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({})
   const [sorting, setSorting] = React.useState<SortingState>([])
 
   const loadStatus = React.useCallback(async (signal?: AbortSignal) => {
-    setIsLoading(true)
-    setError(null)
+    setInternalLoading(true)
+    setInternalError(null)
     try {
       const res = await fetchAdminSystemStatus({ signal })
-      setModules(res.modules)
+      setInternalModules(res.modules)
     } catch (err: any) {
       if (err.name === 'AbortError') return
-      setError(err.message || 'Gagal memuat status modul sistem')
+      setInternalError(err.message || 'Gagal memuat status modul sistem')
     } finally {
-      setIsLoading(false)
+      setInternalLoading(false)
     }
   }, [])
 
   React.useEffect(() => {
+    if (isControlled) return
     const controller = new AbortController()
     loadStatus(controller.signal)
     return () => {
       controller.abort()
     }
-  }, [loadStatus])
+  }, [isControlled, loadStatus])
+
+  const modules = React.useMemo(
+    () => (isControlled ? (externalModules ?? []) : internalModules),
+    [isControlled, externalModules, internalModules]
+  )
+  const isLoading = isControlled ? Boolean(externalLoading) : internalLoading
+  const error = isControlled ? (externalError ?? null) : internalError
+  const handleRefresh = onRefresh ? onRefresh : () => loadStatus()
 
   // Filter based on active tab and search query
   const filteredModules = React.useMemo(() => {
@@ -387,7 +409,7 @@ export function DataTable() {
         <Button
           variant="outline"
           size="sm"
-          onClick={() => loadStatus()}
+          onClick={handleRefresh}
           disabled={isLoading}
           className="gap-2 self-start sm:self-auto h-8 px-3 text-xs shadow-xs"
         >
@@ -405,7 +427,7 @@ export function DataTable() {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => loadStatus()}
+                onClick={handleRefresh}
                 className="bg-card text-foreground"
               >
                 Coba Lagi
