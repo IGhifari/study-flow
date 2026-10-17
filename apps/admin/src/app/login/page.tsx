@@ -2,6 +2,7 @@ import * as React from 'react';
 import Link from 'next/link';
 import { GraduationCap, ShieldCheck } from 'lucide-react';
 import { LoginForm } from '@/components/login-form';
+import { FadeIn } from '@/components/ui/motion';
 
 export default function LoginPage() {
   return (
@@ -13,17 +14,17 @@ export default function LoginPage() {
               <GraduationCap className="size-4" />
             </div>
             <span>StudyFlow</span>
-            <span className="rounded bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
+            <span className="rounded bg-muted px-1.5 py-0.5 text-xs font-medium text-muted-foreground">
               Admin
             </span>
           </Link>
         </div>
         <div className="flex flex-1 items-center justify-center">
-          <div className="w-full max-w-sm">
+          <FadeIn className="w-full max-w-sm">
             <React.Suspense fallback={<div className="h-80 w-full animate-pulse rounded-lg bg-muted" />}>
               <LoginForm />
             </React.Suspense>
-          </div>
+          </FadeIn>
         </div>
       </div>
       <div className="relative hidden lg:flex flex-col justify-between bg-muted p-10 dark:bg-card border-l border-border">

@@ -30,6 +30,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { FadeIn } from '@/components/ui/motion';
 
 const COMMON_TIMEZONES = [
   { value: 'Asia/Jakarta', label: 'WIB — Asia/Jakarta (UTC+7, Indonesia Barat)' },
@@ -108,196 +109,198 @@ function RegisterForm(): React.JSX.Element {
   };
 
   return (
-    <Card className="w-full border-border bg-card shadow-xs">
-      <CardHeader className="space-y-1.5 pb-4">
-        <CardTitle className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">
-          Daftar Akun StudyFlow
-        </CardTitle>
-        <CardDescription className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
-          Mulai atur kegiatan perkuliahan dan pelajari materi kuliah Anda dalam satu tempat.
-        </CardDescription>
-      </CardHeader>
+    <FadeIn className="w-full">
+      <Card className="w-full border-border bg-card shadow-xs">
+        <CardHeader className="space-y-1.5 pb-4">
+          <CardTitle className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">
+            Daftar Akun StudyFlow
+          </CardTitle>
+          <CardDescription className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
+            Mulai atur kegiatan perkuliahan dan pelajari materi kuliah Anda dalam satu tempat.
+          </CardDescription>
+        </CardHeader>
 
-      <form onSubmit={handleSubmit(onSubmit)} noValidate>
-        <CardContent className="space-y-4 pt-0">
-          {/* Google Sign-In Button */}
-          <div className="space-y-3">
-            <GoogleSignInButton returnUrl={returnUrl} disabled={isSubmitting} />
-            <div className="relative flex items-center justify-center">
-              <div className="absolute inset-0 flex items-center">
-                <Separator />
+        <form onSubmit={handleSubmit(onSubmit)} noValidate>
+          <CardContent className="space-y-4 pt-0">
+            {/* Google Sign-In Button */}
+            <div className="space-y-3">
+              <GoogleSignInButton returnUrl={returnUrl} disabled={isSubmitting} />
+              <div className="relative flex items-center justify-center">
+                <div className="absolute inset-0 flex items-center">
+                  <Separator />
+                </div>
+                <span className="relative bg-card px-2 text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                  atau dengan email
+                </span>
               </div>
-              <span className="relative bg-card px-2 text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
-                atau dengan email
-              </span>
             </div>
-          </div>
 
-          {/* Name Field */}
-          <div className="space-y-2">
-            <Label htmlFor="name" className="text-xs font-semibold text-foreground">
-              Nama Lengkap
-            </Label>
-            <Input
-              id="name"
-              type="text"
-              autoComplete="name"
-              placeholder="Nama lengkap Anda"
-              disabled={isSubmitting}
-              aria-invalid={Boolean(errors.name)}
-              aria-describedby={errors.name ? 'name-error' : undefined}
-              className="h-10 text-sm"
-              {...register('name')}
-            />
-            {errors.name && (
-              <p id="name-error" className="text-xs font-medium text-destructive">
-                {errors.name.message}
-              </p>
-            )}
-          </div>
-
-          {/* Email Field */}
-          <div className="space-y-2">
-            <Label htmlFor="email" className="text-xs font-semibold text-foreground">
-              Alamat Email
-            </Label>
-            <Input
-              id="email"
-              type="email"
-              autoComplete="email"
-              placeholder="nama@kampus.ac.id"
-              disabled={isSubmitting}
-              aria-invalid={Boolean(errors.email)}
-              aria-describedby={errors.email ? 'email-error' : undefined}
-              className="h-10 text-sm"
-              {...register('email')}
-            />
-            {errors.email && (
-              <p id="email-error" className="text-xs font-medium text-destructive">
-                {errors.email.message}
-              </p>
-            )}
-          </div>
-
-          {/* Password Field with Toggle */}
-          <div className="space-y-2">
-            <Label htmlFor="password" className="text-xs font-semibold text-foreground">
-              Password
-            </Label>
-            <div className="relative">
+            {/* Name Field */}
+            <div className="space-y-2">
+              <Label htmlFor="name" className="text-xs font-semibold text-foreground">
+                Nama Lengkap
+              </Label>
               <Input
-                id="password"
-                type={showPassword ? 'text' : 'password'}
-                autoComplete="new-password"
-                placeholder="Minimal 12 karakter"
+                id="name"
+                type="text"
+                autoComplete="name"
+                placeholder="Nama lengkap Anda"
                 disabled={isSubmitting}
-                className="h-10 pr-11 text-sm"
-                aria-invalid={Boolean(errors.password)}
-                aria-describedby={errors.password ? 'password-hint password-error' : 'password-hint'}
-                {...register('password')}
+                aria-invalid={Boolean(errors.name)}
+                aria-describedby={errors.name ? 'name-error' : undefined}
+                className="h-10 text-sm"
+                {...register('name')}
               />
-              <button
-                type="button"
-                onClick={() => setShowPassword((prev) => !prev)}
-                className="absolute right-1 top-1/2 -translate-y-1/2 z-10 flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:text-foreground after:absolute after:-inset-2 sm:after:hidden touch-manipulation focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring"
-                aria-label={showPassword ? 'Sembunyikan password' : 'Tampilkan password'}
-                title={showPassword ? 'Sembunyikan password' : 'Tampilkan password'}
-              >
-                {showPassword ? (
-                  <EyeOff className="h-4 w-4" aria-hidden="true" />
-                ) : (
-                  <Eye className="h-4 w-4" aria-hidden="true" />
-                )}
-              </button>
+              {errors.name && (
+                <p id="name-error" className="text-xs font-medium text-destructive">
+                  {errors.name.message}
+                </p>
+              )}
             </div>
-            <p id="password-hint" className="text-xs text-muted-foreground">
-              Minimal 12 karakter. Disarankan menggunakan kombinasi kata sandi yang mudah diingat.
-            </p>
-            {errors.password && (
-              <p id="password-error" className="text-xs font-medium text-destructive">
-                {errors.password.message}
-              </p>
-            )}
-          </div>
 
-          {/* Timezone Selector */}
-          <div className="space-y-2">
-            <Label htmlFor="timezone" className="text-xs font-semibold text-foreground">
-              Zona Waktu Akademik
-            </Label>
-            <Select
-              value={selectedTimezone}
-              onValueChange={(val) => setValue('timezone', val, { shouldValidate: true })}
-              disabled={isSubmitting}
+            {/* Email Field */}
+            <div className="space-y-2">
+              <Label htmlFor="email" className="text-xs font-semibold text-foreground">
+                Alamat Email
+              </Label>
+              <Input
+                id="email"
+                type="email"
+                autoComplete="email"
+                placeholder="nama@kampus.ac.id"
+                disabled={isSubmitting}
+                aria-invalid={Boolean(errors.email)}
+                aria-describedby={errors.email ? 'email-error' : undefined}
+                className="h-10 text-sm"
+                {...register('email')}
+              />
+              {errors.email && (
+                <p id="email-error" className="text-xs font-medium text-destructive">
+                  {errors.email.message}
+                </p>
+              )}
+            </div>
+
+            {/* Password Field with Toggle */}
+            <div className="space-y-2">
+              <Label htmlFor="password" className="text-xs font-semibold text-foreground">
+                Password
+              </Label>
+              <div className="relative">
+                <Input
+                  id="password"
+                  type={showPassword ? 'text' : 'password'}
+                  autoComplete="new-password"
+                  placeholder="Minimal 12 karakter"
+                  disabled={isSubmitting}
+                  className="h-10 pr-11 text-sm"
+                  aria-invalid={Boolean(errors.password)}
+                  aria-describedby={errors.password ? 'password-hint password-error' : 'password-hint'}
+                  {...register('password')}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((prev) => !prev)}
+                  className="absolute right-1 top-1/2 -translate-y-1/2 z-10 flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:text-foreground after:absolute after:-inset-2 sm:after:hidden touch-manipulation focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring"
+                  aria-label={showPassword ? 'Sembunyikan password' : 'Tampilkan password'}
+                  title={showPassword ? 'Sembunyikan password' : 'Tampilkan password'}
+                >
+                  {showPassword ? (
+                    <EyeOff className="h-4 w-4" aria-hidden="true" />
+                  ) : (
+                    <Eye className="h-4 w-4" aria-hidden="true" />
+                  )}
+                </button>
+              </div>
+              <p id="password-hint" className="text-xs text-muted-foreground">
+                Minimal 12 karakter. Disarankan menggunakan kombinasi kata sandi yang mudah diingat.
+              </p>
+              {errors.password && (
+                <p id="password-error" className="text-xs font-medium text-destructive">
+                  {errors.password.message}
+                </p>
+              )}
+            </div>
+
+            {/* Timezone Selector */}
+            <div className="space-y-2">
+              <Label htmlFor="timezone" className="text-xs font-semibold text-foreground">
+                Zona Waktu Akademik
+              </Label>
+              <Select
+                value={selectedTimezone}
+                onValueChange={(val) => setValue('timezone', val, { shouldValidate: true })}
+                disabled={isSubmitting}
+              >
+                <SelectTrigger id="timezone" className="h-10 w-full text-sm">
+                  <SelectValue placeholder="Pilih zona waktu" />
+                </SelectTrigger>
+                <SelectContent>
+                  {COMMON_TIMEZONES.map((tz) => (
+                    <SelectItem key={tz.value} value={tz.value} className="text-xs sm:text-sm">
+                      {tz.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                Digunakan untuk menyesuaikan kalender jadwal kuliah dan tenggat tugas Anda.
+              </p>
+              {errors.timezone && (
+                <p className="text-xs font-medium text-destructive">
+                  {errors.timezone.message}
+                </p>
+              )}
+            </div>
+
+            {/* Cloudflare Turnstile Verification Widget */}
+            <div className="space-y-1">
+              <TurnstileWidget
+                ref={turnstileRef}
+                action="register"
+                onVerify={handleTurnstileVerify}
+                onExpire={handleTurnstileExpire}
+                onError={(err) => setServerError(err || 'Verifikasi keamanan gagal. Silakan coba lagi.')}
+              />
+              {errors.turnstileToken && (
+                <p className="text-center text-xs font-medium text-destructive">
+                  {errors.turnstileToken.message}
+                </p>
+              )}
+            </div>
+          </CardContent>
+
+          <CardFooter className="flex flex-col space-y-4 pt-2">
+            <Button
+              type="submit"
+              className="w-full h-10 font-semibold gap-2"
+              disabled={isSubmitting || !turnstileToken}
             >
-              <SelectTrigger id="timezone" className="h-10 w-full text-sm">
-                <SelectValue placeholder="Pilih zona waktu" />
-              </SelectTrigger>
-              <SelectContent>
-                {COMMON_TIMEZONES.map((tz) => (
-                  <SelectItem key={tz.value} value={tz.value} className="text-xs sm:text-sm">
-                    {tz.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <p className="text-xs text-muted-foreground">
-              Digunakan untuk menyesuaikan kalender jadwal kuliah dan tenggat tugas Anda.
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin shrink-0" aria-hidden="true" />
+                  <span>Memproses...</span>
+                </>
+              ) : (
+                'Buat Akun'
+              )}
+            </Button>
+
+            <Separator className="my-1" />
+
+            <p className="text-center text-xs sm:text-sm text-muted-foreground">
+              Sudah punya akun?{' '}
+              <Link
+                href={returnUrl ? `/login?returnUrl=${encodeURIComponent(returnUrl)}` : '/login'}
+                className="font-medium text-primary underline underline-offset-4 hover:opacity-80 transition-opacity"
+              >
+                Masuk di sini
+              </Link>
             </p>
-            {errors.timezone && (
-              <p className="text-xs font-medium text-destructive">
-                {errors.timezone.message}
-              </p>
-            )}
-          </div>
-
-          {/* Cloudflare Turnstile Verification Widget */}
-          <div className="space-y-1">
-            <TurnstileWidget
-              ref={turnstileRef}
-              action="register"
-              onVerify={handleTurnstileVerify}
-              onExpire={handleTurnstileExpire}
-              onError={(err) => setServerError(err || 'Verifikasi keamanan gagal. Silakan coba lagi.')}
-            />
-            {errors.turnstileToken && (
-              <p className="text-center text-xs font-medium text-destructive">
-                {errors.turnstileToken.message}
-              </p>
-            )}
-          </div>
-        </CardContent>
-
-        <CardFooter className="flex flex-col space-y-4 pt-2">
-          <Button
-            type="submit"
-            className="w-full h-10 font-semibold gap-2"
-            disabled={isSubmitting || !turnstileToken}
-          >
-            {isSubmitting ? (
-              <>
-                <Loader2 className="h-4 w-4 animate-spin shrink-0" aria-hidden="true" />
-                <span>Memproses...</span>
-              </>
-            ) : (
-              'Buat Akun'
-            )}
-          </Button>
-
-          <Separator className="my-1" />
-
-          <p className="text-center text-xs sm:text-sm text-muted-foreground">
-            Sudah punya akun?{' '}
-            <Link
-              href={returnUrl ? `/login?returnUrl=${encodeURIComponent(returnUrl)}` : '/login'}
-              className="font-medium text-primary underline underline-offset-4 hover:opacity-80 transition-opacity"
-            >
-              Masuk di sini
-            </Link>
-          </p>
-        </CardFooter>
-      </form>
-    </Card>
+          </CardFooter>
+        </form>
+      </Card>
+    </FadeIn>
   );
 }
 

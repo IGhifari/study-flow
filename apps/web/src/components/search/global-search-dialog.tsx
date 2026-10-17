@@ -32,6 +32,7 @@ import {
 } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { FadeIn } from '@/components/ui/motion';
 import { cn } from '@/lib/utils';
 
 interface GlobalSearchDialogProps {
@@ -379,7 +380,7 @@ export function GlobalSearchDialog({
 
           {/* Categorized Results */}
           {searchResponse && flattenedItems.length > 0 && (
-            <div className="space-y-4">
+            <FadeIn className="space-y-4">
               {/* Category: Mata Kuliah */}
               {searchResponse.results.courses.length > 0 && (
                 <div className="space-y-1">
@@ -389,7 +390,7 @@ export function GlobalSearchDialog({
                       Mata Kuliah
                     </span>
                     {searchResponse.hasMore.courses && (
-                      <span className="text-[10px] lowercase font-normal opacity-70">
+                      <span className="text-xs lowercase font-normal opacity-70">
                         (5 teratas)
                       </span>
                     )}
@@ -445,7 +446,7 @@ export function GlobalSearchDialog({
                       Materi
                     </span>
                     {searchResponse.hasMore.materials && (
-                      <span className="text-[10px] lowercase font-normal opacity-70">
+                      <span className="text-xs lowercase font-normal opacity-70">
                         (5 teratas)
                       </span>
                     )}
@@ -501,7 +502,7 @@ export function GlobalSearchDialog({
                       Tugas Kuliah
                     </span>
                     {searchResponse.hasMore.assignments && (
-                      <span className="text-[10px] lowercase font-normal opacity-70">
+                      <span className="text-xs lowercase font-normal opacity-70">
                         (5 teratas)
                       </span>
                     )}
@@ -528,12 +529,12 @@ export function GlobalSearchDialog({
                             <div className="flex items-center gap-2">
                               <span className="font-semibold truncate">{item.title}</span>
                               {item.metadata?.isOverdue && (
-                                <Badge variant="danger" className="text-[10px] py-0 px-1.5 h-4">
+                                <Badge variant="danger" className="text-xs py-0 px-1.5 h-4">
                                   Terlewat
                                 </Badge>
                               )}
                               {item.metadata?.status === 'DONE' && (
-                                <Badge variant="success" className="text-[10px] py-0 px-1.5 h-4">
+                                <Badge variant="success" className="text-xs py-0 px-1.5 h-4">
                                   Selesai
                                 </Badge>
                               )}
@@ -569,7 +570,7 @@ export function GlobalSearchDialog({
                       Catatan
                     </span>
                     {searchResponse.hasMore.notes && (
-                      <span className="text-[10px] lowercase font-normal opacity-70">
+                      <span className="text-xs lowercase font-normal opacity-70">
                         (5 teratas)
                       </span>
                     )}
@@ -615,25 +616,25 @@ export function GlobalSearchDialog({
                   </div>
                 </div>
               )}
-            </div>
+            </FadeIn>
           )}
         </div>
 
         {/* Footer with keyboard shortcuts hints */}
-        <div className="px-4 py-2.5 bg-muted/40 border-t flex items-center justify-between text-[11px] text-muted-foreground">
+        <div className="px-4 py-2.5 bg-muted/40 border-t flex items-center justify-between text-xs text-muted-foreground">
           <div className="flex items-center gap-3">
             <span className="flex items-center gap-1">
-              <kbd className="px-1.5 py-0.5 rounded bg-muted border font-mono text-[10px]">↑</kbd>
-              <kbd className="px-1.5 py-0.5 rounded bg-muted border font-mono text-[10px]">↓</kbd>
+              <kbd className="px-1.5 py-0.5 rounded bg-muted border font-mono text-xs">↑</kbd>
+              <kbd className="px-1.5 py-0.5 rounded bg-muted border font-mono text-xs">↓</kbd>
               <span>pilih</span>
             </span>
             <span className="flex items-center gap-1">
-              <kbd className="px-1.5 py-0.5 rounded bg-muted border font-mono text-[10px]">↵</kbd>
+              <kbd className="px-1.5 py-0.5 rounded bg-muted border font-mono text-xs">↵</kbd>
               <span>buka</span>
             </span>
           </div>
           <span className="flex items-center gap-1">
-            <kbd className="px-1.5 py-0.5 rounded bg-muted border font-mono text-[10px]">ESC</kbd>
+            <kbd className="px-1.5 py-0.5 rounded bg-muted border font-mono text-xs">ESC</kbd>
             <span>tutup</span>
           </span>
         </div>

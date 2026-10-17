@@ -48,6 +48,8 @@ import {
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Card } from '@/components/ui/card';
+import { FadeIn, AnimatedPanel } from '@/components/ui/motion';
 import { MonthView } from '@/components/calendar/month-view';
 import { WeekView } from '@/components/calendar/week-view';
 import { AgendaView } from '@/components/calendar/agenda-view';
@@ -309,7 +311,7 @@ export default function CalendarPage(): React.JSX.Element {
   }, [viewMode, currentYear, currentMonth, currentRange]);
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto pb-12">
+    <FadeIn className="space-y-6 max-w-7xl mx-auto pb-12">
       {/* 1. Header Halaman */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
@@ -353,7 +355,7 @@ export default function CalendarPage(): React.JSX.Element {
       </div>
 
       {/* 3. Toolbar Kontrol, Filter, dan Navigasi Periode */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 p-4 rounded-xl border bg-card shadow-xs">
+      <Card className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 p-4 shadow-xs">
         {/* Kiri: Navigasi Periode (< > Hari Ini) & Label Bulan/Minggu */}
         <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
           <div className="flex items-center border rounded-lg bg-background p-0.5 shadow-2xs">
@@ -385,7 +387,7 @@ export default function CalendarPage(): React.JSX.Element {
             </Button>
           </div>
 
-          <h2 className="text-base sm:text-lg font-bold text-foreground min-w-[140px]">
+          <h2 className="text-base sm:text-lg font-bold text-foreground min-w-[140px] tabular-nums">
             {periodTitle}
           </h2>
         </div>
@@ -479,7 +481,7 @@ export default function CalendarPage(): React.JSX.Element {
             </TabsList>
           </Tabs>
         </div>
-      </div>
+      </Card>
 
       {/* 4. Error Banner */}
       {errorMessage && (
@@ -516,7 +518,7 @@ export default function CalendarPage(): React.JSX.Element {
           </div>
         </div>
       ) : !activeSemester ? (
-        <div className="border rounded-xl p-8 bg-card text-center space-y-3">
+        <Card className="p-8 text-center space-y-3 shadow-xs">
           <h3 className="font-bold text-base text-foreground">Belum Ada Semester</h3>
           <p className="text-sm text-muted-foreground max-w-sm mx-auto">
             Anda belum memiliki semester. Silakan buat semester terlebih dahulu di halaman Kelola Semester.
@@ -524,9 +526,9 @@ export default function CalendarPage(): React.JSX.Element {
           <Button asChild size="sm">
             <Link href="/semesters">Kelola Semester</Link>
           </Button>
-        </div>
+        </Card>
       ) : (
-        <>
+        <AnimatedPanel panelKey={viewMode}>
           {viewMode === 'month' && (
             <div className="hidden sm:block">
               <MonthView
@@ -565,7 +567,7 @@ export default function CalendarPage(): React.JSX.Element {
               hasCourses={courses.length > 0}
             />
           </div>
-        </>
+        </AnimatedPanel>
       )}
 
       {/* 6. Modals */}
@@ -583,6 +585,6 @@ export default function CalendarPage(): React.JSX.Element {
         onClose={() => setDayEventsDate(null)}
         onSelectEvent={(ev) => setSelectedEvent(ev)}
       />
-    </div>
+    </FadeIn>
   );
 }

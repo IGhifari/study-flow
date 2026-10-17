@@ -35,6 +35,7 @@ import {
 } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { FadeIn, StaggerGroup, StaggerItem } from '@/components/ui/motion';
 import { fetchAdminUserDetail, AdminApiError } from '@/lib/admin-api';
 import { AdminUserDetail } from '@studyflow/shared';
 
@@ -210,7 +211,7 @@ function UserDetailContent() {
   }
 
   return (
-    <div className="flex flex-1 flex-col gap-6 p-4 md:p-8 max-w-5xl mx-auto w-full">
+    <FadeIn className="flex flex-1 flex-col gap-6 p-4 md:p-8 max-w-5xl mx-auto w-full">
       {/* Page Header and Back Action */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div className="flex items-center gap-3">
@@ -347,7 +348,7 @@ function UserDetailContent() {
                       <Badge variant="outline" className="w-fit bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950 dark:text-emerald-300 dark:border-emerald-800 text-xs">
                         Terverifikasi
                       </Badge>
-                      <span className="text-xs text-muted-foreground">
+                      <span className="text-xs text-muted-foreground tabular-nums">
                         Diverifikasi pada:{' '}
                         {new Date(userDetail.emailVerifiedAt).toLocaleString('id-ID', {
                           dateStyle: 'medium',
@@ -405,7 +406,7 @@ function UserDetailContent() {
                 </span>
                 <div className="flex items-center gap-1.5 mt-1 text-foreground">
                   <Calendar className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-sm">
+                  <span className="text-sm tabular-nums">
                     {new Date(userDetail.createdAt).toLocaleString('id-ID', {
                       dateStyle: 'full',
                       timeStyle: 'short',
@@ -437,79 +438,79 @@ function UserDetailContent() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+            <StaggerGroup className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
               {/* Semester */}
-              <div className="rounded-lg border border-border/70 p-4 bg-muted/30 flex flex-col items-center justify-center text-center">
+              <StaggerItem className="rounded-lg border border-border/70 p-4 bg-muted/30 flex flex-col items-center justify-center text-center">
                 <div className="rounded-full bg-primary/10 p-2 mb-2 text-primary">
                   <GraduationCap className="h-4 w-4" />
                 </div>
-                <span className="text-2xl font-bold text-foreground">
+                <span className="text-2xl font-bold text-foreground tabular-nums">
                   {userDetail.usageSummary.semesters}
                 </span>
                 <span className="text-xs text-muted-foreground mt-1">Semester</span>
-              </div>
+              </StaggerItem>
 
               {/* Mata Kuliah */}
-              <div className="rounded-lg border border-border/70 p-4 bg-muted/30 flex flex-col items-center justify-center text-center">
+              <StaggerItem className="rounded-lg border border-border/70 p-4 bg-muted/30 flex flex-col items-center justify-center text-center">
                 <div className="rounded-full bg-primary/10 p-2 mb-2 text-primary">
                   <BookOpen className="h-4 w-4" />
                 </div>
-                <span className="text-2xl font-bold text-foreground">
+                <span className="text-2xl font-bold text-foreground tabular-nums">
                   {userDetail.usageSummary.courses}
                 </span>
                 <span className="text-xs text-muted-foreground mt-1">Mata Kuliah</span>
-              </div>
+              </StaggerItem>
 
               {/* Materi Aktif */}
-              <div className="rounded-lg border border-border/70 p-4 bg-muted/30 flex flex-col items-center justify-center text-center">
+              <StaggerItem className="rounded-lg border border-border/70 p-4 bg-muted/30 flex flex-col items-center justify-center text-center">
                 <div className="rounded-full bg-primary/10 p-2 mb-2 text-primary">
                   <FileText className="h-4 w-4" />
                 </div>
-                <span className="text-2xl font-bold text-foreground">
+                <span className="text-2xl font-bold text-foreground tabular-nums">
                   {userDetail.usageSummary.materials}
                 </span>
                 <span className="text-xs text-muted-foreground mt-1">Materi Aktif</span>
-              </div>
+              </StaggerItem>
 
               {/* Tugas */}
-              <div className="rounded-lg border border-border/70 p-4 bg-muted/30 flex flex-col items-center justify-center text-center">
+              <StaggerItem className="rounded-lg border border-border/70 p-4 bg-muted/30 flex flex-col items-center justify-center text-center">
                 <div className="rounded-full bg-primary/10 p-2 mb-2 text-primary">
                   <CheckSquare className="h-4 w-4" />
                 </div>
-                <span className="text-2xl font-bold text-foreground">
+                <span className="text-2xl font-bold text-foreground tabular-nums">
                   {userDetail.usageSummary.assignments}
                 </span>
                 <span className="text-xs text-muted-foreground mt-1">Tugas Kuliah</span>
-              </div>
+              </StaggerItem>
 
               {/* Catatan */}
-              <div className="rounded-lg border border-border/70 p-4 bg-muted/30 flex flex-col items-center justify-center text-center">
+              <StaggerItem className="rounded-lg border border-border/70 p-4 bg-muted/30 flex flex-col items-center justify-center text-center">
                 <div className="rounded-full bg-primary/10 p-2 mb-2 text-primary">
                   <StickyNote className="h-4 w-4" />
                 </div>
-                <span className="text-2xl font-bold text-foreground">
+                <span className="text-2xl font-bold text-foreground tabular-nums">
                   {userDetail.usageSummary.notes}
                 </span>
                 <span className="text-xs text-muted-foreground mt-1">Catatan Belajar</span>
-              </div>
+              </StaggerItem>
 
               {/* Penyimpanan */}
-              <div className="rounded-lg border border-border/70 p-4 bg-muted/30 flex flex-col items-center justify-center text-center">
+              <StaggerItem className="rounded-lg border border-border/70 p-4 bg-muted/30 flex flex-col items-center justify-center text-center">
                 <div className="rounded-full bg-primary/10 p-2 mb-2 text-primary">
                   <HardDrive className="h-4 w-4" />
                 </div>
-                <span className="text-lg font-bold text-foreground truncate max-w-full">
+                <span className="text-lg font-bold text-foreground truncate max-w-full tabular-nums">
                   {userDetail.usageSummary.storageUsage
                     ? userDetail.usageSummary.storageUsage.formatted
                     : '0 B'}
                 </span>
                 <span className="text-xs text-muted-foreground mt-1">Penyimpanan</span>
-              </div>
-            </div>
+              </StaggerItem>
+            </StaggerGroup>
           </CardContent>
         </Card>
       </div>
-    </div>
+    </FadeIn>
   );
 }
 

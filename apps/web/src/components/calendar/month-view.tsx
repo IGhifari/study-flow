@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { CalendarClock, ListTodo, Clock, Plus } from 'lucide-react';
+import { CalendarClock, ListTodo, Plus } from 'lucide-react';
 import { CalendarEvent } from '@studyflow/shared';
 import {
   SHORT_DAY_NAMES,
@@ -9,7 +9,7 @@ import {
   groupEventsByDate,
 } from '@/lib/calendar-utils';
 import { cn } from '@/lib/utils';
-import { Badge } from '@/components/ui/badge';
+import { Card } from '@/components/ui/card';
 
 interface MonthViewProps {
   days: string[]; // List of YYYY-MM-DD strings for the grid
@@ -35,7 +35,7 @@ export function MonthView({
   const groupedEvents = React.useMemo(() => groupEventsByDate(events), [events]);
 
   return (
-    <div className="w-full border rounded-xl overflow-hidden bg-card shadow-sm">
+    <Card className="w-full overflow-hidden shadow-xs">
       {/* 7-column Day Name Headers (Senin – Minggu) */}
       <div className="grid grid-cols-7 border-b bg-muted/60 text-xs font-semibold text-muted-foreground text-center">
         {SHORT_DAY_NAMES.map((name, index) => (
@@ -53,7 +53,7 @@ export function MonthView({
 
       {/* Grid of days */}
       <div className="grid grid-cols-7 auto-rows-fr divide-y divide-border/60">
-        {days.map((dateStr, index) => {
+        {days.map((dateStr) => {
           const { year, month, day } = parseDateString(dateStr);
           const isCurrentMonth = month === activeMonth && year === activeYear;
           const isToday = dateStr === todayDateStr;
@@ -74,7 +74,7 @@ export function MonthView({
               <div className="flex items-center justify-between mb-1 px-1">
                 <span
                   className={cn(
-                    'text-xs font-semibold inline-flex items-center justify-center rounded-full h-6 w-6',
+                    'text-xs font-semibold tabular-nums inline-flex items-center justify-center rounded-full h-6 w-6',
                     isToday
                       ? 'bg-primary text-primary-foreground font-bold shadow-xs'
                       : !isCurrentMonth
@@ -86,7 +86,7 @@ export function MonthView({
                 </span>
 
                 {dayEvents.length > 0 && (
-                  <span className="text-[10px] font-mono text-muted-foreground hidden sm:inline">
+                  <span className="text-xs font-mono tabular-nums text-muted-foreground hidden sm:inline">
                     {dayEvents.length}
                   </span>
                 )}
@@ -103,7 +103,7 @@ export function MonthView({
                       onClick={() => onSelectEvent(event)}
                       title={`${event.title} (${isSchedule ? `${event.startTime} - ${event.endTime}` : `Tenggat ${event.dueTime}`})`}
                       className={cn(
-                        'w-full text-left rounded px-1.5 py-0.5 text-[11px] font-medium truncate flex items-center gap-1 transition-all border focus:outline-none focus:ring-1 focus:ring-primary',
+                        'w-full text-left rounded px-1.5 py-0.5 text-xs font-medium truncate flex items-center gap-1 transition-all border focus:outline-none focus:ring-1 focus:ring-primary',
                         isSchedule
                           ? 'bg-primary/10 text-primary border-primary/20 hover:bg-primary/20'
                           : event.isOverdue
@@ -118,7 +118,7 @@ export function MonthView({
                       ) : (
                         <ListTodo className="h-3 w-3 shrink-0" />
                       )}
-                      <span className="shrink-0 font-mono text-[10px]">
+                      <span className="shrink-0 font-mono text-xs tabular-nums">
                         {isSchedule ? event.startTime : event.dueTime}
                       </span>
                       <span className="truncate">{event.title}</span>
@@ -132,7 +132,7 @@ export function MonthView({
                 <button
                   type="button"
                   onClick={() => onOpenDayEvents(dateStr, dayEvents)}
-                  className="mt-1 text-[10px] text-primary hover:text-primary/80 font-semibold px-1 py-0.5 rounded hover:bg-primary/10 text-left transition-colors flex items-center gap-0.5"
+                  className="mt-1 text-xs tabular-nums text-primary hover:text-primary/80 font-semibold px-1 py-0.5 rounded hover:bg-primary/10 text-left transition-colors flex items-center gap-0.5"
                 >
                   <Plus className="h-2.5 w-2.5" />
                   {remainingCount} lainnya
@@ -142,6 +142,6 @@ export function MonthView({
           );
         })}
       </div>
-    </div>
+    </Card>
   );
 }

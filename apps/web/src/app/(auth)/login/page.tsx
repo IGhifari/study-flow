@@ -23,6 +23,7 @@ import {
 } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { toast } from '@/components/ui/sonner';
+import { FadeIn } from '@/components/ui/motion';
 
 function LoginForm(): React.JSX.Element {
   const router = useRouter();
@@ -104,147 +105,149 @@ function LoginForm(): React.JSX.Element {
   };
 
   return (
-    <Card className="w-full border-border bg-card shadow-xs">
-      <CardHeader className="space-y-1.5 pb-4">
-        <CardTitle className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">
-          Masuk ke StudyFlow
-        </CardTitle>
-        <CardDescription className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
-          Masukkan email dan password atau lanjutkan dengan akun Google Anda.
-        </CardDescription>
-      </CardHeader>
+    <FadeIn className="w-full">
+      <Card className="w-full border-border bg-card shadow-xs">
+        <CardHeader className="space-y-1.5 pb-4">
+          <CardTitle className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">
+            Masuk ke StudyFlow
+          </CardTitle>
+          <CardDescription className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
+            Masukkan email dan password atau lanjutkan dengan akun Google Anda.
+          </CardDescription>
+        </CardHeader>
 
-      <form onSubmit={handleSubmit(onSubmit)} noValidate>
-        <CardContent className="space-y-4 pt-0">
-          {/* Google Sign-In Button */}
-          <div className="space-y-3">
-            <GoogleSignInButton returnUrl={returnUrl} disabled={isSubmitting} />
-            <div className="relative flex items-center justify-center">
-              <div className="absolute inset-0 flex items-center">
-                <Separator />
+        <form onSubmit={handleSubmit(onSubmit)} noValidate>
+          <CardContent className="space-y-4 pt-0">
+            {/* Google Sign-In Button */}
+            <div className="space-y-3">
+              <GoogleSignInButton returnUrl={returnUrl} disabled={isSubmitting} />
+              <div className="relative flex items-center justify-center">
+                <div className="absolute inset-0 flex items-center">
+                  <Separator />
+                </div>
+                <span className="relative bg-card px-2 text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                  atau dengan email
+                </span>
               </div>
-              <span className="relative bg-card px-2 text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
-                atau dengan email
-              </span>
             </div>
-          </div>
 
-          {/* Email Field */}
-          <div className="space-y-2">
-            <Label htmlFor="email" className="text-xs font-semibold text-foreground">
-              Alamat Email
-            </Label>
-            <Input
-              id="email"
-              type="email"
-              autoComplete="email"
-              placeholder="nama@kampus.ac.id"
-              disabled={isSubmitting}
-              aria-invalid={Boolean(errors.email)}
-              aria-describedby={errors.email ? 'email-error' : undefined}
-              className="h-10 text-sm"
-              {...register('email')}
-            />
-            {errors.email && (
-              <p id="email-error" className="text-xs font-medium text-destructive">
-                {errors.email.message}
-              </p>
-            )}
-          </div>
-
-          {/* Password Field with Accessible Toggle */}
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <Label htmlFor="password" className="text-xs font-semibold text-foreground">
-                Password
+            {/* Email Field */}
+            <div className="space-y-2">
+              <Label htmlFor="email" className="text-xs font-semibold text-foreground">
+                Alamat Email
               </Label>
-              <Link
-                href="/forgot-password"
-                className="text-xs text-primary hover:underline font-medium"
-              >
-                Lupa password?
-              </Link>
-            </div>
-            <div className="relative">
               <Input
-                id="password"
-                type={showPassword ? 'text' : 'password'}
-                autoComplete="current-password"
-                placeholder="Masukkan password akun"
+                id="email"
+                type="email"
+                autoComplete="email"
+                placeholder="nama@kampus.ac.id"
                 disabled={isSubmitting}
-                className="h-10 pr-11 text-sm"
-                aria-invalid={Boolean(errors.password)}
-                aria-describedby={errors.password ? 'password-error' : undefined}
-                {...register('password')}
+                aria-invalid={Boolean(errors.email)}
+                aria-describedby={errors.email ? 'email-error' : undefined}
+                className="h-10 text-sm"
+                {...register('email')}
               />
-              <button
-                type="button"
-                onClick={() => setShowPassword((prev) => !prev)}
-                className="absolute right-1 top-1/2 -translate-y-1/2 z-10 flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:text-foreground after:absolute after:-inset-2 sm:after:hidden touch-manipulation focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring"
-                aria-label={showPassword ? 'Sembunyikan password' : 'Tampilkan password'}
-                title={showPassword ? 'Sembunyikan password' : 'Tampilkan password'}
-              >
-                {showPassword ? (
-                  <EyeOff className="h-4 w-4" aria-hidden="true" />
-                ) : (
-                  <Eye className="h-4 w-4" aria-hidden="true" />
-                )}
-              </button>
+              {errors.email && (
+                <p id="email-error" className="text-xs font-medium text-destructive">
+                  {errors.email.message}
+                </p>
+              )}
             </div>
-            {errors.password && (
-              <p id="password-error" className="text-xs font-medium text-destructive">
-                {errors.password.message}
-              </p>
-            )}
-          </div>
 
-          {/* Adaptive Cloudflare Turnstile: tampil setelah beberapa percobaan gagal */}
-          {requireCaptcha && (
-            <div className="space-y-1.5 pt-1">
-              <p className="text-center text-[11px] text-muted-foreground">
-                Selesaikan verifikasi keamanan untuk melanjutkan.
-              </p>
-              <TurnstileWidget
-                ref={turnstileRef}
-                action="login"
-                onVerify={handleTurnstileVerify}
-                onExpire={handleTurnstileExpire}
-                onError={(err) => setServerError(err || 'Verifikasi keamanan gagal. Silakan coba lagi.')}
-              />
+            {/* Password Field with Accessible Toggle */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label htmlFor="password" className="text-xs font-semibold text-foreground">
+                  Password
+                </Label>
+                <Link
+                  href="/forgot-password"
+                  className="text-xs text-primary hover:underline font-medium"
+                >
+                  Lupa password?
+                </Link>
+              </div>
+              <div className="relative">
+                <Input
+                  id="password"
+                  type={showPassword ? 'text' : 'password'}
+                  autoComplete="current-password"
+                  placeholder="Masukkan password akun"
+                  disabled={isSubmitting}
+                  className="h-10 pr-11 text-sm"
+                  aria-invalid={Boolean(errors.password)}
+                  aria-describedby={errors.password ? 'password-error' : undefined}
+                  {...register('password')}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((prev) => !prev)}
+                  className="absolute right-1 top-1/2 -translate-y-1/2 z-10 flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:text-foreground after:absolute after:-inset-2 sm:after:hidden touch-manipulation focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring"
+                  aria-label={showPassword ? 'Sembunyikan password' : 'Tampilkan password'}
+                  title={showPassword ? 'Sembunyikan password' : 'Tampilkan password'}
+                >
+                  {showPassword ? (
+                    <EyeOff className="h-4 w-4" aria-hidden="true" />
+                  ) : (
+                    <Eye className="h-4 w-4" aria-hidden="true" />
+                  )}
+                </button>
+              </div>
+              {errors.password && (
+                <p id="password-error" className="text-xs font-medium text-destructive">
+                  {errors.password.message}
+                </p>
+              )}
             </div>
-          )}
-        </CardContent>
 
-        <CardFooter className="flex flex-col space-y-4 pt-2">
-          <Button
-            type="submit"
-            className="w-full h-10 font-semibold gap-2"
-            disabled={isSubmitting || (requireCaptcha && !turnstileToken)}
-          >
-            {isSubmitting ? (
-              <>
-                <Loader2 className="h-4 w-4 animate-spin shrink-0" aria-hidden="true" />
-                <span>Memproses...</span>
-              </>
-            ) : (
-              'Masuk'
+            {/* Adaptive Cloudflare Turnstile: tampil setelah beberapa percobaan gagal */}
+            {requireCaptcha && (
+              <div className="space-y-1.5 pt-1">
+                <p className="text-center text-xs text-muted-foreground">
+                  Selesaikan verifikasi keamanan untuk melanjutkan.
+                </p>
+                <TurnstileWidget
+                  ref={turnstileRef}
+                  action="login"
+                  onVerify={handleTurnstileVerify}
+                  onExpire={handleTurnstileExpire}
+                  onError={(err) => setServerError(err || 'Verifikasi keamanan gagal. Silakan coba lagi.')}
+                />
+              </div>
             )}
-          </Button>
+          </CardContent>
 
-          <Separator className="my-1" />
-
-          <p className="text-center text-xs sm:text-sm text-muted-foreground">
-            Belum punya akun?{' '}
-            <Link
-              href={returnUrl ? `/register?returnUrl=${encodeURIComponent(returnUrl)}` : '/register'}
-              className="font-medium text-primary underline underline-offset-4 hover:opacity-80 transition-opacity"
+          <CardFooter className="flex flex-col space-y-4 pt-2">
+            <Button
+              type="submit"
+              className="w-full h-10 font-semibold gap-2"
+              disabled={isSubmitting || (requireCaptcha && !turnstileToken)}
             >
-              Daftar sekarang
-            </Link>
-          </p>
-        </CardFooter>
-      </form>
-    </Card>
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin shrink-0" aria-hidden="true" />
+                  <span>Memproses...</span>
+                </>
+              ) : (
+                'Masuk'
+              )}
+            </Button>
+
+            <Separator className="my-1" />
+
+            <p className="text-center text-xs sm:text-sm text-muted-foreground">
+              Belum punya akun?{' '}
+              <Link
+                href={returnUrl ? `/register?returnUrl=${encodeURIComponent(returnUrl)}` : '/register'}
+                className="font-medium text-primary underline underline-offset-4 hover:opacity-80 transition-opacity"
+              >
+                Daftar sekarang
+              </Link>
+            </p>
+          </CardFooter>
+        </form>
+      </Card>
+    </FadeIn>
   );
 }
 

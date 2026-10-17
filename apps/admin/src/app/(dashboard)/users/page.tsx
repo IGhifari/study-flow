@@ -44,6 +44,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { Card } from '@/components/ui/card';
+import { FadeIn } from '@/components/ui/motion';
 import { fetchAdminUsers } from '@/lib/admin-api';
 import { AdminUserListItem, AdminUserListResponse } from '@studyflow/shared';
 
@@ -54,13 +56,13 @@ function UsersTableSkeleton() {
         <Skeleton className="h-10 w-full sm:max-w-sm" />
         <Skeleton className="h-9 w-32 self-end sm:self-auto" />
       </div>
-      <div className="rounded-lg border border-border bg-card shadow-xs overflow-hidden">
+      <Card className="overflow-hidden shadow-xs">
         <div className="p-4 space-y-3">
           {Array.from({ length: 6 }).map((_, idx) => (
             <Skeleton key={idx} className="h-10 w-full" />
           ))}
         </div>
-      </div>
+      </Card>
     </div>
   );
 }
@@ -275,7 +277,7 @@ function AdminUsersContent() {
   const totalItems = data?.pagination.totalItems || 0;
 
   return (
-    <div className="flex flex-1 flex-col gap-6 p-4 md:p-8 max-w-7xl mx-auto w-full">
+    <FadeIn className="flex flex-1 flex-col gap-6 p-4 md:p-8 max-w-7xl mx-auto w-full">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-foreground md:text-3xl">
@@ -359,7 +361,7 @@ function AdminUsersContent() {
               setPage(1);
             }}
           >
-            <SelectTrigger className="w-20 h-9">
+            <SelectTrigger className="w-20 h-9 tabular-nums">
               <SelectValue placeholder={String(limit)} />
             </SelectTrigger>
             <SelectContent>
@@ -373,7 +375,7 @@ function AdminUsersContent() {
       </div>
 
       {/* Users Table */}
-      <div className="rounded-lg border border-border bg-card shadow-xs overflow-hidden">
+      <Card className="overflow-hidden shadow-xs">
         <div className="overflow-x-auto">
           <Table>
             <TableHeader>
@@ -478,7 +480,7 @@ function AdminUsersContent() {
                           </Badge>
                         )}
                       </TableCell>
-                      <TableCell className="text-muted-foreground text-xs whitespace-nowrap">
+                      <TableCell className="text-muted-foreground text-xs whitespace-nowrap tabular-nums">
                         {new Date(user.createdAt).toLocaleDateString('id-ID', {
                           year: 'numeric',
                           month: 'short',
@@ -565,7 +567,7 @@ function AdminUsersContent() {
         </div>
 
         {/* Pagination Footer */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-t border-border px-4 py-3 bg-card text-xs text-muted-foreground">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-t border-border px-4 py-3 bg-card text-xs text-muted-foreground tabular-nums">
           <div>
             Menampilkan{' '}
             <span className="font-semibold text-foreground">
@@ -593,7 +595,7 @@ function AdminUsersContent() {
               <ChevronLeft className="h-4 w-4" />
               <span>Sebelumnya</span>
             </Button>
-            <span className="px-2 font-medium text-foreground">
+            <span className="px-2 font-medium text-foreground tabular-nums">
               {page} / {totalPages}
             </span>
             <Button
@@ -608,8 +610,8 @@ function AdminUsersContent() {
             </Button>
           </div>
         </div>
-      </div>
-    </div>
+      </Card>
+    </FadeIn>
   );
 }
 

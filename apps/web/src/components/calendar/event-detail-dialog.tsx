@@ -86,7 +86,7 @@ export function EventDetailDialog({
                   ? `Setiap ${getDayNameId(event.dayOfWeek || 1)} (${formattedDate})`
                   : formattedDate}
               </div>
-              <div className="text-muted-foreground text-xs">
+              <div className="text-muted-foreground text-xs tabular-nums">
                 {isSchedule ? (
                   <span>
                     Pukul {event.startTime} – {event.endTime} ({timezone})

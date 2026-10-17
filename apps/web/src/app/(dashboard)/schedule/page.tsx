@@ -51,6 +51,13 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Card } from '@/components/ui/card';
+import {
+  FadeIn,
+  StaggerGroup,
+  StaggerItem,
+  AnimatedPanel,
+} from '@/components/ui/motion';
 import { CreateScheduleDialog } from '@/components/schedules/create-schedule-dialog';
 import { EditScheduleDialog } from '@/components/schedules/edit-schedule-dialog';
 import { DeleteScheduleDialog } from '@/components/schedules/delete-schedule-dialog';
@@ -286,7 +293,7 @@ export default function SchedulePage(): React.JSX.Element {
   };
 
   return (
-    <div className="space-y-6">
+    <FadeIn className="space-y-6">
       {/* 1. Header Ringkas */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-border pb-4">
         <div className="space-y-1">
@@ -365,7 +372,7 @@ export default function SchedulePage(): React.JSX.Element {
 
       {/* 3. Toolbar: Filter Mata Kuliah */}
       {activeSemester && !isLoading && schedules.length > 0 && (
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-card border border-border rounded-lg p-3">
+        <Card className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 p-3 shadow-xs">
           <div className="flex items-center gap-2 flex-1 max-w-sm">
             <label htmlFor="course-filter" className="text-xs font-medium text-muted-foreground shrink-0">
               Filter Kuliah:
@@ -404,7 +411,7 @@ export default function SchedulePage(): React.JSX.Element {
               <span>Reset Filter</span>
             </Button>
           )}
-        </div>
+        </Card>
       )}
 
       {/* 4. State Tampilan Konten */}
@@ -414,11 +421,11 @@ export default function SchedulePage(): React.JSX.Element {
         <div className="space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
             {[1, 2, 3, 4, 5].map((idx) => (
-              <div key={idx} className="space-y-2 border border-border rounded-lg p-3 bg-card">
+              <Card key={idx} className="space-y-2 p-3 shadow-xs">
                 <Skeleton className="h-5 w-24" />
                 <Skeleton className="h-20 w-full" />
                 <Skeleton className="h-20 w-full" />
-              </div>
+              </Card>
             ))}
           </div>
         </div>
@@ -445,7 +452,7 @@ export default function SchedulePage(): React.JSX.Element {
 
       {/* C. Empty State: Belum Ada Semester Aktif */}
       {!isLoading && !errorMsg && !activeSemester && (
-        <div className="rounded-xl border border-dashed border-border p-8 text-center bg-muted/10 space-y-3">
+        <Card className="border-dashed p-8 text-center bg-muted/10 space-y-3 shadow-xs">
           <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary">
             <CalendarRange className="h-6 w-6" />
           </div>
@@ -460,12 +467,12 @@ export default function SchedulePage(): React.JSX.Element {
               <Link href="/semesters">Buka Kelola Semester</Link>
             </Button>
           </div>
-        </div>
+        </Card>
       )}
 
       {/* D. Empty State: Semester Aktif Belum Punya Jadwal (Onboarding) */}
       {!isLoading && !errorMsg && activeSemester && schedules.length === 0 && (
-        <div className="rounded-xl border border-dashed border-border p-8 text-center bg-muted/10 space-y-3">
+        <Card className="border-dashed p-8 text-center bg-muted/10 space-y-3 shadow-xs">
           <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary">
             <CalendarClock className="h-6 w-6" />
           </div>
@@ -494,12 +501,12 @@ export default function SchedulePage(): React.JSX.Element {
               </Button>
             )}
           </div>
-        </div>
+        </Card>
       )}
 
       {/* E. Empty State: Filter Tidak Menemukan Jadwal */}
       {!isLoading && !errorMsg && activeSemester && schedules.length > 0 && filteredSchedules.length === 0 && (
-        <div className="rounded-xl border border-border p-8 text-center bg-card space-y-3">
+        <Card className="p-8 text-center space-y-3 shadow-xs">
           <p className="text-sm font-medium text-foreground">
             Tidak ada sesi jadwal untuk mata kuliah yang dipilih.
           </p>
@@ -511,70 +518,71 @@ export default function SchedulePage(): React.JSX.Element {
           >
             Tampilkan Semua Jadwal
           </Button>
-        </div>
+        </Card>
       )}
 
       {/* F. TAMPILAN JADWAL TERISI */}
       {!isLoading && !errorMsg && activeSemester && filteredSchedules.length > 0 && (
         <div>
           {/* F.1 TAMPILAN DESKTOP (Grid Mingguan Senin–Minggu) */}
-          <div className="hidden lg:grid grid-cols-7 gap-3 items-start">
+          <StaggerGroup className="hidden lg:grid grid-cols-7 gap-3 items-start">
             {[1, 2, 3, 4, 5, 6, 7].map((dayNum) => {
               const dayItems = schedulesByDay[dayNum] || [];
               const isWeekend = dayNum === 6 || dayNum === 7;
               const isCurrentDay = getCurrentDayOfWeekInTimezone(timezone) === dayNum;
 
               return (
-                <div
-                  key={dayNum}
-                  className={`rounded-xl border ${
-                    isCurrentDay
-                      ? 'border-primary/50 bg-primary/[0.02] shadow-xs'
-                      : 'border-border bg-card'
-                  } flex flex-col min-h-[380px]`}
-                >
-                  {/* Day Column Header */}
-                  <div
-                    className={`p-3 border-b border-border flex items-center justify-between ${
-                      isCurrentDay ? 'bg-primary/10 text-primary' : 'bg-muted/30 text-foreground'
-                    } rounded-t-xl`}
+                <StaggerItem key={dayNum}>
+                  <Card
+                    className={`${
+                      isCurrentDay
+                        ? 'border-primary/50 bg-primary/[0.02] shadow-xs'
+                        : 'border-border bg-card shadow-xs'
+                    } flex flex-col min-h-[380px] overflow-hidden`}
                   >
-                    <div className="flex items-center gap-1.5 min-w-0">
-                      <span className="font-bold text-sm tracking-tight truncate">
-                        {getDayNameId(dayNum)}
+                    {/* Day Column Header */}
+                    <div
+                      className={`p-3 border-b border-border flex items-center justify-between ${
+                        isCurrentDay ? 'bg-primary/10 text-primary' : 'bg-muted/30 text-foreground'
+                      }`}
+                    >
+                      <div className="flex items-center gap-1.5 min-w-0">
+                        <span className="font-bold text-sm tracking-tight truncate">
+                          {getDayNameId(dayNum)}
+                        </span>
+                        {isCurrentDay && (
+                          <Badge variant="default" className="text-xs px-1.5 py-0 h-4">
+                            Hari Ini
+                          </Badge>
+                        )}
+                      </div>
+                      <span className="text-xs font-semibold tabular-nums text-muted-foreground">
+                        {dayItems.length}
                       </span>
-                      {isCurrentDay && (
-                        <Badge variant="default" className="text-[10px] px-1.5 py-0 h-4">
-                          Hari Ini
-                        </Badge>
+                    </div>
+
+                    {/* Day Column Items */}
+                    <div className="p-2.5 space-y-2.5 flex-1">
+                      {dayItems.length === 0 ? (
+                        <div className="h-32 flex items-center justify-center text-center p-2 text-xs text-muted-foreground/60">
+                          {isWeekend ? 'Tidak ada kelas' : 'Kosong'}
+                        </div>
+                      ) : (
+                        dayItems.map((item) => (
+                          <ScheduleCard
+                            key={item.id}
+                            schedule={item}
+                            onEdit={() => setEditingSchedule(item)}
+                            onDelete={() => setDeletingSchedule(item)}
+                          />
+                        ))
                       )}
                     </div>
-                    <span className="text-xs font-semibold text-muted-foreground">
-                      {dayItems.length}
-                    </span>
-                  </div>
-
-                  {/* Day Column Items */}
-                  <div className="p-2.5 space-y-2.5 flex-1">
-                    {dayItems.length === 0 ? (
-                      <div className="h-32 flex items-center justify-center text-center p-2 text-xs text-muted-foreground/60">
-                        {isWeekend ? 'Tidak ada kelas' : 'Kosong'}
-                      </div>
-                    ) : (
-                      dayItems.map((item) => (
-                        <ScheduleCard
-                          key={item.id}
-                          schedule={item}
-                          onEdit={() => setEditingSchedule(item)}
-                          onDelete={() => setDeletingSchedule(item)}
-                        />
-                      ))
-                    )}
-                  </div>
-                </div>
+                  </Card>
+                </StaggerItem>
               );
             })}
-          </div>
+          </StaggerGroup>
 
           {/* F.2 TAMPILAN MOBILE (< 1024px: Agenda Harian Responsif) */}
           <div className="lg:hidden space-y-4">
@@ -599,7 +607,7 @@ export default function SchedulePage(): React.JSX.Element {
                   >
                     <span className="text-xs truncate">{getDayNameId(dayNum).substring(0, 3)}</span>
                     <span
-                      className={`text-[10px] px-1 rounded-full ${
+                      className={`text-xs tabular-nums px-1 rounded-full ${
                         isSelected ? 'bg-primary-foreground/20 text-primary-foreground' : 'text-muted-foreground'
                       }`}
                     >
@@ -613,39 +621,41 @@ export default function SchedulePage(): React.JSX.Element {
               })}
             </div>
 
-            {/* Selected Day Agenda Header */}
-            <div className="flex items-center justify-between px-1">
-              <h2 className="text-base font-bold text-foreground">
-                Jadwal Hari {getDayNameId(mobileSelectedDay)}
-              </h2>
-              <span className="text-xs text-muted-foreground">
-                {schedulesByDay[mobileSelectedDay]?.length || 0} Sesi Perkuliahan
-              </span>
-            </div>
+            <AnimatedPanel panelKey={String(mobileSelectedDay)} className="space-y-3">
+              {/* Selected Day Agenda Header */}
+              <div className="flex items-center justify-between px-1">
+                <h2 className="text-base font-bold text-foreground">
+                  Jadwal Hari {getDayNameId(mobileSelectedDay)}
+                </h2>
+                <span className="text-xs tabular-nums text-muted-foreground">
+                  {schedulesByDay[mobileSelectedDay]?.length || 0} Sesi Perkuliahan
+                </span>
+              </div>
 
-            {/* List Sesi Hari Terpilih */}
-            <div className="space-y-3">
-              {(schedulesByDay[mobileSelectedDay] || []).length === 0 ? (
-                <div className="rounded-xl border border-dashed border-border p-6 text-center bg-muted/10 space-y-1">
-                  <p className="text-sm font-medium text-foreground">
-                    Tidak ada jadwal kuliah pada hari {getDayNameId(mobileSelectedDay)}.
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    Gunakan waktu luang untuk mempelajari materi atau mengerjakan tugas.
-                  </p>
-                </div>
-              ) : (
-                schedulesByDay[mobileSelectedDay].map((item) => (
-                  <ScheduleCard
-                    key={item.id}
-                    schedule={item}
-                    isMobileView
-                    onEdit={() => setEditingSchedule(item)}
-                    onDelete={() => setDeletingSchedule(item)}
-                  />
-                ))
-              )}
-            </div>
+              {/* List Sesi Hari Terpilih */}
+              <div className="space-y-3">
+                {(schedulesByDay[mobileSelectedDay] || []).length === 0 ? (
+                  <Card className="border-dashed p-6 text-center bg-muted/10 space-y-1 shadow-xs">
+                    <p className="text-sm font-medium text-foreground">
+                      Tidak ada jadwal kuliah pada hari {getDayNameId(mobileSelectedDay)}.
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      Gunakan waktu luang untuk mempelajari materi atau mengerjakan tugas.
+                    </p>
+                  </Card>
+                ) : (
+                  schedulesByDay[mobileSelectedDay].map((item) => (
+                    <ScheduleCard
+                      key={item.id}
+                      schedule={item}
+                      isMobileView
+                      onEdit={() => setEditingSchedule(item)}
+                      onDelete={() => setDeletingSchedule(item)}
+                    />
+                  ))
+                )}
+              </div>
+            </AnimatedPanel>
           </div>
         </div>
       )}
@@ -671,7 +681,7 @@ export default function SchedulePage(): React.JSX.Element {
         schedule={deletingSchedule}
         onSuccess={handleDeleteSuccess}
       />
-    </div>
+    </FadeIn>
   );
 }
 
@@ -685,7 +695,7 @@ interface ScheduleCardProps {
 
 function ScheduleCard({
   schedule,
-  isMobileView,
+  isMobileView: _isMobileView,
   onEdit,
   onDelete,
 }: ScheduleCardProps): React.JSX.Element {
@@ -702,7 +712,7 @@ function ScheduleCard({
     >
       {/* Top: Waktu & Aksi Dropdown */}
       <div className="flex items-start justify-between gap-1.5">
-        <div className="flex items-center gap-1.5 font-mono text-xs font-bold text-foreground">
+        <div className="flex items-center gap-1.5 font-mono text-xs font-bold tabular-nums text-foreground">
           <Clock className="h-3.5 w-3.5 text-primary shrink-0" />
           <span>
             {schedule.startTime} – {schedule.endTime}
@@ -747,14 +757,14 @@ function ScheduleCard({
           {course?.name || 'Mata Kuliah'}
         </Link>
         {course?.code && (
-          <p className="font-mono text-[11px] text-muted-foreground truncate">
+          <p className="font-mono text-xs text-muted-foreground truncate">
             {course.code}
           </p>
         )}
       </div>
 
       {/* Dosen & Ruangan */}
-      <div className="space-y-1 pt-1 border-t border-border/50 text-[11px] text-muted-foreground">
+      <div className="space-y-1 pt-1 border-t border-border/50 text-xs text-muted-foreground">
         {course?.lecturer && (
           <div className="flex items-center gap-1.5 truncate">
             <User className="h-3 w-3 shrink-0 text-muted-foreground/70" />
@@ -773,13 +783,13 @@ function ScheduleCard({
       {/* Peringatan Benturan Waktu (Accessible Text & Icon) */}
       {hasConflict && (
         <div className="pt-1.5">
-          <div className="rounded-md bg-destructive/10 border border-destructive/30 p-2 text-[11px] text-destructive space-y-1">
+          <div className="rounded-md bg-destructive/10 border border-destructive/30 p-2 text-xs text-destructive space-y-1">
             <div className="flex items-center gap-1.5 font-semibold">
               <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
               <span>Benturan Waktu</span>
             </div>
             {schedule.conflicts && schedule.conflicts.length > 0 && (
-              <p className="text-[10px] text-destructive/90 leading-tight">
+              <p className="text-xs text-destructive/90 leading-tight">
                 Tabrakan dengan:{' '}
                 {schedule.conflicts.map((c) => c.courseName).join(', ')}
               </p>

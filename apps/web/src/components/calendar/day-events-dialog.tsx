@@ -73,7 +73,7 @@ export function DayEventsDialog({
                       {isSchedule ? (
                         <Badge
                           variant="outline"
-                          className="bg-primary/10 text-primary border-primary/20 text-[10px] px-1.5 py-0 gap-1 font-normal"
+                          className="bg-primary/10 text-primary border-primary/20 text-xs px-1.5 py-0 gap-1 font-normal"
                         >
                           <CalendarClock className="h-3 w-3" />
                           Kuliah
@@ -81,13 +81,13 @@ export function DayEventsDialog({
                       ) : (
                         <Badge
                           variant="outline"
-                          className="bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/20 text-[10px] px-1.5 py-0 gap-1 font-normal"
+                          className="bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/20 text-xs px-1.5 py-0 gap-1 font-normal"
                         >
                           <ListTodo className="h-3 w-3" />
                           Tugas
                         </Badge>
                       )}
-                      <span className="text-xs text-muted-foreground flex items-center gap-1 font-mono">
+                      <span className="text-xs text-muted-foreground flex items-center gap-1 font-mono tabular-nums">
                         <Clock className="h-3 w-3" />
                         {isSchedule ? `${event.startTime} - ${event.endTime}` : event.dueTime}
                       </span>

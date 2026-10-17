@@ -21,7 +21,6 @@ import {
   Info,
   Server,
   FileText,
-  Sparkles,
   User,
   Download,
 } from 'lucide-react';
@@ -59,6 +58,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from '@/components/ui/sheet';
+import { FadeIn, StaggerGroup, StaggerItem } from '@/components/ui/motion';
 import {
   fetchAdminJobs,
   fetchAdminJobDetail,
@@ -484,7 +484,7 @@ function AdminJobsContent() {
   const totalItems = jobsData?.pagination.totalItems || 0;
 
   return (
-    <div className="flex flex-1 flex-col gap-6 p-4 md:p-8 max-w-7xl mx-auto w-full">
+    <FadeIn className="flex flex-1 flex-col gap-6 p-4 md:p-8 max-w-7xl mx-auto w-full">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
@@ -522,68 +522,74 @@ function AdminJobsContent() {
       </div>
 
       {/* Queue Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {queuesData?.queues.map((q) => (
-          <Card key={q.name} className="border-border bg-card shadow-xs">
-            <CardHeader className="pb-3">
-              <div className="flex items-center justify-between gap-2">
-                <div className="flex items-center gap-2">
-                  {q.name.includes('document') ? (
-                    <FileText className="h-5 w-5 text-primary" />
+      {queuesData?.queues ? (
+        <StaggerGroup className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {queuesData.queues.map((q) => (
+            <StaggerItem key={q.name}>
+              <Card className="h-full border-border bg-card shadow-xs">
+                <CardHeader className="pb-3">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                      {q.name.includes('document') ? (
+                        <FileText className="h-5 w-5 text-primary" />
+                      ) : (
+                        <Server className="h-5 w-5 text-primary" />
+                      )}
+                      <CardTitle className="text-base font-semibold">{q.label}</CardTitle>
+                    </div>
+                    {q.status === 'available' ? (
+                      <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950 dark:text-emerald-300 text-xs">
+                        Tersambung
+                      </Badge>
+                    ) : (
+                      <Badge variant="outline" className="bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950 dark:text-rose-300 text-xs">
+                        Tidak Tersedia
+                      </Badge>
+                    )}
+                  </div>
+                  <CardDescription className="text-xs">{q.retentionNote}</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {q.status === 'available' && q.counts ? (
+                    <div className="grid grid-cols-4 gap-2 text-center">
+                      <div className="rounded-md border border-border/70 p-2 bg-muted/20">
+                        <span className="text-lg font-bold text-foreground block tabular-nums">
+                          {q.counts.waiting}
+                        </span>
+                        <span className="text-xs text-muted-foreground block mt-0.5">Menunggu</span>
+                      </div>
+                      <div className="rounded-md border border-border/70 p-2 bg-muted/20">
+                        <span className="text-lg font-bold text-blue-600 dark:text-blue-400 block tabular-nums">
+                          {q.counts.active}
+                        </span>
+                        <span className="text-xs text-muted-foreground block mt-0.5">Aktif</span>
+                      </div>
+                      <div className="rounded-md border border-border/70 p-2 bg-muted/20">
+                        <span className="text-lg font-bold text-amber-600 dark:text-amber-400 block tabular-nums">
+                          {q.counts.delayed}
+                        </span>
+                        <span className="text-xs text-muted-foreground block mt-0.5">Tertunda</span>
+                      </div>
+                      <div className="rounded-md border border-border/70 p-2 bg-muted/20">
+                        <span className="text-lg font-bold text-rose-600 dark:text-rose-400 block tabular-nums">
+                          {q.counts.failed}
+                        </span>
+                        <span className="text-xs text-muted-foreground block mt-0.5">Gagal</span>
+                      </div>
+                    </div>
                   ) : (
-                    <Sparkles className="h-5 w-5 text-primary" />
+                    <div className="rounded-md border border-border/70 p-3 bg-muted/10 text-center text-xs text-muted-foreground">
+                      Status antrean BullMQ saat ini tidak dapat dihubungi atau Redis offline.
+                    </div>
                   )}
-                  <CardTitle className="text-base font-semibold">{q.label}</CardTitle>
-                </div>
-                {q.status === 'available' ? (
-                  <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950 dark:text-emerald-300 text-xs">
-                    Tersambung
-                  </Badge>
-                ) : (
-                  <Badge variant="outline" className="bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950 dark:text-rose-300 text-xs">
-                    Tidak Tersedia
-                  </Badge>
-                )}
-              </div>
-              <CardDescription className="text-xs">{q.retentionNote}</CardDescription>
-            </CardHeader>
-            <CardContent>
-              {q.status === 'available' && q.counts ? (
-                <div className="grid grid-cols-4 gap-2 text-center">
-                  <div className="rounded-md border border-border/70 p-2 bg-muted/20">
-                    <span className="text-lg font-bold text-foreground block">
-                      {q.counts.waiting}
-                    </span>
-                    <span className="text-[11px] text-muted-foreground block mt-0.5">Menunggu</span>
-                  </div>
-                  <div className="rounded-md border border-border/70 p-2 bg-muted/20">
-                    <span className="text-lg font-bold text-blue-600 dark:text-blue-400 block">
-                      {q.counts.active}
-                    </span>
-                    <span className="text-[11px] text-muted-foreground block mt-0.5">Aktif</span>
-                  </div>
-                  <div className="rounded-md border border-border/70 p-2 bg-muted/20">
-                    <span className="text-lg font-bold text-amber-600 dark:text-amber-400 block">
-                      {q.counts.delayed}
-                    </span>
-                    <span className="text-[11px] text-muted-foreground block mt-0.5">Tertunda</span>
-                  </div>
-                  <div className="rounded-md border border-border/70 p-2 bg-muted/20">
-                    <span className="text-lg font-bold text-rose-600 dark:text-rose-400 block">
-                      {q.counts.failed}
-                    </span>
-                    <span className="text-[11px] text-muted-foreground block mt-0.5">Gagal</span>
-                  </div>
-                </div>
-              ) : (
-                <div className="rounded-md border border-border/70 p-3 bg-muted/10 text-center text-xs text-muted-foreground">
-                  Status antrean BullMQ saat ini tidak dapat dihubungi atau Redis offline.
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        )) || (
-          Array.from({ length: 2 }).map((_, idx) => (
+                </CardContent>
+              </Card>
+            </StaggerItem>
+          ))}
+        </StaggerGroup>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {Array.from({ length: 2 }).map((_, idx) => (
             <Card key={idx}>
               <CardHeader className="pb-3">
                 <Skeleton className="h-5 w-40" />
@@ -597,9 +603,9 @@ function AdminJobsContent() {
                 </div>
               </CardContent>
             </Card>
-          ))
-        )}
-      </div>
+          ))}
+        </div>
+      )}
 
       {/* Notice on Retention */}
       <div className="flex items-start gap-2.5 rounded-lg border border-primary/20 bg-primary/5 p-3 text-xs text-muted-foreground">
@@ -718,7 +724,7 @@ function AdminJobsContent() {
       )}
 
       {/* Jobs Table */}
-      <div className="rounded-lg border border-border bg-card shadow-xs overflow-hidden">
+      <Card className="overflow-hidden shadow-xs">
         <div className="overflow-x-auto">
           <Table>
             <TableHeader>
@@ -777,13 +783,13 @@ function AdminJobsContent() {
                     <TableCell>
                       {renderDatabaseStatusBadge(job.status)}
                     </TableCell>
-                    <TableCell className="text-xs text-muted-foreground font-mono">
+                    <TableCell className="text-xs text-muted-foreground font-mono tabular-nums">
                       {job.attempts} / {job.maxAttempts}
                     </TableCell>
-                    <TableCell className="text-xs text-muted-foreground font-mono">
+                    <TableCell className="text-xs text-muted-foreground font-mono tabular-nums">
                       {formatDuration(job.durationMs)}
                     </TableCell>
-                    <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
+                    <TableCell className="text-xs text-muted-foreground whitespace-nowrap tabular-nums">
                       {formatDateTimeWithTz(job.createdAt)}
                     </TableCell>
                     <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
@@ -821,7 +827,7 @@ function AdminJobsContent() {
         </div>
 
         {/* Pagination Footer */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-t border-border px-4 py-3 bg-card text-xs text-muted-foreground">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-t border-border px-4 py-3 bg-card text-xs text-muted-foreground tabular-nums">
           <div>
             Menampilkan{' '}
             <span className="font-semibold text-foreground">
@@ -849,7 +855,7 @@ function AdminJobsContent() {
               <ChevronLeft className="h-4 w-4" />
               <span>Sebelumnya</span>
             </Button>
-            <span className="px-2 font-medium text-foreground">
+            <span className="px-2 font-medium text-foreground tabular-nums">
               {page} / {totalPages}
             </span>
             <Button
@@ -864,7 +870,7 @@ function AdminJobsContent() {
             </Button>
           </div>
         </div>
-      </div>
+      </Card>
 
       {/* Slide-over Sheet for Job Operational Detail */}
       <Sheet open={!!selectedJobId} onOpenChange={(open) => !open && setSelectedJobId(null)}>
@@ -939,7 +945,7 @@ function AdminJobsContent() {
                     {renderQueueStatusBadge(jobDetail.queueStatus)}
                   </div>
                 </div>
-                <p className="text-[11px] text-muted-foreground/80 pt-1 border-t border-border/50">
+                <p className="text-xs text-muted-foreground/80 pt-1 border-t border-border/50">
                   Status antrean menandakan kondisi transien pada Redis. Jika job telah melewati batas retensi, antrean menampilkan &quot;Dibersihkan dari Memori&quot;.
                 </p>
               </div>
@@ -949,19 +955,19 @@ function AdminJobsContent() {
                 <span className="text-muted-foreground font-medium block">Pengguna Terkait</span>
                 <div className="flex items-center justify-between">
                   <span className="text-foreground font-semibold">{jobDetail.userName}</span>
-                  <Button variant="outline" size="sm" asChild className="h-6 px-2 text-[11px]">
+                  <Button variant="outline" size="sm" asChild className="h-6 px-2 text-xs">
                     <Link href={`/users/${jobDetail.userId}`}>
                       <User className="h-3 w-3 mr-1" />
                       Profil
                     </Link>
                   </Button>
                 </div>
-                <div className="flex items-center justify-between text-muted-foreground text-[11px]">
+                <div className="flex items-center justify-between text-muted-foreground text-xs">
                   <span className="font-mono truncate max-w-[200px]">{jobDetail.userId}</span>
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="h-5 px-1 text-[11px]"
+                    className="h-5 px-1 text-xs"
                     onClick={() => handleCopy(jobDetail.userId, 'userId')}
                   >
                     {copiedKey === 'userId' ? 'Disalin' : 'Salin ID'}
@@ -972,14 +978,14 @@ function AdminJobsContent() {
               {/* Job Metadata */}
               <div className="grid grid-cols-2 gap-2">
                 <div className="rounded-md border border-border p-2.5 bg-muted/20">
-                  <span className="text-muted-foreground block text-[11px]">Jenis Pekerjaan</span>
+                  <span className="text-muted-foreground block text-xs">Jenis Pekerjaan</span>
                   <span className="font-semibold text-foreground mt-0.5 block">
                     {getJobTypeLabel(jobDetail.type)}
                   </span>
                 </div>
                 <div className="rounded-md border border-border p-2.5 bg-muted/20">
-                  <span className="text-muted-foreground block text-[11px]">Attempt</span>
-                  <span className="font-semibold text-foreground font-mono mt-0.5 block">
+                  <span className="text-muted-foreground block text-xs">Attempt</span>
+                  <span className="font-semibold text-foreground font-mono tabular-nums mt-0.5 block">
                     {jobDetail.attempts} / {jobDetail.maxAttempts}
                   </span>
                 </div>
@@ -988,7 +994,7 @@ function AdminJobsContent() {
               {/* Timestamps */}
               <div className="rounded-md border border-border p-3 bg-muted/20 space-y-1.5">
                 <span className="text-muted-foreground font-medium block">Jejak Waktu</span>
-                <div className="space-y-1 text-xs">
+                <div className="space-y-1 text-xs tabular-nums">
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Waktu Dibuat:</span>
                     <span className="font-mono text-foreground">
@@ -1031,14 +1037,14 @@ function AdminJobsContent() {
                     <AlertCircle className="h-4 w-4" />
                     <span>Kode Kesalahan: {jobDetail.errorCode || 'UNKNOWN_ERROR'}</span>
                   </div>
-                  <p className="text-[11px] text-foreground/80 mt-1 leading-relaxed">
+                  <p className="text-xs text-foreground/80 mt-1 leading-relaxed">
                     {jobDetail.safeErrorMessage || 'Terjadi kegagalan operasional saat mengeksekusi pekerjaan.'}
                   </p>
                 </div>
               )}
 
               {/* Privacy Notice */}
-              <div className="rounded-md bg-muted/50 p-2.5 text-[11px] text-muted-foreground leading-relaxed">
+              <div className="rounded-md bg-muted/50 p-2.5 text-xs text-muted-foreground leading-relaxed">
                 <span className="font-semibold block text-foreground mb-0.5">
                   Proteksi Privasi Pengguna:
                 </span>
@@ -1048,7 +1054,7 @@ function AdminJobsContent() {
           ) : null}
         </SheetContent>
       </Sheet>
-    </div>
+    </FadeIn>
   );
 }
 

@@ -21,6 +21,7 @@ import {
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
 
 interface AgendaViewProps {
   events: CalendarEvent[];
@@ -42,7 +43,7 @@ export function AgendaView({
 
   if (sortedDates.length === 0) {
     return (
-      <div className="w-full border rounded-xl p-8 bg-card text-center space-y-4">
+      <Card className="w-full p-8 text-center space-y-4 shadow-xs">
         <div className="mx-auto w-12 h-12 rounded-full bg-muted flex items-center justify-center text-muted-foreground">
           <CalendarDays className="h-6 w-6" />
         </div>
@@ -85,7 +86,7 @@ export function AgendaView({
             </>
           )}
         </div>
-      </div>
+      </Card>
     );
   }
 
@@ -103,7 +104,7 @@ export function AgendaView({
                 {formatAgendaDateHeader(dateStr)}
               </h3>
               {isToday && (
-                <Badge variant="default" className="text-[10px] px-2 py-0 font-semibold shadow-xs">
+                <Badge variant="default" className="text-xs px-2 py-0 font-semibold shadow-xs">
                   Hari Ini
                 </Badge>
               )}
@@ -156,7 +157,7 @@ export function AgendaView({
                         )}
                       </div>
 
-                      <span className="text-xs font-mono text-muted-foreground flex items-center gap-1 font-medium">
+                      <span className="text-xs font-mono tabular-nums text-muted-foreground flex items-center gap-1 font-medium">
                         <Clock className="h-3.5 w-3.5" />
                         {isSchedule ? `${event.startTime} – ${event.endTime}` : `Tenggat: ${event.dueTime}`}
                       </span>

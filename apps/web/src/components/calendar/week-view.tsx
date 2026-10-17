@@ -4,10 +4,8 @@ import * as React from 'react';
 import {
   CalendarClock,
   ListTodo,
-  Clock,
   MapPin,
   AlertCircle,
-  CheckCircle2,
 } from 'lucide-react';
 import { CalendarEvent } from '@studyflow/shared';
 import {
@@ -17,7 +15,7 @@ import {
   groupEventsByDate,
 } from '@/lib/calendar-utils';
 import { cn } from '@/lib/utils';
-import { Badge } from '@/components/ui/badge';
+import { Card } from '@/components/ui/card';
 
 interface WeekViewProps {
   days: string[]; // 7 days (YYYY-MM-DD) from Monday to Sunday
@@ -35,7 +33,7 @@ export function WeekView({
   const groupedEvents = React.useMemo(() => groupEventsByDate(events), [events]);
 
   return (
-    <div className="w-full border rounded-xl overflow-hidden bg-card shadow-sm">
+    <Card className="w-full overflow-hidden shadow-xs">
       {/* 7-column grid */}
       <div className="grid grid-cols-7 divide-x divide-border min-h-[500px]">
         {days.map((dateStr, index) => {
@@ -65,19 +63,19 @@ export function WeekView({
                 </div>
                 <div
                   className={cn(
-                    'mt-1 inline-flex items-center justify-center rounded-full h-8 w-8 text-sm font-bold',
+                    'mt-1 inline-flex items-center justify-center rounded-full h-8 w-8 text-sm font-bold tabular-nums',
                     isToday ? 'bg-primary text-primary-foreground shadow-xs' : 'text-foreground'
                   )}
                 >
                   {day}
                 </div>
-                <div className="text-[11px] text-muted-foreground mt-0.5">{monthShort}</div>
+                <div className="text-xs text-muted-foreground mt-0.5">{monthShort}</div>
               </div>
 
               {/* Event Cards inside column */}
               <div className="flex-1 p-2 space-y-2 overflow-y-auto max-h-[650px]">
                 {dayEvents.length === 0 ? (
-                  <div className="h-24 flex items-center justify-center text-[11px] text-muted-foreground/60 italic text-center">
+                  <div className="h-24 flex items-center justify-center text-xs text-muted-foreground/60 italic text-center">
                     Tidak ada agenda
                   </div>
                 ) : (
@@ -102,18 +100,18 @@ export function WeekView({
                         {/* Header card: Badge & Time */}
                         <div className="flex items-center justify-between gap-1 mb-1">
                           {isSchedule ? (
-                            <span className="inline-flex items-center gap-1 font-semibold text-[10px] text-primary">
+                            <span className="inline-flex items-center gap-1 font-semibold text-xs text-primary">
                               <CalendarClock className="h-3 w-3" />
                               Kuliah
                             </span>
                           ) : (
-                            <span className="inline-flex items-center gap-1 font-semibold text-[10px] text-amber-700 dark:text-amber-400">
+                            <span className="inline-flex items-center gap-1 font-semibold text-xs text-amber-700 dark:text-amber-400">
                               <ListTodo className="h-3 w-3" />
                               Tugas
                             </span>
                           )}
 
-                          <span className="font-mono text-[10px] text-muted-foreground">
+                          <span className="font-mono text-xs tabular-nums text-muted-foreground">
                             {isSchedule ? event.startTime : event.dueTime}
                           </span>
                         </div>
@@ -124,20 +122,20 @@ export function WeekView({
                         </div>
 
                         {/* Course Name */}
-                        <div className="text-[11px] text-muted-foreground line-clamp-1">
+                        <div className="text-xs text-muted-foreground line-clamp-1">
                           {event.courseName}
                         </div>
 
                         {/* Extra: Room or Overdue/Status */}
                         {isSchedule && event.room && (
-                          <div className="mt-1.5 flex items-center gap-1 text-[10px] text-muted-foreground">
+                          <div className="mt-1.5 flex items-center gap-1 text-xs text-muted-foreground">
                             <MapPin className="h-3 w-3 text-primary shrink-0" />
                             <span className="truncate">{event.room}</span>
                           </div>
                         )}
 
                         {!isSchedule && event.isOverdue && (
-                          <div className="mt-1 flex items-center gap-1 text-[10px] text-destructive font-semibold">
+                          <div className="mt-1 flex items-center gap-1 text-xs text-destructive font-semibold">
                             <AlertCircle className="h-3 w-3 shrink-0" />
                             Terlewat
                           </div>
@@ -151,6 +149,6 @@ export function WeekView({
           );
         })}
       </div>
-    </div>
+    </Card>
   );
 }

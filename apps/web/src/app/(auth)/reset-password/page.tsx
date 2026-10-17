@@ -30,6 +30,7 @@ import {
   CardFooter,
 } from '@/components/ui/card';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
+import { FadeIn } from '@/components/ui/motion';
 
 const ResetPasswordFormSchema = z
   .object({
@@ -319,7 +320,9 @@ export default function ResetPasswordPage(): React.JSX.Element {
         </Card>
       }
     >
-      <ResetPasswordForm />
+      <FadeIn className="w-full">
+        <ResetPasswordForm />
+      </FadeIn>
     </React.Suspense>
   );
 }
