@@ -142,7 +142,7 @@ export function SidebarSemesterSelector({
           </Tooltip>
 
           <DropdownMenuContent side="right" align="start" className="w-64">
-            <DropdownMenuLabel>Pilih Semester Aktif</DropdownMenuLabel>
+            <DropdownMenuLabel className="uppercase tracking-wider">Pilih Semester Aktif</DropdownMenuLabel>
             <DropdownMenuSeparator />
             {semesters.length === 0 ? (
               <div className="p-3 text-center text-xs text-muted-foreground">
@@ -248,7 +248,7 @@ export function SidebarSemesterSelector({
         </DropdownMenuTrigger>
 
         <DropdownMenuContent align="start" className="w-[256px]">
-          <DropdownMenuLabel>Pilih Semester Aktif</DropdownMenuLabel>
+          <DropdownMenuLabel className="uppercase tracking-wider">Pilih Semester Aktif</DropdownMenuLabel>
           <DropdownMenuSeparator />
 
           {semesters.length === 0 ? (

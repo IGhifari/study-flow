@@ -72,9 +72,9 @@ export function NavUser({ user }: NavUserProps): React.JSX.Element {
                   {getInitials(user.name)}
                 </AvatarFallback>
               </Avatar>
-              <div className="grid flex-1 text-left text-sm leading-tight group-data-[collapsible=icon]:hidden group-data-[state=collapsed]:hidden">
-                <span className="truncate font-semibold">{user.name}</span>
-                <span className="truncate text-xs text-muted-foreground">
+              <div className="grid flex-1 text-left text-sm leading-tight normal-case group-data-[collapsible=icon]:hidden group-data-[state=collapsed]:hidden">
+                <span className="truncate font-semibold normal-case">{user.name}</span>
+                <span className="truncate text-xs text-muted-foreground normal-case">
                   {user.email}
                 </span>
               </div>
@@ -87,16 +87,16 @@ export function NavUser({ user }: NavUserProps): React.JSX.Element {
             align="end"
             sideOffset={4}
           >
-            <DropdownMenuLabel className="p-0 font-normal">
-              <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
+            <DropdownMenuLabel className="p-0 font-normal normal-case tracking-normal">
+              <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm normal-case">
                 <Avatar className="h-8 w-8 rounded-lg shrink-0">
                   <AvatarFallback className="rounded-lg bg-primary/10 text-primary font-semibold text-xs">
                     {getInitials(user.name)}
                   </AvatarFallback>
                 </Avatar>
-                <div className="grid flex-1 text-left text-sm leading-tight">
-                  <span className="truncate font-semibold">{user.name}</span>
-                  <span className="truncate text-xs text-muted-foreground">
+                <div className="grid flex-1 text-left text-sm leading-tight normal-case">
+                  <span className="truncate font-semibold normal-case">{user.name}</span>
+                  <span className="truncate text-xs text-muted-foreground normal-case">
                     {user.email}
                   </span>
                 </div>
