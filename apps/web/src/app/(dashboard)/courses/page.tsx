@@ -33,6 +33,22 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import {
+  Card,
+  CardHeader,
+  CardContent,
+  CardFooter,
+} from '@/components/ui/card';
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell,
+} from '@/components/ui/table';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { FadeIn, StaggerGroup, StaggerItem } from '@/components/ui/motion';
+import {
   RadixSelect,
   SelectTrigger,
   SelectValue,
@@ -181,7 +197,7 @@ export default function CoursesPage(): React.JSX.Element {
   };
 
   return (
-    <div className="space-y-6">
+    <FadeIn className="space-y-6">
       {/* 1. Header Halaman */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-border pb-5">
         <div>
@@ -255,30 +271,16 @@ export default function CoursesPage(): React.JSX.Element {
           </div>
 
           {/* Status Tab Toggle */}
-          <div className="inline-flex rounded-lg border border-border p-1 bg-muted/40" role="group" aria-label="Filter status arsip">
-            <button
-              type="button"
-              onClick={() => setIsArchivedFilter(false)}
-              className={`rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
-                !isArchivedFilter
-                  ? 'bg-background text-foreground shadow-xs font-semibold'
-                  : 'text-muted-foreground hover:text-foreground'
-              }`}
-            >
-              Aktif
-            </button>
-            <button
-              type="button"
-              onClick={() => setIsArchivedFilter(true)}
-              className={`rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
-                isArchivedFilter
-                  ? 'bg-background text-foreground shadow-xs font-semibold'
-                  : 'text-muted-foreground hover:text-foreground'
-              }`}
-            >
-              Arsip
-            </button>
-          </div>
+          <Tabs
+            value={isArchivedFilter ? 'archived' : 'active'}
+            onValueChange={(v) => setIsArchivedFilter(v === 'archived')}
+            className="w-auto"
+          >
+            <TabsList className="h-9" aria-label="Filter status arsip">
+              <TabsTrigger value="active">Aktif</TabsTrigger>
+              <TabsTrigger value="archived">Arsip</TabsTrigger>
+            </TabsList>
+          </Tabs>
         </div>
 
         {/* Pencarian & Reset Filter */}
@@ -396,30 +398,28 @@ export default function CoursesPage(): React.JSX.Element {
           )}
         </div>
       ) : (
-        <div className="overflow-hidden rounded-xl border border-border bg-card shadow-xs">
-          <table className="w-full text-left text-sm block md:table">
-            <thead className="hidden md:table-header-group border-b border-border bg-muted/40 text-xs font-semibold uppercase text-muted-foreground">
-              <tr>
-                <th scope="col" className="px-4 py-3.5">Mata Kuliah</th>
-                <th scope="col" className="px-4 py-3.5">Semester</th>
-                <th scope="col" className="px-4 py-3.5">Dosen Pengampu</th>
-                <th scope="col" className="px-4 py-3.5">Status</th>
-                <th scope="col" className="px-4 py-3.5 text-right">Aksi</th>
-              </tr>
-            </thead>
-            <tbody className="block md:table-row-group divide-y divide-border">
-              {courses.map((course) => {
-                const isArchived = Boolean(course.archivedAt);
-                const isPending = archivingId === course.id;
+        <div className="space-y-4">
+          {/* Desktop Table View (>= 768px) */}
+          <Card className="hidden md:block overflow-hidden shadow-xs">
+            <Table>
+              <TableHeader className="bg-muted/40">
+                <TableRow>
+                  <TableHead className="text-xs font-semibold">Mata Kuliah</TableHead>
+                  <TableHead className="text-xs font-semibold">Semester</TableHead>
+                  <TableHead className="text-xs font-semibold">Dosen Pengampu</TableHead>
+                  <TableHead className="text-xs font-semibold">Status</TableHead>
+                  <TableHead className="text-right text-xs font-semibold">Aksi</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {courses.map((course) => {
+                  const isArchived = Boolean(course.archivedAt);
+                  const isPending = archivingId === course.id;
 
-                return (
-                  <tr
-                    key={course.id}
-                    className="flex flex-col p-4 space-y-2.5 md:space-y-0 md:table-row md:p-0 hover:bg-muted/30 transition-colors"
-                  >
-                    {/* Nama & Kode */}
-                    <td className="p-0 md:px-4 md:py-3.5 block md:table-cell max-w-[320px]">
-                      <div className="flex items-start md:items-center justify-between md:justify-start gap-2">
+                  return (
+                    <TableRow key={course.id}>
+                      {/* Nama & Kode */}
+                      <TableCell className="py-3.5 max-w-[320px]">
                         <div className="flex items-center gap-2 min-w-0 flex-wrap">
                           <Link
                             href={`/courses/${course.id}`}
@@ -428,35 +428,184 @@ export default function CoursesPage(): React.JSX.Element {
                             {course.name}
                           </Link>
                           {course.code && (
-                            <Badge variant="outline" className="font-mono text-[11px] shrink-0">
+                            <Badge variant="outline" className="font-mono text-xs shrink-0">
                               {course.code}
                             </Badge>
                           )}
                         </div>
+                        {course.description && (
+                          <p className="mt-0.5 line-clamp-1 text-xs text-muted-foreground break-words">
+                            {course.description}
+                          </p>
+                        )}
+                      </TableCell>
 
-                        {/* Mobile Status Badge */}
-                        <div className="md:hidden shrink-0">
-                          {isArchived ? (
-                            <Badge variant="secondary" className="text-[10px] text-muted-foreground">
-                              Arsip
-                            </Badge>
-                          ) : (
-                            <Badge variant="default" className="text-[10px]">
-                              Aktif
+                      {/* Semester */}
+                      <TableCell className="py-3.5 whitespace-nowrap text-xs text-muted-foreground">
+                        {course.semester ? (
+                          <div className="flex items-center gap-1.5">
+                            <CalendarRange className="h-3.5 w-3.5 shrink-0 text-muted-foreground/70" />
+                            <span>
+                              {course.semester.name}
+                              {course.semester.isActive ? ' (Aktif)' : ''}
+                            </span>
+                          </div>
+                        ) : (
+                          <span>—</span>
+                        )}
+                      </TableCell>
+
+                      {/* Dosen */}
+                      <TableCell className="py-3.5 whitespace-nowrap text-xs text-muted-foreground">
+                        {course.lecturer ? (
+                          <div className="flex items-center gap-1.5">
+                            <User className="h-3.5 w-3.5 shrink-0 text-muted-foreground/70" />
+                            <span className="truncate max-w-[200px]">{course.lecturer}</span>
+                          </div>
+                        ) : (
+                          <span>—</span>
+                        )}
+                      </TableCell>
+
+                      {/* Status */}
+                      <TableCell className="py-3.5 whitespace-nowrap">
+                        {isArchived ? (
+                          <Badge variant="secondary" className="text-xs text-muted-foreground">
+                            Arsip
+                          </Badge>
+                        ) : (
+                          <Badge variant="default" className="text-xs">
+                            Aktif
+                          </Badge>
+                        )}
+                      </TableCell>
+
+                      {/* Aksi */}
+                      <TableCell className="py-3.5 whitespace-nowrap text-right">
+                        <div className="flex items-center justify-end gap-1.5">
+                          <Button
+                            asChild
+                            variant="ghost"
+                            size="sm"
+                            className="h-8 px-2.5 text-xs"
+                          >
+                            <Link href={`/courses/${course.id}`}>
+                              Detail
+                              <ExternalLink className="ml-1 h-3 w-3" />
+                            </Link>
+                          </Button>
+
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon-sm"
+                                className="h-8 w-8 relative after:absolute after:-inset-1.5 sm:after:hidden touch-manipulation text-muted-foreground hover:text-foreground"
+                                aria-label={`Menu aksi untuk mata kuliah "${course.name}"`}
+                              >
+                                <MoreVertical className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="w-44">
+                              <DropdownMenuItem
+                                onClick={() => setEditingCourse(course)}
+                                className="cursor-pointer"
+                              >
+                                <Pencil className="h-4 w-4 mr-2" />
+                                <span>Edit mata kuliah</span>
+                              </DropdownMenuItem>
+
+                              {isArchived ? (
+                                <DropdownMenuItem
+                                  onClick={() => handleUnarchive(course.id)}
+                                  disabled={isPending}
+                                  className="cursor-pointer"
+                                >
+                                  {isPending ? (
+                                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                  ) : (
+                                    <RotateCcw className="h-4 w-4 mr-2" />
+                                  )}
+                                  <span>Pulihkan</span>
+                                </DropdownMenuItem>
+                              ) : (
+                                <DropdownMenuItem
+                                  onClick={() => handleArchive(course.id)}
+                                  disabled={isPending}
+                                  className="cursor-pointer"
+                                >
+                                  {isPending ? (
+                                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                  ) : (
+                                    <Archive className="h-4 w-4 mr-2" />
+                                  )}
+                                  <span>Arsipkan</span>
+                                </DropdownMenuItem>
+                              )}
+
+                              <DropdownMenuSeparator />
+
+                              <DropdownMenuItem
+                                onClick={() => setDeletingCourse(course)}
+                                className="cursor-pointer text-destructive focus:text-destructive focus:bg-destructive/10"
+                              >
+                                <Trash2 className="h-4 w-4 mr-2" />
+                                <span>Hapus mata kuliah</span>
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </Card>
+
+          {/* Mobile Card List (< 768px) */}
+          <StaggerGroup className="grid gap-3 md:hidden">
+            {courses.map((course) => {
+              const isArchived = Boolean(course.archivedAt);
+              const isPending = archivingId === course.id;
+
+              return (
+                <StaggerItem key={course.id}>
+                  <Card className="shadow-xs">
+                    <CardHeader className="p-4 pb-2">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex items-center gap-2 min-w-0 flex-wrap">
+                          <Link
+                            href={`/courses/${course.id}`}
+                            className="font-semibold text-sm text-foreground hover:text-primary hover:underline transition-colors break-words"
+                          >
+                            {course.name}
+                          </Link>
+                          {course.code && (
+                            <Badge variant="outline" className="font-mono text-xs shrink-0">
+                              {course.code}
                             </Badge>
                           )}
                         </div>
+                        {isArchived ? (
+                          <Badge variant="secondary" className="text-xs text-muted-foreground shrink-0">
+                            Arsip
+                          </Badge>
+                        ) : (
+                          <Badge variant="default" className="text-xs shrink-0">
+                            Aktif
+                          </Badge>
+                        )}
                       </div>
                       {course.description && (
-                        <p className="mt-0.5 line-clamp-1 text-xs text-muted-foreground break-words">
+                        <p className="mt-1 line-clamp-2 text-xs text-muted-foreground break-words">
                           {course.description}
                         </p>
                       )}
-                    </td>
+                    </CardHeader>
 
-                    {/* Semester */}
-                    <td className="p-0 md:px-4 md:py-3.5 block md:table-cell whitespace-nowrap text-xs text-muted-foreground">
-                      {course.semester ? (
+                    <CardContent className="px-4 py-2 space-y-1.5 text-xs text-muted-foreground">
+                      {course.semester && (
                         <div className="flex items-center gap-1.5">
                           <CalendarRange className="h-3.5 w-3.5 shrink-0 text-muted-foreground/70" />
                           <span>
@@ -464,117 +613,93 @@ export default function CoursesPage(): React.JSX.Element {
                             {course.semester.isActive ? ' (Aktif)' : ''}
                           </span>
                         </div>
-                      ) : (
-                        <span className="hidden md:inline">—</span>
                       )}
-                    </td>
-
-                    {/* Dosen */}
-                    <td className="p-0 md:px-4 md:py-3.5 block md:table-cell whitespace-nowrap text-xs text-muted-foreground">
-                      {course.lecturer ? (
+                      {course.lecturer && (
                         <div className="flex items-center gap-1.5">
                           <User className="h-3.5 w-3.5 shrink-0 text-muted-foreground/70" />
-                          <span className="truncate max-w-[200px]">{course.lecturer}</span>
+                          <span className="truncate">{course.lecturer}</span>
                         </div>
-                      ) : (
-                        <span className="hidden md:inline">—</span>
                       )}
-                    </td>
+                    </CardContent>
 
-                    {/* Status (Desktop only) */}
-                    <td className="hidden md:table-cell px-4 py-3.5 whitespace-nowrap">
-                      {isArchived ? (
-                        <Badge variant="secondary" className="text-[11px] text-muted-foreground">
-                          Arsip
-                        </Badge>
-                      ) : (
-                        <Badge variant="default" className="text-[11px]">
-                          Aktif
-                        </Badge>
-                      )}
-                    </td>
+                    <CardFooter className="px-4 py-2.5 border-t border-border/60 flex items-center justify-between gap-2">
+                      <Button
+                        asChild
+                        variant="ghost"
+                        size="sm"
+                        className="h-8 px-2.5 text-xs"
+                      >
+                        <Link href={`/courses/${course.id}`}>
+                          Detail
+                          <ExternalLink className="ml-1 h-3 w-3" />
+                        </Link>
+                      </Button>
 
-                    {/* Aksi */}
-                    <td className="pt-2 md:pt-0 p-0 md:px-4 md:py-3.5 block md:table-cell border-t md:border-t-0 border-border/50 md:whitespace-nowrap md:text-right">
-                      <div className="flex items-center justify-between md:justify-end gap-1.5">
-                        <Button
-                          asChild
-                          variant="ghost"
-                          size="sm"
-                          className="h-8 px-2.5 text-xs"
-                        >
-                          <Link href={`/courses/${course.id}`}>
-                            Detail
-                            <ExternalLink className="ml-1 h-3 w-3" />
-                          </Link>
-                        </Button>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon-sm"
+                            className="h-8 w-8 relative after:absolute after:-inset-1.5 sm:after:hidden touch-manipulation text-muted-foreground hover:text-foreground"
+                            aria-label={`Menu aksi untuk mata kuliah "${course.name}"`}
+                          >
+                            <MoreVertical className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-44">
+                          <DropdownMenuItem
+                            onClick={() => setEditingCourse(course)}
+                            className="cursor-pointer"
+                          >
+                            <Pencil className="h-4 w-4 mr-2" />
+                            <span>Edit mata kuliah</span>
+                          </DropdownMenuItem>
 
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="icon-sm"
-                              className="h-8 w-8 relative after:absolute after:-inset-1.5 sm:after:hidden touch-manipulation text-muted-foreground hover:text-foreground"
-                              aria-label={`Menu aksi untuk mata kuliah "${course.name}"`}
-                            >
-                              <MoreVertical className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end" className="w-44">
+                          {isArchived ? (
                             <DropdownMenuItem
-                              onClick={() => setEditingCourse(course)}
+                              onClick={() => handleUnarchive(course.id)}
+                              disabled={isPending}
                               className="cursor-pointer"
                             >
-                              <Pencil className="h-4 w-4 mr-2" />
-                              <span>Edit mata kuliah</span>
+                              {isPending ? (
+                                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                              ) : (
+                                <RotateCcw className="h-4 w-4 mr-2" />
+                              )}
+                              <span>Pulihkan</span>
                             </DropdownMenuItem>
-
-                            {isArchived ? (
-                              <DropdownMenuItem
-                                onClick={() => handleUnarchive(course.id)}
-                                disabled={isPending}
-                                className="cursor-pointer"
-                              >
-                                {isPending ? (
-                                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                                ) : (
-                                  <RotateCcw className="h-4 w-4 mr-2" />
-                                )}
-                                <span>Pulihkan</span>
-                              </DropdownMenuItem>
-                            ) : (
-                              <DropdownMenuItem
-                                onClick={() => handleArchive(course.id)}
-                                disabled={isPending}
-                                className="cursor-pointer"
-                              >
-                                {isPending ? (
-                                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                                ) : (
-                                  <Archive className="h-4 w-4 mr-2" />
-                                )}
-                                <span>Arsipkan</span>
-                              </DropdownMenuItem>
-                            )}
-
-                            <DropdownMenuSeparator />
-
+                          ) : (
                             <DropdownMenuItem
-                              onClick={() => setDeletingCourse(course)}
-                              className="cursor-pointer text-destructive focus:text-destructive focus:bg-destructive/10"
+                              onClick={() => handleArchive(course.id)}
+                              disabled={isPending}
+                              className="cursor-pointer"
                             >
-                              <Trash2 className="h-4 w-4 mr-2" />
-                              <span>Hapus mata kuliah</span>
+                              {isPending ? (
+                                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                              ) : (
+                                <Archive className="h-4 w-4 mr-2" />
+                              )}
+                              <span>Arsipkan</span>
                             </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+                          )}
+
+                          <DropdownMenuSeparator />
+
+                          <DropdownMenuItem
+                            onClick={() => setDeletingCourse(course)}
+                            className="cursor-pointer text-destructive focus:text-destructive focus:bg-destructive/10"
+                          >
+                            <Trash2 className="h-4 w-4 mr-2" />
+                            <span>Hapus mata kuliah</span>
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </CardFooter>
+                  </Card>
+                </StaggerItem>
+              );
+            })}
+          </StaggerGroup>
         </div>
       )}
 
@@ -611,6 +736,6 @@ export default function CoursesPage(): React.JSX.Element {
           router.refresh();
         }}
       />
-    </div>
+    </FadeIn>
   );
 }

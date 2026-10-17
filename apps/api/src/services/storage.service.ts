@@ -140,7 +140,8 @@ export class LocalStorageAdapter implements StorageAdapter {
     if (!storageKey || typeof storageKey !== 'string' || storageKey.includes('\0')) {
       throw new Error('Invalid storage key: path traversal detected');
     }
-    const sanitizedKey = storageKey.replace(/^[/\\]+/, '');
+    const normalizedKey = storageKey.replace(/\\/g, '/');
+    const sanitizedKey = normalizedKey.replace(/^\/+/, '');
     if (!sanitizedKey) {
       throw new Error('Invalid storage key: path traversal detected');
     }

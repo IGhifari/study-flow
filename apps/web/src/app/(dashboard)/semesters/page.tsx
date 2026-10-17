@@ -26,6 +26,22 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import {
+  Card,
+  CardHeader,
+  CardContent,
+  CardFooter,
+} from '@/components/ui/card';
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell,
+} from '@/components/ui/table';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { FadeIn, StaggerGroup, StaggerItem } from '@/components/ui/motion';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
@@ -137,7 +153,7 @@ export default function SemestersPage(): React.JSX.Element {
   };
 
   return (
-    <div className="space-y-6">
+    <FadeIn className="space-y-6">
       {/* 1. Header Halaman */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-border pb-5">
         <div>
@@ -173,42 +189,23 @@ export default function SemestersPage(): React.JSX.Element {
 
       {/* 2. Filter Bar: Status Tabs & Pencarian */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        {/* Status Filter Buttons */}
-        <div className="inline-flex rounded-lg border border-border p-1 bg-muted/40" role="group" aria-label="Filter status semester">
-          <button
-            type="button"
-            onClick={() => setStatusFilter('all')}
-            className={`rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
-              statusFilter === 'all'
-                ? 'bg-background text-foreground shadow-xs font-semibold'
-                : 'text-muted-foreground hover:text-foreground'
-            }`}
-          >
-            Semua {statusFilter === 'all' ? `(${semesters.length})` : ''}
-          </button>
-          <button
-            type="button"
-            onClick={() => setStatusFilter('active')}
-            className={`rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
-              statusFilter === 'active'
-                ? 'bg-background text-foreground shadow-xs font-semibold'
-                : 'text-muted-foreground hover:text-foreground'
-            }`}
-          >
-            Aktif
-          </button>
-          <button
-            type="button"
-            onClick={() => setStatusFilter('archived')}
-            className={`rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
-              statusFilter === 'archived'
-                ? 'bg-background text-foreground shadow-xs font-semibold'
-                : 'text-muted-foreground hover:text-foreground'
-            }`}
-          >
-            Arsip
-          </button>
-        </div>
+        {/* Status Filter Tabs */}
+        <Tabs
+          value={statusFilter}
+          onValueChange={(v) => setStatusFilter(v as 'all' | 'active' | 'archived')}
+        >
+          <TabsList aria-label="Filter status semester">
+            <TabsTrigger value="all" className="text-xs px-3">
+              Semua {statusFilter === 'all' ? `(${semesters.length})` : ''}
+            </TabsTrigger>
+            <TabsTrigger value="active" className="text-xs px-3">
+              Aktif
+            </TabsTrigger>
+            <TabsTrigger value="archived" className="text-xs px-3">
+              Arsip
+            </TabsTrigger>
+          </TabsList>
+        </Tabs>
 
         {/* Input Pencarian & Reset Filter */}
         <div className="flex items-center gap-2 w-full sm:w-auto">
@@ -323,192 +320,331 @@ export default function SemestersPage(): React.JSX.Element {
           )}
         </div>
       ) : (
-        <div className="overflow-hidden rounded-xl border border-border bg-card shadow-xs">
-          <table className="w-full text-left text-sm block md:table">
-            <thead className="hidden md:table-header-group border-b border-border bg-muted/40 text-xs font-semibold uppercase text-muted-foreground">
-              <tr>
-                <th scope="col" className="px-4 py-3.5">Nama Semester</th>
-                <th scope="col" className="px-4 py-3.5">Tahun Ajaran</th>
-                <th scope="col" className="px-4 py-3.5">Mata Kuliah Terkait</th>
-                <th scope="col" className="px-4 py-3.5">Status</th>
-                <th scope="col" className="px-4 py-3.5 text-right">Aksi</th>
-              </tr>
-            </thead>
-            <tbody className="block md:table-row-group divide-y divide-border">
-              {filteredSemesters.map((semester) => {
-                const isArchived = Boolean(semester.archivedAt);
-                const isCurrentActive = Boolean(semester.isActive && !isArchived);
-                const isActivating = activatingId === semester.id;
-                const isUnarchiving = unarchivingId === semester.id;
+        <div className="space-y-4">
+          {/* Desktop Table View (>= 768px) */}
+          <Card className="hidden md:block overflow-hidden shadow-xs">
+            <Table>
+              <TableHeader className="bg-muted/40">
+                <TableRow className="hover:bg-transparent">
+                  <TableHead className="px-4 py-3.5 text-xs font-semibold uppercase text-muted-foreground">
+                    Nama Semester
+                  </TableHead>
+                  <TableHead className="px-4 py-3.5 text-xs font-semibold uppercase text-muted-foreground">
+                    Tahun Ajaran
+                  </TableHead>
+                  <TableHead className="px-4 py-3.5 text-xs font-semibold uppercase text-muted-foreground">
+                    Mata Kuliah Terkait
+                  </TableHead>
+                  <TableHead className="px-4 py-3.5 text-xs font-semibold uppercase text-muted-foreground">
+                    Status
+                  </TableHead>
+                  <TableHead className="px-4 py-3.5 text-right text-xs font-semibold uppercase text-muted-foreground">
+                    Aksi
+                  </TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredSemesters.map((semester) => {
+                  const isArchived = Boolean(semester.archivedAt);
+                  const isCurrentActive = Boolean(semester.isActive && !isArchived);
+                  const isActivating = activatingId === semester.id;
+                  const isUnarchiving = unarchivingId === semester.id;
 
-                return (
-                  <tr
-                    key={semester.id}
-                    className={`flex flex-col p-4 space-y-2.5 md:space-y-0 md:table-row md:p-0 transition-colors ${
-                      isCurrentActive
-                        ? 'bg-primary/[0.03] md:hover:bg-primary/[0.06]'
-                        : 'hover:bg-muted/30'
-                    }`}
-                  >
-                    {/* Nama Semester */}
-                    <td className="p-0 md:px-4 md:py-3.5 block md:table-cell">
-                      <div className="flex items-start md:items-center justify-between md:justify-start gap-2">
+                  return (
+                    <TableRow
+                      key={semester.id}
+                      className={
+                        isCurrentActive
+                          ? 'bg-primary/[0.03] hover:bg-primary/[0.06]'
+                          : 'hover:bg-muted/30'
+                      }
+                    >
+                      {/* Nama Semester */}
+                      <TableCell className="px-4 py-3.5">
                         <span className="font-semibold text-foreground text-sm break-words">
                           {semester.name}
                         </span>
+                      </TableCell>
 
-                        {/* Mobile Status Badge */}
-                        <div className="md:hidden shrink-0">
-                          {isCurrentActive ? (
-                            <Badge variant="default" className="text-[10px] gap-1 bg-primary text-primary-foreground">
-                              <Check className="h-3 w-3" /> Aktif
-                            </Badge>
-                          ) : isArchived ? (
-                            <Badge variant="secondary" className="text-[10px] text-muted-foreground">
-                              Arsip
-                            </Badge>
-                          ) : (
-                            <Badge variant="outline" className="text-[10px] text-muted-foreground">
-                              Non-aktif
-                            </Badge>
-                          )}
+                      {/* Tahun Ajaran */}
+                      <TableCell className="px-4 py-3.5 whitespace-nowrap text-xs text-muted-foreground">
+                        <div className="flex items-center gap-1.5">
+                          <CalendarRange className="h-3.5 w-3.5 shrink-0 text-muted-foreground/70" />
+                          <span className="tabular-nums">{semester.academicYear}</span>
                         </div>
-                      </div>
-                    </td>
+                      </TableCell>
 
-                    {/* Tahun Ajaran */}
-                    <td className="p-0 md:px-4 md:py-3.5 block md:table-cell whitespace-nowrap text-xs text-muted-foreground">
+                      {/* Mata Kuliah Terkait */}
+                      <TableCell className="px-4 py-3.5 whitespace-nowrap text-xs text-muted-foreground">
+                        <div className="flex items-center gap-1.5">
+                          <Layers className="h-3.5 w-3.5 shrink-0 text-muted-foreground/70" />
+                          <span className="tabular-nums">
+                            {typeof semester.courseCount === 'number'
+                              ? `${semester.courseCount} Mata Kuliah`
+                              : '0 Mata Kuliah'}
+                          </span>
+                        </div>
+                      </TableCell>
+
+                      {/* Status */}
+                      <TableCell className="px-4 py-3.5 whitespace-nowrap">
+                        {isCurrentActive ? (
+                          <Badge variant="default" className="text-xs gap-1 bg-primary text-primary-foreground">
+                            <Check className="h-3 w-3" /> Aktif
+                          </Badge>
+                        ) : isArchived ? (
+                          <Badge variant="secondary" className="text-xs text-muted-foreground">
+                            Arsip
+                          </Badge>
+                        ) : (
+                          <Badge variant="outline" className="text-xs text-muted-foreground">
+                            Non-aktif
+                          </Badge>
+                        )}
+                      </TableCell>
+
+                      {/* Aksi */}
+                      <TableCell className="px-4 py-3.5 whitespace-nowrap text-right">
+                        <div className="flex items-center justify-end gap-1.5">
+                          {!isArchived && !isCurrentActive ? (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleActivate(semester.id)}
+                              disabled={Boolean(activatingId)}
+                              className="h-8 px-2.5 text-xs inline-flex items-center gap-1.5 text-primary border-primary/30 hover:bg-primary/10"
+                              title="Jadikan semester aktif"
+                            >
+                              {isActivating ? (
+                                <>
+                                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                  <span>Mengaktifkan...</span>
+                                </>
+                              ) : (
+                                <>
+                                  <CheckCircle2 className="h-3.5 w-3.5 text-primary" />
+                                  <span>Jadikan Aktif</span>
+                                </>
+                              )}
+                            </Button>
+                          ) : isCurrentActive ? (
+                            <span className="text-xs font-medium text-primary px-2">
+                              Sedang Digunakan
+                            </span>
+                          ) : (
+                            <span className="text-xs text-muted-foreground px-2">
+                              Hanya-Baca
+                            </span>
+                          )}
+
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon-sm"
+                                className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                                aria-label={`Menu aksi untuk semester "${semester.name}"`}
+                              >
+                                <MoreVertical className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="w-44">
+                              <DropdownMenuItem
+                                onClick={() => setEditingSemester(semester)}
+                                className="cursor-pointer"
+                              >
+                                <Pencil className="h-4 w-4 mr-2" />
+                                <span>Edit semester</span>
+                              </DropdownMenuItem>
+
+                              {isArchived ? (
+                                <DropdownMenuItem
+                                  onClick={() => handleUnarchive(semester.id)}
+                                  disabled={isUnarchiving}
+                                  className="cursor-pointer"
+                                >
+                                  {isUnarchiving ? (
+                                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                  ) : (
+                                    <RotateCcw className="h-4 w-4 mr-2" />
+                                  )}
+                                  <span>Pulihkan</span>
+                                </DropdownMenuItem>
+                              ) : (
+                                <DropdownMenuItem
+                                  onClick={() => setArchivingSemester(semester)}
+                                  className="cursor-pointer"
+                                >
+                                  <Archive className="h-4 w-4 mr-2" />
+                                  <span>Arsipkan</span>
+                                </DropdownMenuItem>
+                              )}
+
+                              <DropdownMenuSeparator />
+
+                              <DropdownMenuItem
+                                onClick={() => setDeletingSemester(semester)}
+                                className="cursor-pointer text-destructive focus:text-destructive focus:bg-destructive/10"
+                              >
+                                <Trash2 className="h-4 w-4 mr-2" />
+                                <span>Hapus semester</span>
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </Card>
+
+          {/* Mobile Card List (< 768px) */}
+          <StaggerGroup className="grid gap-3 md:hidden">
+            {filteredSemesters.map((semester) => {
+              const isArchived = Boolean(semester.archivedAt);
+              const isCurrentActive = Boolean(semester.isActive && !isArchived);
+              const isActivating = activatingId === semester.id;
+              const isUnarchiving = unarchivingId === semester.id;
+
+              return (
+                <StaggerItem key={semester.id}>
+                  <Card
+                    className={`shadow-xs transition-colors ${
+                      isCurrentActive
+                        ? 'border-primary/30 bg-primary/[0.03]'
+                        : ''
+                    }`}
+                  >
+                    <CardHeader className="p-4 pb-2 flex flex-row items-start justify-between gap-2 space-y-0">
+                      <span className="font-semibold text-foreground text-sm break-words">
+                        {semester.name}
+                      </span>
+                      <div className="shrink-0">
+                        {isCurrentActive ? (
+                          <Badge variant="default" className="text-xs gap-1 bg-primary text-primary-foreground">
+                            <Check className="h-3 w-3" /> Aktif
+                          </Badge>
+                        ) : isArchived ? (
+                          <Badge variant="secondary" className="text-xs text-muted-foreground">
+                            Arsip
+                          </Badge>
+                        ) : (
+                          <Badge variant="outline" className="text-xs text-muted-foreground">
+                            Non-aktif
+                          </Badge>
+                        )}
+                      </div>
+                    </CardHeader>
+
+                    <CardContent className="px-4 py-2 space-y-1.5 text-xs text-muted-foreground">
                       <div className="flex items-center gap-1.5">
                         <CalendarRange className="h-3.5 w-3.5 shrink-0 text-muted-foreground/70" />
-                        <span>{semester.academicYear}</span>
+                        <span className="tabular-nums">{semester.academicYear}</span>
                       </div>
-                    </td>
-
-                    {/* Mata Kuliah Terkait */}
-                    <td className="p-0 md:px-4 md:py-3.5 block md:table-cell whitespace-nowrap text-xs text-muted-foreground">
                       <div className="flex items-center gap-1.5">
                         <Layers className="h-3.5 w-3.5 shrink-0 text-muted-foreground/70" />
-                        <span>
+                        <span className="tabular-nums">
                           {typeof semester.courseCount === 'number'
                             ? `${semester.courseCount} Mata Kuliah`
                             : '0 Mata Kuliah'}
                         </span>
                       </div>
-                    </td>
+                    </CardContent>
 
-                    {/* Status (Desktop only, mobile has it in row header) */}
-                    <td className="hidden md:table-cell px-4 py-3.5 whitespace-nowrap">
-                      {isCurrentActive ? (
-                        <Badge variant="default" className="text-[11px] gap-1 bg-primary text-primary-foreground">
-                          <Check className="h-3 w-3" /> Aktif
-                        </Badge>
-                      ) : isArchived ? (
-                        <Badge variant="secondary" className="text-[11px] text-muted-foreground">
-                          Arsip
-                        </Badge>
+                    <CardFooter className="p-4 pt-2 border-t border-border/50 flex items-center justify-between gap-1.5">
+                      {!isArchived && !isCurrentActive ? (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleActivate(semester.id)}
+                          disabled={Boolean(activatingId)}
+                          className="h-8 px-2.5 text-xs inline-flex items-center gap-1.5 text-primary border-primary/30 hover:bg-primary/10 relative after:absolute after:-inset-1 sm:after:hidden touch-manipulation"
+                          title="Jadikan semester aktif"
+                        >
+                          {isActivating ? (
+                            <>
+                              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                              <span>Mengaktifkan...</span>
+                            </>
+                          ) : (
+                            <>
+                              <CheckCircle2 className="h-3.5 w-3.5 text-primary" />
+                              <span>Jadikan Aktif</span>
+                            </>
+                          )}
+                        </Button>
+                      ) : isCurrentActive ? (
+                        <span className="text-xs font-medium text-primary px-2">
+                          Sedang Digunakan
+                        </span>
                       ) : (
-                        <Badge variant="outline" className="text-[11px] text-muted-foreground">
-                          Non-aktif
-                        </Badge>
+                        <span className="text-xs text-muted-foreground px-2">
+                          Hanya-Baca
+                        </span>
                       )}
-                    </td>
 
-                    {/* Aksi */}
-                    <td className="pt-2 md:pt-0 p-0 md:px-4 md:py-3.5 block md:table-cell border-t md:border-t-0 border-border/50 md:whitespace-nowrap md:text-right">
-                      <div className="flex items-center justify-between md:justify-end gap-1.5">
-                        {/* Tombol Jadikan Aktif */}
-                        {!isArchived && !isCurrentActive ? (
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
                           <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => handleActivate(semester.id)}
-                            disabled={Boolean(activatingId)}
-                            className="h-8 px-2.5 text-xs inline-flex items-center gap-1.5 text-primary border-primary/30 hover:bg-primary/10 relative after:absolute after:-inset-1 sm:after:hidden touch-manipulation"
-                            title="Jadikan semester aktif"
+                            variant="ghost"
+                            size="icon-sm"
+                            className="h-8 w-8 relative after:absolute after:-inset-1.5 sm:after:hidden touch-manipulation text-muted-foreground hover:text-foreground"
+                            aria-label={`Menu aksi untuk semester "${semester.name}"`}
                           >
-                            {isActivating ? (
-                              <>
-                                <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                                <span>Mengaktifkan...</span>
-                              </>
-                            ) : (
-                              <>
-                                <CheckCircle2 className="h-3.5 w-3.5 text-primary" />
-                                <span>Jadikan Aktif</span>
-                              </>
-                            )}
+                            <MoreVertical className="h-4 w-4" />
                           </Button>
-                        ) : isCurrentActive ? (
-                          <span className="text-xs font-medium text-primary px-2">
-                            Sedang Digunakan
-                          </span>
-                        ) : (
-                          <span className="text-xs text-muted-foreground px-2">
-                            Hanya-Baca
-                          </span>
-                        )}
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-44">
+                          <DropdownMenuItem
+                            onClick={() => setEditingSemester(semester)}
+                            className="cursor-pointer"
+                          >
+                            <Pencil className="h-4 w-4 mr-2" />
+                            <span>Edit semester</span>
+                          </DropdownMenuItem>
 
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="icon-sm"
-                              className="h-8 w-8 relative after:absolute after:-inset-1.5 sm:after:hidden touch-manipulation text-muted-foreground hover:text-foreground"
-                              aria-label={`Menu aksi untuk semester "${semester.name}"`}
-                            >
-                              <MoreVertical className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end" className="w-44">
+                          {isArchived ? (
                             <DropdownMenuItem
-                              onClick={() => setEditingSemester(semester)}
+                              onClick={() => handleUnarchive(semester.id)}
+                              disabled={isUnarchiving}
                               className="cursor-pointer"
                             >
-                              <Pencil className="h-4 w-4 mr-2" />
-                              <span>Edit semester</span>
+                              {isUnarchiving ? (
+                                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                              ) : (
+                                <RotateCcw className="h-4 w-4 mr-2" />
+                              )}
+                              <span>Pulihkan</span>
                             </DropdownMenuItem>
-
-                            {isArchived ? (
-                              <DropdownMenuItem
-                                onClick={() => handleUnarchive(semester.id)}
-                                disabled={isUnarchiving}
-                                className="cursor-pointer"
-                              >
-                                {isUnarchiving ? (
-                                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                                ) : (
-                                  <RotateCcw className="h-4 w-4 mr-2" />
-                                )}
-                                <span>Pulihkan</span>
-                              </DropdownMenuItem>
-                            ) : (
-                              <DropdownMenuItem
-                                onClick={() => setArchivingSemester(semester)}
-                                className="cursor-pointer"
-                              >
-                                <Archive className="h-4 w-4 mr-2" />
-                                <span>Arsipkan</span>
-                              </DropdownMenuItem>
-                            )}
-
-                            <DropdownMenuSeparator />
-
+                          ) : (
                             <DropdownMenuItem
-                              onClick={() => setDeletingSemester(semester)}
-                              className="cursor-pointer text-destructive focus:text-destructive focus:bg-destructive/10"
+                              onClick={() => setArchivingSemester(semester)}
+                              className="cursor-pointer"
                             >
-                              <Trash2 className="h-4 w-4 mr-2" />
-                              <span>Hapus semester</span>
+                              <Archive className="h-4 w-4 mr-2" />
+                              <span>Arsipkan</span>
                             </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+                          )}
+
+                          <DropdownMenuSeparator />
+
+                          <DropdownMenuItem
+                            onClick={() => setDeletingSemester(semester)}
+                            className="cursor-pointer text-destructive focus:text-destructive focus:bg-destructive/10"
+                          >
+                            <Trash2 className="h-4 w-4 mr-2" />
+                            <span>Hapus semester</span>
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </CardFooter>
+                  </Card>
+                </StaggerItem>
+              );
+            })}
+          </StaggerGroup>
         </div>
       )}
 
@@ -548,6 +684,6 @@ export default function SemestersPage(): React.JSX.Element {
           router.refresh();
         }}
       />
-    </div>
+    </FadeIn>
   );
 }

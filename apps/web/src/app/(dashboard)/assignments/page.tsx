@@ -41,6 +41,16 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Progress } from '@/components/ui/progress';
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell,
+} from '@/components/ui/table';
+import { FadeIn, StaggerGroup, StaggerItem } from '@/components/ui/motion';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
@@ -321,7 +331,7 @@ export default function AssignmentsPage(): React.JSX.Element {
   };
 
   return (
-    <div className="space-y-4 sm:space-y-6">
+    <FadeIn className="space-y-4 sm:space-y-6">
       {/* 1. Header Halaman */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-b border-border pb-3.5 sm:pb-5">
         <div>
@@ -339,7 +349,7 @@ export default function AssignmentsPage(): React.JSX.Element {
                 <span>•</span>
               </>
             ) : null}
-            <span>{assignments.length} tugas terdaftar</span>
+            <span className="tabular-nums">{assignments.length} tugas terdaftar</span>
           </div>
         </div>
 
@@ -581,277 +591,163 @@ export default function AssignmentsPage(): React.JSX.Element {
         /* Data Loaded View: Desktop Table + Mobile Cards */
         <div className="space-y-4">
           {/* Desktop Table View (>= 768px) */}
-          <div className="hidden md:block overflow-hidden rounded-xl border border-border bg-card shadow-xs">
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-sm">
-                <thead className="border-b border-border bg-muted/40 text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
-                  <tr>
-                    <th scope="col" className="px-4 py-3 w-14 text-center">
-                      Status
-                    </th>
-                    <th scope="col" className="px-4 py-3">
-                      Judul Tugas
-                    </th>
-                    <th scope="col" className="px-4 py-3">
-                      Mata Kuliah
-                    </th>
-                    <th scope="col" className="px-4 py-3">
-                      Tenggat Waktu
-                    </th>
-                    <th scope="col" className="px-4 py-3">
-                      Prioritas
-                    </th>
-                    <th scope="col" className="px-4 py-3 text-right w-14">
-                      Aksi
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-border">
-                  {assignments.map((asg) => {
-                    const isDone = asg.status === 'DONE';
-                    const isArchived = Boolean(
-                      asg.course?.archivedAt || asg.course?.semester?.archivedAt
-                    );
-                    const isPending = pendingTaskIds.has(asg.id);
-                    const deadlineInfo = getDeadlineStatusInfo(asg, timezone);
-                    const DeadlineIcon = deadlineInfo.icon;
+          <Card className="hidden md:block overflow-hidden shadow-xs">
+            <Table>
+              <TableHeader className="bg-muted/40">
+                <TableRow>
+                  <TableHead className="w-14 text-center text-xs font-semibold">
+                    Status
+                  </TableHead>
+                  <TableHead className="text-xs font-semibold">
+                    Judul Tugas
+                  </TableHead>
+                  <TableHead className="text-xs font-semibold">
+                    Mata Kuliah
+                  </TableHead>
+                  <TableHead className="text-xs font-semibold">
+                    Tenggat Waktu
+                  </TableHead>
+                  <TableHead className="text-xs font-semibold">
+                    Prioritas
+                  </TableHead>
+                  <TableHead className="w-14 text-right text-xs font-semibold">
+                    Aksi
+                  </TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {assignments.map((asg) => {
+                  const isDone = asg.status === 'DONE';
+                  const isArchived = Boolean(
+                    asg.course?.archivedAt || asg.course?.semester?.archivedAt
+                  );
+                  const isPending = pendingTaskIds.has(asg.id);
+                  const deadlineInfo = getDeadlineStatusInfo(asg, timezone);
+                  const DeadlineIcon = deadlineInfo.icon;
 
-                    return (
-                      <tr
-                        key={asg.id}
-                        className={`hover:bg-muted/30 transition-all duration-150 ${
-                          isDone ? 'bg-muted/15' : ''
-                        }`}
-                      >
-                        {/* Status Checkbox */}
-                        <td className="px-4 py-3.5 text-center align-middle w-14">
-                          <div className="flex items-center justify-center">
-                            {isPending ? (
-                              <Loader2 className="h-4 w-4 animate-spin text-primary" />
-                            ) : (
-                              <Checkbox
-                                id={`task-check-${asg.id}`}
-                                checked={isDone}
-                                disabled={isArchived || isPending}
-                                onCheckedChange={() => handleToggleStatus(asg)}
-                                aria-label={
-                                  isDone
-                                    ? `Tandai tugas "${asg.title}" belum selesai`
-                                    : `Tandai tugas "${asg.title}" selesai`
-                                }
-                              />
-                            )}
-                          </div>
-                        </td>
+                  return (
+                    <TableRow
+                      key={asg.id}
+                      className={isDone ? 'bg-muted/15' : ''}
+                    >
+                      {/* Status Checkbox */}
+                      <TableCell className="py-3.5 text-center w-14">
+                        <div className="flex items-center justify-center">
+                          {isPending ? (
+                            <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                          ) : (
+                            <Checkbox
+                              id={`task-check-${asg.id}`}
+                              checked={isDone}
+                              disabled={isArchived || isPending}
+                              onCheckedChange={() => handleToggleStatus(asg)}
+                              aria-label={
+                                isDone
+                                  ? `Tandai tugas "${asg.title}" belum selesai`
+                                  : `Tandai tugas "${asg.title}" selesai`
+                              }
+                            />
+                          )}
+                        </div>
+                      </TableCell>
 
-                        {/* Judul Tugas & Deskripsi */}
-                        <td className="px-4 py-3.5 align-middle">
-                          <div className="flex flex-col min-w-0 max-w-[360px]">
+                      {/* Judul Tugas & Deskripsi */}
+                      <TableCell className="py-3.5">
+                        <div className="flex flex-col min-w-0 max-w-[360px]">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (!isArchived) setEditingAssignment(asg);
+                            }}
+                            className={`text-left font-medium text-sm break-words transition-all duration-150 hover:underline ${
+                              isDone
+                                ? 'line-through text-muted-foreground'
+                                : 'text-foreground'
+                            }`}
+                          >
+                            {asg.title}
+                          </button>
+                          {asg.description && (
+                            <p className="mt-0.5 text-xs text-muted-foreground line-clamp-1 break-words">
+                              {asg.description}
+                            </p>
+                          )}
+                          {asg.subtaskCount && asg.subtaskCount.total > 0 && (
                             <button
                               type="button"
                               onClick={() => {
                                 if (!isArchived) setEditingAssignment(asg);
                               }}
-                              className={`text-left font-medium text-sm break-words transition-all duration-150 hover:underline ${
-                                isDone
-                                  ? 'line-through text-muted-foreground'
-                                  : 'text-foreground'
-                              }`}
+                              className="inline-flex items-center gap-2 text-xs font-medium text-muted-foreground hover:text-foreground bg-muted/60 hover:bg-muted px-2 py-0.5 rounded-md border border-border/40 w-fit mt-1.5 transition-colors"
+                              title={`${asg.subtaskCount.completed} dari ${asg.subtaskCount.total} subtugas selesai (klik untuk kelola)`}
                             >
-                              {asg.title}
-                            </button>
-                            {asg.description && (
-                              <p className="mt-0.5 text-xs text-muted-foreground line-clamp-1 break-words">
-                                {asg.description}
-                              </p>
-                            )}
-                            {asg.subtaskCount && asg.subtaskCount.total > 0 && (
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  if (!isArchived) setEditingAssignment(asg);
-                                }}
-                                className="inline-flex items-center gap-1 text-[11px] font-medium text-muted-foreground hover:text-foreground bg-muted/60 hover:bg-muted px-1.5 py-0.5 rounded border border-border/40 w-fit mt-1.5 transition-colors"
-                                title={`${asg.subtaskCount.completed} dari ${asg.subtaskCount.total} subtugas selesai (klik untuk kelola)`}
-                              >
-                                <ListTodo className="h-3 w-3 text-primary shrink-0" />
-                                <span>
-                                  {asg.subtaskCount.completed}/{asg.subtaskCount.total} langkah
-                                </span>
-                              </button>
-                            )}
-                          </div>
-                        </td>
-
-                        {/* Mata Kuliah */}
-                        <td className="px-4 py-3.5 align-middle whitespace-nowrap">
-                          {asg.course ? (
-                            <div className="flex items-center gap-1.5">
-                              <Link
-                                href={`/courses/${asg.course.id}`}
-                                className="text-xs font-medium text-muted-foreground hover:text-foreground hover:underline inline-flex items-center gap-1.5 transition-colors"
-                                title={asg.course.name}
-                              >
-                                <BookOpen className="h-3.5 w-3.5 shrink-0 text-muted-foreground/70" />
-                                <span className="truncate max-w-[200px]">
-                                  {asg.course.name}
-                                </span>
-                              </Link>
-                              {isArchived && (
-                                <Badge
-                                  variant="outline"
-                                  className="text-[10px] py-0 px-1 border-muted text-muted-foreground"
-                                >
-                                  Arsip
-                                </Badge>
-                              )}
-                            </div>
-                          ) : (
-                            <span className="text-xs text-muted-foreground">-</span>
-                          )}
-                        </td>
-
-                        {/* Tenggat Waktu & Penanda Status */}
-                        <td className="px-4 py-3.5 align-middle whitespace-nowrap">
-                          <div className="flex flex-col gap-1">
-                            <span className="text-xs text-foreground font-medium">
-                              {formatUserDateTime(asg.dueDate, timezone)}
-                            </span>
-                            <div className="flex items-center gap-1.5">
-                              <span
-                                className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium ${deadlineInfo.badgeClass}`}
-                              >
-                                <DeadlineIcon className="h-3 w-3 shrink-0" />
-                                <span>{deadlineInfo.label}</span>
+                              <ListTodo className="h-3 w-3 text-primary shrink-0" />
+                              <Progress
+                                value={Math.round(
+                                  (asg.subtaskCount.completed / asg.subtaskCount.total) * 100
+                                )}
+                                className="h-1.5 w-16"
+                              />
+                              <span className="tabular-nums">
+                                {asg.subtaskCount.completed}/{asg.subtaskCount.total} langkah
                               </span>
-                              {isDone && asg.completedAt && (
-                                <span className="text-[11px] text-muted-foreground">
-                                  ({formatUserDateTime(asg.completedAt, timezone)})
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                        </td>
-
-                        {/* Prioritas */}
-                        <td className="px-4 py-3.5 align-middle whitespace-nowrap">
-                          <Badge
-                            variant={
-                              asg.priority === 'HIGH'
-                                ? 'danger'
-                                : asg.priority === 'MEDIUM'
-                                ? 'default'
-                                : 'secondary'
-                            }
-                            className="text-xs font-medium px-2 py-0.5 rounded-full"
-                          >
-                            {asg.priority === 'HIGH'
-                              ? 'Tinggi'
-                              : asg.priority === 'MEDIUM'
-                              ? 'Sedang'
-                              : 'Rendah'}
-                          </Badge>
-                        </td>
-
-                        {/* Aksi Dropdown */}
-                        <td className="px-4 py-3.5 align-middle text-right whitespace-nowrap w-14">
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button
-                                variant="ghost"
-                                size="icon-sm"
-                                className="h-8 w-8 relative after:absolute after:-inset-1.5 sm:after:hidden touch-manipulation text-muted-foreground hover:text-foreground"
-                                aria-label={`Menu aksi untuk tugas "${asg.title}"`}
-                                disabled={isArchived}
-                              >
-                                <MoreVertical className="h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end" className="w-40">
-                              <DropdownMenuItem
-                                onClick={() => setEditingAssignment(asg)}
-                                disabled={isArchived}
-                                className="cursor-pointer"
-                              >
-                                <Pencil className="h-4 w-4 mr-2" />
-                                <span>Edit tugas</span>
-                              </DropdownMenuItem>
-                              <DropdownMenuSeparator />
-                              <DropdownMenuItem
-                                onClick={() => setDeletingAssignment(asg)}
-                                disabled={isArchived}
-                                className="cursor-pointer text-destructive focus:text-destructive focus:bg-destructive/10"
-                              >
-                                <Trash2 className="h-4 w-4 mr-2" />
-                                <span>Hapus tugas</span>
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          </div>
-
-          {/* Mobile Card List (< 768px) */}
-          <div className="grid grid-cols-1 gap-3 md:hidden">
-            {assignments.map((asg) => {
-              const isDone = asg.status === 'DONE';
-              const isArchived = Boolean(
-                asg.course?.archivedAt || asg.course?.semester?.archivedAt
-              );
-              const isPending = pendingTaskIds.has(asg.id);
-              const deadlineInfo = getDeadlineStatusInfo(asg, timezone);
-              const DeadlineIcon = deadlineInfo.icon;
-
-              return (
-                <Card
-                  key={asg.id}
-                  className={`p-3.5 transition-all duration-200 ${
-                    isDone ? 'bg-muted/20 opacity-80' : ''
-                  }`}
-                >
-                  <div className="flex items-start gap-3">
-                    {/* Checkbox Status */}
-                    <div className="pt-0.5 shrink-0">
-                      {isPending ? (
-                        <Loader2 className="h-4.5 w-4.5 animate-spin text-primary" />
-                      ) : (
-                        <div className="inline-flex items-center justify-center p-1 rounded-md transition-colors hover:bg-muted/50 -m-1">
-                          <Checkbox
-                            id={`mob-task-check-${asg.id}`}
-                            checked={isDone}
-                            disabled={isArchived || isPending}
-                            onCheckedChange={() => handleToggleStatus(asg)}
-                            aria-label={
-                              isDone
-                                ? `Tandai tugas "${asg.title}" belum selesai`
-                                : `Tandai tugas "${asg.title}" selesai`
-                            }
-                          />
+                            </button>
+                          )}
                         </div>
-                      )}
-                    </div>
+                      </TableCell>
 
-                    <div className="flex-1 min-w-0">
-                      {/* Title & Priority Badge */}
-                      <div className="flex items-start justify-between gap-2">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            if (!isArchived) setEditingAssignment(asg);
-                          }}
-                          className={`text-left text-sm font-semibold leading-snug break-words flex-1 min-w-0 transition-all duration-200 hover:underline ${
-                            isDone
-                              ? 'line-through text-muted-foreground'
-                              : 'text-foreground'
-                          }`}
-                        >
-                          {asg.title}
-                        </button>
+                      {/* Mata Kuliah */}
+                      <TableCell className="py-3.5 whitespace-nowrap">
+                        {asg.course ? (
+                          <div className="flex items-center gap-1.5">
+                            <Link
+                              href={`/courses/${asg.course.id}`}
+                              className="text-xs font-medium text-muted-foreground hover:text-foreground hover:underline inline-flex items-center gap-1.5 transition-colors"
+                              title={asg.course.name}
+                            >
+                              <BookOpen className="h-3.5 w-3.5 shrink-0 text-muted-foreground/70" />
+                              <span className="truncate max-w-[200px]">
+                                {asg.course.name}
+                              </span>
+                            </Link>
+                            {isArchived && (
+                              <Badge
+                                variant="outline"
+                                className="text-xs py-0 px-1.5 border-muted text-muted-foreground"
+                              >
+                                Arsip
+                              </Badge>
+                            )}
+                          </div>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">-</span>
+                        )}
+                      </TableCell>
+
+                      {/* Tenggat Waktu & Penanda Status */}
+                      <TableCell className="py-3.5 whitespace-nowrap">
+                        <div className="flex flex-col gap-1">
+                          <span className="text-xs text-foreground font-medium tabular-nums">
+                            {formatUserDateTime(asg.dueDate, timezone)}
+                          </span>
+                          <div className="flex items-center gap-1.5">
+                            <span
+                              className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium ${deadlineInfo.badgeClass}`}
+                            >
+                              <DeadlineIcon className="h-3 w-3 shrink-0" />
+                              <span>{deadlineInfo.label}</span>
+                            </span>
+                            {isDone && asg.completedAt && (
+                              <span className="text-xs text-muted-foreground tabular-nums">
+                                ({formatUserDateTime(asg.completedAt, timezone)})
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </TableCell>
+
+                      {/* Prioritas */}
+                      <TableCell className="py-3.5 whitespace-nowrap">
                         <Badge
                           variant={
                             asg.priority === 'HIGH'
@@ -860,7 +756,7 @@ export default function AssignmentsPage(): React.JSX.Element {
                               ? 'default'
                               : 'secondary'
                           }
-                          className="text-[10px] shrink-0"
+                          className="text-xs font-medium px-2 py-0.5 rounded-full"
                         >
                           {asg.priority === 'HIGH'
                             ? 'Tinggi'
@@ -868,59 +764,16 @@ export default function AssignmentsPage(): React.JSX.Element {
                             ? 'Sedang'
                             : 'Rendah'}
                         </Badge>
-                      </div>
+                      </TableCell>
 
-                      {/* Subtask Indicator for Mobile */}
-                      {asg.subtaskCount && asg.subtaskCount.total > 0 && (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            if (!isArchived) setEditingAssignment(asg);
-                          }}
-                          className="inline-flex items-center gap-1 text-[11px] font-medium text-muted-foreground hover:text-foreground bg-muted/60 hover:bg-muted px-1.5 py-0.5 rounded border border-border/40 w-fit mt-1 transition-colors"
-                          title={`${asg.subtaskCount.completed} dari ${asg.subtaskCount.total} subtugas selesai (klik untuk kelola)`}
-                        >
-                          <ListTodo className="h-3 w-3 text-primary shrink-0" />
-                          <span>
-                            {asg.subtaskCount.completed}/{asg.subtaskCount.total} langkah
-                          </span>
-                        </button>
-                      )}
-
-                      {/* Course */}
-                      {asg.course && (
-                        <p className="mt-1 text-xs text-muted-foreground flex items-center gap-1.5">
-                          <BookOpen className="h-3 w-3 shrink-0" />
-                          <span className="truncate">{asg.course.name}</span>
-                        </p>
-                      )}
-
-                      {/* Description */}
-                      {asg.description && (
-                        <p className="mt-1 text-xs text-muted-foreground line-clamp-2 break-words">
-                          {asg.description}
-                        </p>
-                      )}
-
-                      {/* Card Footer: Due Date & Actions */}
-                      <div className="mt-3 flex items-center justify-between gap-2 border-t border-border pt-2.5">
-                        <div className="flex flex-wrap items-center gap-1.5 text-xs text-foreground font-medium">
-                          <Calendar className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                          <span>{formatUserDateTime(asg.dueDate, timezone)}</span>
-                          <span
-                            className={`inline-flex items-center gap-1 px-1.5 py-0.2 rounded text-[10px] ${deadlineInfo.badgeClass}`}
-                          >
-                            <DeadlineIcon className="h-2.5 w-2.5 shrink-0" />
-                            <span>{deadlineInfo.label}</span>
-                          </span>
-                        </div>
-
+                      {/* Aksi Dropdown */}
+                      <TableCell className="py-3.5 text-right whitespace-nowrap w-14">
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
                             <Button
                               variant="ghost"
                               size="icon-sm"
-                              className="h-8 w-8 relative after:absolute after:-inset-1.5 sm:after:hidden touch-manipulation text-muted-foreground hover:text-foreground shrink-0"
+                              className="h-8 w-8 relative after:absolute after:-inset-1.5 sm:after:hidden touch-manipulation text-muted-foreground hover:text-foreground"
                               aria-label={`Menu aksi untuk tugas "${asg.title}"`}
                               disabled={isArchived}
                             >
@@ -947,13 +800,179 @@ export default function AssignmentsPage(): React.JSX.Element {
                             </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </Card>
+
+          {/* Mobile Card List (< 768px) */}
+          <StaggerGroup className="grid grid-cols-1 gap-3 md:hidden">
+            {assignments.map((asg) => {
+              const isDone = asg.status === 'DONE';
+              const isArchived = Boolean(
+                asg.course?.archivedAt || asg.course?.semester?.archivedAt
+              );
+              const isPending = pendingTaskIds.has(asg.id);
+              const deadlineInfo = getDeadlineStatusInfo(asg, timezone);
+              const DeadlineIcon = deadlineInfo.icon;
+
+              return (
+                <StaggerItem key={asg.id}>
+                  <Card
+                    className={`p-3.5 transition-all duration-200 ${
+                      isDone ? 'bg-muted/20 opacity-80' : ''
+                    }`}
+                  >
+                    <div className="flex items-start gap-3">
+                      {/* Checkbox Status */}
+                      <div className="pt-0.5 shrink-0">
+                        {isPending ? (
+                          <Loader2 className="h-4.5 w-4.5 animate-spin text-primary" />
+                        ) : (
+                          <div className="inline-flex items-center justify-center p-1 rounded-md transition-colors hover:bg-muted/50 -m-1">
+                            <Checkbox
+                              id={`mob-task-check-${asg.id}`}
+                              checked={isDone}
+                              disabled={isArchived || isPending}
+                              onCheckedChange={() => handleToggleStatus(asg)}
+                              aria-label={
+                                isDone
+                                  ? `Tandai tugas "${asg.title}" belum selesai`
+                                  : `Tandai tugas "${asg.title}" selesai`
+                              }
+                            />
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="flex-1 min-w-0">
+                        {/* Title & Priority Badge */}
+                        <div className="flex items-start justify-between gap-2">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (!isArchived) setEditingAssignment(asg);
+                            }}
+                            className={`text-left text-sm font-semibold leading-snug break-words flex-1 min-w-0 transition-all duration-200 hover:underline ${
+                              isDone
+                                ? 'line-through text-muted-foreground'
+                                : 'text-foreground'
+                            }`}
+                          >
+                            {asg.title}
+                          </button>
+                          <Badge
+                            variant={
+                              asg.priority === 'HIGH'
+                                ? 'danger'
+                                : asg.priority === 'MEDIUM'
+                                ? 'default'
+                                : 'secondary'
+                            }
+                            className="text-xs shrink-0"
+                          >
+                            {asg.priority === 'HIGH'
+                              ? 'Tinggi'
+                              : asg.priority === 'MEDIUM'
+                              ? 'Sedang'
+                              : 'Rendah'}
+                          </Badge>
+                        </div>
+
+                        {/* Subtask Indicator for Mobile */}
+                        {asg.subtaskCount && asg.subtaskCount.total > 0 && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (!isArchived) setEditingAssignment(asg);
+                            }}
+                            className="inline-flex items-center gap-2 text-xs font-medium text-muted-foreground hover:text-foreground bg-muted/60 hover:bg-muted px-2 py-0.5 rounded-md border border-border/40 w-fit mt-1.5 transition-colors"
+                            title={`${asg.subtaskCount.completed} dari ${asg.subtaskCount.total} subtugas selesai (klik untuk kelola)`}
+                          >
+                            <ListTodo className="h-3 w-3 text-primary shrink-0" />
+                            <Progress
+                              value={Math.round(
+                                (asg.subtaskCount.completed / asg.subtaskCount.total) * 100
+                              )}
+                              className="h-1.5 w-16"
+                            />
+                            <span className="tabular-nums">
+                              {asg.subtaskCount.completed}/{asg.subtaskCount.total} langkah
+                            </span>
+                          </button>
+                        )}
+
+                        {/* Course */}
+                        {asg.course && (
+                          <p className="mt-1 text-xs text-muted-foreground flex items-center gap-1.5">
+                            <BookOpen className="h-3 w-3 shrink-0" />
+                            <span className="truncate">{asg.course.name}</span>
+                          </p>
+                        )}
+
+                        {/* Description */}
+                        {asg.description && (
+                          <p className="mt-1 text-xs text-muted-foreground line-clamp-2 break-words">
+                            {asg.description}
+                          </p>
+                        )}
+
+                        {/* Card Footer: Due Date & Actions */}
+                        <div className="mt-3 flex items-center justify-between gap-2 border-t border-border pt-2.5">
+                          <div className="flex flex-wrap items-center gap-1.5 text-xs text-foreground font-medium">
+                            <Calendar className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                            <span className="tabular-nums">{formatUserDateTime(asg.dueDate, timezone)}</span>
+                            <span
+                              className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs ${deadlineInfo.badgeClass}`}
+                            >
+                              <DeadlineIcon className="h-3 w-3 shrink-0" />
+                              <span>{deadlineInfo.label}</span>
+                            </span>
+                          </div>
+
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon-sm"
+                                className="h-8 w-8 relative after:absolute after:-inset-1.5 sm:after:hidden touch-manipulation text-muted-foreground hover:text-foreground shrink-0"
+                                aria-label={`Menu aksi untuk tugas "${asg.title}"`}
+                                disabled={isArchived}
+                              >
+                                <MoreVertical className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="w-40">
+                              <DropdownMenuItem
+                                onClick={() => setEditingAssignment(asg)}
+                                disabled={isArchived}
+                                className="cursor-pointer"
+                              >
+                                <Pencil className="h-4 w-4 mr-2" />
+                                <span>Edit tugas</span>
+                              </DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem
+                                onClick={() => setDeletingAssignment(asg)}
+                                disabled={isArchived}
+                                className="cursor-pointer text-destructive focus:text-destructive focus:bg-destructive/10"
+                              >
+                                <Trash2 className="h-4 w-4 mr-2" />
+                                <span>Hapus tugas</span>
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                </Card>
+                  </Card>
+                </StaggerItem>
               );
             })}
-          </div>
+          </StaggerGroup>
         </div>
       )}
 
@@ -1036,6 +1055,6 @@ export default function AssignmentsPage(): React.JSX.Element {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+    </FadeIn>
   );
 }

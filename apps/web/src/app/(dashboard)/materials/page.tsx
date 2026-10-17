@@ -46,6 +46,15 @@ import {
   SelectItem,
 } from '@/components/ui/select';
 import { Card, CardContent } from '@/components/ui/card';
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell,
+} from '@/components/ui/table';
+import { FadeIn, StaggerGroup, StaggerItem } from '@/components/ui/motion';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
@@ -442,32 +451,32 @@ export default function MaterialsPage(): React.JSX.Element {
         /* Data Loaded View: Desktop Table + Mobile Cards */
         <div className="space-y-4">
           {/* Desktop Table View (>= 768px) */}
-          <div className="hidden md:block overflow-hidden rounded-xl border border-border bg-card shadow-xs">
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-sm">
-                <thead className="border-b border-border bg-muted/40 text-xs font-semibold uppercase text-muted-foreground">
-                  <tr>
-                    <th scope="col" className="px-4 py-3">
+          <FadeIn className="hidden md:block">
+            <Card className="overflow-hidden shadow-xs">
+              <Table>
+                <TableHeader className="bg-muted/40">
+                  <TableRow>
+                    <TableHead className="text-xs font-semibold">
                       Judul Materi
-                    </th>
-                    <th scope="col" className="px-4 py-3">
+                    </TableHead>
+                    <TableHead className="text-xs font-semibold">
                       Mata Kuliah
-                    </th>
-                    <th scope="col" className="px-4 py-3">
+                    </TableHead>
+                    <TableHead className="text-xs font-semibold">
                       Ukuran & Halaman
-                    </th>
-                    <th scope="col" className="px-4 py-3">
+                    </TableHead>
+                    <TableHead className="text-xs font-semibold">
                       Waktu Unggah
-                    </th>
-                    <th scope="col" className="px-4 py-3">
+                    </TableHead>
+                    <TableHead className="text-xs font-semibold">
                       Status
-                    </th>
-                    <th scope="col" className="w-28 px-3.5 py-3 text-right">
+                    </TableHead>
+                    <TableHead className="w-28 text-right text-xs font-semibold">
                       Aksi
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-border">
+                    </TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
                   {materials.map((m) => {
                     const sizeMb = (m.bytes / (1024 * 1024)).toFixed(1);
                     const canRetry =
@@ -479,8 +488,8 @@ export default function MaterialsPage(): React.JSX.Element {
                       m.errorCode !== 'FILE_TOO_LARGE';
 
                     return (
-                      <tr key={m.id} className="hover:bg-muted/30 transition-colors">
-                        <td className="px-4 py-3">
+                      <TableRow key={m.id}>
+                        <TableCell className="py-3">
                           <TooltipProvider delayDuration={200}>
                             <Tooltip>
                               <TooltipTrigger asChild>
@@ -501,7 +510,7 @@ export default function MaterialsPage(): React.JSX.Element {
                               </TooltipTrigger>
                               <TooltipContent side="top" align="start" className="max-w-xs break-words">
                                 <p className="font-semibold">{m.title}</p>
-                                <p className="text-[11px] text-muted-foreground mt-0.5">{m.originalFilename}</p>
+                                <p className="text-xs text-muted-foreground mt-0.5">{m.originalFilename}</p>
                               </TooltipContent>
                             </Tooltip>
                           </TooltipProvider>
@@ -511,9 +520,9 @@ export default function MaterialsPage(): React.JSX.Element {
                           >
                             {m.originalFilename}
                           </p>
-                        </td>
+                        </TableCell>
 
-                        <td className="px-4 py-3 whitespace-nowrap">
+                        <TableCell className="py-3 whitespace-nowrap">
                           {m.course ? (
                             <Link
                               href={`/courses/${m.course.id}`}
@@ -526,33 +535,33 @@ export default function MaterialsPage(): React.JSX.Element {
                           ) : (
                             <span className="text-xs text-muted-foreground">—</span>
                           )}
-                        </td>
+                        </TableCell>
 
-                        <td className="px-4 py-3 whitespace-nowrap text-xs text-muted-foreground">
+                        <TableCell className="py-3 whitespace-nowrap text-xs text-muted-foreground tabular-nums">
                           <span>{sizeMb} MB</span>
                           {m.pageCount ? (
-                            <span className="ml-1.5 text-foreground font-medium">
+                            <span className="ml-1.5 text-foreground font-medium tabular-nums">
                               • {m.pageCount} hal.
                             </span>
                           ) : null}
-                        </td>
+                        </TableCell>
 
-                        <td className="px-4 py-3 whitespace-nowrap text-xs text-muted-foreground">
+                        <TableCell className="py-3 whitespace-nowrap text-xs text-muted-foreground tabular-nums">
                           <span className="flex items-center gap-1">
-                            <Clock className="h-3 w-3" />
+                            <Clock className="h-3 w-3 shrink-0" />
                             {formatUserDateTime(m.createdAt, timezone)}
                           </span>
-                        </td>
+                        </TableCell>
 
-                        <td className="px-4 py-3 whitespace-nowrap">
+                        <TableCell className="py-3 whitespace-nowrap">
                           <MaterialStatusBadge
                             status={m.status}
                             errorCode={m.errorCode}
                             errorMessage={m.errorMessage}
                           />
-                        </td>
+                        </TableCell>
 
-                        <td className="w-28 px-3.5 py-3 whitespace-nowrap text-right">
+                        <TableCell className="w-28 py-3 whitespace-nowrap text-right">
                           <div className="flex items-center justify-end gap-1">
                             <Button variant="ghost" size="sm" asChild className="h-8 px-2 text-xs">
                               <Link href={`/materials/${m.id}`}>
@@ -636,17 +645,17 @@ export default function MaterialsPage(): React.JSX.Element {
                               </DropdownMenuContent>
                             </DropdownMenu>
                           </div>
-                        </td>
-                      </tr>
+                        </TableCell>
+                      </TableRow>
                     );
                   })}
-                </tbody>
-              </table>
-            </div>
-          </div>
+                </TableBody>
+              </Table>
+            </Card>
+          </FadeIn>
 
           {/* Mobile Card List (< 768px) */}
-          <div className="grid grid-cols-1 gap-2.5 md:hidden">
+          <StaggerGroup className="grid grid-cols-1 gap-2.5 md:hidden">
             {materials.map((m) => {
               const sizeMb = (m.bytes / (1024 * 1024)).toFixed(1);
               const canRetry =
@@ -658,152 +667,151 @@ export default function MaterialsPage(): React.JSX.Element {
                 m.errorCode !== 'FILE_TOO_LARGE';
 
               return (
-                <div
-                  key={m.id}
-                  className="rounded-xl border border-border bg-card p-3.5 shadow-xs space-y-2.5"
-                >
-                  {/* Judul & Status Badge */}
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="min-w-0 flex-1">
-                      <Link
-                        href={`/materials/${m.id}`}
-                        className="font-medium text-foreground hover:text-primary transition-colors inline-flex items-center gap-1.5 text-sm break-words"
-                        title={m.title}
-                        aria-label={`Buka materi: ${m.title}`}
-                      >
-                        <span>{m.title}</span>
-                        {m.isPinned && (
-                          <span title="Disematkan" aria-label="Disematkan" className="inline-flex text-primary shrink-0">
-                            <Pin className="h-3 w-3 fill-current" />
-                          </span>
-                        )}
-                      </Link>
-                      <p
-                        className="text-xs text-muted-foreground break-all mt-0.5"
-                        title={m.originalFilename}
-                      >
-                        {m.originalFilename}
-                      </p>
-                    </div>
-                    <div className="shrink-0">
-                      <MaterialStatusBadge
-                        status={m.status}
-                        errorCode={m.errorCode}
-                        errorMessage={m.errorMessage}
-                      />
-                    </div>
-                  </div>
-
-                  {/* Metadata Baris */}
-                  <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 text-xs text-muted-foreground border-t border-border/60 pt-2">
-                    {m.course && (
-                      <span className="flex items-center gap-1 text-foreground/80 font-medium truncate max-w-[140px]">
-                        <BookOpen className="h-3 w-3 shrink-0" />
-                        {m.course.name}
-                      </span>
-                    )}
-                    <span>•</span>
-                    <span>{sizeMb} MB</span>
-                    {m.pageCount ? <span>• {m.pageCount} hal.</span> : null}
-                    <span>•</span>
-                    <span className="flex items-center gap-1">
-                      <Clock className="h-3 w-3" />
-                      {formatUserDateTime(m.createdAt, timezone)}
-                    </span>
-                  </div>
-
-                  {/* Aksi Mobile: Touch Target minimal 44x44px tanpa overlap */}
-                  <div className="flex items-center justify-end gap-3.5 pt-1 border-t border-border/40">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      asChild
-                      className="h-8 px-3 text-xs relative before:absolute before:-inset-y-1.5 before:inset-x-0"
-                    >
-                      <Link href={`/materials/${m.id}`}>
-                        <span>Buka Materi</span>
-                        <ExternalLink className="ml-1.5 h-3.5 w-3.5" />
-                      </Link>
-                    </Button>
-
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          size="icon-sm"
-                          className="h-8 w-8 text-muted-foreground hover:text-foreground relative before:absolute before:-inset-1.5"
-                          aria-label={`Menu aksi materi ${m.title}`}
+                <StaggerItem key={m.id}>
+                  <Card className="p-3.5 shadow-xs space-y-2.5">
+                    {/* Judul & Status Badge */}
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0 flex-1">
+                        <Link
+                          href={`/materials/${m.id}`}
+                          className="font-medium text-foreground hover:text-primary transition-colors inline-flex items-center gap-1.5 text-sm break-words"
+                          title={m.title}
+                          aria-label={`Buka materi: ${m.title}`}
                         >
-                          <MoreVertical className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="w-48">
-                        <DropdownMenuItem asChild>
-                          <Link href={`/materials/${m.id}`} className="cursor-pointer text-xs">
-                            <ExternalLink className="mr-2 h-3.5 w-3.5" />
-                            <span>Buka Materi</span>
-                          </Link>
-                        </DropdownMenuItem>
-
-                        <DropdownMenuItem
-                          onClick={() => handleTogglePin(m)}
-                          disabled={pinningId === m.id}
-                          className="cursor-pointer text-xs"
-                        >
-                          {pinningId === m.id ? (
-                            <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />
-                          ) : (
-                            <Pin className={`mr-2 h-3.5 w-3.5 ${m.isPinned ? 'fill-primary text-primary' : ''}`} />
+                          <span>{m.title}</span>
+                          {m.isPinned && (
+                            <span title="Disematkan" aria-label="Disematkan" className="inline-flex text-primary shrink-0">
+                              <Pin className="h-3 w-3 fill-current" />
+                            </span>
                           )}
-                          <span>{m.isPinned ? 'Lepas Sematan' : 'Sematkan'}</span>
-                        </DropdownMenuItem>
-
-                        {canRetry && (
-                          <DropdownMenuItem
-                            onClick={() => handleRetry(m.id)}
-                            disabled={retryingId === m.id}
-                            className="cursor-pointer text-xs"
-                          >
-                            {retryingId === m.id ? (
-                              <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />
-                            ) : (
-                              <RotateCcw className="mr-2 h-3.5 w-3.5" />
-                            )}
-                            <span>Coba Lagi Pemrosesan</span>
-                          </DropdownMenuItem>
-                        )}
-
-                        {m.status === 'READY' && (
-                          <DropdownMenuItem
-                            onClick={() => handleDownload(m.id)}
-                            disabled={downloadingId === m.id}
-                            className="cursor-pointer text-xs"
-                          >
-                            {downloadingId === m.id ? (
-                              <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />
-                            ) : (
-                              <Download className="mr-2 h-3.5 w-3.5" />
-                            )}
-                            <span>Unduh Berkas Asli</span>
-                          </DropdownMenuItem>
-                        )}
-
-                        <DropdownMenuSeparator />
-
-                        <DropdownMenuItem
-                          onClick={() => setDeleteTarget(m)}
-                          className="cursor-pointer text-xs text-destructive focus:bg-destructive/10 focus:text-destructive"
+                        </Link>
+                        <p
+                          className="text-xs text-muted-foreground break-all mt-0.5"
+                          title={m.originalFilename}
                         >
-                          <Trash2 className="mr-2 h-3.5 w-3.5" />
-                          <span>Hapus Materi</span>
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </div>
-                </div>
+                          {m.originalFilename}
+                        </p>
+                      </div>
+                      <div className="shrink-0">
+                        <MaterialStatusBadge
+                          status={m.status}
+                          errorCode={m.errorCode}
+                          errorMessage={m.errorMessage}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Metadata Baris */}
+                    <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 text-xs text-muted-foreground border-t border-border/60 pt-2 tabular-nums">
+                      {m.course && (
+                        <span className="flex items-center gap-1 text-foreground/80 font-medium truncate max-w-[140px]">
+                          <BookOpen className="h-3 w-3 shrink-0" />
+                          {m.course.name}
+                        </span>
+                      )}
+                      <span>•</span>
+                      <span>{sizeMb} MB</span>
+                      {m.pageCount ? <span>• {m.pageCount} hal.</span> : null}
+                      <span>•</span>
+                      <span className="flex items-center gap-1">
+                        <Clock className="h-3 w-3 shrink-0" />
+                        {formatUserDateTime(m.createdAt, timezone)}
+                      </span>
+                    </div>
+
+                    {/* Aksi Mobile: Touch Target minimal 44x44px tanpa overlap */}
+                    <div className="flex items-center justify-end gap-3.5 pt-1 border-t border-border/40">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        asChild
+                        className="h-8 px-3 text-xs relative before:absolute before:-inset-y-1.5 before:inset-x-0"
+                      >
+                        <Link href={`/materials/${m.id}`}>
+                          <span>Buka Materi</span>
+                          <ExternalLink className="ml-1.5 h-3.5 w-3.5" />
+                        </Link>
+                      </Button>
+
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon-sm"
+                            className="h-8 w-8 text-muted-foreground hover:text-foreground relative before:absolute before:-inset-1.5"
+                            aria-label={`Menu aksi materi ${m.title}`}
+                          >
+                            <MoreVertical className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-48">
+                          <DropdownMenuItem asChild>
+                            <Link href={`/materials/${m.id}`} className="cursor-pointer text-xs">
+                              <ExternalLink className="mr-2 h-3.5 w-3.5" />
+                              <span>Buka Materi</span>
+                            </Link>
+                          </DropdownMenuItem>
+
+                          <DropdownMenuItem
+                            onClick={() => handleTogglePin(m)}
+                            disabled={pinningId === m.id}
+                            className="cursor-pointer text-xs"
+                          >
+                            {pinningId === m.id ? (
+                              <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />
+                            ) : (
+                              <Pin className={`mr-2 h-3.5 w-3.5 ${m.isPinned ? 'fill-primary text-primary' : ''}`} />
+                            )}
+                            <span>{m.isPinned ? 'Lepas Sematan' : 'Sematkan'}</span>
+                          </DropdownMenuItem>
+
+                          {canRetry && (
+                            <DropdownMenuItem
+                              onClick={() => handleRetry(m.id)}
+                              disabled={retryingId === m.id}
+                              className="cursor-pointer text-xs"
+                            >
+                              {retryingId === m.id ? (
+                                <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />
+                              ) : (
+                                <RotateCcw className="mr-2 h-3.5 w-3.5" />
+                              )}
+                              <span>Coba Lagi Pemrosesan</span>
+                            </DropdownMenuItem>
+                          )}
+
+                          {m.status === 'READY' && (
+                            <DropdownMenuItem
+                              onClick={() => handleDownload(m.id)}
+                              disabled={downloadingId === m.id}
+                              className="cursor-pointer text-xs"
+                            >
+                              {downloadingId === m.id ? (
+                                <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />
+                              ) : (
+                                <Download className="mr-2 h-3.5 w-3.5" />
+                              )}
+                              <span>Unduh Berkas Asli</span>
+                            </DropdownMenuItem>
+                          )}
+
+                          <DropdownMenuSeparator />
+
+                          <DropdownMenuItem
+                            onClick={() => setDeleteTarget(m)}
+                            className="cursor-pointer text-xs text-destructive focus:bg-destructive/10 focus:text-destructive"
+                          >
+                            <Trash2 className="mr-2 h-3.5 w-3.5" />
+                            <span>Hapus Materi</span>
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+                  </Card>
+                </StaggerItem>
               );
             })}
-          </div>
+          </StaggerGroup>
         </div>
       )}
 

@@ -34,7 +34,22 @@ import { getProfile } from '@/lib/auth-client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Card, CardContent } from '@/components/ui/card';
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardContent,
+  CardFooter,
+} from '@/components/ui/card';
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell,
+} from '@/components/ui/table';
+import { FadeIn, StaggerGroup, StaggerItem } from '@/components/ui/motion';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
@@ -192,7 +207,7 @@ export default function NotesPage(): React.JSX.Element {
   };
 
   return (
-    <div className="space-y-4 sm:space-y-6">
+    <FadeIn className="space-y-4 sm:space-y-6">
       {/* 1. Header Halaman */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-b border-border pb-3.5 sm:pb-5">
         <div>
@@ -210,7 +225,7 @@ export default function NotesPage(): React.JSX.Element {
                 <span>•</span>
               </>
             ) : null}
-            <span>{notes.length} catatan terdaftar</span>
+            <span className="tabular-nums">{notes.length} catatan terdaftar</span>
           </div>
         </div>
 
@@ -365,44 +380,44 @@ export default function NotesPage(): React.JSX.Element {
           )}
         </div>
       ) : (
-        /* Data Loaded View: Desktop Table + Mobile List */
+        /* Data Loaded View: Desktop Table + Mobile Card List */
         <div className="space-y-4">
           {/* Desktop Table View (>= 768px) */}
-          <div className="hidden md:block overflow-hidden rounded-xl border border-border bg-card shadow-xs">
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-sm">
-                <thead className="border-b border-border bg-muted/40 text-xs font-semibold uppercase text-muted-foreground">
-                  <tr>
-                    <th scope="col" className="px-4 py-3.5">
+          <FadeIn className="hidden md:block">
+            <Card className="overflow-hidden shadow-xs">
+              <Table>
+                <TableHeader className="bg-muted/40">
+                  <TableRow className="hover:bg-transparent">
+                    <TableHead className="px-4 py-3.5 text-xs font-semibold uppercase text-muted-foreground">
                       Judul Catatan
-                    </th>
-                    <th scope="col" className="px-4 py-3.5">
+                    </TableHead>
+                    <TableHead className="px-4 py-3.5 text-xs font-semibold uppercase text-muted-foreground">
                       Mata Kuliah
-                    </th>
-                    <th scope="col" className="px-4 py-3.5">
+                    </TableHead>
+                    <TableHead className="px-4 py-3.5 text-xs font-semibold uppercase text-muted-foreground">
                       Tautan Materi
-                    </th>
-                    <th scope="col" className="px-4 py-3.5">
+                    </TableHead>
+                    <TableHead className="px-4 py-3.5 text-xs font-semibold uppercase text-muted-foreground">
                       Terakhir Diperbarui
-                    </th>
-                    <th scope="col" className="px-4 py-3.5 text-right w-14">
+                    </TableHead>
+                    <TableHead className="px-4 py-3.5 text-right w-14 text-xs font-semibold uppercase text-muted-foreground">
                       Aksi
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-border">
+                    </TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
                   {notes.map((note) => {
                     const isArchived = Boolean(
                       note.course?.archivedAt || note.course?.semester?.archivedAt
                     );
 
                     return (
-                      <tr
+                      <TableRow
                         key={note.id}
                         className="hover:bg-muted/30 transition-colors"
                       >
                         {/* Judul Catatan */}
-                        <td className="px-4 py-3.5 align-middle">
+                        <TableCell className="px-4 py-3.5 align-middle">
                           <div className="flex flex-col min-w-0 max-w-[360px]">
                             <Link
                               href={`/notes/${note.id}`}
@@ -417,10 +432,10 @@ export default function NotesPage(): React.JSX.Element {
                               )}
                             </Link>
                           </div>
-                        </td>
+                        </TableCell>
 
                         {/* Mata Kuliah */}
-                        <td className="px-4 py-3.5 align-middle whitespace-nowrap">
+                        <TableCell className="px-4 py-3.5 align-middle whitespace-nowrap">
                           {note.course ? (
                             <div className="flex items-center gap-1.5">
                               <Link
@@ -436,7 +451,7 @@ export default function NotesPage(): React.JSX.Element {
                               {isArchived && (
                                 <Badge
                                   variant="outline"
-                                  className="text-[10px] py-0 px-1 border-muted"
+                                  className="text-xs py-0 px-1.5 border-muted"
                                 >
                                   Arsip
                                 </Badge>
@@ -445,10 +460,10 @@ export default function NotesPage(): React.JSX.Element {
                           ) : (
                             <span className="text-xs text-muted-foreground">Mata Kuliah</span>
                           )}
-                        </td>
+                        </TableCell>
 
                         {/* Tautan Materi */}
-                        <td className="px-4 py-3.5 align-middle whitespace-nowrap">
+                        <TableCell className="px-4 py-3.5 align-middle whitespace-nowrap">
                           {note.material ? (
                             <Link
                               href={`/materials/${note.material.id}`}
@@ -463,17 +478,17 @@ export default function NotesPage(): React.JSX.Element {
                               — Tidak terhubung —
                             </span>
                           )}
-                        </td>
+                        </TableCell>
 
                         {/* Waktu Update */}
-                        <td className="px-4 py-3.5 align-middle whitespace-nowrap">
-                          <span className="text-xs text-foreground font-medium">
+                        <TableCell className="px-4 py-3.5 align-middle whitespace-nowrap">
+                          <span className="text-xs text-foreground font-medium tabular-nums">
                             {formatUserDateTime(note.updatedAt, timezone)}
                           </span>
-                        </td>
+                        </TableCell>
 
                         {/* Aksi Dropdown */}
-                        <td className="px-4 py-3.5 align-middle text-right whitespace-nowrap">
+                        <TableCell className="px-4 py-3.5 align-middle text-right whitespace-nowrap">
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                               <Button
@@ -515,117 +530,119 @@ export default function NotesPage(): React.JSX.Element {
                               </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
-                        </td>
-                      </tr>
+                        </TableCell>
+                      </TableRow>
                     );
                   })}
-                </tbody>
-              </table>
-            </div>
-          </div>
+                </TableBody>
+              </Table>
+            </Card>
+          </FadeIn>
 
-          {/* Mobile List View (< 768px): Flat Clean List without Nested Cards */}
-          <div className="rounded-xl border border-border bg-card shadow-xs overflow-hidden divide-y divide-border md:hidden">
+          {/* Mobile Card List (< 768px) */}
+          <StaggerGroup className="grid gap-3 md:hidden">
             {notes.map((note) => {
               const isArchived = Boolean(
                 note.course?.archivedAt || note.course?.semester?.archivedAt
               );
 
               return (
-                <div key={note.id} className="p-3.5 flex flex-col gap-2 hover:bg-muted/20 transition-colors">
-                  <div className="flex items-start justify-between gap-2">
-                    <Link
-                      href={`/notes/${note.id}`}
-                      className="text-sm font-semibold text-foreground hover:text-primary transition-colors break-words flex-1 min-w-0 flex items-start gap-1.5"
-                    >
-                      <FileText className="h-4 w-4 text-primary shrink-0 mt-0.5" />
-                      <span className="break-words">{note.title}</span>
-                      {note.isPinned && (
-                        <span title="Disematkan" aria-label="Disematkan" className="inline-flex text-primary shrink-0 mt-0.5">
-                          <Pin className="h-3 w-3 fill-current" />
+                <StaggerItem key={note.id}>
+                  <Card className="shadow-xs">
+                    <CardHeader className="p-3.5 pb-2 flex flex-row items-start justify-between gap-2 space-y-0">
+                      <CardTitle className="text-sm font-semibold flex-1 min-w-0">
+                        <Link
+                          href={`/notes/${note.id}`}
+                          className="text-foreground hover:text-primary transition-colors break-words flex items-start gap-1.5"
+                        >
+                          <FileText className="h-4 w-4 text-primary shrink-0 mt-0.5" />
+                          <span className="break-words">{note.title}</span>
+                          {note.isPinned && (
+                            <span title="Disematkan" aria-label="Disematkan" className="inline-flex text-primary shrink-0 mt-0.5">
+                              <Pin className="h-3 w-3 fill-current" />
+                            </span>
+                          )}
+                        </Link>
+                      </CardTitle>
+                      {isArchived && (
+                        <Badge
+                          variant="outline"
+                          className="text-xs shrink-0 border-muted"
+                        >
+                          Arsip
+                        </Badge>
+                      )}
+                    </CardHeader>
+
+                    <CardContent className="px-3.5 py-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
+                      {note.course && (
+                        <span className="flex items-center gap-1">
+                          <BookOpen className="h-3 w-3 shrink-0" />
+                          <span className="truncate max-w-[160px]">{note.course.name}</span>
                         </span>
                       )}
-                    </Link>
-                    {isArchived && (
-                      <Badge
-                        variant="outline"
-                        className="text-[10px] shrink-0 border-muted"
-                      >
-                        Arsip
-                      </Badge>
-                    )}
-                  </div>
 
-                  {/* Metadata Row */}
-                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
-                    {note.course && (
-                      <span className="flex items-center gap-1">
-                        <BookOpen className="h-3 w-3 shrink-0" />
-                        <span className="truncate max-w-[160px]">{note.course.name}</span>
+                      {note.material && (
+                        <span className="flex items-center gap-1 text-primary">
+                          <FileText className="h-3 w-3 shrink-0" />
+                          <span className="truncate max-w-[160px]">{note.material.title}</span>
+                        </span>
+                      )}
+                    </CardContent>
+
+                    <CardFooter className="p-3.5 pt-2 flex items-center justify-between border-t border-border/60 text-xs text-muted-foreground">
+                      <span className="flex items-center gap-1 tabular-nums">
+                        <Calendar className="h-3.5 w-3.5 shrink-0" />
+                        <span>{formatUserDateTime(note.updatedAt, timezone)}</span>
                       </span>
-                    )}
 
-                    {note.material && (
-                      <span className="flex items-center gap-1 text-primary">
-                        <FileText className="h-3 w-3 shrink-0" />
-                        <span className="truncate max-w-[160px]">{note.material.title}</span>
-                      </span>
-                    )}
-                  </div>
-
-                  {/* Footer Row */}
-                  <div className="mt-1 flex items-center justify-between border-t border-border/60 pt-2 text-xs text-muted-foreground">
-                    <span className="flex items-center gap-1">
-                      <Calendar className="h-3.5 w-3.5 shrink-0" />
-                      <span>{formatUserDateTime(note.updatedAt, timezone)}</span>
-                    </span>
-
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          size="icon-sm"
-                          className="h-8 w-8 relative after:absolute after:-inset-1.5 sm:after:hidden touch-manipulation text-muted-foreground hover:text-foreground shrink-0"
-                          aria-label={`Menu aksi untuk catatan "${note.title}"`}
-                        >
-                          <MoreVertical className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="w-44">
-                        <DropdownMenuItem asChild className="cursor-pointer">
-                          <Link href={`/notes/${note.id}`} className="flex items-center">
-                            <Pencil className="h-4 w-4 mr-2" />
-                            <span>Buka editor</span>
-                          </Link>
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onClick={() => handleTogglePin(note)}
-                          disabled={pinningId === note.id}
-                          className="cursor-pointer text-xs"
-                        >
-                          {pinningId === note.id ? (
-                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          ) : (
-                            <Pin className={`mr-2 h-4 w-4 ${note.isPinned ? 'fill-primary text-primary' : ''}`} />
-                          )}
-                          <span>{note.isPinned ? 'Lepas sematan' : 'Sematkan'}</span>
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem
-                          onClick={() => setDeletingNote(note)}
-                          disabled={isArchived}
-                          className="cursor-pointer text-destructive focus:text-destructive focus:bg-destructive/10"
-                        >
-                          <Trash2 className="h-4 w-4 mr-2" />
-                          <span>Hapus catatan</span>
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </div>
-                </div>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon-sm"
+                            className="h-8 w-8 relative after:absolute after:-inset-1.5 sm:after:hidden touch-manipulation text-muted-foreground hover:text-foreground shrink-0"
+                            aria-label={`Menu aksi untuk catatan "${note.title}"`}
+                          >
+                            <MoreVertical className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-44">
+                          <DropdownMenuItem asChild className="cursor-pointer">
+                            <Link href={`/notes/${note.id}`} className="flex items-center">
+                              <Pencil className="h-4 w-4 mr-2" />
+                              <span>Buka editor</span>
+                            </Link>
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => handleTogglePin(note)}
+                            disabled={pinningId === note.id}
+                            className="cursor-pointer text-xs"
+                          >
+                            {pinningId === note.id ? (
+                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            ) : (
+                              <Pin className={`mr-2 h-4 w-4 ${note.isPinned ? 'fill-primary text-primary' : ''}`} />
+                            )}
+                            <span>{note.isPinned ? 'Lepas sematan' : 'Sematkan'}</span>
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem
+                            onClick={() => setDeletingNote(note)}
+                            disabled={isArchived}
+                            className="cursor-pointer text-destructive focus:text-destructive focus:bg-destructive/10"
+                          >
+                            <Trash2 className="h-4 w-4 mr-2" />
+                            <span>Hapus catatan</span>
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </CardFooter>
+                  </Card>
+                </StaggerItem>
               );
             })}
-          </div>
+          </StaggerGroup>
         </div>
       )}
 
@@ -647,6 +664,6 @@ export default function NotesPage(): React.JSX.Element {
           fetchNotesList(true);
         }}
       />
-    </div>
+    </FadeIn>
   );
 }

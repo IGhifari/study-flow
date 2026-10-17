@@ -141,6 +141,7 @@ describe('Security Hardening Defense-in-Depth Tests', () => {
       const maliciousKeys = [
         '../../package.json',
         '../secret.txt',
+        '..\\..\\windows\\system32',
         '../../etc/passwd',
         'material/..\0/injected',
         '',
