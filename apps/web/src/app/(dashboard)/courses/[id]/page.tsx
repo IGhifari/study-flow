@@ -44,13 +44,9 @@ import {
 } from '@/lib/course-client';
 import {
   listAssignments,
-  createAssignment,
   updateAssignment,
 } from '@/lib/assignment-client';
-import {
-  listNotes,
-  createNote,
-} from '@/lib/note-client';
+import { listNotes } from '@/lib/note-client';
 import { listMaterials } from '@/lib/material-client';
 import { listSchedules } from '@/lib/schedule-client';
 import { CreateScheduleDialog } from '@/components/schedules/create-schedule-dialog';
@@ -60,18 +56,7 @@ import { MaterialUploadDialog } from '@/components/materials/material-upload-dia
 import { MaterialStatusBadge } from '@/components/materials/material-status-badge';
 import { getProfile } from '@/lib/auth-client';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import {
-  RadixSelect as Select,
-  SelectTrigger,
-  SelectValue,
-  SelectContent,
-  SelectItem,
-} from '@/components/ui/select';
-import { Textarea } from '@/components/ui/textarea';
-import { DateTimePicker } from '@/components/ui/date-picker';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import {
@@ -99,14 +84,8 @@ import {
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { EditCourseDialog } from '@/components/courses/edit-course-dialog';
 import { DeleteCourseDialog } from '@/components/courses/delete-course-dialog';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-} from '@/components/ui/dialog';
+import { CourseQuickAssignmentDialog } from '@/features/courses/components/course-quick-assignment-dialog';
+import { CourseQuickNoteDialog } from '@/features/courses/components/course-quick-note-dialog';
 
 export default function CourseDetailPage(): React.JSX.Element {
   const params = useParams();
@@ -149,22 +128,8 @@ export default function CourseDetailPage(): React.JSX.Element {
   // Dialogs
   const [isEditOpen, setIsEditOpen] = React.useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = React.useState(false);
-
-  // Modal Create Assignment for this Course
   const [isCreateAsgOpen, setIsCreateAsgOpen] = React.useState(false);
-  const [createAsgTitle, setCreateAsgTitle] = React.useState('');
-  const [createAsgDesc, setCreateAsgDesc] = React.useState('');
-  const [createAsgDueDate, setCreateAsgDueDate] = React.useState('');
-  const [createAsgPriority, setCreateAsgPriority] = React.useState<'LOW' | 'MEDIUM' | 'HIGH'>('MEDIUM');
-  const [createAsgError, setCreateAsgError] = React.useState<string | null>(null);
-  const [isSubmittingAsg, setIsSubmittingAsg] = React.useState(false);
-
-  // Modal Create Note for this Course
   const [isCreateNoteOpen, setIsCreateNoteOpen] = React.useState(false);
-  const [createNoteTitle, setCreateNoteTitle] = React.useState('');
-  const [createNoteContent, setCreateNoteContent] = React.useState('');
-  const [createNoteError, setCreateNoteError] = React.useState<string | null>(null);
-  const [isSubmittingNote, setIsSubmittingNote] = React.useState(false);
 
   const timezone = userProfile?.timezone || 'Asia/Jakarta';
 
@@ -332,65 +297,6 @@ export default function CourseDetailPage(): React.JSX.Element {
         next.delete(asg.id);
         return next;
       });
-    }
-  };
-
-  // Create Assignment directly for this course
-  const handleCreateAssignment = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!createAsgTitle.trim()) {
-      setCreateAsgError('Judul tugas wajib diisi');
-      return;
-    }
-    if (!createAsgDueDate) {
-      setCreateAsgError('Tenggat waktu wajib diisi');
-      return;
-    }
-
-    setIsSubmittingAsg(true);
-    setCreateAsgError(null);
-    try {
-      await createAssignment({
-        courseId,
-        title: createAsgTitle.trim(),
-        description: createAsgDesc.trim() || undefined,
-        dueDate: createAsgDueDate,
-        priority: createAsgPriority,
-        status: 'TODO',
-      });
-      setIsCreateAsgOpen(false);
-      setCreateAsgTitle('');
-      setCreateAsgDesc('');
-      setCreateAsgDueDate('');
-      fetchAssignmentsData();
-    } catch (err: any) {
-      setCreateAsgError(err.message || 'Gagal menambahkan tugas baru');
-    } finally {
-      setIsSubmittingAsg(false);
-    }
-  };
-
-  // Create Note directly for this course
-  const handleCreateNote = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!createNoteTitle.trim()) {
-      setCreateNoteError('Judul catatan wajib diisi');
-      return;
-    }
-
-    setIsSubmittingNote(true);
-    setCreateNoteError(null);
-    try {
-      const created = await createNote({
-        courseId,
-        title: createNoteTitle.trim(),
-        content: createNoteContent.trim() || '',
-      });
-      setIsCreateNoteOpen(false);
-      router.push(`/notes/${created.id}`);
-    } catch (err: any) {
-      setCreateNoteError(err.message || 'Gagal membuat catatan');
-      setIsSubmittingNote(false);
     }
   };
 
@@ -777,14 +683,7 @@ export default function CourseDetailPage(): React.JSX.Element {
               </div>
               <Button
                 size="standard"
-                onClick={() => {
-                  setCreateAsgTitle('');
-                  setCreateAsgDesc('');
-                  setCreateAsgDueDate('');
-                  setCreateAsgPriority('MEDIUM');
-                  setCreateAsgError(null);
-                  setIsCreateAsgOpen(true);
-                }}
+                onClick={() => setIsCreateAsgOpen(true)}
                 disabled={isArchived}
                 className="gap-1.5 shrink-0 self-start sm:self-auto"
               >
@@ -967,12 +866,7 @@ export default function CourseDetailPage(): React.JSX.Element {
               </div>
               <Button
                 size="standard"
-                onClick={() => {
-                  setCreateNoteTitle('');
-                  setCreateNoteContent('');
-                  setCreateNoteError(null);
-                  setIsCreateNoteOpen(true);
-                }}
+                onClick={() => setIsCreateNoteOpen(true)}
                 disabled={isArchived}
                 className="gap-1.5 shrink-0 self-start sm:self-auto"
               >
@@ -1227,169 +1121,23 @@ export default function CourseDetailPage(): React.JSX.Element {
       />
 
       {/* Modal Tambah Tugas untuk Mata Kuliah ini */}
-      <Dialog open={isCreateAsgOpen} onOpenChange={setIsCreateAsgOpen}>
-        <DialogContent className="sm:max-w-[480px] max-h-[90vh] overflow-y-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
-          <DialogHeader>
-            <DialogTitle>Tambah Tugas untuk {course.name}</DialogTitle>
-            <DialogDescription>
-              Catat tugas perkuliahan baru dengan tenggat waktu dan tingkat prioritas.
-            </DialogDescription>
-          </DialogHeader>
-
-          {createAsgError && (
-            <Alert variant="destructive">
-              <AlertCircle className="h-4 w-4" />
-              <AlertDescription>{createAsgError}</AlertDescription>
-            </Alert>
-          )}
-
-          <form noValidate onSubmit={handleCreateAssignment} className="space-y-4">
-            <div className="space-y-1.5">
-              <Label htmlFor="course-asg-title">Judul Tugas *</Label>
-              <Input
-                id="course-asg-title"
-                placeholder="Contoh: Makalah Pertemuan 4"
-                value={createAsgTitle}
-                onChange={(e) => setCreateAsgTitle(e.target.value)}
-                disabled={isSubmittingAsg}
-              />
-            </div>
-
-            <div className="space-y-1.5">
-              <Label htmlFor="course-asg-due">Tenggat Waktu *</Label>
-              <DateTimePicker
-                id="course-asg-due"
-                value={createAsgDueDate}
-                onChange={setCreateAsgDueDate}
-                disabled={isSubmittingAsg}
-                required
-                timezone={timezone}
-              />
-              <p className="text-xs text-muted-foreground">
-                Zona waktu profil: <strong className="text-foreground">{timezone}</strong>. Jika jam tidak ditentukan, deadline otomatis diatur ke 23.59.
-              </p>
-            </div>
-
-            <div className="space-y-1.5">
-              <Label htmlFor="course-asg-priority">Prioritas *</Label>
-              <Select
-                value={createAsgPriority}
-                onValueChange={(val) => setCreateAsgPriority(val as any)}
-                disabled={isSubmittingAsg}
-              >
-                <SelectTrigger id="course-asg-priority" className="w-full">
-                  <SelectValue placeholder="Pilih prioritas" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="LOW">Rendah</SelectItem>
-                  <SelectItem value="MEDIUM">Sedang</SelectItem>
-                  <SelectItem value="HIGH">Tinggi</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-1.5">
-              <Label htmlFor="course-asg-desc">Deskripsi (Opsional)</Label>
-              <Textarea
-                id="course-asg-desc"
-                placeholder="Petunjuk tugas, tautan pengumpulan, atau catatan tambahan..."
-                value={createAsgDesc}
-                onChange={(e) => setCreateAsgDesc(e.target.value)}
-                disabled={isSubmittingAsg}
-                rows={3}
-              />
-            </div>
-
-            <DialogFooter className="pt-2 flex flex-col-reverse sm:flex-row gap-2 sm:justify-end">
-              <Button
-                type="button"
-                variant="outline"
-                size="standard"
-                onClick={() => setIsCreateAsgOpen(false)}
-                disabled={isSubmittingAsg}
-              >
-                Batal
-              </Button>
-              <Button type="submit" size="standard" disabled={isSubmittingAsg}>
-                {isSubmittingAsg ? (
-                  <>
-                    <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
-                    Menyimpan...
-                  </>
-                ) : (
-                  'Simpan Tugas'
-                )}
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
+      <CourseQuickAssignmentDialog
+        open={isCreateAsgOpen}
+        onOpenChange={setIsCreateAsgOpen}
+        courseId={courseId}
+        courseName={course.name}
+        timezone={timezone}
+        onSuccess={fetchAssignmentsData}
+      />
 
       {/* Modal Tambah Catatan untuk Mata Kuliah ini */}
-      <Dialog open={isCreateNoteOpen} onOpenChange={setIsCreateNoteOpen}>
-        <DialogContent className="sm:max-w-[480px] max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Buat Catatan untuk {course.name}</DialogTitle>
-            <DialogDescription>
-              Tulis catatan belajar baru yang terhubung ke mata kuliah ini.
-            </DialogDescription>
-          </DialogHeader>
-
-          {createNoteError && (
-            <Alert variant="destructive">
-              <AlertCircle className="h-4 w-4" />
-              <AlertDescription>{createNoteError}</AlertDescription>
-            </Alert>
-          )}
-
-          <form noValidate onSubmit={handleCreateNote} className="space-y-4">
-            <div className="space-y-1.5">
-              <Label htmlFor="course-note-title">Judul Catatan *</Label>
-              <Input
-                id="course-note-title"
-                placeholder="Contoh: Rangkuman Bab 1 Dasar Teori"
-                value={createNoteTitle}
-                onChange={(e) => setCreateNoteTitle(e.target.value)}
-                disabled={isSubmittingNote}
-              />
-            </div>
-
-            <div className="space-y-1.5">
-              <Label htmlFor="course-note-content">Konten Awal Markdown (Opsional)</Label>
-              <Textarea
-                id="course-note-content"
-                placeholder="# Topik Perkuliahan&#10;&#10;Tulis poin penting perkuliahan di sini..."
-                value={createNoteContent}
-                onChange={(e) => setCreateNoteContent(e.target.value)}
-                disabled={isSubmittingNote}
-                rows={4}
-              />
-            </div>
-
-            <DialogFooter className="pt-2 flex flex-col-reverse sm:flex-row gap-2 sm:justify-end">
-              <Button
-                type="button"
-                variant="outline"
-                size="standard"
-                onClick={() => setIsCreateNoteOpen(false)}
-                disabled={isSubmittingNote}
-              >
-                Batal
-              </Button>
-              <Button type="submit" size="standard" disabled={isSubmittingNote}>
-                {isSubmittingNote ? (
-                  <>
-                    <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
-                    Membuat...
-                  </>
-                ) : (
-                  'Buat & Buka Editor'
-                )}
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
+      <CourseQuickNoteDialog
+        open={isCreateNoteOpen}
+        onOpenChange={setIsCreateNoteOpen}
+        courseId={courseId}
+        courseName={course.name}
+        onNoteCreated={(noteId) => router.push(`/notes/${noteId}`)}
+      />
 
       {/* Modal Tambah Jadwal untuk Mata Kuliah ini */}
       {course && (

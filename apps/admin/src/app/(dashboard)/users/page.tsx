@@ -48,6 +48,8 @@ import { Card } from '@/components/ui/card';
 import { FadeIn } from '@/components/ui/motion';
 import { fetchAdminUsers } from '@/lib/admin-api';
 import { AdminUserListItem, AdminUserListResponse } from '@studyflow/shared';
+import { downloadCsvFile } from '@/lib/admin-formatters';
+import { AdminPagination } from '@/components/admin-pagination';
 
 function UsersTableSkeleton() {
   return (
@@ -134,33 +136,20 @@ function AdminUsersContent() {
         'Tanggal Bergabung',
       ];
 
-      const escapeCsv = (str: string | null | undefined) => {
-        if (str === null || str === undefined) return '""';
-        const escaped = String(str).replace(/"/g, '""');
-        return `"${escaped}"`;
-      };
-
       const rows = allUsers.map((u) => [
-        escapeCsv(u.id),
-        escapeCsv(u.name),
-        escapeCsv(u.email),
-        escapeCsv(u.role),
-        escapeCsv(u.emailVerifiedAt ? 'Terverifikasi' : 'Belum Verifikasi'),
-        escapeCsv(u.emailVerifiedAt ? new Date(u.emailVerifiedAt).toLocaleString('id-ID') : '-'),
-        escapeCsv(new Date(u.createdAt).toLocaleString('id-ID')),
+        u.id,
+        u.name,
+        u.email,
+        u.role,
+        u.emailVerifiedAt ? 'Terverifikasi' : 'Belum Verifikasi',
+        u.emailVerifiedAt ? new Date(u.emailVerifiedAt).toLocaleString('id-ID') : '-',
+        new Date(u.createdAt).toLocaleString('id-ID'),
       ]);
 
-      const csvContent =
-        '\uFEFF' + [headers.join(','), ...rows.map((r) => r.join(','))].join('\r\n');
-      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `studyflow-pengguna-${new Date().toISOString().split('T')[0]}.csv`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
+      downloadCsvFile(
+        `studyflow-pengguna-${new Date().toISOString().split('T')[0]}.csv`,
+        [headers, ...rows]
+      );
     } catch (err: any) {
       console.error('Failed to export users CSV:', err);
     } finally {
@@ -567,49 +556,16 @@ function AdminUsersContent() {
         </div>
 
         {/* Pagination Footer */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-t border-border px-4 py-3 bg-card text-xs text-muted-foreground tabular-nums">
-          <div>
-            Menampilkan{' '}
-            <span className="font-semibold text-foreground">
-              {data && data.items.length > 0 ? (page - 1) * limit + 1 : 0}
-            </span>{' '}
-            hingga{' '}
-            <span className="font-semibold text-foreground">
-              {data ? Math.min(page * limit, totalItems) : 0}
-            </span>{' '}
-            dari{' '}
-            <span className="font-semibold text-foreground">
-              {totalItems.toLocaleString('id-ID')}
-            </span>{' '}
-            pengguna
-          </div>
-
-          <div className="flex items-center gap-2 self-end sm:self-auto">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setPage((p) => Math.max(1, p - 1))}
-              disabled={page <= 1 || isLoading}
-              className="h-8 px-2.5 gap-1"
-            >
-              <ChevronLeft className="h-4 w-4" />
-              <span>Sebelumnya</span>
-            </Button>
-            <span className="px-2 font-medium text-foreground tabular-nums">
-              {page} / {totalPages}
-            </span>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-              disabled={page >= totalPages || isLoading}
-              className="h-8 px-2.5 gap-1"
-            >
-              <span>Berikutnya</span>
-              <ChevronRight className="h-4 w-4" />
-            </Button>
-          </div>
-        </div>
+        <AdminPagination
+          page={page}
+          limit={limit}
+          totalItems={totalItems}
+          totalPages={totalPages}
+          currentItemsCount={data?.items.length ?? 0}
+          itemLabel="pengguna"
+          isLoading={isLoading}
+          onPageChange={setPage}
+        />
       </Card>
     </FadeIn>
   );

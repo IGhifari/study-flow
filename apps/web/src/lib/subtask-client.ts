@@ -5,16 +5,12 @@ import {
   SubtaskListResponseSchema,
   SubtaskDetailResponseSchema,
 } from '@studyflow/shared';
+import { authFetch } from './auth-client';
 
 export async function listSubtasks(assignmentId: string): Promise<AssignmentSubtask[]> {
-  const res = await fetch(`/api/assignments/${assignmentId}/subtasks`, {
-    headers: {
-      Accept: 'application/json',
-    },
-    credentials: 'include',
-  });
+  const res = await authFetch(`/api/assignments/${assignmentId}/subtasks`);
 
-  const data = await res.json();
+  const data = await res.json().catch(() => ({}));
   if (!res.ok) {
     throw new Error(data.error?.message || data.message || 'Gagal memuat subtugas');
   }
@@ -31,17 +27,12 @@ export async function createSubtask(
   assignmentId: string,
   input: CreateSubtaskInput
 ): Promise<AssignmentSubtask> {
-  const res = await fetch(`/api/assignments/${assignmentId}/subtasks`, {
+  const res = await authFetch(`/api/assignments/${assignmentId}/subtasks`, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Accept: 'application/json',
-    },
-    credentials: 'include',
     body: JSON.stringify(input),
   });
 
-  const data = await res.json();
+  const data = await res.json().catch(() => ({}));
   if (!res.ok) {
     throw new Error(data.error?.message || data.message || 'Gagal menambahkan subtugas');
   }
@@ -59,17 +50,12 @@ export async function updateSubtask(
   subtaskId: string,
   input: UpdateSubtaskInput
 ): Promise<AssignmentSubtask> {
-  const res = await fetch(`/api/assignments/${assignmentId}/subtasks/${subtaskId}`, {
+  const res = await authFetch(`/api/assignments/${assignmentId}/subtasks/${subtaskId}`, {
     method: 'PATCH',
-    headers: {
-      'Content-Type': 'application/json',
-      Accept: 'application/json',
-    },
-    credentials: 'include',
     body: JSON.stringify(input),
   });
 
-  const data = await res.json();
+  const data = await res.json().catch(() => ({}));
   if (!res.ok) {
     throw new Error(data.error?.message || data.message || 'Gagal memperbarui subtugas');
   }
@@ -86,15 +72,11 @@ export async function deleteSubtask(
   assignmentId: string,
   subtaskId: string
 ): Promise<void> {
-  const res = await fetch(`/api/assignments/${assignmentId}/subtasks/${subtaskId}`, {
+  const res = await authFetch(`/api/assignments/${assignmentId}/subtasks/${subtaskId}`, {
     method: 'DELETE',
-    headers: {
-      Accept: 'application/json',
-    },
-    credentials: 'include',
   });
 
-  const data = await res.json();
+  const data = await res.json().catch(() => ({}));
   if (!res.ok) {
     throw new Error(data.error?.message || data.message || 'Gagal menghapus subtugas');
   }

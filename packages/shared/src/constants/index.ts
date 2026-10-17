@@ -60,3 +60,23 @@ export const AI_QUIZ_LIMITS = {
   minCharacters: 50,
 } as const;
 
+export interface TimezoneOption {
+  value: string;
+  label: string;
+}
+
+export const TIMEZONE_OPTIONS: readonly TimezoneOption[] = [
+  { value: 'Asia/Jakarta', label: 'WIB — Asia/Jakarta (UTC+7, Indonesia Barat)' },
+  { value: 'Asia/Makassar', label: 'WITA — Asia/Makassar (UTC+8, Indonesia Tengah)' },
+  { value: 'Asia/Jayapura', label: 'WIT — Asia/Jayapura (UTC+9, Indonesia Timur)' },
+  { value: 'Asia/Pontianak', label: 'WIB — Asia/Pontianak (UTC+7, Kalimantan Barat)' },
+  { value: 'Asia/Singapore', label: 'SGT — Asia/Singapore (UTC+8)' },
+  { value: 'Asia/Tokyo', label: 'JST — Asia/Tokyo (UTC+9)' },
+  { value: 'UTC', label: 'UTC — Universal Time Coordinated' },
+] as const;
+
+export const PRIORITY_LABELS: Record<'HIGH' | 'MEDIUM' | 'LOW', string> = {
+  HIGH: 'Tinggi',
+  MEDIUM: 'Sedang',
+  LOW: 'Rendah',
+} as const;

@@ -51,13 +51,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-} from '@/components/ui/sheet';
 import { FadeIn, StaggerGroup, StaggerItem } from '@/components/ui/motion';
 import {
   fetchAdminJobs,
@@ -71,133 +64,16 @@ import {
   AdminQueuesSummaryResponse,
   AdminJobType,
   AdminJobStatus,
-  AdminQueueStatus,
 } from '@studyflow/shared';
-
-function formatDuration(ms: number | null): string {
-  if (ms === null || ms === undefined || ms < 0) return '-';
-  if (ms < 1000) return `${ms}ms`;
-  const sec = (ms / 1000).toFixed(1);
-  return `${sec}s`;
-}
-
-function formatDateTimeWithTz(isoString: string | null): string {
-  if (!isoString) return '-';
-  try {
-    const d = new Date(isoString);
-    return `${d.toLocaleString('id-ID', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit',
-    })} WIB`;
-  } catch {
-    return isoString;
-  }
-}
-
-function getJobTypeLabel(type: AdminJobType): string {
-  switch (type) {
-    case 'DOCUMENT_EXTRACTION':
-      return 'Ekstraksi Dokumen';
-    case 'DOCUMENT_CLEANUP':
-      return 'Pembersihan Dokumen';
-    case 'AI_SUMMARY_GENERATION':
-      return 'Ringkasan AI';
-    case 'AI_FLASHCARD_GENERATION':
-      return 'Flashcard AI';
-    case 'AI_QUIZ_GENERATION':
-      return 'Kuis AI';
-    default:
-      return type;
-  }
-}
-
-function renderDatabaseStatusBadge(status: AdminJobStatus) {
-  switch (status) {
-    case 'PENDING':
-      return (
-        <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950 dark:text-amber-300 dark:border-amber-800 text-xs gap-1">
-          <Clock className="h-3 w-3" />
-          Menunggu
-        </Badge>
-      );
-    case 'PROCESSING':
-      return (
-        <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950 dark:text-blue-300 dark:border-blue-800 text-xs gap-1">
-          <Activity className="h-3 w-3 animate-pulse" />
-          Diproses
-        </Badge>
-      );
-    case 'COMPLETED':
-      return (
-        <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950 dark:text-emerald-300 dark:border-emerald-800 text-xs gap-1">
-          <CheckCircle2 className="h-3 w-3" />
-          Selesai
-        </Badge>
-      );
-    case 'FAILED':
-      return (
-        <Badge variant="danger" className="text-xs gap-1">
-          <XCircle className="h-3 w-3" />
-          Gagal
-        </Badge>
-      );
-    default:
-      return <Badge variant="secondary">{status}</Badge>;
-  }
-}
-
-function renderQueueStatusBadge(queueStatus: AdminQueueStatus) {
-  switch (queueStatus) {
-    case 'waiting':
-      return (
-        <Badge variant="outline" className="text-xs bg-muted/60 text-muted-foreground border-border">
-          Antrean: Menunggu
-        </Badge>
-      );
-    case 'active':
-      return (
-        <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950 dark:text-blue-300">
-          Antrean: Aktif
-        </Badge>
-      );
-    case 'delayed':
-      return (
-        <Badge variant="outline" className="text-xs bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950 dark:text-amber-300">
-          Antrean: Tertunda
-        </Badge>
-      );
-    case 'completed':
-      return (
-        <Badge variant="outline" className="text-xs bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950 dark:text-emerald-300">
-          Antrean: Selesai
-        </Badge>
-      );
-    case 'failed':
-      return (
-        <Badge variant="outline" className="text-xs bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950 dark:text-rose-300">
-          Antrean: Gagal
-        </Badge>
-      );
-    case 'not_found':
-      return (
-        <Badge variant="secondary" className="text-xs font-normal">
-          Dibersihkan dari Memori
-        </Badge>
-      );
-    case 'unavailable':
-      return (
-        <Badge variant="outline" className="text-xs bg-muted text-muted-foreground">
-          Tidak Tersedia
-        </Badge>
-      );
-    default:
-      return <Badge variant="secondary">{queueStatus}</Badge>;
-  }
-}
+import {
+  downloadCsvFile,
+  formatJobDuration,
+  formatLocalDateTime,
+  getJobTypeLabel,
+} from '@/lib/admin-formatters';
+import { JobStatusBadge } from '@/components/jobs/job-status-badge';
+import { JobDetailSheet } from '@/components/jobs/job-detail-sheet';
+import { AdminPagination } from '@/components/admin-pagination';
 
 function JobsSkeleton() {
   return (
@@ -256,8 +132,6 @@ function AdminJobsContent() {
   const [isDetailLoading, setIsDetailLoading] = React.useState(false);
   const [detailError, setDetailError] = React.useState<string | null>(null);
 
-  // Copy feedback state
-  const [copiedKey, setCopiedKey] = React.useState<string | null>(null);
   const [isExporting, setIsExporting] = React.useState(false);
 
   const handleExportJobsCsv = async () => {
@@ -301,59 +175,36 @@ function AdminJobsContent() {
         'Waktu Selesai',
       ];
 
-      const escapeCsv = (str: string | number | null | undefined) => {
-        if (str === null || str === undefined) return '""';
-        const escaped = String(str).replace(/"/g, '""');
-        return `"${escaped}"`;
-      };
-
       const rows = allJobs.map((j) => [
-        escapeCsv(j.id),
-        escapeCsv(j.type),
-        escapeCsv(j.status),
-        escapeCsv(j.userId),
-        escapeCsv(j.userName),
-        escapeCsv(j.materialId || '-'),
-        escapeCsv(j.attempts),
-        escapeCsv(j.maxAttempts),
-        escapeCsv(j.durationMs !== null ? j.durationMs : '-'),
-        escapeCsv(j.errorCode || '-'),
-        escapeCsv(j.safeErrorMessage || '-'),
-        escapeCsv(new Date(j.createdAt).toLocaleString('id-ID')),
-        escapeCsv(j.startedAt ? new Date(j.startedAt).toLocaleString('id-ID') : '-'),
-        escapeCsv(
-          j.completedAt
-            ? new Date(j.completedAt).toLocaleString('id-ID')
-            : j.failedAt
-            ? new Date(j.failedAt).toLocaleString('id-ID')
-            : '-'
-        ),
+        j.id,
+        j.type,
+        j.status,
+        j.userId,
+        j.userName,
+        j.materialId || '-',
+        j.attempts,
+        j.maxAttempts,
+        j.durationMs !== null ? j.durationMs : '-',
+        j.errorCode || '-',
+        j.safeErrorMessage || '-',
+        new Date(j.createdAt).toLocaleString('id-ID'),
+        j.startedAt ? new Date(j.startedAt).toLocaleString('id-ID') : '-',
+        j.completedAt
+          ? new Date(j.completedAt).toLocaleString('id-ID')
+          : j.failedAt
+          ? new Date(j.failedAt).toLocaleString('id-ID')
+          : '-',
       ]);
 
-      const csvContent =
-        '\uFEFF' + [headers.join(','), ...rows.map((r) => r.join(','))].join('\r\n');
-      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `studyflow-jobs-${new Date().toISOString().split('T')[0]}.csv`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
+      downloadCsvFile(
+        `studyflow-jobs-${new Date().toISOString().split('T')[0]}.csv`,
+        [headers, ...rows]
+      );
     } catch (err: any) {
       console.error('Failed to export jobs CSV:', err);
     } finally {
       setIsExporting(false);
     }
-  };
-
-  const handleCopy = (text: string, key: string) => {
-    navigator.clipboard.writeText(text);
-    setCopiedKey(key);
-    setTimeout(() => {
-      setCopiedKey((curr) => (curr === key ? null : curr));
-    }, 2000);
   };
 
   // Debounce search input
@@ -781,16 +632,16 @@ function AdminJobsContent() {
                       </Link>
                     </TableCell>
                     <TableCell>
-                      {renderDatabaseStatusBadge(job.status)}
+                      <JobStatusBadge status={job.status} />
                     </TableCell>
                     <TableCell className="text-xs text-muted-foreground font-mono tabular-nums">
                       {job.attempts} / {job.maxAttempts}
                     </TableCell>
                     <TableCell className="text-xs text-muted-foreground font-mono tabular-nums">
-                      {formatDuration(job.durationMs)}
+                      {formatJobDuration(job.durationMs)}
                     </TableCell>
                     <TableCell className="text-xs text-muted-foreground whitespace-nowrap tabular-nums">
-                      {formatDateTimeWithTz(job.createdAt)}
+                      {formatLocalDateTime(job.createdAt, true)}
                     </TableCell>
                     <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
                       <Button
@@ -827,233 +678,27 @@ function AdminJobsContent() {
         </div>
 
         {/* Pagination Footer */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-t border-border px-4 py-3 bg-card text-xs text-muted-foreground tabular-nums">
-          <div>
-            Menampilkan{' '}
-            <span className="font-semibold text-foreground">
-              {jobsData && jobsData.items.length > 0 ? (page - 1) * limit + 1 : 0}
-            </span>{' '}
-            hingga{' '}
-            <span className="font-semibold text-foreground">
-              {jobsData ? Math.min(page * limit, totalItems) : 0}
-            </span>{' '}
-            dari{' '}
-            <span className="font-semibold text-foreground">
-              {totalItems.toLocaleString('id-ID')}
-            </span>{' '}
-            pekerjaan
-          </div>
-
-          <div className="flex items-center gap-2 self-end sm:self-auto">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setPage((p) => Math.max(1, p - 1))}
-              disabled={page <= 1 || isJobsLoading}
-              className="h-8 px-2.5 gap-1"
-            >
-              <ChevronLeft className="h-4 w-4" />
-              <span>Sebelumnya</span>
-            </Button>
-            <span className="px-2 font-medium text-foreground tabular-nums">
-              {page} / {totalPages}
-            </span>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-              disabled={page >= totalPages || isJobsLoading}
-              className="h-8 px-2.5 gap-1"
-            >
-              <span>Berikutnya</span>
-              <ChevronRight className="h-4 w-4" />
-            </Button>
-          </div>
-        </div>
+        <AdminPagination
+          page={page}
+          limit={limit}
+          totalItems={totalItems}
+          totalPages={totalPages}
+          currentItemsCount={jobsData?.items.length ?? 0}
+          itemLabel="pekerjaan"
+          isLoading={isJobsLoading}
+          onPageChange={setPage}
+        />
       </Card>
 
       {/* Slide-over Sheet for Job Operational Detail */}
-      <Sheet open={!!selectedJobId} onOpenChange={(open) => !open && setSelectedJobId(null)}>
-        <SheetContent side="right" className="sm:max-w-md w-full overflow-y-auto">
-          <SheetHeader className="text-left border-b border-border pb-4">
-            <SheetTitle className="text-lg flex items-center gap-2">
-              <Activity className="h-5 w-5 text-primary" />
-              Detail Pekerjaan Operasional
-            </SheetTitle>
-            <SheetDescription className="text-xs">
-              Informasi pelacakan teknis dan riwayat eksekusi pekerjaan secara aman.
-            </SheetDescription>
-          </SheetHeader>
-
-          {isDetailLoading ? (
-            <div className="py-6 space-y-4">
-              <Skeleton className="h-6 w-32" />
-              <Skeleton className="h-20 w-full" />
-              <Skeleton className="h-20 w-full" />
-              <Skeleton className="h-20 w-full" />
-            </div>
-          ) : detailError ? (
-            <div className="py-6 space-y-4">
-              <Alert variant="destructive">
-                <AlertCircle className="h-4 w-4" />
-                <AlertTitle>Gagal Memuat Detail</AlertTitle>
-                <AlertDescription className="text-xs mt-1">{detailError}</AlertDescription>
-              </Alert>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => selectedJobId && setSelectedJobId(selectedJobId)}
-                className="w-full"
-              >
-                Coba Lagi
-              </Button>
-            </div>
-          ) : jobDetail ? (
-            <div className="py-4 space-y-4 text-xs">
-              {/* ID Pekerjaan */}
-              <div className="rounded-md border border-border p-3 bg-muted/20">
-                <span className="text-muted-foreground font-medium block">ID Pekerjaan</span>
-                <div className="flex items-center justify-between gap-2 mt-1">
-                  <span className="font-mono text-xs text-foreground select-all break-all">
-                    {jobDetail.id}
-                  </span>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-6 px-1.5 text-xs gap-1 shrink-0"
-                    onClick={() => handleCopy(jobDetail.id, 'jobId')}
-                  >
-                    {copiedKey === 'jobId' ? (
-                      <Check className="h-3 w-3 text-emerald-500" />
-                    ) : (
-                      <Copy className="h-3 w-3" />
-                    )}
-                  </Button>
-                </div>
-              </div>
-
-              {/* Status Section */}
-              <div className="rounded-md border border-border p-3 bg-muted/20 space-y-2">
-                <span className="text-muted-foreground font-medium block">Status Operasional</span>
-                <div className="flex flex-col gap-1.5">
-                  <div className="flex items-center justify-between">
-                    <span className="text-muted-foreground">Status Database (Permanen):</span>
-                    {renderDatabaseStatusBadge(jobDetail.status)}
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-muted-foreground">Status Antrean (BullMQ):</span>
-                    {renderQueueStatusBadge(jobDetail.queueStatus)}
-                  </div>
-                </div>
-                <p className="text-xs text-muted-foreground/80 pt-1 border-t border-border/50">
-                  Status antrean menandakan kondisi transien pada Redis. Jika job telah melewati batas retensi, antrean menampilkan &quot;Dibersihkan dari Memori&quot;.
-                </p>
-              </div>
-
-              {/* Identitas Pengguna */}
-              <div className="rounded-md border border-border p-3 bg-muted/20 space-y-1.5">
-                <span className="text-muted-foreground font-medium block">Pengguna Terkait</span>
-                <div className="flex items-center justify-between">
-                  <span className="text-foreground font-semibold">{jobDetail.userName}</span>
-                  <Button variant="outline" size="sm" asChild className="h-6 px-2 text-xs">
-                    <Link href={`/users/${jobDetail.userId}`}>
-                      <User className="h-3 w-3 mr-1" />
-                      Profil
-                    </Link>
-                  </Button>
-                </div>
-                <div className="flex items-center justify-between text-muted-foreground text-xs">
-                  <span className="font-mono truncate max-w-[200px]">{jobDetail.userId}</span>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-5 px-1 text-xs"
-                    onClick={() => handleCopy(jobDetail.userId, 'userId')}
-                  >
-                    {copiedKey === 'userId' ? 'Disalin' : 'Salin ID'}
-                  </Button>
-                </div>
-              </div>
-
-              {/* Job Metadata */}
-              <div className="grid grid-cols-2 gap-2">
-                <div className="rounded-md border border-border p-2.5 bg-muted/20">
-                  <span className="text-muted-foreground block text-xs">Jenis Pekerjaan</span>
-                  <span className="font-semibold text-foreground mt-0.5 block">
-                    {getJobTypeLabel(jobDetail.type)}
-                  </span>
-                </div>
-                <div className="rounded-md border border-border p-2.5 bg-muted/20">
-                  <span className="text-muted-foreground block text-xs">Attempt</span>
-                  <span className="font-semibold text-foreground font-mono tabular-nums mt-0.5 block">
-                    {jobDetail.attempts} / {jobDetail.maxAttempts}
-                  </span>
-                </div>
-              </div>
-
-              {/* Timestamps */}
-              <div className="rounded-md border border-border p-3 bg-muted/20 space-y-1.5">
-                <span className="text-muted-foreground font-medium block">Jejak Waktu</span>
-                <div className="space-y-1 text-xs tabular-nums">
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Waktu Dibuat:</span>
-                    <span className="font-mono text-foreground">
-                      {formatDateTimeWithTz(jobDetail.createdAt)}
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Waktu Mulai:</span>
-                    <span className="font-mono text-foreground">
-                      {formatDateTimeWithTz(jobDetail.startedAt)}
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Waktu Selesai:</span>
-                    <span className="font-mono text-foreground">
-                      {formatDateTimeWithTz(jobDetail.completedAt)}
-                    </span>
-                  </div>
-                  {jobDetail.failedAt && (
-                    <div className="flex justify-between text-destructive">
-                      <span>Waktu Gagal:</span>
-                      <span className="font-mono">
-                        {formatDateTimeWithTz(jobDetail.failedAt)}
-                      </span>
-                    </div>
-                  )}
-                  <div className="flex justify-between border-t border-border/50 pt-1 mt-1">
-                    <span className="text-muted-foreground font-medium">Durasi Eksekusi:</span>
-                    <span className="font-mono font-semibold text-foreground">
-                      {formatDuration(jobDetail.durationMs)}
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Error Information (if failed) */}
-              {jobDetail.status === 'FAILED' && (
-                <div className="rounded-md border border-destructive/30 bg-destructive/10 p-3 space-y-1 text-xs text-destructive">
-                  <div className="font-semibold flex items-center gap-1.5">
-                    <AlertCircle className="h-4 w-4" />
-                    <span>Kode Kesalahan: {jobDetail.errorCode || 'UNKNOWN_ERROR'}</span>
-                  </div>
-                  <p className="text-xs text-foreground/80 mt-1 leading-relaxed">
-                    {jobDetail.safeErrorMessage || 'Terjadi kegagalan operasional saat mengeksekusi pekerjaan.'}
-                  </p>
-                </div>
-              )}
-
-              {/* Privacy Notice */}
-              <div className="rounded-md bg-muted/50 p-2.5 text-xs text-muted-foreground leading-relaxed">
-                <span className="font-semibold block text-foreground mb-0.5">
-                  Proteksi Privasi Pengguna:
-                </span>
-                Isi dokumen PDF, teks prompt, respons model AI mentah, kredensial, dan URL unduhan materi dilindungi secara ketat dan tidak diekspos melalui portal administrator.
-              </div>
-            </div>
-          ) : null}
-        </SheetContent>
-      </Sheet>
+      <JobDetailSheet
+        selectedJobId={selectedJobId}
+        onClose={() => setSelectedJobId(null)}
+        onRetry={() => selectedJobId && setSelectedJobId(selectedJobId)}
+        isDetailLoading={isDetailLoading}
+        detailError={detailError}
+        jobDetail={jobDetail}
+      />
     </FadeIn>
   );
 }

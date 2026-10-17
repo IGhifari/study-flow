@@ -29,6 +29,7 @@ import {
   formatFileSize,
   StorageUsageResponse,
   UserProfile,
+  TIMEZONE_OPTIONS,
 } from '@studyflow/shared';
 import {
   apiUpdateProfile,
@@ -73,16 +74,6 @@ import {
 import { Progress } from '@/components/ui/progress';
 import { FadeIn, StaggerGroup, StaggerItem } from '@/components/ui/motion';
 import { ThemeToggle } from '@/components/theme-toggle';
-
-const TIMEZONE_OPTIONS = [
-  { value: 'Asia/Jakarta', label: 'WIB — Asia/Jakarta (UTC+7, Indonesia Barat)' },
-  { value: 'Asia/Makassar', label: 'WITA — Asia/Makassar (UTC+8, Indonesia Tengah)' },
-  { value: 'Asia/Jayapura', label: 'WIT — Asia/Jayapura (UTC+9, Indonesia Timur)' },
-  { value: 'Asia/Pontianak', label: 'WIB — Asia/Pontianak (UTC+7, Kalimantan Barat)' },
-  { value: 'Asia/Singapore', label: 'SGT — Asia/Singapore (UTC+8)' },
-  { value: 'Asia/Tokyo', label: 'JST — Asia/Tokyo (UTC+9)' },
-  { value: 'UTC', label: 'UTC — Universal Time Coordinated' },
-];
 
 function SettingsContent(): React.JSX.Element {
   const router = useRouter();

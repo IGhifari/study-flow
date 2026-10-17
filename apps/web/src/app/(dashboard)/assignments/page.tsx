@@ -70,59 +70,8 @@ import {
 import { CreateTaskDialog } from '@/components/assignments/create-task-dialog';
 import { EditTaskDialog } from '@/components/assignments/edit-task-dialog';
 import { DeleteTaskDialog } from '@/components/assignments/delete-task-dialog';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-} from '@/components/ui/dialog';
-
-function getDeadlineStatusInfo(asg: Assignment, timezone: string) {
-  if (asg.status === 'DONE') {
-    return {
-      type: 'DONE' as const,
-      label: 'Selesai',
-      icon: CheckCircle2,
-      badgeClass:
-        'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20',
-    };
-  }
-
-  if (asg.isOverdue) {
-    return {
-      type: 'OVERDUE' as const,
-      label: 'Terlambat',
-      icon: AlertTriangle,
-      badgeClass:
-        'bg-destructive/10 text-destructive border border-destructive/20 font-semibold',
-    };
-  }
-
-  try {
-    const { startOfToday, endOfToday } = getUserTodayRange(new Date(), timezone);
-    const dueTime = new Date(asg.dueDate).getTime();
-    if (dueTime >= startOfToday.getTime() && dueTime <= endOfToday.getTime()) {
-      return {
-        type: 'TODAY' as const,
-        label: 'Hari ini',
-        icon: Clock,
-        badgeClass:
-          'bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/20 font-medium',
-      };
-    }
-  } catch {
-    // fallback if calculation fails
-  }
-
-  return {
-    type: 'UPCOMING' as const,
-    label: 'Mendatang',
-    icon: Calendar,
-    badgeClass: 'bg-muted/80 text-muted-foreground border border-border',
-  };
-}
+import { getDeadlineStatusInfo } from '@/features/assignments/utils/assignment-helpers';
+import { ConfirmIncompleteSubtasksDialog } from '@/features/assignments/components/confirm-incomplete-subtasks-dialog';
 
 export default function AssignmentsPage(): React.JSX.Element {
   const [assignments, setAssignments] = React.useState<Assignment[]>([]);
@@ -1011,50 +960,11 @@ export default function AssignmentsPage(): React.JSX.Element {
       />
 
       {/* Confirmation Dialog when completing task with unfinished subtasks */}
-      <Dialog
-        open={Boolean(confirmDoneTask)}
-        onOpenChange={(open) => {
-          if (!open) setConfirmDoneTask(null);
-        }}
-      >
-        <DialogContent className="sm:max-w-[420px]">
-          <DialogHeader>
-            <DialogTitle>Selesaikan Tugas?</DialogTitle>
-            <DialogDescription className="text-xs text-muted-foreground pt-1">
-              Tugas &quot;{confirmDoneTask?.title}&quot; memiliki{' '}
-              <strong className="text-foreground">
-                {(confirmDoneTask?.subtaskCount?.total ?? 0) -
-                  (confirmDoneTask?.subtaskCount?.completed ?? 0)}{' '}
-                subtugas
-              </strong>{' '}
-              yang belum selesai. Apakah Anda yakin ingin tetap menandai tugas ini sebagai selesai?
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter className="flex flex-col-reverse sm:flex-row gap-2 pt-2 sm:justify-end">
-            <Button
-              type="button"
-              variant="outline"
-              size="standard"
-              onClick={() => setConfirmDoneTask(null)}
-            >
-              Batal
-            </Button>
-            <Button
-              type="button"
-              size="standard"
-              onClick={() => {
-                if (confirmDoneTask) {
-                  const target = confirmDoneTask;
-                  setConfirmDoneTask(null);
-                  executeToggleStatus(target);
-                }
-              }}
-            >
-              Tetap Selesaikan
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <ConfirmIncompleteSubtasksDialog
+        task={confirmDoneTask}
+        onClose={() => setConfirmDoneTask(null)}
+        onConfirm={executeToggleStatus}
+      />
     </FadeIn>
   );
 }

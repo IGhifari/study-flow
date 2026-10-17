@@ -6,7 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Eye, EyeOff, Loader2 } from 'lucide-react';
-import { RegisterFormInput, RegisterInput, RegisterInputSchema } from '@studyflow/shared';
+import { RegisterFormInput, RegisterInput, RegisterInputSchema, TIMEZONE_OPTIONS } from '@studyflow/shared';
 import { apiRegister } from '@/lib/auth-client';
 import { GoogleSignInButton } from '@/components/auth/google-sign-in-button';
 import { TurnstileWidget, TurnstileWidgetHandle } from '@/components/auth/turnstile-widget';
@@ -31,13 +31,6 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { FadeIn } from '@/components/ui/motion';
-
-const COMMON_TIMEZONES = [
-  { value: 'Asia/Jakarta', label: 'WIB — Asia/Jakarta (UTC+7, Indonesia Barat)' },
-  { value: 'Asia/Makassar', label: 'WITA — Asia/Makassar (UTC+8, Indonesia Tengah)' },
-  { value: 'Asia/Jayapura', label: 'WIT — Asia/Jayapura (UTC+9, Indonesia Timur)' },
-  { value: 'UTC', label: 'UTC — Universal Time Coordinated' },
-];
 
 function RegisterForm(): React.JSX.Element {
   const router = useRouter();
@@ -236,7 +229,7 @@ function RegisterForm(): React.JSX.Element {
                   <SelectValue placeholder="Pilih zona waktu" />
                 </SelectTrigger>
                 <SelectContent>
-                  {COMMON_TIMEZONES.map((tz) => (
+                  {TIMEZONE_OPTIONS.map((tz) => (
                     <SelectItem key={tz.value} value={tz.value} className="text-xs sm:text-sm">
                       {tz.label}
                     </SelectItem>

@@ -23,10 +23,12 @@ import {
   formatUserDateTime,
   formatFileSize,
   Assignment,
+  PRIORITY_LABELS,
 } from '@studyflow/shared';
 import { MaterialStatusBadge } from '@/components/materials/material-status-badge';
 import { MaterialUploadDialog } from '@/components/materials/material-upload-dialog';
 import { CreateTaskDialog } from '@/components/assignments/create-task-dialog';
+import { ConfirmIncompleteSubtasksDialog } from '@/features/assignments/components/confirm-incomplete-subtasks-dialog';
 import { getDashboardSummary } from '@/lib/dashboard-client';
 import { updateAssignment } from '@/lib/assignment-client';
 import { getProfile } from '@/lib/auth-client';
@@ -61,14 +63,6 @@ import {
 } from '@/components/ui/table';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-} from '@/components/ui/dialog';
-import {
   AnimatedPanel,
   FadeIn,
   StaggerGroup,
@@ -80,13 +74,6 @@ import { DashboardSkeleton } from './dashboard-skeleton';
 interface DashboardContentProps {
   user: UserProfile;
 }
-
-// Indonesian mapping for priority
-const PRIORITY_LABELS: Record<string, string> = {
-  HIGH: 'Tinggi',
-  MEDIUM: 'Sedang',
-  LOW: 'Rendah',
-};
 
 export function DashboardContent({ user }: DashboardContentProps): React.JSX.Element {
   const [currentUser, setCurrentUser] = React.useState<UserProfile>(user);
@@ -924,50 +911,11 @@ export function DashboardContent({ user }: DashboardContentProps): React.JSX.Ele
       />
 
       {/* Confirmation Dialog when completing task with unfinished subtasks */}
-      <Dialog
-        open={Boolean(confirmDoneTask)}
-        onOpenChange={(open) => {
-          if (!open) setConfirmDoneTask(null);
-        }}
-      >
-        <DialogContent className="sm:max-w-[420px]">
-          <DialogHeader>
-            <DialogTitle>Selesaikan Tugas?</DialogTitle>
-            <DialogDescription className="text-xs text-muted-foreground pt-1">
-              Tugas &quot;{confirmDoneTask?.title}&quot; memiliki{' '}
-              <strong className="text-foreground">
-                {(confirmDoneTask?.subtaskCount?.total ?? 0) -
-                  (confirmDoneTask?.subtaskCount?.completed ?? 0)}{' '}
-                subtugas
-              </strong>{' '}
-              yang belum selesai. Apakah Anda yakin ingin tetap menandai tugas ini sebagai selesai?
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter className="flex flex-col-reverse sm:flex-row gap-2 pt-2 sm:justify-end">
-            <Button
-              type="button"
-              variant="outline"
-              size="standard"
-              onClick={() => setConfirmDoneTask(null)}
-            >
-              Batal
-            </Button>
-            <Button
-              type="button"
-              size="standard"
-              onClick={() => {
-                if (confirmDoneTask) {
-                  const target = confirmDoneTask;
-                  setConfirmDoneTask(null);
-                  executeToggleTask(target);
-                }
-              }}
-            >
-              Tetap Selesaikan
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <ConfirmIncompleteSubtasksDialog
+        task={confirmDoneTask}
+        onClose={() => setConfirmDoneTask(null)}
+        onConfirm={executeToggleTask}
+      />
     </div>
   );
 }

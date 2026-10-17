@@ -5,6 +5,7 @@ on:
     branches: [main, develop]
   pull_request:
     branches: [main, develop]
+  workflow_dispatch:
 
 jobs:
   validate:
@@ -84,6 +85,8 @@ jobs:
   e2e:
     name: End-to-End Tests (Chromium)
     needs: validate
+    # Hanya dijalankan saat ada PR ke main, push ke main, atau dipicu manual lewat Actions UI
+    if: github.ref == 'refs/heads/main' || github.base_ref == 'main' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
 
     services:
@@ -133,7 +136,15 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Cache Playwright browser binaries
+        uses: actions/cache@v4
+        id: playwright-cache
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-${{ hashFiles('package-lock.json') }}
+
       - name: Install Playwright Chromium & dependencies
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
         run: npx playwright install --with-deps chromium
 
       - name: Generate Prisma client

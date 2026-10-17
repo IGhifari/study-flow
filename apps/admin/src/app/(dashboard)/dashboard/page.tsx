@@ -56,116 +56,15 @@ import type {
   AdminQueueSummaryItem,
   AdminUserListResponse,
   AdminJobListResponse,
-  AdminJobType,
-  AdminJobStatus,
 } from '@studyflow/shared';
-
-function formatLocalDateTime(isoString: string | null | undefined): string {
-  if (!isoString) return '-';
-  try {
-    const date = new Date(isoString);
-    return `${date.toLocaleString('id-ID', {
-      day: '2-digit',
-      month: 'short',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    })} WIB`;
-  } catch {
-    return isoString;
-  }
-}
-
-function formatSyncTime(date: Date): string {
-  return `${date.toLocaleTimeString('id-ID', {
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
-  })} WIB`;
-}
-
-function formatJobDuration(durationMs: number | null): string {
-  if (durationMs === null || durationMs === undefined || durationMs < 0) {
-    return '-';
-  }
-  if (durationMs < 1000) {
-    return `${durationMs}ms`;
-  }
-  return `${(durationMs / 1000).toFixed(1)}s`;
-}
-
-function getJobTypeLabel(type: AdminJobType): string {
-  switch (type) {
-    case 'DOCUMENT_EXTRACTION':
-      return 'Ekstraksi Dokumen';
-    case 'DOCUMENT_CLEANUP':
-      return 'Pembersihan Dokumen';
-    case 'AI_SUMMARY_GENERATION':
-      return 'Ringkasan AI';
-    case 'AI_FLASHCARD_GENERATION':
-      return 'Flashcard AI';
-    case 'AI_QUIZ_GENERATION':
-      return 'Kuis AI';
-    default:
-      return type;
-  }
-}
-
-function renderJobStatusBadge(status: AdminJobStatus, safeErrorMessage: string | null) {
-  switch (status) {
-    case 'COMPLETED':
-      return (
-        <Badge
-          variant="outline"
-          className="gap-1 border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-300 text-xs font-medium"
-        >
-          <CheckCircle2 className="h-3 w-3 shrink-0" />
-          <span>Selesai</span>
-        </Badge>
-      );
-    case 'FAILED':
-      return (
-        <div className="flex flex-col items-start gap-1">
-          <Badge
-            variant="outline"
-            className="gap-1 border-rose-200 bg-rose-50 text-rose-700 dark:border-rose-800 dark:bg-rose-950/50 dark:text-rose-300 text-xs font-medium"
-          >
-            <XCircle className="h-3 w-3 shrink-0" />
-            <span>Gagal</span>
-          </Badge>
-          {safeErrorMessage && (
-            <span
-              className="text-xs text-rose-600 dark:text-rose-400 line-clamp-1 max-w-[220px]"
-              title={safeErrorMessage}
-            >
-              {safeErrorMessage}
-            </span>
-          )}
-        </div>
-      );
-    case 'PROCESSING':
-      return (
-        <Badge
-          variant="outline"
-          className="gap-1 border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-800 dark:bg-blue-950/50 dark:text-blue-300 text-xs font-medium"
-        >
-          <Activity className="h-3 w-3 animate-pulse shrink-0" />
-          <span>Diproses</span>
-        </Badge>
-      );
-    case 'PENDING':
-    default:
-      return (
-        <Badge
-          variant="outline"
-          className="gap-1 border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-800 dark:bg-amber-950/50 dark:text-amber-300 text-xs font-medium"
-        >
-          <Clock className="h-3 w-3 shrink-0" />
-          <span>Menunggu</span>
-        </Badge>
-      );
-  }
-}
+import {
+  downloadCsvFile,
+  formatJobDuration,
+  formatLocalDateTime,
+  formatSyncTime,
+  getJobTypeLabel,
+} from '@/lib/admin-formatters';
+import { JobStatusBadge } from '@/components/jobs/job-status-badge';
 
 const DEFAULT_QUEUE_CONFIGS: Array<{
   name: string;
@@ -346,23 +245,7 @@ export default function AdminDashboardPage() {
         ]);
       }
 
-      const csvContent = rows
-        .map((row) =>
-          row
-            .map((cell) => `"${String(cell).replace(/"/g, '""')}"`)
-            .join(',')
-        )
-        .join('\r\n');
-
-      const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.setAttribute('href', url);
-      link.setAttribute('download', `studyflow-laporan-admin-${dateStr.slice(0, 10)}.csv`);
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
+      downloadCsvFile(`studyflow-laporan-admin-${dateStr.slice(0, 10)}.csv`, rows);
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Kesalahan tidak diketahui';
       setExportError('Gagal mengekspor laporan: ' + message);
@@ -987,7 +870,10 @@ export default function AdminDashboardPage() {
                             </Link>
                           </TableCell>
                           <TableCell className="py-2.5">
-                            {renderJobStatusBadge(job.status, job.safeErrorMessage)}
+                            <JobStatusBadge
+                              status={job.status}
+                              safeErrorMessage={job.safeErrorMessage}
+                            />
                           </TableCell>
                           <TableCell className="py-2.5 text-right font-mono text-xs text-muted-foreground tabular-nums whitespace-nowrap">
                             {formatJobDuration(job.durationMs)}
