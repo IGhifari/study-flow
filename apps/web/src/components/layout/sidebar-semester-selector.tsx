@@ -278,7 +278,7 @@ export function SidebarSemesterSelector({
                     <p className={`truncate text-xs ${sem.isActive ? 'font-semibold text-primary' : 'text-foreground'}`}>
                       {sem.name}
                     </p>
-                    <p className="truncate text-[11px] text-muted-foreground">
+                    <p className="truncate text-xs text-muted-foreground">
                       {sem.academicYear} {isArchived ? '(Arsip)' : ''}
                     </p>
                   </div>

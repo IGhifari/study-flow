@@ -14,6 +14,11 @@
 | **10** | Deployment Prep | Panduan arsitektur, environment per proses, migration, backup/restore, rollback, dan health/ready probe | **PASS** |
 | **11** | Demo Data | Script seed demo independen (`scripts/seed-demo.mjs`) tanpa mengganggu akun nyata | **PASS** |
 | **12** | Domain Deployment | Smoke test autentikasi dan kuota pada domain produksi | **NOT RUN** (Menunggu pilihan hosting) |
+| **13** | Jadwal & Kalender | Jadwal kuliah berkala, tampilan harian/mingguan, ekspor kalender .ics RFC 5545, grid interaktif | **PASS** |
+| **14** | Search & Subtasks | Global Search Cmd+K lintas entitas, checklist subtugas dengan progres atomik | **PASS** |
+| **15** | Reminder & OAuth | Pengingat tugas H-1 berkala via worker, login sosial Google OAuth dengan PKCE | **PASS** |
+| **16** | Admin Cockpit | Portal admin mandiri (`apps/admin`), pemantauan memori Redis/BullMQ, audit log, manajemen kuota | **PASS** |
+| **17** | UI/UX Architecture | 100% shadcn/ui semantik, Motion fluid, sidebar-08 inset, bebas tipografi mikro & AI slop, error boundaries | **PASS** |
 
 ---
 

@@ -31,9 +31,19 @@ import {
   Card,
   CardContent,
   CardDescription,
+  CardFooter,
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import { StaggerGroup, StaggerItem } from '@/components/ui/motion';
 import {
   ChartContainer,
   ChartLegend,
@@ -238,59 +248,60 @@ export function DashboardCharts({
             Tabel Ringkasan Aktivitas Belajar ({chartsData.semesterName || 'Semester Aktif'})
           </h3>
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs border-collapse">
-              <thead>
-                <tr className="border-b border-border text-muted-foreground">
-                  <th className="py-2 pr-4 font-medium">Periode</th>
-                  <th className="py-2 px-4 font-medium text-right">Tugas Selesai</th>
-                  <th className="py-2 px-4 font-medium text-right">Kuis Selesai</th>
-                  <th className="py-2 pl-4 font-medium text-right">Total Aktivitas</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border/60">
+            <Table>
+              <TableHeader>
+                <TableRow className="border-b border-border">
+                  <TableHead className="py-2 pr-4 font-medium text-xs">Periode</TableHead>
+                  <TableHead className="py-2 px-4 font-medium text-right text-xs">Tugas Selesai</TableHead>
+                  <TableHead className="py-2 px-4 font-medium text-right text-xs">Kuis Selesai</TableHead>
+                  <TableHead className="py-2 pl-4 font-medium text-right text-xs">Total Aktivitas</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
                 {activity?.items.map((item: ActivityBucket) => (
-                  <tr key={item.date} className="hover:bg-muted/30">
-                    <td className="py-2 pr-4 text-foreground font-medium">{item.fullDateLabel}</td>
-                    <td className="py-2 px-4 text-right tabular-nums">{item.tasksCompleted}</td>
-                    <td className="py-2 px-4 text-right tabular-nums">{item.quizzesCompleted}</td>
-                    <td className="py-2 pl-4 text-right font-semibold tabular-nums">
+                  <TableRow key={item.date} className="hover:bg-muted/30">
+                    <TableCell className="py-2 pr-4 text-foreground font-medium text-xs">{item.fullDateLabel}</TableCell>
+                    <TableCell className="py-2 px-4 text-right tabular-nums text-xs">{item.tasksCompleted}</TableCell>
+                    <TableCell className="py-2 px-4 text-right tabular-nums text-xs">{item.quizzesCompleted}</TableCell>
+                    <TableCell className="py-2 pl-4 text-right font-semibold tabular-nums text-xs">
                       {item.tasksCompleted + item.quizzesCompleted}
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 ))}
-              </tbody>
-            </table>
+              </TableBody>
+            </Table>
           </div>
         </Card>
       )}
 
-      <div className="grid grid-cols-1 gap-4 sm:gap-6 w-full">
+      <StaggerGroup className="grid grid-cols-1 gap-4 sm:gap-6 w-full">
         {/* =========================================================================
             CHART 1: AKTIVITAS BELAJAR (INTERACTIVE AREA CHART)
            ========================================================================= */}
-        <Card className="rounded-xl border border-border bg-card shadow-xs flex flex-col justify-between">
-          <div>
-            <CardHeader className="flex flex-col gap-2 space-y-0 border-b border-border py-4 sm:flex-row sm:items-center sm:justify-between sm:py-4.5">
-              <div className="grid flex-1 gap-1">
-                <div className="flex items-center gap-2">
-                  <Activity className="h-4 w-4 text-primary" />
-                  <CardTitle className="text-base sm:text-lg font-semibold text-foreground">
-                    Aktivitas Belajar
-                  </CardTitle>
-                  {isRefreshing && <Loader2 className="h-3 w-3 animate-spin text-primary ml-1" />}
+        <StaggerItem>
+          <Card className="rounded-xl border border-border bg-card shadow-xs flex flex-col justify-between h-full">
+            <div>
+              <CardHeader className="flex flex-col gap-2 space-y-0 border-b border-border py-4 sm:flex-row sm:items-center sm:justify-between sm:py-4.5">
+                <div className="grid flex-1 gap-1">
+                  <div className="flex items-center gap-2">
+                    <Activity className="h-4 w-4 text-primary" />
+                    <CardTitle className="text-base sm:text-lg font-semibold text-foreground">
+                      Aktivitas Belajar
+                    </CardTitle>
+                    {isRefreshing && <Loader2 className="h-3 w-3 animate-spin text-primary ml-1" />}
+                  </div>
+                  <CardDescription className="text-xs text-muted-foreground">
+                    {period === '7d'
+                      ? '7 hari terakhir'
+                      : period === '30d'
+                      ? '30 hari terakhir'
+                      : '3 bulan terakhir (mingguan)'}
+                    {' • '}
+                    <span className="font-medium text-foreground tabular-nums">
+                      {totalActivities} aktivitas selesai
+                    </span>
+                  </CardDescription>
                 </div>
-                <CardDescription className="text-xs text-muted-foreground">
-                  {period === '7d'
-                    ? '7 hari terakhir'
-                    : period === '30d'
-                    ? '30 hari terakhir'
-                    : '3 bulan terakhir (mingguan)'}
-                  {' • '}
-                  <span className="font-medium text-foreground">
-                    {totalActivities} aktivitas selesai
-                  </span>
-                </CardDescription>
-              </div>
 
               <div className="flex items-center gap-2">
                 <Select
@@ -399,20 +410,22 @@ export function DashboardCharts({
             </CardContent>
           </div>
 
-          <div className="px-4 py-2.5 sm:px-5 border-t border-border/80 bg-muted/20 rounded-b-xl">
-            <p className="text-[11px] leading-relaxed text-muted-foreground flex items-center gap-1.5">
+          <CardFooter className="px-4 py-2.5 sm:px-5 border-t border-border/80 bg-muted/20 rounded-b-xl">
+            <p className="text-xs leading-relaxed text-muted-foreground flex items-center gap-1.5">
               <HelpCircle className="h-3.5 w-3.5 shrink-0 text-muted-foreground/80" />
               <span>
                 Satu tugas dihitung maksimal 1x pada penyelesaian pertama. Kuis dihitung per attempt yang disubmit final.
               </span>
             </p>
-          </div>
+          </CardFooter>
         </Card>
+      </StaggerItem>
 
         {/* =========================================================================
             CHART 2: BEBAN TUGAS PER MATA KULIAH (HORIZONTAL BAR CHART)
            ========================================================================= */}
-        <Card className="rounded-xl border border-border bg-card shadow-xs flex flex-col justify-between">
+      <StaggerItem>
+        <Card className="rounded-xl border border-border bg-card shadow-xs flex flex-col justify-between h-full">
           <div>
             <CardHeader className="flex flex-row items-center justify-between pb-3.5 border-b border-border py-4 sm:py-4.5">
               <div className="grid gap-1">
@@ -425,7 +438,7 @@ export function DashboardCharts({
                 <CardDescription className="text-xs text-muted-foreground">
                   Jumlah tugas belum selesai per mata kuliah semester ini
                   {' • '}
-                  <span className="font-medium text-foreground">
+                  <span className="font-medium text-foreground tabular-nums">
                     {workload?.totalPendingTasks || 0} tugas tersisa
                   </span>
                 </CardDescription>
@@ -501,7 +514,7 @@ export function DashboardCharts({
                                 x={-8}
                                 y={3}
                                 textAnchor="end"
-                                className="text-[11px] fill-foreground font-medium hover:fill-primary cursor-pointer transition-colors"
+                                className="text-xs fill-foreground font-medium hover:fill-primary cursor-pointer transition-colors"
                               >
                                 <title>{text}</title>
                                 {truncated}
@@ -547,14 +560,15 @@ export function DashboardCharts({
             </CardContent>
           </div>
 
-          <div className="px-4 py-2.5 sm:px-5 border-t border-border/80 bg-muted/20 rounded-b-xl flex items-center justify-between text-[11px] text-muted-foreground">
+          <CardFooter className="px-4 py-2.5 sm:px-5 border-t border-border/80 bg-muted/20 rounded-b-xl flex items-center justify-between text-xs text-muted-foreground">
             <span className="truncate">
               Klik pada bar mata kuliah untuk membuka daftar tugas terkait.
             </span>
             <span className="font-medium shrink-0 ml-2">Urutan beban terbanyak</span>
-          </div>
+          </CardFooter>
         </Card>
-      </div>
-    </div>
+      </StaggerItem>
+    </StaggerGroup>
+  </div>
   );
 }

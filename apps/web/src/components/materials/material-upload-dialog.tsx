@@ -355,7 +355,7 @@ export function MaterialUploadDialog({
                       <p className="text-xs font-semibold text-foreground">
                         Tarik & lepas berkas PDF ke sini, atau klik untuk memilih
                       </p>
-                      <p className="text-[11px] text-muted-foreground mt-0.5">
+                      <p className="text-xs text-muted-foreground mt-0.5">
                         Maksimal 20 MB dan 100 halaman (PDF berbasis teks)
                       </p>
                     </div>

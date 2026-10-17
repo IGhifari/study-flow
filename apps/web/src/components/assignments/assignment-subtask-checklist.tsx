@@ -11,6 +11,7 @@ import {
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import { Progress } from '@/components/ui/progress';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import {
   Plus,
@@ -249,27 +250,18 @@ export function AssignmentSubtaskChecklist({
             Checklist Subtugas
           </span>
           {total > 0 && (
-            <span className="text-muted-foreground font-medium">
+            <span className="text-muted-foreground font-medium tabular-nums">
               {completed} dari {total} langkah selesai ({progressPercent}%)
             </span>
           )}
         </div>
 
         {total > 0 && (
-          <div
-            role="progressbar"
-            aria-valuenow={progressPercent}
-            aria-valuemin={0}
-            aria-valuemax={100}
-            className="h-1.5 w-full bg-muted rounded-full overflow-hidden"
-          >
-            <div
-              className={`h-full transition-all duration-300 ${
-                progressPercent === 100 ? 'bg-emerald-500' : 'bg-primary'
-              }`}
-              style={{ width: `${progressPercent}%` }}
-            />
-          </div>
+          <Progress
+            value={progressPercent}
+            className="h-1.5"
+            aria-label="Progres penyelesaian subtugas"
+          />
         )}
       </div>
 
@@ -410,7 +402,7 @@ export function AssignmentSubtaskChecklist({
                 {!isEditing && !isParentDone && !isArchived && (
                   <div className="shrink-0 flex items-center gap-0.5">
                     {isConfirmingDelete ? (
-                      <div className="flex items-center gap-1 bg-destructive/10 px-1.5 py-0.5 rounded border border-destructive/20 text-[11px]">
+                      <div className="flex items-center gap-1 bg-destructive/10 px-1.5 py-0.5 rounded border border-destructive/20 text-xs">
                         <span className="text-destructive font-medium">Hapus?</span>
                         <Button
                           type="button"

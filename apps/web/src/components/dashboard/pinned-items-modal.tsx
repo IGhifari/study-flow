@@ -123,13 +123,13 @@ export function PinnedItemsModal({
                       <div className="mt-1 flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
                         <Badge
                           variant={item.type === 'MATERIAL' ? 'secondary' : 'outline'}
-                          className="text-[10px] py-0 px-1.5 font-normal"
+                          className="text-xs py-0 px-1.5 font-normal"
                         >
                           {item.type === 'MATERIAL' ? 'Materi' : 'Catatan'}
                         </Badge>
 
                         {item.isGeneralNote ? (
-                          <Badge variant="outline" className="text-[10px] py-0 px-1.5 text-muted-foreground">
+                          <Badge variant="outline" className="text-xs py-0 px-1.5 text-muted-foreground">
                             Catatan Umum
                           </Badge>
                         ) : item.courseName ? (
@@ -139,7 +139,7 @@ export function PinnedItemsModal({
                         ) : null}
 
                         <span>•</span>
-                        <span className="text-[11px]">
+                        <span className="text-xs">
                           Disematkan {formatUserDateTime(item.pinnedAt, timezone)}
                         </span>
                       </div>

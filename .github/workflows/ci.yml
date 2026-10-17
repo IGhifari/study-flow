@@ -43,6 +43,8 @@ jobs:
       DATABASE_URL_TEST: "postgresql://studyflow_user:studyflow_dev_password@localhost:5432/studyflow_test?schema=public"
       REDIS_URL: "redis://localhost:6379"
       JWT_ACCESS_SECRET: "ci_test_jwt_access_secret_super_secure_32_chars"
+      JWT_REFRESH_SECRET: "ci_test_jwt_refresh_secret_super_secure_32_chars"
+      COOKIE_SECRET: "ci_test_cookie_secret_super_secure_32_chars"
       INTERNAL_API_URL: "http://localhost:4000"
 
     steps:
@@ -195,3 +197,6 @@ jobs:
 
       - name: Build Web Docker image
         run: docker build -f apps/web/Dockerfile -t studyflow-web:ci .
+
+      - name: Build Admin Docker image
+        run: docker build -f apps/admin/Dockerfile -t studyflow-admin:ci .
