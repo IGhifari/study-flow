@@ -2,9 +2,9 @@
 
 | Metadata Evaluasi | Nilai |
 | --- | --- |
-| **Waktu Eksekusi** | 2026-10-16T10:56:13.604Z |
+| **Waktu Eksekusi** | 2026-10-17T01:29:32.065Z |
 | **Node.js Runtime** | v22.17.0 |
-| **Versi Kode (Git)** | `d52f86a` |
+| **Versi Kode (Git)** | `9f537b6` |
 | **Mode Evaluasi** | `MOCK` |
 | **Provider AI** | `MockAiProviderAdapter (Deterministik)` |
 | **Model AI** | `reference-mock-v1` |

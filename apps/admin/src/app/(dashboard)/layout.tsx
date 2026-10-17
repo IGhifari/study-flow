@@ -43,7 +43,7 @@ export default function DashboardLayout({
       <AppSidebar />
       <SidebarInset>
         <AdminHeader />
-        <main className="flex-1 bg-background">{children}</main>
+        <div className="flex flex-1 flex-col">{children}</div>
       </SidebarInset>
     </SidebarProvider>
   );

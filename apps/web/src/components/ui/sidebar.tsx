@@ -130,6 +130,7 @@ export function SidebarProvider({
     <SidebarContext.Provider value={contextValue}>
       <TooltipProvider delayDuration={0}>
         <div
+          data-slot="sidebar-wrapper"
           style={
             {
               '--sidebar-width': SIDEBAR_WIDTH,
@@ -138,7 +139,7 @@ export function SidebarProvider({
             } as React.CSSProperties
           }
           className={cn(
-            'group/sidebar-wrapper flex min-h-svh w-full bg-background',
+            'group/sidebar-wrapper has-data-[variant=inset]:bg-sidebar flex min-h-svh w-full bg-background',
             className
           )}
           {...props}
@@ -206,13 +207,25 @@ export const Sidebar = React.forwardRef<
       >
         <div
           className={cn(
-            'fixed inset-y-0 z-30 hidden lg:flex h-svh flex-col border-r border-sidebar-border bg-sidebar transition-[width] duration-200 ease-in-out',
+            'fixed inset-y-0 z-30 hidden lg:flex h-svh flex-col bg-sidebar transition-[width] duration-200 ease-in-out',
+            variant === 'inset' && 'p-2 bg-sidebar',
+            variant === 'floating' && 'p-2 bg-sidebar',
+            variant === 'sidebar' && 'border-r border-sidebar-border bg-sidebar',
             state === 'collapsed'
               ? 'w-[var(--sidebar-width-icon)]'
               : 'w-[var(--sidebar-width)]'
           )}
         >
-          <div className="flex h-full w-full flex-col">{children}</div>
+          <div
+            data-sidebar="sidebar-inner"
+            className={cn(
+              'flex h-full w-full flex-col bg-sidebar',
+              variant === 'floating' &&
+                'rounded-lg border border-sidebar-border bg-sidebar shadow-xs'
+            )}
+          >
+            {children}
+          </div>
         </div>
       </div>
     );
@@ -279,6 +292,7 @@ export const SidebarInset = React.forwardRef<
       ref={ref}
       className={cn(
         'relative flex min-h-svh flex-1 flex-col bg-background transition-all duration-200 ease-in-out min-w-0',
+        'lg:peer-data-[variant=inset]:m-2 lg:peer-data-[variant=inset]:ml-0 lg:peer-data-[variant=inset]:rounded-xl lg:peer-data-[variant=inset]:border lg:peer-data-[variant=inset]:border-border/60 lg:peer-data-[variant=inset]:shadow-xs lg:peer-data-[variant=inset]:peer-data-[state=collapsed]:ml-2',
         className
       )}
       {...props}
@@ -440,11 +454,15 @@ export const SidebarMenuButton = React.forwardRef<
         data-size={size}
         data-active={isActive}
         className={cn(
-          'peer/menu-button flex w-full items-center gap-3 overflow-hidden rounded-lg px-3 py-2 text-left text-sm font-medium outline-hidden transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2 focus-visible:ring-sidebar-ring disabled:pointer-events-none disabled:opacity-50 [&>svg]:size-5 [&>svg]:shrink-0',
+          'peer/menu-button flex w-full items-center gap-3 overflow-hidden rounded-lg px-3 py-2 text-left text-sm font-medium outline-hidden transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2 focus-visible:ring-sidebar-ring disabled:pointer-events-none disabled:opacity-50 [&>svg]:size-4 [&>svg]:shrink-0',
+          size === 'sm' && 'h-8 px-2.5 py-1.5 text-xs [&>svg]:size-4',
+          size === 'lg' && 'h-12 px-2 py-2 text-sm',
+          'group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0 group-data-[collapsible=icon]:h-9 group-data-[collapsible=icon]:w-9 group-data-[collapsible=icon]:mx-auto group-data-[collapsible=icon]:[&>span]:hidden',
+          'group-data-[state=collapsed]:justify-center group-data-[state=collapsed]:px-0 group-data-[state=collapsed]:h-9 group-data-[state=collapsed]:w-9 group-data-[state=collapsed]:mx-auto group-data-[state=collapsed]:[&>span]:hidden',
           isActive
             ? 'bg-accent text-accent-foreground font-semibold shadow-xs'
             : 'text-sidebar-foreground',
-          state === 'collapsed' && !isMobile && 'justify-center px-0 h-10 w-10 mx-auto',
+          state === 'collapsed' && !isMobile && 'justify-center px-0 h-9 w-9 mx-auto',
           className
         )}
         {...props}

@@ -197,7 +197,7 @@ export function SidebarSemesterSelector({
 
   // View when sidebar is expanded or in mobile drawer
   return (
-    <div className="px-3 py-2 border-b border-sidebar-border">
+    <div className="px-1 py-1">
       <div className="flex items-center justify-between mb-1.5 px-0.5">
         <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
           Semester Aktif

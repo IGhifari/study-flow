@@ -8,9 +8,11 @@ import {
   Users,
   Activity,
   Shield,
+  AlertTriangle,
 } from "lucide-react"
 
 import { NavMain } from "@/components/nav-main"
+import { NavSecondary } from "@/components/nav-secondary"
 import { NavUser } from "@/components/nav-user"
 import {
   Sidebar,
@@ -48,6 +50,19 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     },
   ]
 
+  const navSecondary = [
+    {
+      title: "Pekerjaan Gagal",
+      url: "/jobs?status=FAILED",
+      icon: AlertTriangle,
+    },
+    {
+      title: "Direktori Mahasiswa",
+      url: "/users",
+      icon: Users,
+    },
+  ]
+
   const currentUser = {
     name: user?.name || "Administrator",
     email: user?.email || "admin@studyflow.id",
@@ -55,7 +70,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   }
 
   return (
-    <Sidebar collapsible="icon" {...props}>
+    <Sidebar variant="inset" collapsible="icon" {...props}>
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
@@ -65,8 +80,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
               className="data-[slot=sidebar-menu-button]:!p-1.5 hover:bg-sidebar-accent"
             >
               <Link href="/dashboard" className="flex items-center gap-3">
-                <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-xs shrink-0">
-                  <Shield className="h-5 w-5" />
+                <div className="bg-primary text-primary-foreground flex aspect-square size-8 items-center justify-center rounded-lg shadow-xs shrink-0">
+                  <Shield className="size-4" />
                 </div>
                 <div className="grid flex-1 text-left text-sm leading-tight group-data-[collapsible=icon]:hidden group-data-[state=collapsed]:hidden">
                   <span className="truncate font-semibold text-foreground">
@@ -84,6 +99,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 
       <SidebarContent>
         <NavMain items={navMain} />
+        <NavSecondary items={navSecondary} className="mt-auto" />
       </SidebarContent>
 
       <SidebarFooter>

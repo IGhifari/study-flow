@@ -2,8 +2,8 @@
 
 import * as React from "react"
 import {
+  ChevronsUpDown,
   LogOutIcon,
-  MoreVerticalIcon,
   ShieldCheckIcon,
 } from "lucide-react"
 
@@ -74,7 +74,7 @@ export function NavUser({
                   {user.email}
                 </span>
               </div>
-              <MoreVerticalIcon className="ml-auto size-4 group-data-[collapsible=icon]:hidden group-data-[state=collapsed]:hidden" />
+              <ChevronsUpDown className="ml-auto size-4 group-data-[collapsible=icon]:hidden group-data-[state=collapsed]:hidden" />
             </SidebarMenuButton>
           </DropdownMenuTrigger>
           <DropdownMenuContent

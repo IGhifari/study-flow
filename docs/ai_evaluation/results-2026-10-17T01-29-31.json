@@ -1,0 +1,40 @@
+{
+  "timestamp": "2026-10-17T01:29:31.959Z",
+  "nodeVersion": "v22.17.0",
+  "gitCommit": "9f537b6",
+  "mode": "mock",
+  "providerName": "MockAiProviderAdapter (Deterministik)",
+  "modelName": "reference-mock-v1",
+  "promptVersion": "v1 (Summary, Flashcard, Quiz)",
+  "totalProviderCalls": 0,
+  "maxCallsLimit": 1000,
+  "validDocumentsTarget": 0,
+  "validDocumentsProcessed": 0,
+  "negativeFixturesTarget": 1,
+  "negativeFixturesProcessed": 1,
+  "overallVerdict": "FAIL",
+  "summaryMetrics": {
+    "validDocumentsPassCount": 0,
+    "validDocumentsFailCount": 0,
+    "negativeFixturesPassCount": 0,
+    "negativeFixturesFailCount": 1,
+    "totalQuizQuestionsEvaluated": 0,
+    "quizQuestionsStructurallyValid": 0,
+    "quizQuestionsFactualAccuracyReviewed": 0,
+    "quizQuestionsFactualAccuracyPassed": 0,
+    "invalidPageReferencesCount": 0,
+    "unreviewedCriteriaCount": 0
+  },
+  "validDocuments": [],
+  "negativeFixtures": [
+    {
+      "id": "negative-faulty-check",
+      "filename": "id-cs101-algoritma-pemrograman.pdf",
+      "category": "FILE_CORRUPTED",
+      "expectedError": "FILE_CORRUPTED",
+      "status": "FAIL",
+      "detail": "Berkas fixture negatif tidak ditemukan di: C:\\Users\\msi gf63\\OneDrive\\study-flow\\docs\\ai_evaluation\\fixtures\\negative\\id-cs101-algoritma-pemrograman.pdf"
+    }
+  ],
+  "manualReviewItems": []
+}
