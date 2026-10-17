@@ -16,7 +16,6 @@ import {
 } from 'lucide-react';
 import {
   CourseSchedule,
-  CourseScheduleConflict,
   getDayNameId,
 } from '@studyflow/shared';
 import { listSchedules } from '@/lib/schedule-client';
@@ -24,6 +23,14 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import {
+  Card,
+  CardContent,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import { StaggerGroup, StaggerItem } from '@/components/ui/motion';
 import { cn } from '@/lib/utils';
 
 export interface TodayScheduleWidgetProps {
@@ -111,7 +118,6 @@ export function getScheduleTimeStatus(
 
 export function TodayScheduleWidget({
   activeSemesterId,
-  activeSemesterName,
   timezone,
   className,
 }: TodayScheduleWidgetProps): React.JSX.Element {
@@ -250,37 +256,36 @@ export function TodayScheduleWidget({
   const dayName = isMounted ? getDayNameId(currentDayOfWeek) : 'Hari Ini';
 
   return (
-    <div
-      className={cn(
-        "rounded-xl border border-border bg-card p-5 sm:p-6 shadow-xs flex flex-col justify-between",
-        className
-      )}
+    <Card
+      className={cn('flex flex-col justify-between h-full', className)}
       data-testid="today-schedule-widget"
     >
       <div className="flex flex-col flex-1">
         {/* Header Widget */}
-        <div className="flex items-center justify-between pb-3.5 border-b border-border">
-          <div className="flex items-center gap-2 min-w-0">
-            <CalendarClock className="h-4 w-4 text-primary shrink-0" />
-            <h2 className="text-base font-semibold text-foreground truncate">
-              Jadwal Hari Ini
-            </h2>
-            {isMounted && !isLoading && schedules.length > 0 && (
-              <Badge variant="secondary" className="text-xs shrink-0 font-medium ml-0.5">
-                {schedules.length}
-              </Badge>
-            )}
+        <CardHeader className="border-b border-border/60 pb-3 px-5 sm:px-6 pt-5">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2 min-w-0">
+              <CalendarClock className="h-4 w-4 text-primary shrink-0" />
+              <CardTitle className="text-base font-semibold text-foreground truncate">
+                Jadwal Hari Ini
+              </CardTitle>
+              {isMounted && !isLoading && schedules.length > 0 && (
+                <Badge variant="secondary" className="text-xs shrink-0 font-medium ml-0.5 tabular-nums">
+                  {schedules.length}
+                </Badge>
+              )}
+            </div>
+            <Button asChild variant="ghost" size="sm" className="h-8 px-2 text-xs shrink-0">
+              <Link href="/schedule" className="gap-1">
+                <span>Lihat jadwal</span>
+                <ArrowRight className="h-3.5 w-3.5" />
+              </Link>
+            </Button>
           </div>
-          <Button asChild variant="ghost" size="sm" className="h-8 px-2 text-xs shrink-0">
-            <Link href="/schedule" className="gap-1">
-              <span>Lihat jadwal</span>
-              <ArrowRight className="h-3.5 w-3.5" />
-            </Link>
-          </Button>
-        </div>
+        </CardHeader>
 
         {/* Content Section */}
-        <div className="mt-3 flex-1 flex flex-col justify-center">
+        <CardContent className="pt-4 px-5 sm:px-6 pb-4 flex-1 flex flex-col justify-center">
           {/* A. Loading State */}
           {isLoading && (
             <div className="space-y-3">
@@ -356,7 +361,7 @@ export function TodayScheduleWidget({
 
           {/* E. List Sesi Jadwal Hari Ini */}
           {!isLoading && !errorMsg && activeSemesterId && schedules.length > 0 && (
-            <div className="space-y-2.5">
+            <StaggerGroup className="space-y-2.5">
               {schedules.map((sched) => {
                 const status = isMounted
                   ? getScheduleTimeStatus(sched.startTime, sched.endTime, currentTime)
@@ -364,7 +369,7 @@ export function TodayScheduleWidget({
                 const hasConflict = sched.hasConflict;
 
                 return (
-                  <div
+                  <StaggerItem
                     key={sched.id}
                     className={`rounded-lg border p-3 transition-colors space-y-1.5 ${
                       status === 'ONGOING'
@@ -376,7 +381,7 @@ export function TodayScheduleWidget({
                   >
                     {/* Waktu & Status Badge */}
                     <div className="flex items-center justify-between gap-2">
-                      <div className="flex items-center gap-1.5 font-mono text-xs font-bold text-foreground">
+                      <div className="flex items-center gap-1.5 font-mono text-xs font-bold text-foreground tabular-nums">
                         <Clock
                           className={`h-3.5 w-3.5 shrink-0 ${
                             status === 'ONGOING' ? 'text-primary' : 'text-muted-foreground'
@@ -391,7 +396,7 @@ export function TodayScheduleWidget({
                       {status === 'ONGOING' ? (
                         <Badge
                           variant="default"
-                          className="text-[11px] py-0 px-2 gap-1 font-semibold bg-primary text-primary-foreground"
+                          className="text-xs py-0 px-2 gap-1 font-semibold bg-primary text-primary-foreground"
                         >
                           <CircleDot className="h-3 w-3 animate-pulse" />
                           <span>Berlangsung</span>
@@ -399,7 +404,7 @@ export function TodayScheduleWidget({
                       ) : status === 'COMPLETED' ? (
                         <Badge
                           variant="secondary"
-                          className="text-[11px] py-0 px-2 gap-1 font-normal text-muted-foreground bg-muted"
+                          className="text-xs py-0 px-2 gap-1 font-normal text-muted-foreground bg-muted"
                         >
                           <CheckCircle2 className="h-3 w-3 text-muted-foreground" />
                           <span>Selesai</span>
@@ -407,7 +412,7 @@ export function TodayScheduleWidget({
                       ) : (
                         <Badge
                           variant="outline"
-                          className="text-[11px] py-0 px-2 gap-1 font-normal text-muted-foreground border-border"
+                          className="text-xs py-0 px-2 gap-1 font-normal text-muted-foreground border-border"
                         >
                           <Clock className="h-3 w-3 text-muted-foreground" />
                           <span>Akan datang</span>
@@ -429,7 +434,7 @@ export function TodayScheduleWidget({
                         {sched.course?.name || 'Mata Kuliah'}
                       </Link>
                       {sched.course?.code && (
-                        <span className="font-mono text-[11px] text-muted-foreground">
+                        <span className="font-mono text-xs text-muted-foreground">
                           {sched.course.code}
                         </span>
                       )}
@@ -444,27 +449,36 @@ export function TodayScheduleWidget({
                         </span>
                       </div>
                     ) : (
-                      <p className="text-[11px] text-muted-foreground italic pt-0.5">
+                      <p className="text-xs text-muted-foreground italic pt-0.5">
                         Ruangan belum ditentukan
                       </p>
                     )}
 
                     {/* Benturan Waktu jika terdeteksi */}
                     {hasConflict && sched.conflicts && sched.conflicts.length > 0 && (
-                      <div className="rounded border border-destructive/30 bg-destructive/10 p-1.5 text-[11px] text-destructive flex items-start gap-1.5 mt-1">
+                      <div className="rounded border border-destructive/30 bg-destructive/10 p-1.5 text-xs text-destructive flex items-start gap-1.5 mt-1">
                         <AlertTriangle className="h-3.5 w-3.5 shrink-0 mt-0.5" />
                         <span className="leading-tight">
                           Benturan dengan: {sched.conflicts.map((c) => c.courseName).join(', ')}
                         </span>
                       </div>
                     )}
-                  </div>
+                  </StaggerItem>
                 );
               })}
-            </div>
+            </StaggerGroup>
           )}
-        </div>
+        </CardContent>
       </div>
-    </div>
+
+      {/* Footer Widget */}
+      <CardFooter className="border-t border-border/60 pt-3 pb-4 px-5 sm:px-6 justify-between text-xs text-muted-foreground">
+        <span>Hari: {dayName}</span>
+        <Link href="/schedule" className="font-medium text-primary hover:underline inline-flex items-center gap-1">
+          <span>Kelola Jadwal</span>
+          <ArrowRight className="h-3 w-3" />
+        </Link>
+      </CardFooter>
+    </Card>
   );
 }

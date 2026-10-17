@@ -1,8 +1,15 @@
 'use client';
 
 import * as React from 'react';
-import { ChevronDown, HelpCircle } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { Card, CardContent } from '@/components/ui/card';
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from '@/components/ui/accordion';
+import { FadeIn } from '@/components/ui/motion';
 
 interface FaqItem {
   id: string;
@@ -44,22 +51,13 @@ const FAQ_ITEMS: FaqItem[] = [
 ];
 
 export function FaqSection(): React.JSX.Element {
-  // Buka FAQ pertama secara default untuk memberi contoh visual
-  const [openItems, setOpenItems] = React.useState<Record<string, boolean>>({
-    'faq-1': true,
-  });
-
-  const toggleItem = (id: string) => {
-    setOpenItems((prev) => ({
-      ...prev,
-      [id]: !prev[id],
-    }));
-  };
-
   return (
     <section id="faq" className="py-14 sm:py-20 border-b border-border/60 scroll-mt-20">
-      <div className="max-w-2xl mx-auto text-center mb-10 sm:mb-12">
-        <Badge variant="outline" className="mb-3 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-primary border-primary/30 bg-primary/5">
+      <FadeIn className="max-w-2xl mx-auto text-center mb-10 sm:mb-12">
+        <Badge
+          variant="secondary"
+          className="mb-3 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-primary"
+        >
           Tanya Jawab
         </Badge>
         <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground">
@@ -68,56 +66,30 @@ export function FaqSection(): React.JSX.Element {
         <p className="mt-2.5 text-sm sm:text-base text-muted-foreground leading-relaxed">
           Semua yang perlu Anda ketahui tentang privasi data akademik, batas format dokumen, dan fitur AI di StudyFlow.
         </p>
-      </div>
+      </FadeIn>
 
-      <div className="max-w-3xl mx-auto divide-y divide-border rounded-xl border border-border bg-card shadow-xs overflow-hidden">
-        {FAQ_ITEMS.map((item, index) => {
-          const isOpen = Boolean(openItems[item.id]);
-          const contentId = `faq-content-${item.id}`;
-          const buttonId = `faq-trigger-${item.id}`;
-
-          return (
-            <div key={item.id} className="transition-colors">
-              <h3>
-                <button
-                  type="button"
-                  id={buttonId}
-                  aria-expanded={isOpen}
-                  aria-controls={contentId}
-                  onClick={() => toggleItem(item.id)}
-                  className="w-full flex items-center justify-between gap-4 p-4 sm:p-5 text-left text-sm sm:text-base font-semibold text-foreground hover:bg-muted/40 transition-colors focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring touch-manipulation"
-                >
-                  <span className="flex items-center gap-2.5">
-                    <span className="text-xs font-mono text-primary font-bold">
+      {/* WAI-ARIA disclosure attributes (aria-expanded, aria-controls, role="region") are managed by shadcn Accordion */}
+      <Card className="max-w-3xl mx-auto border-border bg-card shadow-xs overflow-hidden">
+        <CardContent className="p-0">
+          <Accordion type="single" collapsible defaultValue="faq-1" className="w-full">
+            {FAQ_ITEMS.map((item, index) => (
+              <AccordionItem key={item.id} value={item.id} className="px-4 sm:px-6">
+                <AccordionTrigger className="py-4 sm:py-5 text-sm sm:text-base font-semibold text-foreground hover:no-underline">
+                  <span className="flex items-center gap-2.5 text-left">
+                    <span className="text-xs font-mono text-primary font-bold tabular-nums">
                       0{index + 1}
                     </span>
                     <span>{item.question}</span>
                   </span>
-                  <ChevronDown
-                    className={`h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-200 ease-in-out ${
-                      isOpen ? 'rotate-180 text-primary' : ''
-                    }`}
-                    aria-hidden="true"
-                  />
-                </button>
-              </h3>
-
-              {isOpen && (
-                <div
-                  id={contentId}
-                  role="region"
-                  aria-labelledby={buttonId}
-                  className="px-4 pb-4 sm:px-5 sm:pb-5 pt-1 text-xs sm:text-sm text-muted-foreground leading-relaxed"
-                >
-                  <p className="pl-6 border-l-2 border-primary/30">
-                    {item.answer}
-                  </p>
-                </div>
-              )}
-            </div>
-          );
-        })}
-      </div>
+                </AccordionTrigger>
+                <AccordionContent className="pb-4 sm:pb-5 text-xs sm:text-sm text-muted-foreground leading-relaxed">
+                  <p className="pl-6 border-l-2 border-primary/30">{item.answer}</p>
+                </AccordionContent>
+              </AccordionItem>
+            ))}
+          </Accordion>
+        </CardContent>
+      </Card>
     </section>
   );
 }

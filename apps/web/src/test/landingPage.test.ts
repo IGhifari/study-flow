@@ -112,4 +112,56 @@ describe('Public Landing Page Production Overhaul', () => {
     expect(faqContent).toContain('menyertakan nomor halaman dokumen sumber asli');
     expect(faqContent).toContain('WIB, WITA, WIT');
   });
+
+  it('integrates Motion primitives, next/image SVG illustrations, and full shadcn/ui primitives across landing page and dashboard', () => {
+    const pageContent = fs.readFileSync(pagePath, 'utf-8');
+    const showcaseContent = fs.readFileSync(showcasePath, 'utf-8');
+    const faqContent = fs.readFileSync(faqPath, 'utf-8');
+    const motionPath = path.resolve(__dirname, '../components/ui/motion.tsx');
+    const dashboardContentPath = path.resolve(__dirname, '../app/(dashboard)/dashboard/dashboard-content.tsx');
+    const imagesDir = path.resolve(__dirname, '../../public/images');
+
+    // Motion primitive respects prefers-reduced-motion
+    const motionContent = fs.readFileSync(motionPath, 'utf-8');
+    expect(motionContent).toContain("from 'motion/react'");
+    expect(motionContent).toContain('useReducedMotion');
+    expect(motionContent).toContain('FadeIn');
+    expect(motionContent).toContain('StaggerGroup');
+    expect(motionContent).toContain('StaggerItem');
+    expect(motionContent).toContain('AnimatedPanel');
+
+    // 4 SVG illustrations exist
+    expect(fs.existsSync(path.join(imagesDir, 'hero-studyflow-workspace.svg'))).toBe(true);
+    expect(fs.existsSync(path.join(imagesDir, 'feature-pdf-citation.svg'))).toBe(true);
+    expect(fs.existsSync(path.join(imagesDir, 'feature-semester-schedule.svg'))).toBe(true);
+    expect(fs.existsSync(path.join(imagesDir, 'feature-flashcard-quiz.svg'))).toBe(true);
+
+    // Landing page uses next/image, Card, Badge, and Motion
+    expect(pageContent).toContain("from 'next/image'");
+    expect(pageContent).toContain('/images/hero-studyflow-workspace.svg');
+    expect(pageContent).toContain('/images/feature-pdf-citation.svg');
+    expect(pageContent).toContain('/images/feature-semester-schedule.svg');
+    expect(pageContent).toContain('/images/feature-flashcard-quiz.svg');
+    expect(pageContent).toContain('<FadeIn');
+    expect(pageContent).toContain('<StaggerGroup');
+    expect(pageContent).toContain('<Card');
+
+    // Product showcase uses Tabs, Card, Progress, and AnimatedPanel
+    expect(showcaseContent).toContain("from '@/components/ui/tabs'");
+    expect(showcaseContent).toContain("from '@/components/ui/progress'");
+    expect(showcaseContent).toContain('<AnimatedPanel');
+
+    // FAQ section uses Accordion and Card
+    expect(faqContent).toContain("from '@/components/ui/accordion'");
+    expect(faqContent).toContain('<Accordion');
+
+    // Dashboard uses Card, Tabs, Progress, Table, and Motion
+    const dashboardContent = fs.readFileSync(dashboardContentPath, 'utf-8');
+    expect(dashboardContent).toContain("from '@/components/ui/card'");
+    expect(dashboardContent).toContain("from '@/components/ui/tabs'");
+    expect(dashboardContent).toContain("from '@/components/ui/progress'");
+    expect(dashboardContent).toContain("from '@/components/ui/table'");
+    expect(dashboardContent).toContain("from '@/components/ui/motion'");
+  });
 });
+

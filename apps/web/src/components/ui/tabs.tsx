@@ -11,19 +11,35 @@ export interface TabsContextValue {
 const TabsContext = React.createContext<TabsContextValue | null>(null);
 
 export interface TabsProps extends React.HTMLAttributes<HTMLDivElement> {
-  value: string;
-  onValueChange: (value: string) => void;
+  value?: string;
+  defaultValue?: string;
+  onValueChange?: (value: string) => void;
 }
 
 export function Tabs({
   value,
+  defaultValue = '',
   onValueChange,
   className,
   children,
   ...props
 }: TabsProps): React.JSX.Element {
+  const [internalValue, setInternalValue] = React.useState<string>(defaultValue);
+  const isControlled = value !== undefined;
+  const activeValue = isControlled ? value : internalValue;
+
+  const handleValueChange = React.useCallback(
+    (nextValue: string) => {
+      if (!isControlled) {
+        setInternalValue(nextValue);
+      }
+      onValueChange?.(nextValue);
+    },
+    [isControlled, onValueChange]
+  );
+
   return (
-    <TabsContext.Provider value={{ value, onValueChange }}>
+    <TabsContext.Provider value={{ value: activeValue, onValueChange: handleValueChange }}>
       <div className={cn('w-full', className)} {...props}>
         {children}
       </div>

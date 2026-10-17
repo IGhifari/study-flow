@@ -17,6 +17,15 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Skeleton } from '@/components/ui/skeleton';
+import {
+  Card,
+  CardContent,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import { StaggerGroup, StaggerItem } from '@/components/ui/motion';
+import { cn } from '@/lib/utils';
 import { PinnedItemsModal } from './pinned-items-modal';
 
 interface PinnedItemsWidgetProps {
@@ -80,36 +89,38 @@ export function PinnedItemsWidget({
   const displayedItems = items.slice(0, 6);
 
   return (
-    <div
-      className={`rounded-xl border border-border bg-card p-5 sm:p-6 shadow-xs flex flex-col justify-between w-full ${className}`}
-    >
+    <Card className={cn('flex flex-col justify-between w-full', className)}>
       <div>
         {/* Header Widget */}
-        <div className="flex items-center justify-between pb-3.5 border-b border-border">
-          <div className="flex items-center gap-2">
-            <Pin className="h-4 w-4 text-primary fill-primary" />
-            <h2 className="text-base font-semibold text-foreground">Disematkan</h2>
-            {items.length > 0 && (
-              <Badge variant="secondary" className="text-xs ml-1 font-medium">
-                {items.length}
-              </Badge>
+        <CardHeader className="border-b border-border/60 pb-3 px-5 sm:px-6 pt-5">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <Pin className="h-4 w-4 text-primary fill-primary" />
+              <CardTitle className="text-base font-semibold text-foreground">
+                Disematkan
+              </CardTitle>
+              {items.length > 0 && (
+                <Badge variant="secondary" className="text-xs ml-1 font-medium tabular-nums">
+                  {items.length}
+                </Badge>
+              )}
+            </div>
+
+            {items.length > 6 && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setIsModalOpen(true)}
+                className="text-xs h-7 px-2.5"
+              >
+                Tampilkan semua ({items.length})
+              </Button>
             )}
           </div>
-
-          {items.length > 6 && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setIsModalOpen(true)}
-              className="text-xs h-7 px-2.5"
-            >
-              Tampilkan semua ({items.length})
-            </Button>
-          )}
-        </div>
+        </CardHeader>
 
         {/* Content View */}
-        <div className="mt-2.5">
+        <CardContent className="pt-4 px-5 sm:px-6 pb-4">
           {isLoading ? (
             <div className="space-y-3 py-2">
               {Array.from({ length: 3 }).map((_, i) => (
@@ -149,7 +160,7 @@ export function PinnedItemsWidget({
               </p>
             </div>
           ) : (
-            <div className="divide-y divide-border/60">
+            <StaggerGroup className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {displayedItems.map((item) => {
                 const href =
                   item.type === 'MATERIAL'
@@ -157,78 +168,79 @@ export function PinnedItemsWidget({
                     : `/notes/${item.targetId}`;
 
                 return (
-                  <div
-                    key={item.id}
-                    className="py-2.5 first:pt-1 last:pb-1 flex items-start justify-between gap-2.5 group"
-                  >
-                    <div className="min-w-0 flex-1 pr-1">
-                      <div className="flex items-center gap-1.5 min-w-0">
-                        <span className="text-muted-foreground shrink-0">
-                          {item.type === 'MATERIAL' ? (
-                            <FileText className="h-3.5 w-3.5" />
-                          ) : (
-                            <Edit3 className="h-3.5 w-3.5" />
-                          )}
-                        </span>
-                        <Link
-                          href={href}
-                          className="text-sm font-medium text-foreground hover:text-primary transition-colors block truncate"
-                          title={item.title}
+                  <StaggerItem key={item.id}>
+                    <Card className="bg-muted/20 hover:bg-muted/40 transition-colors border-border/70 shadow-none">
+                      <CardContent className="p-3.5 flex items-start justify-between gap-2.5">
+                        <div className="min-w-0 flex-1 pr-1">
+                          <div className="flex items-center gap-1.5 min-w-0">
+                            <span className="text-muted-foreground shrink-0">
+                              {item.type === 'MATERIAL' ? (
+                                <FileText className="h-3.5 w-3.5 text-primary" />
+                              ) : (
+                                <Edit3 className="h-3.5 w-3.5 text-primary" />
+                              )}
+                            </span>
+                            <Link
+                              href={href}
+                              className="text-sm font-medium text-foreground hover:text-primary transition-colors block truncate"
+                              title={item.title}
+                            >
+                              {item.title}
+                            </Link>
+                          </div>
+
+                          <div className="mt-1.5 flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
+                            <Badge
+                              variant={item.type === 'MATERIAL' ? 'secondary' : 'outline'}
+                              className="text-xs py-0.5 px-1.5 font-normal"
+                            >
+                              {item.type === 'MATERIAL' ? 'Materi' : 'Catatan'}
+                            </Badge>
+
+                            {item.isGeneralNote ? (
+                              <Badge
+                                variant="outline"
+                                className="text-xs py-0.5 px-1.5 text-muted-foreground"
+                              >
+                                Catatan Umum
+                              </Badge>
+                            ) : item.courseName ? (
+                              <span className="truncate max-w-[160px] sm:max-w-[200px] font-medium text-foreground/80">
+                                {item.courseName}
+                              </span>
+                            ) : null}
+
+                            <span>•</span>
+                            <span className="text-xs text-muted-foreground/80 tabular-nums">
+                              {formatUserDateTime(item.pinnedAt, timezone)}
+                            </span>
+                          </div>
+                        </div>
+
+                        <Button
+                          asChild
+                          variant="ghost"
+                          size="sm"
+                          className="h-7 px-2 text-xs shrink-0 self-center"
                         >
-                          {item.title}
-                        </Link>
-                      </div>
-
-                      <div className="mt-1 flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
-                        <Badge
-                          variant={item.type === 'MATERIAL' ? 'secondary' : 'outline'}
-                          className="text-xs py-0.5 px-1.5 font-normal"
-                        >
-                          {item.type === 'MATERIAL' ? 'Materi' : 'Catatan'}
-                        </Badge>
-
-                        {item.isGeneralNote ? (
-                          <Badge
-                            variant="outline"
-                            className="text-xs py-0.5 px-1.5 text-muted-foreground"
-                          >
-                            Catatan Umum
-                          </Badge>
-                        ) : item.courseName ? (
-                          <span className="truncate max-w-[160px] sm:max-w-[240px] font-medium text-foreground/80">
-                            {item.courseName}
-                          </span>
-                        ) : null}
-
-                        <span>•</span>
-                        <span className="text-xs text-muted-foreground/80 tabular-nums">
-                          {formatUserDateTime(item.pinnedAt, timezone)}
-                        </span>
-                      </div>
-                    </div>
-
-                    <Button
-                      asChild
-                      variant="ghost"
-                      size="sm"
-                      className="h-7 px-2 text-xs shrink-0 self-center"
-                    >
-                      <Link href={href}>
-                        Buka
-                        <ArrowRight className="ml-1 h-3 w-3" />
-                      </Link>
-                    </Button>
-                  </div>
+                          <Link href={href}>
+                            Buka
+                            <ArrowRight className="ml-1 h-3 w-3" />
+                          </Link>
+                        </Button>
+                      </CardContent>
+                    </Card>
+                  </StaggerItem>
                 );
               })}
-            </div>
+            </StaggerGroup>
           )}
-        </div>
+        </CardContent>
       </div>
 
       {/* Footer Link if <= 6 but has items */}
       {!isLoading && !error && items.length > 0 && items.length <= 6 && (
-        <div className="mt-3 pt-2.5 border-t border-border">
+        <CardFooter className="border-t border-border/60 pt-3 pb-4 px-5 sm:px-6">
           <Button
             variant="ghost"
             size="sm"
@@ -238,7 +250,7 @@ export function PinnedItemsWidget({
             <span>Kelola Sematan ({items.length})</span>
             <ArrowRight className="h-3.5 w-3.5" />
           </Button>
-        </div>
+        </CardFooter>
       )}
 
       {/* Full Modal */}
@@ -250,6 +262,6 @@ export function PinnedItemsWidget({
         unpinningId={unpinningId}
         timezone={timezone}
       />
-    </div>
+    </Card>
   );
 }

@@ -41,6 +41,7 @@ import {
 } from '@/components/ui/table';
 import { SectionCards } from '@/components/section-cards';
 import { DataTable } from '@/components/data-table';
+import { FadeIn, StaggerGroup, StaggerItem } from '@/components/ui/motion';
 import {
   fetchAdminSummary,
   fetchAdminSystemStatus,
@@ -450,129 +451,139 @@ export default function AdminDashboardPage() {
       )}
 
       {/* 1. Primary Metric Cards */}
-      <SectionCards summary={summary} isLoading={isSummaryLoading} />
+      <FadeIn>
+        <SectionCards summary={summary} isLoading={isSummaryLoading} />
+      </FadeIn>
 
       {/* 2. Quick Action Bar (Tombol Pintas Tindakan Operasional) */}
       <section aria-label="Tindakan Cepat Operasional" className="px-4 lg:px-6">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+        <StaggerGroup className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
           {/* Quick Action 1: Tinjau Pekerjaan Gagal */}
-          <Link
-            href="/jobs?status=FAILED"
-            className={`flex items-center justify-between gap-3 rounded-lg border p-3.5 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
-              failedJobs24h > 0
-                ? 'border-rose-500/40 bg-rose-500/5 hover:bg-rose-500/10'
-                : 'border-border bg-card hover:bg-muted/50'
-            }`}
-          >
-            <div className="flex items-center gap-3 min-w-0">
-              <div
-                className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-md border ${
-                  failedJobs24h > 0
-                    ? 'border-rose-500/30 bg-rose-500/10 text-rose-600 dark:text-rose-400'
-                    : 'border-emerald-500/20 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
-                }`}
-              >
-                {failedJobs24h > 0 ? (
-                  <AlertCircle className="h-4 w-4" />
-                ) : (
-                  <CheckCircle2 className="h-4 w-4" />
-                )}
+          <StaggerItem>
+            <Link
+              href="/jobs?status=FAILED"
+              className={`flex items-center justify-between gap-3 rounded-lg border p-3.5 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+                failedJobs24h > 0
+                  ? 'border-rose-500/40 bg-rose-500/5 hover:bg-rose-500/10'
+                  : 'border-border bg-card hover:bg-muted/50'
+              }`}
+            >
+              <div className="flex items-center gap-3 min-w-0">
+                <div
+                  className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-md border ${
+                    failedJobs24h > 0
+                      ? 'border-rose-500/30 bg-rose-500/10 text-rose-600 dark:text-rose-400'
+                      : 'border-emerald-500/20 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
+                  }`}
+                >
+                  {failedJobs24h > 0 ? (
+                    <AlertCircle className="h-4 w-4" />
+                  ) : (
+                    <CheckCircle2 className="h-4 w-4" />
+                  )}
+                </div>
+                <div className="min-w-0">
+                  <p className="text-xs font-semibold text-foreground truncate">
+                    Tinjau Pekerjaan Gagal
+                  </p>
+                  <p className="text-xs text-muted-foreground truncate">
+                    {failedJobs24h > 0
+                      ? 'Perlu peninjauan segera (24j)'
+                      : 'Semua pekerjaan normal'}
+                  </p>
+                </div>
               </div>
-              <div className="min-w-0">
-                <p className="text-xs font-semibold text-foreground truncate">
-                  Tinjau Pekerjaan Gagal
-                </p>
-                <p className="text-xs text-muted-foreground truncate">
-                  {failedJobs24h > 0
-                    ? 'Perlu peninjauan segera (24j)'
-                    : 'Semua pekerjaan normal'}
-                </p>
-              </div>
-            </div>
-            {failedJobs24h > 0 ? (
-              <Badge
-                variant="destructive"
-                className="shrink-0 tabular-nums font-semibold text-xs"
-              >
-                {failedJobs24h.toLocaleString('id-ID')}
-              </Badge>
-            ) : (
-              <ArrowRight className="h-4 w-4 text-muted-foreground shrink-0" />
-            )}
-          </Link>
+              {failedJobs24h > 0 ? (
+                <Badge
+                  variant="destructive"
+                  className="shrink-0 tabular-nums font-semibold text-xs"
+                >
+                  {failedJobs24h.toLocaleString('id-ID')}
+                </Badge>
+              ) : (
+                <ArrowRight className="h-4 w-4 text-muted-foreground shrink-0" />
+              )}
+            </Link>
+          </StaggerItem>
 
           {/* Quick Action 2: Direktori Mahasiswa */}
-          <Link
-            href="/users"
-            className="flex items-center justify-between gap-3 rounded-lg border border-border bg-card p-3.5 transition-colors hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-          >
-            <div className="flex items-center gap-3 min-w-0">
-              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-border bg-muted/50 text-foreground">
-                <Users className="h-4 w-4" />
+          <StaggerItem>
+            <Link
+              href="/users"
+              className="flex items-center justify-between gap-3 rounded-lg border border-border bg-card p-3.5 transition-colors hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-border bg-muted/50 text-foreground">
+                  <Users className="h-4 w-4" />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-xs font-semibold text-foreground truncate">
+                    Direktori Mahasiswa
+                  </p>
+                  <p className="text-xs text-muted-foreground truncate tabular-nums">
+                    {totalUsersCount.toLocaleString('id-ID')} akun terdaftar
+                  </p>
+                </div>
               </div>
-              <div className="min-w-0">
-                <p className="text-xs font-semibold text-foreground truncate">
-                  Direktori Mahasiswa
-                </p>
-                <p className="text-xs text-muted-foreground truncate tabular-nums">
-                  {totalUsersCount.toLocaleString('id-ID')} akun terdaftar
-                </p>
-              </div>
-            </div>
-            <ArrowRight className="h-4 w-4 text-muted-foreground shrink-0" />
-          </Link>
+              <ArrowRight className="h-4 w-4 text-muted-foreground shrink-0" />
+            </Link>
+          </StaggerItem>
 
           {/* Quick Action 3: Monitoring Antrean */}
-          <Link
-            href="/jobs"
-            className="flex items-center justify-between gap-3 rounded-lg border border-border bg-card p-3.5 transition-colors hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-          >
-            <div className="flex items-center gap-3 min-w-0">
-              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-border bg-muted/50 text-foreground">
-                <Activity className="h-4 w-4" />
+          <StaggerItem>
+            <Link
+              href="/jobs"
+              className="flex items-center justify-between gap-3 rounded-lg border border-border bg-card p-3.5 transition-colors hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-border bg-muted/50 text-foreground">
+                  <Activity className="h-4 w-4" />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-xs font-semibold text-foreground truncate">
+                    Monitoring Antrean
+                  </p>
+                  <p className="text-xs text-muted-foreground truncate">
+                    Log eksekusi & status worker
+                  </p>
+                </div>
               </div>
-              <div className="min-w-0">
-                <p className="text-xs font-semibold text-foreground truncate">
-                  Monitoring Antrean
-                </p>
-                <p className="text-xs text-muted-foreground truncate">
-                  Log eksekusi & status worker
-                </p>
-              </div>
-            </div>
-            <ArrowRight className="h-4 w-4 text-muted-foreground shrink-0" />
-          </Link>
+              <ArrowRight className="h-4 w-4 text-muted-foreground shrink-0" />
+            </Link>
+          </StaggerItem>
 
           {/* Quick Action 4: Ekspor Laporan CSV */}
-          <button
-            type="button"
-            onClick={handleExportCsv}
-            disabled={isExporting}
-            className="flex items-center justify-between gap-3 rounded-lg border border-border bg-card p-3.5 text-left transition-colors hover:bg-muted/50 disabled:opacity-60 disabled:pointer-events-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-          >
-            <div className="flex items-center gap-3 min-w-0">
-              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-border bg-muted/50 text-foreground">
-                {isExporting ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Download className="h-4 w-4" />
-                )}
+          <StaggerItem>
+            <button
+              type="button"
+              onClick={handleExportCsv}
+              disabled={isExporting}
+              className="w-full flex items-center justify-between gap-3 rounded-lg border border-border bg-card p-3.5 text-left transition-colors hover:bg-muted/50 disabled:opacity-60 disabled:pointer-events-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-border bg-muted/50 text-foreground">
+                  {isExporting ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Download className="h-4 w-4" />
+                  )}
+                </div>
+                <div className="min-w-0">
+                  <p className="text-xs font-semibold text-foreground truncate">
+                    Ekspor Laporan CSV
+                  </p>
+                  <p className="text-xs text-muted-foreground truncate">
+                    {isExporting ? 'Menyiapkan berkas CSV...' : 'Unduh ringkasan operasional'}
+                  </p>
+                </div>
               </div>
-              <div className="min-w-0">
-                <p className="text-xs font-semibold text-foreground truncate">
-                  Ekspor Laporan CSV
-                </p>
-                <p className="text-xs text-muted-foreground truncate">
-                  {isExporting ? 'Menyiapkan berkas CSV...' : 'Unduh ringkasan operasional'}
-                </p>
-              </div>
-            </div>
-          </button>
-        </div>
+            </button>
+          </StaggerItem>
+        </StaggerGroup>
       </section>
 
       {/* 3. Widget Monitoring Antrean BullMQ & Status Redis */}
-      <section aria-label="Monitoring Antrean BullMQ & Status Redis" className="px-4 lg:px-6">
+      <FadeIn delay={0.04} className="px-4 lg:px-6" role="region" aria-label="Monitoring Antrean BullMQ & Status Redis">
         <Card className="border-border bg-card shadow-xs">
           <CardHeader className="pb-3">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
@@ -771,10 +782,10 @@ export default function AdminDashboardPage() {
             </div>
           </CardContent>
         </Card>
-      </section>
+      </FadeIn>
 
       {/* 4. Two-Column Operational Feeds: Recent Users & Recent Jobs */}
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 px-4 lg:px-6">
+      <FadeIn delay={0.08} className="grid grid-cols-1 xl:grid-cols-2 gap-6 px-4 lg:px-6">
         {/* 4A. Feed Pendaftaran Mahasiswa Terbaru (Recent Users Feed) */}
         <Card className="border-border bg-card shadow-xs flex flex-col justify-between">
           <div>
@@ -999,15 +1010,17 @@ export default function AdminDashboardPage() {
             </Link>
           </CardFooter>
         </Card>
-      </div>
+      </FadeIn>
 
       {/* 5. Platform Modules & Health Table */}
-      <DataTable
-        externalModules={systemStatus?.modules ?? null}
-        externalLoading={isSystemLoading}
-        externalError={systemError}
-        onRefresh={loadAllDashboardData}
-      />
+      <FadeIn delay={0.12}>
+        <DataTable
+          externalModules={systemStatus?.modules ?? null}
+          externalLoading={isSystemLoading}
+          externalError={systemError}
+          onRefresh={loadAllDashboardData}
+        />
+      </FadeIn>
 
       {/* 6. Technical Policy & Metrics Scope */}
       <div className="px-4 lg:px-6">
