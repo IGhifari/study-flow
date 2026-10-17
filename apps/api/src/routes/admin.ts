@@ -3,6 +3,12 @@ import {
   AdminUserListQuerySchema,
   AdminJobListQuerySchema,
   AdminTrendsQuerySchema,
+  AdminCourseListQuerySchema,
+  AdminMaterialListQuerySchema,
+  AdminAssignmentListQuerySchema,
+  AdminNoteListQuerySchema,
+  AdminScheduleListQuerySchema,
+  AdminQuizListQuerySchema,
 } from '@studyflow/shared';
 import { requireAdmin } from '../middleware/requireAdmin.js';
 import {
@@ -14,6 +20,12 @@ import {
   getAdminQueuesSummary,
   getAdminTrends,
   getAdminSystemStatus,
+  listAdminCourses,
+  listAdminMaterials,
+  listAdminAssignments,
+  listAdminNotes,
+  listAdminSchedules,
+  listAdminQuizzes,
 } from '../services/admin.service.js';
 import { originCheckMiddleware } from '../middleware/originCheck.js';
 
@@ -164,6 +176,138 @@ adminRouter.get('/system/status', async (_req: Request, res: Response, next: Nex
     const status = await getAdminSystemStatus();
     res.setHeader('Cache-Control', 'no-store, private');
     res.status(200).json(status);
+  } catch (err) {
+    next(err);
+  }
+});
+
+// GET /api/admin/courses
+adminRouter.get('/courses', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const parseResult = AdminCourseListQuerySchema.safeParse(req.query);
+    if (!parseResult.success) {
+      res.status(400).json({
+        error: {
+          code: 'VALIDATION_ERROR',
+          message: 'Parameter query mata kuliah tidak valid',
+          details: parseResult.error.flatten().fieldErrors,
+        },
+      });
+      return;
+    }
+    const result = await listAdminCourses(parseResult.data);
+    res.setHeader('Cache-Control', 'no-store, private');
+    res.status(200).json(result);
+  } catch (err) {
+    next(err);
+  }
+});
+
+// GET /api/admin/materials
+adminRouter.get('/materials', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const parseResult = AdminMaterialListQuerySchema.safeParse(req.query);
+    if (!parseResult.success) {
+      res.status(400).json({
+        error: {
+          code: 'VALIDATION_ERROR',
+          message: 'Parameter query materi tidak valid',
+          details: parseResult.error.flatten().fieldErrors,
+        },
+      });
+      return;
+    }
+    const result = await listAdminMaterials(parseResult.data);
+    res.setHeader('Cache-Control', 'no-store, private');
+    res.status(200).json(result);
+  } catch (err) {
+    next(err);
+  }
+});
+
+// GET /api/admin/assignments
+adminRouter.get('/assignments', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const parseResult = AdminAssignmentListQuerySchema.safeParse(req.query);
+    if (!parseResult.success) {
+      res.status(400).json({
+        error: {
+          code: 'VALIDATION_ERROR',
+          message: 'Parameter query tugas tidak valid',
+          details: parseResult.error.flatten().fieldErrors,
+        },
+      });
+      return;
+    }
+    const result = await listAdminAssignments(parseResult.data);
+    res.setHeader('Cache-Control', 'no-store, private');
+    res.status(200).json(result);
+  } catch (err) {
+    next(err);
+  }
+});
+
+// GET /api/admin/notes
+adminRouter.get('/notes', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const parseResult = AdminNoteListQuerySchema.safeParse(req.query);
+    if (!parseResult.success) {
+      res.status(400).json({
+        error: {
+          code: 'VALIDATION_ERROR',
+          message: 'Parameter query catatan tidak valid',
+          details: parseResult.error.flatten().fieldErrors,
+        },
+      });
+      return;
+    }
+    const result = await listAdminNotes(parseResult.data);
+    res.setHeader('Cache-Control', 'no-store, private');
+    res.status(200).json(result);
+  } catch (err) {
+    next(err);
+  }
+});
+
+// GET /api/admin/schedules
+adminRouter.get('/schedules', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const parseResult = AdminScheduleListQuerySchema.safeParse(req.query);
+    if (!parseResult.success) {
+      res.status(400).json({
+        error: {
+          code: 'VALIDATION_ERROR',
+          message: 'Parameter query jadwal tidak valid',
+          details: parseResult.error.flatten().fieldErrors,
+        },
+      });
+      return;
+    }
+    const result = await listAdminSchedules(parseResult.data);
+    res.setHeader('Cache-Control', 'no-store, private');
+    res.status(200).json(result);
+  } catch (err) {
+    next(err);
+  }
+});
+
+// GET /api/admin/quizzes
+adminRouter.get('/quizzes', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const parseResult = AdminQuizListQuerySchema.safeParse(req.query);
+    if (!parseResult.success) {
+      res.status(400).json({
+        error: {
+          code: 'VALIDATION_ERROR',
+          message: 'Parameter query kuis tidak valid',
+          details: parseResult.error.flatten().fieldErrors,
+        },
+      });
+      return;
+    }
+    const result = await listAdminQuizzes(parseResult.data);
+    res.setHeader('Cache-Control', 'no-store, private');
+    res.status(200).json(result);
   } catch (err) {
     next(err);
   }

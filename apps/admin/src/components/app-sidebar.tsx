@@ -9,9 +9,15 @@ import {
   Activity,
   Shield,
   AlertTriangle,
+  BookOpen,
+  Files,
+  ListTodo,
+  FileText,
+  CalendarClock,
+  BrainCircuit,
 } from "lucide-react"
 
-import { NavMain } from "@/components/nav-main"
+import { NavMain, type NavMainGroup, type NavMainItem } from "@/components/nav-main"
 import { NavSecondary } from "@/components/nav-secondary"
 import { NavUser } from "@/components/nav-user"
 import {
@@ -29,26 +35,74 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const pathname = usePathname()
   const { user } = useAdminAuth()
 
-  const navMain = [
+  const navGroups: NavMainGroup[] = [
     {
-      title: "Ringkasan",
-      url: "/dashboard",
-      icon: LayoutDashboard,
-      isActive: pathname === "/dashboard" || pathname === "/",
+      label: "Operasional & Sistem",
+      items: [
+        {
+          title: "Ringkasan",
+          url: "/dashboard",
+          icon: LayoutDashboard,
+          isActive: pathname === "/dashboard" || pathname === "/",
+        },
+        {
+          title: "Pengguna",
+          url: "/users",
+          icon: Users,
+          isActive: pathname.startsWith("/users"),
+        },
+        {
+          title: "Pekerjaan",
+          url: "/jobs",
+          icon: Activity,
+          isActive: pathname.startsWith("/jobs"),
+        },
+      ],
     },
     {
-      title: "Pengguna",
-      url: "/users",
-      icon: Users,
-      isActive: pathname.startsWith("/users"),
-    },
-    {
-      title: "Pekerjaan",
-      url: "/jobs",
-      icon: Activity,
-      isActive: pathname.startsWith("/jobs"),
+      label: "Data Akademik",
+      items: [
+        {
+          title: "Mata Kuliah",
+          url: "/courses",
+          icon: BookOpen,
+          isActive: pathname.startsWith("/courses"),
+        },
+        {
+          title: "Materi Kuliah",
+          url: "/materials",
+          icon: Files,
+          isActive: pathname.startsWith("/materials"),
+        },
+        {
+          title: "Tugas Kuliah",
+          url: "/assignments",
+          icon: ListTodo,
+          isActive: pathname.startsWith("/assignments"),
+        },
+        {
+          title: "Catatan",
+          url: "/notes",
+          icon: FileText,
+          isActive: pathname.startsWith("/notes"),
+        },
+        {
+          title: "Jadwal Kuliah",
+          url: "/schedules",
+          icon: CalendarClock,
+          isActive: pathname.startsWith("/schedules"),
+        },
+        {
+          title: "Kuis & Latihan",
+          url: "/quizzes",
+          icon: BrainCircuit,
+          isActive: pathname.startsWith("/quizzes"),
+        },
+      ],
     },
   ]
+
+  const navMain: NavMainItem[] = navGroups.flatMap((g) => g.items)
 
   const navSecondary = [
     {
@@ -98,7 +152,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       </SidebarHeader>
 
       <SidebarContent>
-        <NavMain items={navMain} />
+        <NavMain groups={navGroups} items={navMain} />
         <NavSecondary items={navSecondary} className="mt-auto" />
       </SidebarContent>
 

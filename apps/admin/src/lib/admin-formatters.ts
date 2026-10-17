@@ -38,6 +38,15 @@ export function formatJobDuration(durationMs: number | null | undefined): string
   return `${(durationMs / 1000).toFixed(1)}s`;
 }
 
+export function formatBytes(bytes: number, decimals = 1): string {
+  if (bytes === 0) return '0 B';
+  const k = 1024;
+  const dm = decimals < 0 ? 0 : decimals;
+  const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return `${parseFloat((bytes / Math.pow(k, i)).toFixed(dm))} ${sizes[i]}`;
+}
+
 export function getJobTypeLabel(type: AdminJobType): string {
   switch (type) {
     case 'DOCUMENT_EXTRACTION':

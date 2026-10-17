@@ -1,0 +1,471 @@
+'use client';
+
+import * as React from 'react';
+import Link from 'next/link';
+import { useSearchParams, useRouter } from 'next/navigation';
+import {
+  Search,
+  BrainCircuit,
+  RefreshCw,
+  AlertCircle,
+  X,
+  ArrowUpDown,
+  Download,
+  CheckCircle2,
+  Clock,
+  AlertTriangle,
+  Award,
+} from 'lucide-react';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Card } from '@/components/ui/card';
+import { FadeIn } from '@/components/ui/motion';
+import { fetchAdminQuizzes } from '@/lib/admin-api';
+import { AdminQuizListItem, AdminQuizListResponse } from '@studyflow/shared';
+import { downloadCsvFile } from '@/lib/admin-formatters';
+import { AdminPagination } from '@/components/admin-pagination';
+
+function QuizzesTableSkeleton() {
+  return (
+    <div className="space-y-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <Skeleton className="h-10 w-full sm:max-w-sm" />
+        <Skeleton className="h-9 w-32 self-end sm:self-auto" />
+      </div>
+      <Card className="overflow-hidden shadow-xs">
+        <div className="p-4 space-y-3">
+          {Array.from({ length: 6 }).map((_, idx) => (
+            <Skeleton key={idx} className="h-10 w-full" />
+          ))}
+        </div>
+      </Card>
+    </div>
+  );
+}
+
+function StatusBadge({ status }: { status: string }) {
+  switch (status) {
+    case 'READY':
+      return (
+        <Badge variant="outline" className="bg-emerald-500/10 text-emerald-600 border-emerald-500/20 text-xs gap-1">
+          <CheckCircle2 className="h-3 w-3" />
+          <span>Siap (Ready)</span>
+        </Badge>
+      );
+    case 'PROCESSING':
+      return (
+        <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20 text-xs gap-1 animate-pulse">
+          <RefreshCw className="h-3 w-3 animate-spin" />
+          <span>Sedang Dibuat</span>
+        </Badge>
+      );
+    case 'QUEUED':
+      return (
+        <Badge variant="outline" className="bg-amber-500/10 text-amber-600 border-amber-500/20 text-xs gap-1">
+          <Clock className="h-3 w-3" />
+          <span>Dalam Antrean</span>
+        </Badge>
+      );
+    case 'FAILED':
+      return (
+        <Badge variant="outline" className="bg-destructive/10 text-destructive border-destructive/20 text-xs gap-1">
+          <AlertTriangle className="h-3 w-3" />
+          <span>Gagal Dibuat</span>
+        </Badge>
+      );
+    default:
+      return <Badge variant="outline" className="text-xs">{status}</Badge>;
+  }
+}
+
+function AdminQuizzesContent() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+
+  const initialSearch = searchParams.get('search') || '';
+  const initialStatus = searchParams.get('status') || '';
+  const initialPage = Math.max(1, parseInt(searchParams.get('page') || '1', 10) || 1);
+  const initialLimit = [10, 20, 50].includes(Number(searchParams.get('limit')))
+    ? Number(searchParams.get('limit'))
+    : 20;
+
+  const [data, setData] = React.useState<AdminQuizListResponse | null>(null);
+  const [isLoading, setIsLoading] = React.useState(true);
+  const [error, setError] = React.useState<string | null>(null);
+
+  const [search, setSearch] = React.useState(initialSearch);
+  const [debouncedSearch, setDebouncedSearch] = React.useState(initialSearch);
+  const [status, setStatus] = React.useState(initialStatus);
+  const [page, setPage] = React.useState(initialPage);
+  const [limit, setLimit] = React.useState(initialLimit);
+  const [sortBy, setSortBy] = React.useState<'createdAt' | 'title' | 'questionCount'>('createdAt');
+  const [sortOrder, setSortOrder] = React.useState<'asc' | 'desc'>('desc');
+
+  React.useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(search);
+      setPage(1);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [search]);
+
+  React.useEffect(() => {
+    const params = new URLSearchParams();
+    if (debouncedSearch) params.set('search', debouncedSearch);
+    if (status) params.set('status', status);
+    if (page > 1) params.set('page', String(page));
+    if (limit !== 20) params.set('limit', String(limit));
+    if (sortBy !== 'createdAt') params.set('sortBy', sortBy);
+    if (sortOrder !== 'desc') params.set('sortOrder', sortOrder);
+
+    const queryString = params.toString();
+    const target = queryString ? `/quizzes?${queryString}` : '/quizzes';
+    router.replace(target, { scroll: false });
+  }, [debouncedSearch, status, page, limit, sortBy, sortOrder, router]);
+
+  const loadData = React.useCallback(async (signal?: AbortSignal) => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const res = await fetchAdminQuizzes(
+        {
+          search: debouncedSearch || undefined,
+          status: status || undefined,
+          page,
+          limit,
+          sortBy,
+          sortOrder,
+        },
+        { signal }
+      );
+      setData(res);
+    } catch (err: any) {
+      if (err.name === 'AbortError') return;
+      setError(err.message || 'Gagal memuat kuis latihan');
+    } finally {
+      setIsLoading(false);
+    }
+  }, [debouncedSearch, status, page, limit, sortBy, sortOrder]);
+
+  React.useEffect(() => {
+    const controller = new AbortController();
+    loadData(controller.signal);
+    return () => controller.abort();
+  }, [loadData]);
+
+  const handleExportCsv = () => {
+    if (!data || data.items.length === 0) return;
+    const headers = [
+      'ID',
+      'Judul Kuis',
+      'Materi',
+      'Jumlah Soal',
+      'Status',
+      'Total Attempt',
+      'Rata-rata Skor',
+      'Mahasiswa',
+      'Email Mahasiswa',
+      'Tanggal Dibuat',
+    ];
+    const rows = data.items.map((item) => [
+      item.id,
+      item.title,
+      item.materialTitle,
+      String(item.questionCount),
+      item.status,
+      String(item.attemptsCount),
+      item.averageScore !== null ? `${item.averageScore}%` : '-',
+      item.userName,
+      item.userEmail,
+      new Date(item.createdAt).toLocaleString('id-ID'),
+    ]);
+    downloadCsvFile('data-kuis-latihan-studyflow.csv', [headers, ...rows]);
+  };
+
+  const handleSort = (field: 'createdAt' | 'title' | 'questionCount') => {
+    if (sortBy === field) {
+      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortBy(field);
+      setSortOrder('desc');
+    }
+    setPage(1);
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
+            <BrainCircuit className="h-6 w-6 text-primary" />
+            Kuis & Latihan AI
+          </h1>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            Daftar seluruh kuis interaktif yang dihasilkan AI dari materi perkuliahan mahasiswa.
+          </p>
+        </div>
+
+        <div className="flex items-center gap-2 self-start sm:self-auto">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => loadData()}
+            disabled={isLoading}
+            className="h-9 gap-1.5 text-xs"
+          >
+            <RefreshCw className={`h-3.5 w-3.5 ${isLoading ? 'animate-spin' : ''}`} />
+            <span>Segarkan</span>
+          </Button>
+
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleExportCsv}
+            disabled={isLoading || !data?.items.length}
+            className="h-9 gap-1.5 text-xs"
+          >
+            <Download className="h-3.5 w-3.5" />
+            <span>Ekspor CSV</span>
+          </Button>
+        </div>
+      </div>
+
+      {/* Filter Bar */}
+      <Card className="p-3.5 border-border bg-card shadow-xs">
+        <div className="flex flex-col sm:flex-row gap-3">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+            <Input
+              type="text"
+              placeholder="Cari judul kuis, materi, mahasiswa..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="pl-9 pr-8 text-xs h-9"
+            />
+            {search && (
+              <button
+                type="button"
+                onClick={() => setSearch('')}
+                className="absolute right-2.5 top-2.5 text-muted-foreground hover:text-foreground"
+                aria-label="Hapus pencarian"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            )}
+          </div>
+
+          <div className="flex items-center gap-2">
+            <Select
+              value={status || 'ALL'}
+              onValueChange={(val) => {
+                setStatus(val === 'ALL' ? '' : val);
+                setPage(1);
+              }}
+            >
+              <SelectTrigger className="h-9 w-36 text-xs">
+                <SelectValue placeholder="Semua Status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="ALL" className="text-xs">Semua Status</SelectItem>
+                <SelectItem value="READY" className="text-xs">Siap (Ready)</SelectItem>
+                <SelectItem value="PROCESSING" className="text-xs">Sedang Dibuat</SelectItem>
+                <SelectItem value="QUEUED" className="text-xs">Dalam Antrean</SelectItem>
+                <SelectItem value="FAILED" className="text-xs">Gagal Dibuat</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <Select
+              value={String(limit)}
+              onValueChange={(val) => {
+                setLimit(Number(val));
+                setPage(1);
+              }}
+            >
+              <SelectTrigger className="h-9 w-28 text-xs">
+                <SelectValue placeholder="Baris" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="10" className="text-xs">10 per hal</SelectItem>
+                <SelectItem value="20" className="text-xs">20 per hal</SelectItem>
+                <SelectItem value="50" className="text-xs">50 per hal</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+      </Card>
+
+      {/* Error Alert */}
+      {error && (
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle className="text-xs font-semibold">Gagal Mengambil Data</AlertTitle>
+          <AlertDescription className="text-xs">
+            {error}. Silakan klik tombol Segarkan untuk mencoba kembali.
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {/* Loading Skeleton */}
+      {isLoading && !data && <QuizzesTableSkeleton />}
+
+      {/* Data Table */}
+      {(!isLoading || data) && (
+        <FadeIn>
+          <Card className="overflow-hidden border-border bg-card shadow-xs">
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow className="border-b border-border bg-muted/40">
+                    <TableHead
+                      className="cursor-pointer select-none text-xs font-semibold text-foreground"
+                      onClick={() => handleSort('title')}
+                    >
+                      <div className="flex items-center gap-1.5">
+                        <span>Judul Kuis</span>
+                        <ArrowUpDown className="h-3.5 w-3.5 text-muted-foreground" />
+                      </div>
+                    </TableHead>
+                    <TableHead className="text-xs font-semibold text-foreground">
+                      Materi Acuan
+                    </TableHead>
+                    <TableHead
+                      className="cursor-pointer select-none text-xs font-semibold text-foreground text-center"
+                      onClick={() => handleSort('questionCount')}
+                    >
+                      <div className="flex items-center justify-center gap-1.5">
+                        <span>Soal</span>
+                        <ArrowUpDown className="h-3.5 w-3.5 text-muted-foreground" />
+                      </div>
+                    </TableHead>
+                    <TableHead className="text-xs font-semibold text-foreground">
+                      Status AI
+                    </TableHead>
+                    <TableHead className="text-xs font-semibold text-foreground text-center">
+                      Hasil Percobaan
+                    </TableHead>
+                    <TableHead className="text-xs font-semibold text-foreground">
+                      Mahasiswa
+                    </TableHead>
+                    <TableHead
+                      className="cursor-pointer select-none text-xs font-semibold text-foreground text-right"
+                      onClick={() => handleSort('createdAt')}
+                    >
+                      <div className="flex items-center justify-end gap-1.5">
+                        <span>Dibuat</span>
+                        <ArrowUpDown className="h-3.5 w-3.5 text-muted-foreground" />
+                      </div>
+                    </TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {data?.items && data.items.length > 0 ? (
+                    data.items.map((item: AdminQuizListItem) => (
+                      <TableRow key={item.id} className="hover:bg-muted/30">
+                        <TableCell className="py-3 text-xs font-semibold text-foreground">
+                          {item.title}
+                        </TableCell>
+                        <TableCell className="py-3 text-xs font-medium text-foreground">
+                          {item.materialTitle}
+                        </TableCell>
+                        <TableCell className="py-3 text-xs text-center font-semibold tabular-nums">
+                          {item.questionCount} butir
+                        </TableCell>
+                        <TableCell className="py-3 text-xs">
+                          <StatusBadge status={item.status} />
+                        </TableCell>
+                        <TableCell className="py-3 text-xs text-center">
+                          {item.attemptsCount > 0 ? (
+                            <div className="inline-flex items-center gap-1.5">
+                              <span className="text-xs tabular-nums text-muted-foreground">
+                                {item.attemptsCount}x
+                              </span>
+                              <Badge variant="outline" className="bg-amber-500/10 text-amber-600 border-amber-500/20 text-xs gap-1 font-semibold tabular-nums">
+                                <Award className="h-3 w-3" />
+                                <span>{item.averageScore}%</span>
+                              </Badge>
+                            </div>
+                          ) : (
+                            <span className="text-muted-foreground text-xs">Belum dikerjakan</span>
+                          )}
+                        </TableCell>
+                        <TableCell className="py-3 text-xs">
+                          <Link
+                            href={`/users/${item.userId}`}
+                            className="font-medium text-primary hover:underline block"
+                          >
+                            {item.userName}
+                          </Link>
+                          <span className="text-muted-foreground">{item.userEmail}</span>
+                        </TableCell>
+                        <TableCell className="py-3 text-xs text-right text-muted-foreground tabular-nums">
+                          {new Date(item.createdAt).toLocaleDateString('id-ID', {
+                            day: 'numeric',
+                            month: 'short',
+                            year: 'numeric',
+                          })}
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  ) : (
+                    <TableRow>
+                      <TableCell colSpan={7} className="text-center py-12 text-muted-foreground text-xs">
+                        <BrainCircuit className="h-8 w-8 mx-auto text-muted-foreground/40 mb-2" />
+                        <p className="font-medium text-foreground">Tidak ada kuis latihan ditemukan</p>
+                        <p className="mt-0.5">
+                          {debouncedSearch || status
+                            ? 'Tidak ada kuis yang cocok dengan filter pencarian.'
+                            : 'Belum ada kuis latihan AI yang dihasilkan oleh mahasiswa.'}
+                        </p>
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+
+            {/* Pagination */}
+            {data && data.pagination.totalPages > 1 && (
+              <AdminPagination
+                page={page}
+                limit={limit}
+                totalItems={data.pagination.totalItems}
+                totalPages={data.pagination.totalPages}
+                currentItemsCount={data.items.length}
+                itemLabel="kuis & latihan"
+                isLoading={isLoading}
+                onPageChange={setPage}
+              />
+            )}
+          </Card>
+        </FadeIn>
+      )}
+    </div>
+  );
+}
+
+export default function AdminQuizzesPage(): React.JSX.Element {
+  return (
+    <React.Suspense fallback={<QuizzesTableSkeleton />}>
+      <AdminQuizzesContent />
+    </React.Suspense>
+  );
+}

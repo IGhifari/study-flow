@@ -26,6 +26,12 @@ export function AdminHeader() {
     if (path === '/users') return 'Pengguna';
     if (isUserDetail) return 'Detail Pengguna';
     if (path === '/jobs') return 'Pekerjaan';
+    if (path === '/courses') return 'Mata Kuliah';
+    if (path === '/materials') return 'Materi Kuliah';
+    if (path === '/assignments') return 'Tugas Kuliah';
+    if (path === '/notes') return 'Catatan Mahasiswa';
+    if (path === '/schedules') return 'Jadwal Kuliah';
+    if (path === '/quizzes') return 'Kuis & Latihan';
     if (path === '/dashboard' || path === '/') return 'Ringkasan';
     return 'Admin';
   };

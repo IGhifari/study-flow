@@ -20,6 +20,18 @@ import type {
   AdminModuleStatus,
   AdminSystemModule,
   AdminSystemStatusResponse,
+  AdminCourseListQuery,
+  AdminCourseListResponse,
+  AdminMaterialListQuery,
+  AdminMaterialListResponse,
+  AdminAssignmentListQuery,
+  AdminAssignmentListResponse,
+  AdminNoteListQuery,
+  AdminNoteListResponse,
+  AdminScheduleListQuery,
+  AdminScheduleListResponse,
+  AdminQuizListQuery,
+  AdminQuizListResponse,
   UserProfile,
   Role,
 } from '@studyflow/shared';
@@ -860,6 +872,388 @@ export async function getAdminSystemStatus(): Promise<AdminSystemStatusResponse>
   return {
     modules,
     timestamp: now,
+  };
+}
+
+export async function listAdminCourses(
+  query: AdminCourseListQuery
+): Promise<AdminCourseListResponse> {
+  const { page = 1, limit = 20, search, sortBy = 'createdAt', sortOrder = 'desc' } = query;
+  const skip = (page - 1) * limit;
+
+  const where: any = {};
+  if (search) {
+    where.OR = [
+      { name: { contains: search, mode: 'insensitive' } },
+      { code: { contains: search, mode: 'insensitive' } },
+      { lecturer: { contains: search, mode: 'insensitive' } },
+      { user: { name: { contains: search, mode: 'insensitive' } } },
+      { user: { email: { contains: search, mode: 'insensitive' } } },
+    ];
+  }
+
+  const [totalItems, courses] = await Promise.all([
+    prisma.course.count({ where }),
+    prisma.course.findMany({
+      where,
+      skip,
+      take: limit,
+      orderBy: { [sortBy]: sortOrder },
+      include: {
+        semester: { select: { name: true, academicYear: true } },
+        user: { select: { id: true, name: true, email: true } },
+        _count: {
+          select: { materials: true, assignments: true },
+        },
+      },
+    }),
+  ]);
+
+  const totalPages = Math.ceil(totalItems / limit) || 1;
+
+  return {
+    items: courses.map((c) => ({
+      id: c.id,
+      name: c.name,
+      code: c.code,
+      lecturer: c.lecturer,
+      semesterName: c.semester?.name || '-',
+      academicYear: c.semester?.academicYear || '-',
+      userId: c.user.id,
+      userName: c.user.name,
+      userEmail: c.user.email,
+      materialsCount: c._count.materials,
+      assignmentsCount: c._count.assignments,
+      createdAt: c.createdAt.toISOString(),
+    })),
+    pagination: {
+      page,
+      limit,
+      totalItems,
+      totalPages,
+      hasNext: page < totalPages,
+      hasPrev: page > 1,
+    },
+  };
+}
+
+export async function listAdminMaterials(
+  query: AdminMaterialListQuery
+): Promise<AdminMaterialListResponse> {
+  const { page = 1, limit = 20, search, status, sortBy = 'createdAt', sortOrder = 'desc' } = query;
+  const skip = (page - 1) * limit;
+
+  const where: any = { deletedAt: null };
+  if (status) {
+    where.status = status;
+  }
+  if (search) {
+    where.OR = [
+      { title: { contains: search, mode: 'insensitive' } },
+      { originalFilename: { contains: search, mode: 'insensitive' } },
+      { course: { name: { contains: search, mode: 'insensitive' } } },
+      { user: { name: { contains: search, mode: 'insensitive' } } },
+      { user: { email: { contains: search, mode: 'insensitive' } } },
+    ];
+  }
+
+  const [totalItems, materials] = await Promise.all([
+    prisma.material.count({ where }),
+    prisma.material.findMany({
+      where,
+      skip,
+      take: limit,
+      orderBy: { [sortBy]: sortOrder },
+      include: {
+        course: { select: { name: true } },
+        user: { select: { id: true, name: true, email: true } },
+      },
+    }),
+  ]);
+
+  const totalPages = Math.ceil(totalItems / limit) || 1;
+
+  return {
+    items: materials.map((m) => ({
+      id: m.id,
+      title: m.title,
+      originalFilename: m.originalFilename,
+      mimeType: m.mimeType,
+      bytes: m.bytes,
+      pageCount: m.pageCount,
+      status: m.status,
+      courseName: m.course.name,
+      userId: m.user.id,
+      userName: m.user.name,
+      userEmail: m.user.email,
+      createdAt: m.createdAt.toISOString(),
+    })),
+    pagination: {
+      page,
+      limit,
+      totalItems,
+      totalPages,
+      hasNext: page < totalPages,
+      hasPrev: page > 1,
+    },
+  };
+}
+
+export async function listAdminAssignments(
+  query: AdminAssignmentListQuery
+): Promise<AdminAssignmentListResponse> {
+  const { page = 1, limit = 20, search, status, priority, sortBy = 'createdAt', sortOrder = 'desc' } = query;
+  const skip = (page - 1) * limit;
+
+  const where: any = {};
+  if (status) where.status = status;
+  if (priority) where.priority = priority;
+  if (search) {
+    where.OR = [
+      { title: { contains: search, mode: 'insensitive' } },
+      { description: { contains: search, mode: 'insensitive' } },
+      { course: { name: { contains: search, mode: 'insensitive' } } },
+      { user: { name: { contains: search, mode: 'insensitive' } } },
+      { user: { email: { contains: search, mode: 'insensitive' } } },
+    ];
+  }
+
+  const now = new Date();
+
+  const [totalItems, assignments] = await Promise.all([
+    prisma.assignment.count({ where }),
+    prisma.assignment.findMany({
+      where,
+      skip,
+      take: limit,
+      orderBy: { [sortBy]: sortOrder },
+      include: {
+        course: { select: { name: true } },
+        user: { select: { id: true, name: true, email: true } },
+        subtasks: { select: { isCompleted: true } },
+      },
+    }),
+  ]);
+
+  const totalPages = Math.ceil(totalItems / limit) || 1;
+
+  return {
+    items: assignments.map((a) => {
+      const isOverdue = a.status !== 'DONE' && a.dueDate < now;
+      const subtasksCount = a.subtasks.length;
+      const completedSubtasksCount = a.subtasks.filter((s) => s.isCompleted).length;
+
+      return {
+        id: a.id,
+        title: a.title,
+        courseName: a.course.name,
+        dueDate: a.dueDate.toISOString(),
+        priority: a.priority,
+        status: a.status,
+        isOverdue,
+        subtasksCount,
+        completedSubtasksCount,
+        userId: a.user.id,
+        userName: a.user.name,
+        userEmail: a.user.email,
+        createdAt: a.createdAt.toISOString(),
+      };
+    }),
+    pagination: {
+      page,
+      limit,
+      totalItems,
+      totalPages,
+      hasNext: page < totalPages,
+      hasPrev: page > 1,
+    },
+  };
+}
+
+export async function listAdminNotes(
+  query: AdminNoteListQuery
+): Promise<AdminNoteListResponse> {
+  const { page = 1, limit = 20, search, sortBy = 'updatedAt', sortOrder = 'desc' } = query;
+  const skip = (page - 1) * limit;
+
+  const where: any = {};
+  if (search) {
+    where.OR = [
+      { title: { contains: search, mode: 'insensitive' } },
+      { content: { contains: search, mode: 'insensitive' } },
+      { course: { name: { contains: search, mode: 'insensitive' } } },
+      { user: { name: { contains: search, mode: 'insensitive' } } },
+      { user: { email: { contains: search, mode: 'insensitive' } } },
+    ];
+  }
+
+  const [totalItems, notes] = await Promise.all([
+    prisma.note.count({ where }),
+    prisma.note.findMany({
+      where,
+      skip,
+      take: limit,
+      orderBy: { [sortBy]: sortOrder },
+      include: {
+        course: { select: { name: true } },
+        material: { select: { title: true } },
+        user: { select: { id: true, name: true, email: true } },
+      },
+    }),
+  ]);
+
+  const totalPages = Math.ceil(totalItems / limit) || 1;
+
+  return {
+    items: notes.map((n) => ({
+      id: n.id,
+      title: n.title,
+      courseName: n.course.name,
+      materialTitle: n.material?.title || null,
+      contentSnippet: n.content ? (n.content.length > 120 ? `${n.content.slice(0, 117)}...` : n.content) : '',
+      userId: n.user.id,
+      userName: n.user.name,
+      userEmail: n.user.email,
+      updatedAt: n.updatedAt.toISOString(),
+    })),
+    pagination: {
+      page,
+      limit,
+      totalItems,
+      totalPages,
+      hasNext: page < totalPages,
+      hasPrev: page > 1,
+    },
+  };
+}
+
+export async function listAdminSchedules(
+  query: AdminScheduleListQuery
+): Promise<AdminScheduleListResponse> {
+  const { page = 1, limit = 20, search, dayOfWeek, sortBy = 'dayOfWeek', sortOrder = 'asc' } = query;
+  const skip = (page - 1) * limit;
+
+  const where: any = {};
+  if (dayOfWeek) where.dayOfWeek = dayOfWeek;
+  if (search) {
+    where.OR = [
+      { room: { contains: search, mode: 'insensitive' } },
+      { course: { name: { contains: search, mode: 'insensitive' } } },
+      { course: { code: { contains: search, mode: 'insensitive' } } },
+      { user: { name: { contains: search, mode: 'insensitive' } } },
+      { user: { email: { contains: search, mode: 'insensitive' } } },
+    ];
+  }
+
+  const [totalItems, schedules] = await Promise.all([
+    prisma.courseSchedule.count({ where }),
+    prisma.courseSchedule.findMany({
+      where,
+      skip,
+      take: limit,
+      orderBy: [
+        { [sortBy]: sortOrder },
+        { startTime: 'asc' },
+      ],
+      include: {
+        course: { select: { name: true, code: true } },
+        user: { select: { id: true, name: true, email: true } },
+      },
+    }),
+  ]);
+
+  const totalPages = Math.ceil(totalItems / limit) || 1;
+
+  return {
+    items: schedules.map((s) => ({
+      id: s.id,
+      courseName: s.course.name,
+      courseCode: s.course.code,
+      dayOfWeek: s.dayOfWeek,
+      startTime: s.startTime,
+      endTime: s.endTime,
+      room: s.room,
+      userId: s.user.id,
+      userName: s.user.name,
+      userEmail: s.user.email,
+    })),
+    pagination: {
+      page,
+      limit,
+      totalItems,
+      totalPages,
+      hasNext: page < totalPages,
+      hasPrev: page > 1,
+    },
+  };
+}
+
+export async function listAdminQuizzes(
+  query: AdminQuizListQuery
+): Promise<AdminQuizListResponse> {
+  const { page = 1, limit = 20, search, status, sortBy = 'createdAt', sortOrder = 'desc' } = query;
+  const skip = (page - 1) * limit;
+
+  const where: any = {};
+  if (status) where.status = status as any;
+  if (search) {
+    where.OR = [
+      { title: { contains: search, mode: 'insensitive' } },
+      { material: { title: { contains: search, mode: 'insensitive' } } },
+      { user: { name: { contains: search, mode: 'insensitive' } } },
+      { user: { email: { contains: search, mode: 'insensitive' } } },
+    ];
+  }
+
+  const [totalItems, quizzes] = await Promise.all([
+    prisma.quiz.count({ where }),
+    prisma.quiz.findMany({
+      where,
+      skip,
+      take: limit,
+      orderBy: { [sortBy]: sortOrder },
+      include: {
+        material: { select: { title: true } },
+        user: { select: { id: true, name: true, email: true } },
+        attempts: { select: { score: true } },
+      },
+    }),
+  ]);
+
+  const totalPages = Math.ceil(totalItems / limit) || 1;
+
+  return {
+    items: quizzes.map((q) => {
+      const attemptsCount = q.attempts.length;
+      const averageScore =
+        attemptsCount > 0
+          ? Math.round(
+              (q.attempts.reduce((acc, curr) => acc + curr.score, 0) / attemptsCount) * 10
+            ) / 10
+          : null;
+
+      return {
+        id: q.id,
+        title: q.title,
+        materialTitle: q.material.title,
+        questionCount: q.questionCount,
+        status: q.status,
+        attemptsCount,
+        averageScore,
+        userId: q.user.id,
+        userName: q.user.name,
+        userEmail: q.user.email,
+        createdAt: q.createdAt.toISOString(),
+      };
+    }),
+    pagination: {
+      page,
+      limit,
+      totalItems,
+      totalPages,
+      hasNext: page < totalPages,
+      hasPrev: page > 1,
+    },
   };
 }
 

@@ -12,6 +12,18 @@ import {
   AdminTrendsResponse,
   AdminSystemStatusResponse,
   AdminSystemModule,
+  AdminCourseListQuery,
+  AdminCourseListResponse,
+  AdminMaterialListQuery,
+  AdminMaterialListResponse,
+  AdminAssignmentListQuery,
+  AdminAssignmentListResponse,
+  AdminNoteListQuery,
+  AdminNoteListResponse,
+  AdminScheduleListQuery,
+  AdminScheduleListResponse,
+  AdminQuizListQuery,
+  AdminQuizListResponse,
   UserProfile,
 } from '@studyflow/shared';
 
@@ -278,6 +290,125 @@ export async function fetchAdminSystemStatus(
     signal: options?.signal,
   });
   return handleResponse<AdminSystemStatusResponse>(res);
+}
+
+export async function fetchAdminCourses(
+  query: Partial<AdminCourseListQuery> = {},
+  options?: { signal?: AbortSignal }
+): Promise<AdminCourseListResponse> {
+  const params = new URLSearchParams();
+  if (query.page) params.set('page', String(query.page));
+  if (query.limit) params.set('limit', String(query.limit));
+  if (query.search) params.set('search', query.search);
+  if (query.sortBy) params.set('sortBy', query.sortBy);
+  if (query.sortOrder) params.set('sortOrder', query.sortOrder);
+
+  const res = await adminFetch(`/api/admin/courses?${params.toString()}`, {
+    method: 'GET',
+    cache: 'no-store',
+    signal: options?.signal,
+  });
+  return handleResponse<AdminCourseListResponse>(res);
+}
+
+export async function fetchAdminMaterials(
+  query: Partial<AdminMaterialListQuery> = {},
+  options?: { signal?: AbortSignal }
+): Promise<AdminMaterialListResponse> {
+  const params = new URLSearchParams();
+  if (query.page) params.set('page', String(query.page));
+  if (query.limit) params.set('limit', String(query.limit));
+  if (query.search) params.set('search', query.search);
+  if (query.status) params.set('status', query.status);
+  if (query.sortBy) params.set('sortBy', query.sortBy);
+  if (query.sortOrder) params.set('sortOrder', query.sortOrder);
+
+  const res = await adminFetch(`/api/admin/materials?${params.toString()}`, {
+    method: 'GET',
+    cache: 'no-store',
+    signal: options?.signal,
+  });
+  return handleResponse<AdminMaterialListResponse>(res);
+}
+
+export async function fetchAdminAssignments(
+  query: Partial<AdminAssignmentListQuery> = {},
+  options?: { signal?: AbortSignal }
+): Promise<AdminAssignmentListResponse> {
+  const params = new URLSearchParams();
+  if (query.page) params.set('page', String(query.page));
+  if (query.limit) params.set('limit', String(query.limit));
+  if (query.search) params.set('search', query.search);
+  if (query.status) params.set('status', query.status);
+  if (query.priority) params.set('priority', query.priority);
+  if (query.sortBy) params.set('sortBy', query.sortBy);
+  if (query.sortOrder) params.set('sortOrder', query.sortOrder);
+
+  const res = await adminFetch(`/api/admin/assignments?${params.toString()}`, {
+    method: 'GET',
+    cache: 'no-store',
+    signal: options?.signal,
+  });
+  return handleResponse<AdminAssignmentListResponse>(res);
+}
+
+export async function fetchAdminNotes(
+  query: Partial<AdminNoteListQuery> = {},
+  options?: { signal?: AbortSignal }
+): Promise<AdminNoteListResponse> {
+  const params = new URLSearchParams();
+  if (query.page) params.set('page', String(query.page));
+  if (query.limit) params.set('limit', String(query.limit));
+  if (query.search) params.set('search', query.search);
+  if (query.sortBy) params.set('sortBy', query.sortBy);
+  if (query.sortOrder) params.set('sortOrder', query.sortOrder);
+
+  const res = await adminFetch(`/api/admin/notes?${params.toString()}`, {
+    method: 'GET',
+    cache: 'no-store',
+    signal: options?.signal,
+  });
+  return handleResponse<AdminNoteListResponse>(res);
+}
+
+export async function fetchAdminSchedules(
+  query: Partial<AdminScheduleListQuery> = {},
+  options?: { signal?: AbortSignal }
+): Promise<AdminScheduleListResponse> {
+  const params = new URLSearchParams();
+  if (query.page) params.set('page', String(query.page));
+  if (query.limit) params.set('limit', String(query.limit));
+  if (query.search) params.set('search', query.search);
+  if (query.dayOfWeek) params.set('dayOfWeek', String(query.dayOfWeek));
+  if (query.sortBy) params.set('sortBy', query.sortBy);
+  if (query.sortOrder) params.set('sortOrder', query.sortOrder);
+
+  const res = await adminFetch(`/api/admin/schedules?${params.toString()}`, {
+    method: 'GET',
+    cache: 'no-store',
+    signal: options?.signal,
+  });
+  return handleResponse<AdminScheduleListResponse>(res);
+}
+
+export async function fetchAdminQuizzes(
+  query: Partial<AdminQuizListQuery> = {},
+  options?: { signal?: AbortSignal }
+): Promise<AdminQuizListResponse> {
+  const params = new URLSearchParams();
+  if (query.page) params.set('page', String(query.page));
+  if (query.limit) params.set('limit', String(query.limit));
+  if (query.search) params.set('search', query.search);
+  if (query.status) params.set('status', query.status);
+  if (query.sortBy) params.set('sortBy', query.sortBy);
+  if (query.sortOrder) params.set('sortOrder', query.sortOrder);
+
+  const res = await adminFetch(`/api/admin/quizzes?${params.toString()}`, {
+    method: 'GET',
+    cache: 'no-store',
+    signal: options?.signal,
+  });
+  return handleResponse<AdminQuizListResponse>(res);
 }
 
 

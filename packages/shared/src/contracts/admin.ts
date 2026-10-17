@@ -286,6 +286,238 @@ export const AdminSystemStatusResponseSchema = z.object({
 });
 export type AdminSystemStatusResponse = z.infer<typeof AdminSystemStatusResponseSchema>;
 
+// ==========================================
+// Admin Academic & User Data Contracts
+// ==========================================
+
+export const AdminCourseListItemSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  code: z.string().nullable(),
+  lecturer: z.string().nullable(),
+  semesterName: z.string(),
+  academicYear: z.string(),
+  userId: z.string(),
+  userName: z.string(),
+  userEmail: z.string(),
+  materialsCount: z.number().int().nonnegative(),
+  assignmentsCount: z.number().int().nonnegative(),
+  createdAt: z.string().datetime(),
+});
+export type AdminCourseListItem = z.infer<typeof AdminCourseListItemSchema>;
+
+export const AdminCourseListQuerySchema = z.object({
+  page: z.coerce.number().int().min(1).default(1),
+  limit: z.coerce.number().int().min(1).max(100).default(20),
+  search: z.string().trim().max(100).optional(),
+  sortBy: z.enum(['createdAt', 'name', 'code']).default('createdAt'),
+  sortOrder: z.enum(['asc', 'desc']).default('desc'),
+});
+export type AdminCourseListQuery = z.infer<typeof AdminCourseListQuerySchema>;
+
+export const AdminCourseListResponseSchema = z.object({
+  items: z.array(AdminCourseListItemSchema),
+  pagination: z.object({
+    page: z.number().int(),
+    limit: z.number().int(),
+    totalItems: z.number().int(),
+    totalPages: z.number().int(),
+    hasNext: z.boolean(),
+    hasPrev: z.boolean(),
+  }),
+});
+export type AdminCourseListResponse = z.infer<typeof AdminCourseListResponseSchema>;
+
+export const AdminMaterialListItemSchema = z.object({
+  id: z.string(),
+  title: z.string(),
+  originalFilename: z.string(),
+  mimeType: z.string(),
+  bytes: z.number().int().nonnegative(),
+  pageCount: z.number().int().nullable(),
+  status: z.string(),
+  courseName: z.string(),
+  userId: z.string(),
+  userName: z.string(),
+  userEmail: z.string(),
+  createdAt: z.string().datetime(),
+});
+export type AdminMaterialListItem = z.infer<typeof AdminMaterialListItemSchema>;
+
+export const AdminMaterialListQuerySchema = z.object({
+  page: z.coerce.number().int().min(1).default(1),
+  limit: z.coerce.number().int().min(1).max(100).default(20),
+  search: z.string().trim().max(100).optional(),
+  status: z.string().trim().optional(),
+  sortBy: z.enum(['createdAt', 'title', 'bytes']).default('createdAt'),
+  sortOrder: z.enum(['asc', 'desc']).default('desc'),
+});
+export type AdminMaterialListQuery = z.infer<typeof AdminMaterialListQuerySchema>;
+
+export const AdminMaterialListResponseSchema = z.object({
+  items: z.array(AdminMaterialListItemSchema),
+  pagination: z.object({
+    page: z.number().int(),
+    limit: z.number().int(),
+    totalItems: z.number().int(),
+    totalPages: z.number().int(),
+    hasNext: z.boolean(),
+    hasPrev: z.boolean(),
+  }),
+});
+export type AdminMaterialListResponse = z.infer<typeof AdminMaterialListResponseSchema>;
+
+export const AdminAssignmentListItemSchema = z.object({
+  id: z.string(),
+  title: z.string(),
+  courseName: z.string(),
+  dueDate: z.string().datetime(),
+  priority: z.enum(['LOW', 'MEDIUM', 'HIGH']),
+  status: z.enum(['TODO', 'IN_PROGRESS', 'DONE']),
+  isOverdue: z.boolean(),
+  subtasksCount: z.number().int().nonnegative(),
+  completedSubtasksCount: z.number().int().nonnegative(),
+  userId: z.string(),
+  userName: z.string(),
+  userEmail: z.string(),
+  createdAt: z.string().datetime(),
+});
+export type AdminAssignmentListItem = z.infer<typeof AdminAssignmentListItemSchema>;
+
+export const AdminAssignmentListQuerySchema = z.object({
+  page: z.coerce.number().int().min(1).default(1),
+  limit: z.coerce.number().int().min(1).max(100).default(20),
+  search: z.string().trim().max(100).optional(),
+  status: z.enum(['TODO', 'IN_PROGRESS', 'DONE']).optional(),
+  priority: z.enum(['LOW', 'MEDIUM', 'HIGH']).optional(),
+  sortBy: z.enum(['createdAt', 'dueDate', 'title']).default('createdAt'),
+  sortOrder: z.enum(['asc', 'desc']).default('desc'),
+});
+export type AdminAssignmentListQuery = z.infer<typeof AdminAssignmentListQuerySchema>;
+
+export const AdminAssignmentListResponseSchema = z.object({
+  items: z.array(AdminAssignmentListItemSchema),
+  pagination: z.object({
+    page: z.number().int(),
+    limit: z.number().int(),
+    totalItems: z.number().int(),
+    totalPages: z.number().int(),
+    hasNext: z.boolean(),
+    hasPrev: z.boolean(),
+  }),
+});
+export type AdminAssignmentListResponse = z.infer<typeof AdminAssignmentListResponseSchema>;
+
+export const AdminNoteListItemSchema = z.object({
+  id: z.string(),
+  title: z.string(),
+  courseName: z.string(),
+  materialTitle: z.string().nullable(),
+  contentSnippet: z.string(),
+  userId: z.string(),
+  userName: z.string(),
+  userEmail: z.string(),
+  updatedAt: z.string().datetime(),
+});
+export type AdminNoteListItem = z.infer<typeof AdminNoteListItemSchema>;
+
+export const AdminNoteListQuerySchema = z.object({
+  page: z.coerce.number().int().min(1).default(1),
+  limit: z.coerce.number().int().min(1).max(100).default(20),
+  search: z.string().trim().max(100).optional(),
+  sortBy: z.enum(['updatedAt', 'title']).default('updatedAt'),
+  sortOrder: z.enum(['asc', 'desc']).default('desc'),
+});
+export type AdminNoteListQuery = z.infer<typeof AdminNoteListQuerySchema>;
+
+export const AdminNoteListResponseSchema = z.object({
+  items: z.array(AdminNoteListItemSchema),
+  pagination: z.object({
+    page: z.number().int(),
+    limit: z.number().int(),
+    totalItems: z.number().int(),
+    totalPages: z.number().int(),
+    hasNext: z.boolean(),
+    hasPrev: z.boolean(),
+  }),
+});
+export type AdminNoteListResponse = z.infer<typeof AdminNoteListResponseSchema>;
+
+export const AdminScheduleListItemSchema = z.object({
+  id: z.string(),
+  courseName: z.string(),
+  courseCode: z.string().nullable(),
+  dayOfWeek: z.number().int().min(1).max(7),
+  startTime: z.string(),
+  endTime: z.string(),
+  room: z.string().nullable(),
+  userId: z.string(),
+  userName: z.string(),
+  userEmail: z.string(),
+});
+export type AdminScheduleListItem = z.infer<typeof AdminScheduleListItemSchema>;
+
+export const AdminScheduleListQuerySchema = z.object({
+  page: z.coerce.number().int().min(1).default(1),
+  limit: z.coerce.number().int().min(1).max(100).default(20),
+  search: z.string().trim().max(100).optional(),
+  dayOfWeek: z.coerce.number().int().min(1).max(7).optional(),
+  sortBy: z.enum(['dayOfWeek', 'startTime', 'createdAt']).default('dayOfWeek'),
+  sortOrder: z.enum(['asc', 'desc']).default('asc'),
+});
+export type AdminScheduleListQuery = z.infer<typeof AdminScheduleListQuerySchema>;
+
+export const AdminScheduleListResponseSchema = z.object({
+  items: z.array(AdminScheduleListItemSchema),
+  pagination: z.object({
+    page: z.number().int(),
+    limit: z.number().int(),
+    totalItems: z.number().int(),
+    totalPages: z.number().int(),
+    hasNext: z.boolean(),
+    hasPrev: z.boolean(),
+  }),
+});
+export type AdminScheduleListResponse = z.infer<typeof AdminScheduleListResponseSchema>;
+
+export const AdminQuizListItemSchema = z.object({
+  id: z.string(),
+  title: z.string(),
+  materialTitle: z.string(),
+  questionCount: z.number().int().nonnegative(),
+  status: z.string(),
+  attemptsCount: z.number().int().nonnegative(),
+  averageScore: z.number().nullable(),
+  userId: z.string(),
+  userName: z.string(),
+  userEmail: z.string(),
+  createdAt: z.string().datetime(),
+});
+export type AdminQuizListItem = z.infer<typeof AdminQuizListItemSchema>;
+
+export const AdminQuizListQuerySchema = z.object({
+  page: z.coerce.number().int().min(1).default(1),
+  limit: z.coerce.number().int().min(1).max(100).default(20),
+  search: z.string().trim().max(100).optional(),
+  status: z.string().trim().optional(),
+  sortBy: z.enum(['createdAt', 'title', 'questionCount']).default('createdAt'),
+  sortOrder: z.enum(['asc', 'desc']).default('desc'),
+});
+export type AdminQuizListQuery = z.infer<typeof AdminQuizListQuerySchema>;
+
+export const AdminQuizListResponseSchema = z.object({
+  items: z.array(AdminQuizListItemSchema),
+  pagination: z.object({
+    page: z.number().int(),
+    limit: z.number().int(),
+    totalItems: z.number().int(),
+    totalPages: z.number().int(),
+    hasNext: z.boolean(),
+    hasPrev: z.boolean(),
+  }),
+});
+export type AdminQuizListResponse = z.infer<typeof AdminQuizListResponseSchema>;
+
 
 
 

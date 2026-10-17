@@ -72,67 +72,87 @@ export function SectionCards({ summary, isLoading = false }: SectionCardsProps) 
         </Card>
       </Link>
 
-      {/* 2. Total Materi */}
-      <Card className="@container/card h-full border border-border bg-card shadow-xs">
-        <CardHeader className="relative">
-          <CardDescription>Total Materi Kuliah</CardDescription>
-          <CardTitle className="@[250px]/card:text-3xl text-2xl font-semibold tabular-nums mt-1">
-            {isLoading ? (
-              <Skeleton className="h-8 w-24" />
-            ) : (
-              (summary ? summary.totalMaterials.toLocaleString("id-ID") : "0")
-            )}
-          </CardTitle>
-          <div className="absolute right-4 top-4">
-            <Badge
-              variant="secondary"
-              className="flex items-center gap-1 rounded-lg text-xs font-normal"
-            >
-              <FileText className="size-3 text-muted-foreground" />
-              Dokumen
-            </Badge>
-          </div>
-        </CardHeader>
-        <CardFooter className="flex-col items-start gap-1 text-sm">
-          <div className="line-clamp-1 flex items-center gap-2 font-medium">
-            Bahan pembelajaran aktif <FileText className="size-3.5 text-muted-foreground" />
-          </div>
-          <div className="text-muted-foreground text-xs">
-            Tidak termasuk arsip / terhapus
-          </div>
-        </CardFooter>
-      </Card>
+      {/* 2. Total Materi (Deep-link ke /materials) */}
+      <Link
+        href="/materials"
+        className="block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-xl group"
+      >
+        <Card className="@container/card h-full border border-border bg-card shadow-xs transition-all hover:border-primary/50 hover:shadow-sm">
+          <CardHeader className="relative">
+            <div className="flex items-center justify-between">
+              <CardDescription className="group-hover:text-foreground transition-colors">
+                Total Materi Kuliah
+              </CardDescription>
+              <ArrowRightIcon className="size-3.5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+            </div>
+            <CardTitle className="@[250px]/card:text-3xl text-2xl font-semibold tabular-nums mt-1">
+              {isLoading ? (
+                <Skeleton className="h-8 w-24" />
+              ) : (
+                (summary ? summary.totalMaterials.toLocaleString("id-ID") : "0")
+              )}
+            </CardTitle>
+            <div className="absolute right-4 top-4">
+              <Badge
+                variant="secondary"
+                className="flex items-center gap-1 rounded-lg text-xs font-normal"
+              >
+                <FileText className="size-3 text-muted-foreground" />
+                Dokumen
+              </Badge>
+            </div>
+          </CardHeader>
+          <CardFooter className="flex-col items-start gap-1 text-sm">
+            <div className="line-clamp-1 flex items-center gap-2 font-medium group-hover:text-primary transition-colors">
+              Bahan pembelajaran aktif <FileText className="size-3.5 text-muted-foreground" />
+            </div>
+            <div className="text-muted-foreground text-xs">
+              Buka direktori materi &rarr;
+            </div>
+          </CardFooter>
+        </Card>
+      </Link>
 
-      {/* 3. Total Tugas */}
-      <Card className="@container/card h-full border border-border bg-card shadow-xs">
-        <CardHeader className="relative">
-          <CardDescription>Total Tugas Akademik</CardDescription>
-          <CardTitle className="@[250px]/card:text-3xl text-2xl font-semibold tabular-nums mt-1">
-            {isLoading ? (
-              <Skeleton className="h-8 w-24" />
-            ) : (
-              (summary ? summary.totalAssignments.toLocaleString("id-ID") : "0")
-            )}
-          </CardTitle>
-          <div className="absolute right-4 top-4">
-            <Badge
-              variant="secondary"
-              className="flex items-center gap-1 rounded-lg text-xs font-normal"
-            >
-              <CheckSquare className="size-3 text-muted-foreground" />
-              Tugas
-            </Badge>
-          </div>
-        </CardHeader>
-        <CardFooter className="flex-col items-start gap-1 text-sm">
-          <div className="line-clamp-1 flex items-center gap-2 font-medium">
-            Tugas perkuliahan mahasiswa <CheckSquare className="size-3.5 text-muted-foreground" />
-          </div>
-          <div className="text-muted-foreground text-xs">
-            Terdistribusi lintas semester
-          </div>
-        </CardFooter>
-      </Card>
+      {/* 3. Total Tugas (Deep-link ke /assignments) */}
+      <Link
+        href="/assignments"
+        className="block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-xl group"
+      >
+        <Card className="@container/card h-full border border-border bg-card shadow-xs transition-all hover:border-primary/50 hover:shadow-sm">
+          <CardHeader className="relative">
+            <div className="flex items-center justify-between">
+              <CardDescription className="group-hover:text-foreground transition-colors">
+                Total Tugas Akademik
+              </CardDescription>
+              <ArrowRightIcon className="size-3.5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+            </div>
+            <CardTitle className="@[250px]/card:text-3xl text-2xl font-semibold tabular-nums mt-1">
+              {isLoading ? (
+                <Skeleton className="h-8 w-24" />
+              ) : (
+                (summary ? summary.totalAssignments.toLocaleString("id-ID") : "0")
+              )}
+            </CardTitle>
+            <div className="absolute right-4 top-4">
+              <Badge
+                variant="secondary"
+                className="flex items-center gap-1 rounded-lg text-xs font-normal"
+              >
+                <CheckSquare className="size-3 text-muted-foreground" />
+                Tugas
+              </Badge>
+            </div>
+          </CardHeader>
+          <CardFooter className="flex-col items-start gap-1 text-sm">
+            <div className="line-clamp-1 flex items-center gap-2 font-medium group-hover:text-primary transition-colors">
+              Tugas perkuliahan mahasiswa <CheckSquare className="size-3.5 text-muted-foreground" />
+            </div>
+            <div className="text-muted-foreground text-xs">
+              Buka daftar tugas &rarr;
+            </div>
+          </CardFooter>
+        </Card>
+      </Link>
 
       {/* 4. Gagal AI (24 Jam) (Deep-link ke /jobs?status=FAILED) */}
       <Link

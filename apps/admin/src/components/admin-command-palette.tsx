@@ -16,6 +16,11 @@ import {
   Sun,
   Moon,
   Laptop,
+  BookOpen,
+  CheckSquare,
+  StickyNote,
+  Calendar,
+  HelpCircle,
 } from 'lucide-react';
 
 import {
@@ -108,7 +113,7 @@ export function AdminCommandPalette({
         </CommandEmpty>
 
         {/* 1. Navigasi Halaman Utama */}
-        <CommandGroup heading="Navigasi Halaman">
+        <CommandGroup heading="Sistem & Operasional">
           <CommandItem
             onSelect={() => handleSelect(() => router.push('/dashboard'))}
           >
@@ -129,6 +134,54 @@ export function AdminCommandPalette({
             <Briefcase className="h-4 w-4 text-blue-500" />
             <span>Monitoring Pekerjaan & Antrean AI</span>
             <CommandShortcut>G J</CommandShortcut>
+          </CommandItem>
+        </CommandGroup>
+
+        <CommandSeparator />
+
+        {/* 2. Navigasi Data Akademik */}
+        <CommandGroup heading="Data Akademik">
+          <CommandItem
+            onSelect={() => handleSelect(() => router.push('/courses'))}
+          >
+            <BookOpen className="h-4 w-4 text-indigo-500" />
+            <span>Mata Kuliah Seluruh Mahasiswa</span>
+            <CommandShortcut>G C</CommandShortcut>
+          </CommandItem>
+          <CommandItem
+            onSelect={() => handleSelect(() => router.push('/materials'))}
+          >
+            <FileText className="h-4 w-4 text-sky-500" />
+            <span>Materi Kuliah & Dokumen PDF</span>
+            <CommandShortcut>G M</CommandShortcut>
+          </CommandItem>
+          <CommandItem
+            onSelect={() => handleSelect(() => router.push('/assignments'))}
+          >
+            <CheckSquare className="h-4 w-4 text-amber-500" />
+            <span>Tugas Kuliah & Subtugas</span>
+            <CommandShortcut>G A</CommandShortcut>
+          </CommandItem>
+          <CommandItem
+            onSelect={() => handleSelect(() => router.push('/notes'))}
+          >
+            <StickyNote className="h-4 w-4 text-rose-500" />
+            <span>Catatan Kuliah Mahasiswa</span>
+            <CommandShortcut>G N</CommandShortcut>
+          </CommandItem>
+          <CommandItem
+            onSelect={() => handleSelect(() => router.push('/schedules'))}
+          >
+            <Calendar className="h-4 w-4 text-teal-500" />
+            <span>Jadwal Perkuliahan Mingguan</span>
+            <CommandShortcut>G S</CommandShortcut>
+          </CommandItem>
+          <CommandItem
+            onSelect={() => handleSelect(() => router.push('/quizzes'))}
+          >
+            <HelpCircle className="h-4 w-4 text-violet-500" />
+            <span>Kuis & Latihan AI</span>
+            <CommandShortcut>G Q</CommandShortcut>
           </CommandItem>
         </CommandGroup>
 
@@ -218,8 +271,8 @@ export function CommandPaletteTrigger({ onClick }: { onClick?: () => void }) {
     >
       <Search className="mr-2 h-3.5 w-3.5 shrink-0 opacity-60" />
       <span className="inline-flex">Cari atau navigasi cepat...</span>
-      <kbd className="pointer-events-none absolute right-2 top-2 hidden h-5 select-none items-center gap-1 rounded border bg-background px-1.5 font-mono text-[10px] font-medium text-muted-foreground opacity-100 sm:flex">
-        <span className="text-xs">⌘</span>K
+      <kbd className="pointer-events-none absolute right-2 top-2 hidden h-5 select-none items-center gap-1 rounded border bg-background px-1.5 font-mono text-xs font-medium text-muted-foreground opacity-100 sm:flex">
+        <span>⌘</span>K
       </kbd>
     </Button>
   );
