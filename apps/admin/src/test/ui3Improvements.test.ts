@@ -16,9 +16,7 @@ describe('UI-3 Improvements: Admin Portal AI Slop & Dead Code Cleanup Tests', ()
 
     // No duplicate or fake navigation groups
     expect(content).not.toContain('navPlatform');
-    expect(content).not.toContain('navSecondary');
     expect(content).not.toContain('NavDocuments');
-    expect(content).not.toContain('NavSecondary');
     expect(content).not.toContain('Audit Keamanan');
     expect(content).not.toContain('Bantuan & SLA');
   });
@@ -26,7 +24,6 @@ describe('UI-3 Improvements: Admin Portal AI Slop & Dead Code Cleanup Tests', ()
   it('2. Dead component and data files are completely removed from monorepo', () => {
     const deadFiles = [
       path.join(adminDir, 'components/nav-documents.tsx'),
-      path.join(adminDir, 'components/nav-secondary.tsx'),
       path.join(adminDir, 'components/admin-sidebar.tsx'),
       path.join(adminDir, 'components/site-header.tsx'),
       path.join(adminDir, 'data/platform-services.ts'),
@@ -73,7 +70,7 @@ describe('UI-3 Improvements: Admin Portal AI Slop & Dead Code Cleanup Tests', ()
 
     // No native window.alert dialog
     expect(content).not.toMatch(/alert\s*\(/);
-    expect(content).toContain("setError('Gagal mengekspor laporan:");
+    expect(content).toContain("setExportError('Gagal mengekspor laporan:");
   });
 
   it('5. data-table.tsx adheres to DESIGN.md §4.2 contrast, eliminates micro typography, and ensures responsive table', () => {
@@ -81,8 +78,8 @@ describe('UI-3 Improvements: Admin Portal AI Slop & Dead Code Cleanup Tests', ()
     const content = fs.readFileSync(tablePath, 'utf-8');
 
     // High contrast semantic badges
-    expect(content).toContain('border-emerald-200 bg-emerald-50 text-emerald-800');
-    expect(content).toContain('border-amber-200 bg-amber-50 text-amber-800');
+    expect(content).toContain('bg-success text-success-foreground');
+    expect(content).toContain('bg-warning text-warning-foreground');
     expect(content).toContain('border-destructive/20 bg-destructive/10 text-destructive');
 
     // Responsive horizontal overflow

@@ -82,13 +82,18 @@ function UsersTableSkeleton() {
         <Skeleton className="h-10 w-full sm:max-w-sm" />
         <Skeleton className="h-9 w-32 self-end sm:self-auto" />
       </div>
-      <Card className="overflow-hidden shadow-xs">
+      <Card className="hidden md:block overflow-hidden shadow-xs">
         <div className="p-4 space-y-3">
           {Array.from({ length: 6 }).map((_, idx) => (
             <Skeleton key={idx} className="h-10 w-full" />
           ))}
         </div>
       </Card>
+      <div className="grid grid-cols-1 gap-3 md:hidden">
+        {Array.from({ length: 4 }).map((_, idx) => (
+          <Skeleton key={idx} className="h-40 w-full rounded-xl" />
+        ))}
+      </div>
     </div>
   );
 }
@@ -569,7 +574,8 @@ function AdminUsersContent() {
       </Card>
 
       {/* Users Table */}
-      <Card className="overflow-hidden shadow-xs border-border bg-card">
+      {/* Desktop Table (>= 768px) */}
+      <Card className="hidden md:block overflow-hidden shadow-xs border-border bg-card">
         <div className="overflow-x-auto">
           <Table>
             <TableHeader>
@@ -638,7 +644,7 @@ function AdminUsersContent() {
                           {user.name}
                         </Link>
                         {isCurrentAdmin && (
-                          <span className="ml-2 inline-flex items-center px-1.5 py-0.5 rounded-sm text-[10px] bg-primary/10 text-primary font-medium">
+                          <span className="ml-2 inline-flex items-center px-1.5 py-0.5 rounded-sm text-xs bg-primary/10 text-primary font-semibold">
                             Akun Anda
                           </span>
                         )}
@@ -660,11 +666,11 @@ function AdminUsersContent() {
                       </TableCell>
                       <TableCell className="py-3">
                         {user.emailVerifiedAt ? (
-                          <Badge variant="outline" className="bg-emerald-500/10 text-emerald-600 border-emerald-500/20 text-xs">
+                          <Badge variant="outline" className="bg-success text-success-foreground border-transparent text-xs">
                             Terverifikasi
                           </Badge>
                         ) : (
-                          <Badge variant="outline" className="bg-amber-500/10 text-amber-600 border-amber-500/20 text-xs">
+                          <Badge variant="outline" className="bg-warning text-warning-foreground border-transparent text-xs">
                             Belum Verifikasi
                           </Badge>
                         )}
@@ -679,7 +685,7 @@ function AdminUsersContent() {
                       <TableCell className="text-right py-3">
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-8 w-8 p-0">
+                            <Button variant="ghost" size="icon" className="h-8 w-8 p-0" aria-label={`Aksi untuk pengguna ${user.name}`}>
                               <span className="sr-only">Buka menu aksi</span>
                               <MoreHorizontal className="h-4 w-4" />
                             </Button>
@@ -719,7 +725,7 @@ function AdminUsersContent() {
                               onClick={() => handleResetQuota(user)}
                               className="cursor-pointer text-xs"
                             >
-                              <RotateCcw className="mr-2 h-4 w-4 text-amber-500" />
+                              <RotateCcw className="mr-2 h-4 w-4 text-warning-foreground" />
                               <span>Reset Kuota Harian</span>
                             </DropdownMenuItem>
 
@@ -727,7 +733,7 @@ function AdminUsersContent() {
                               onClick={() => handleRevokeSessions(user)}
                               className="cursor-pointer text-xs"
                             >
-                              <LogOut className="mr-2 h-4 w-4 text-orange-500" />
+                              <LogOut className="mr-2 h-4 w-4 text-warning-foreground" />
                               <span>Cabut Sesi Aktif</span>
                             </DropdownMenuItem>
 
@@ -778,19 +784,201 @@ function AdminUsersContent() {
             </TableBody>
           </Table>
         </div>
-
-        {/* Pagination Footer */}
-        <AdminPagination
-          page={page}
-          limit={limit}
-          totalItems={totalItems}
-          totalPages={totalPages}
-          currentItemsCount={data?.items.length ?? 0}
-          itemLabel="pengguna"
-          isLoading={isLoading}
-          onPageChange={setPage}
-        />
       </Card>
+
+      {/* Mobile Cards View (< 768px) */}
+      <div className="grid grid-cols-1 gap-3 md:hidden">
+        {isLoading ? (
+          Array.from({ length: 4 }).map((_, idx) => (
+            <Skeleton key={idx} className="h-40 w-full rounded-xl" />
+          ))
+        ) : data && data.items.length > 0 ? (
+          data.items.map((user: AdminUserListItem) => {
+            const detailHref = currentQueryString
+              ? `/users/${user.id}?${currentQueryString}`
+              : `/users/${user.id}`;
+            const isCurrentAdmin = currentAdmin?.id === user.id;
+
+            return (
+              <Card key={user.id} className="border-border bg-card shadow-xs p-4 flex flex-col justify-between gap-3">
+                <div className="space-y-2">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0 flex-1">
+                      <Link
+                        href={detailHref}
+                        className="font-semibold text-sm text-foreground hover:underline hover:text-primary transition-colors block truncate"
+                      >
+                        {user.name}
+                      </Link>
+                      <p className="text-xs text-muted-foreground font-mono truncate" title={user.email}>
+                        {user.email}
+                      </p>
+                    </div>
+                    {user.role === 'ADMIN' ? (
+                      <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20 font-semibold text-xs gap-1 shrink-0">
+                        <Shield className="h-3 w-3" />
+                        ADMIN
+                      </Badge>
+                    ) : (
+                      <Badge variant="secondary" className="font-normal text-xs shrink-0">
+                        USER
+                      </Badge>
+                    )}
+                  </div>
+
+                  <div className="flex flex-wrap items-center gap-2 pt-1 border-t border-border/50">
+                    {user.emailVerifiedAt ? (
+                      <Badge variant="outline" className="bg-success text-success-foreground border-transparent text-xs">
+                        Terverifikasi
+                      </Badge>
+                    ) : (
+                      <Badge variant="outline" className="bg-warning text-warning-foreground border-transparent text-xs">
+                        Belum Verifikasi
+                      </Badge>
+                    )}
+
+                    {isCurrentAdmin && (
+                      <span className="inline-flex items-center px-1.5 py-0.5 rounded-sm text-xs bg-primary/10 text-primary font-semibold">
+                        Akun Anda
+                      </span>
+                    )}
+
+                    <span className="text-xs text-muted-foreground ml-auto tabular-nums">
+                      {new Date(user.createdAt).toLocaleDateString('id-ID', {
+                        year: 'numeric',
+                        month: 'short',
+                        day: 'numeric',
+                      })}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Mobile Action Bar with min 40px touch-friendly targets */}
+                <div className="flex items-center gap-2 border-t border-border/60 pt-2.5 mt-1">
+                  <Link href={detailHref} className="flex-1">
+                    <Button variant="outline" size="sm" className="w-full h-10 text-xs gap-1.5 font-medium">
+                      <Eye className="h-3.5 w-3.5" />
+                      <span>Detail Akun</span>
+                    </Button>
+                  </Link>
+
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-10 px-3.5 text-xs shrink-0 gap-1"
+                        aria-label={`Aksi untuk pengguna ${user.name}`}
+                      >
+                        <MoreHorizontal className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-52">
+                      <DropdownMenuItem asChild>
+                        <Link href={detailHref} className="cursor-pointer text-xs">
+                          <Eye className="mr-2 h-4 w-4" />
+                          <span>Lihat detail</span>
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() => handleCopy(user.email, `email-${user.id}`)}
+                        className="cursor-pointer text-xs"
+                      >
+                        {copiedKey === `email-${user.id}` ? (
+                          <Check className="mr-2 h-4 w-4 text-emerald-500" />
+                        ) : (
+                          <Copy className="mr-2 h-4 w-4" />
+                        )}
+                        <span>
+                          {copiedKey === `email-${user.id}` ? 'Email disalin' : 'Salin Email'}
+                        </span>
+                      </DropdownMenuItem>
+
+                      <DropdownMenuSeparator />
+
+                      <DropdownMenuItem
+                        onClick={() => openEditModal(user)}
+                        className="cursor-pointer text-xs"
+                      >
+                        <Edit2 className="mr-2 h-4 w-4 text-primary" />
+                        <span>Edit Akun &amp; Peran</span>
+                      </DropdownMenuItem>
+
+                      <DropdownMenuItem
+                        onClick={() => handleResetQuota(user)}
+                        className="cursor-pointer text-xs"
+                      >
+                        <RotateCcw className="mr-2 h-4 w-4 text-warning-foreground" />
+                        <span>Reset Kuota Harian</span>
+                      </DropdownMenuItem>
+
+                      <DropdownMenuItem
+                        onClick={() => handleRevokeSessions(user)}
+                        className="cursor-pointer text-xs"
+                      >
+                        <LogOut className="mr-2 h-4 w-4 text-warning-foreground" />
+                        <span>Cabut Sesi Aktif</span>
+                      </DropdownMenuItem>
+
+                      <DropdownMenuSeparator />
+
+                      <DropdownMenuItem
+                        onClick={() => setDeletingUser(user)}
+                        disabled={isCurrentAdmin}
+                        className="cursor-pointer text-xs text-destructive focus:bg-destructive/10 focus:text-destructive"
+                      >
+                        <Trash2 className="mr-2 h-4 w-4" />
+                        <span>{isCurrentAdmin ? 'Akun Sendiri (Terkunci)' : 'Hapus Pengguna'}</span>
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+              </Card>
+            );
+          })
+        ) : (
+          <Card className="p-8 text-center border-border bg-card shadow-xs">
+            <Users className="h-8 w-8 mx-auto text-muted-foreground/40 mb-2" />
+            <p className="font-medium text-foreground text-sm">
+              {debouncedSearch || roleFilter !== 'ALL' || verifiedFilter !== 'ALL'
+                ? 'Hasil pencarian tidak ditemukan'
+                : 'Belum ada pengguna'}
+            </p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              {debouncedSearch || roleFilter !== 'ALL' || verifiedFilter !== 'ALL'
+                ? 'Tidak ada pengguna yang cocok dengan kriteria filter yang dipilih.'
+                : 'Belum ada akun pengguna yang terdaftar di platform StudyFlow.'}
+            </p>
+            {(debouncedSearch || roleFilter !== 'ALL' || verifiedFilter !== 'ALL') && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setSearch('');
+                  setRoleFilter('ALL');
+                  setVerifiedFilter('ALL');
+                  setPage(1);
+                }}
+                className="mt-3 text-xs"
+              >
+                Hapus Filter
+              </Button>
+            )}
+          </Card>
+        )}
+      </div>
+
+      {/* Pagination Footer */}
+      <AdminPagination
+        page={page}
+        limit={limit}
+        totalItems={totalItems}
+        totalPages={totalPages}
+        currentItemsCount={data?.items.length ?? 0}
+        itemLabel="pengguna"
+        isLoading={isLoading}
+        onPageChange={setPage}
+      />
 
       {/* Modal 1: Tambah Pengguna */}
       <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
@@ -987,7 +1175,7 @@ function AdminUsersContent() {
                   </SelectContent>
                 </Select>
                 {editingUser?.id === currentAdmin?.id && (
-                  <p className="text-[10px] text-muted-foreground mt-0.5">
+                  <p className="text-xs text-muted-foreground mt-0.5">
                     Peran akun sendiri tidak dapat diturunkan.
                   </p>
                 )}

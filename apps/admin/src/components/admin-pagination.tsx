@@ -26,7 +26,7 @@ export function AdminPagination({
   onPageChange,
 }: AdminPaginationProps): React.JSX.Element {
   return (
-    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-t border-border px-4 py-3 bg-card text-xs text-muted-foreground tabular-nums">
+    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 rounded-xl border border-border px-4 py-3 bg-card shadow-xs text-xs text-muted-foreground tabular-nums">
       <div>
         Menampilkan{' '}
         <span className="font-semibold text-foreground">
@@ -49,7 +49,7 @@ export function AdminPagination({
           size="sm"
           onClick={() => onPageChange(Math.max(1, page - 1))}
           disabled={page <= 1 || isLoading}
-          className="h-8 px-2.5 gap-1"
+          className="h-9 px-3 gap-1 text-xs"
         >
           <ChevronLeft className="h-4 w-4" />
           <span>Sebelumnya</span>
@@ -62,7 +62,7 @@ export function AdminPagination({
           size="sm"
           onClick={() => onPageChange(Math.min(totalPages, page + 1))}
           disabled={page >= totalPages || isLoading}
-          className="h-8 px-2.5 gap-1"
+          className="h-9 px-3 gap-1 text-xs"
         >
           <span>Berikutnya</span>
           <ChevronRight className="h-4 w-4" />

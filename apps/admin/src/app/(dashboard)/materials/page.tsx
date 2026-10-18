@@ -78,13 +78,18 @@ function MaterialsTableSkeleton() {
         <Skeleton className="h-10 w-full sm:max-w-sm" />
         <Skeleton className="h-9 w-32 self-end sm:self-auto" />
       </div>
-      <Card className="overflow-hidden shadow-xs">
+      <Card className="hidden md:block overflow-hidden shadow-xs">
         <div className="p-4 space-y-3">
           {Array.from({ length: 6 }).map((_, idx) => (
             <Skeleton key={idx} className="h-10 w-full" />
           ))}
         </div>
       </Card>
+      <div className="grid grid-cols-1 gap-3 md:hidden">
+        {Array.from({ length: 4 }).map((_, idx) => (
+          <Skeleton key={idx} className="h-44 w-full rounded-xl" />
+        ))}
+      </div>
     </div>
   );
 }
@@ -93,7 +98,7 @@ function StatusBadge({ status, safeErrorMessage }: { status: string; safeErrorMe
   switch (status) {
     case 'READY':
       return (
-        <Badge variant="outline" className="bg-emerald-500/10 text-emerald-600 border-emerald-500/20 text-xs gap-1">
+        <Badge variant="outline" className="bg-success text-success-foreground border-transparent text-xs gap-1">
           <FileCheck2 className="h-3 w-3" />
           <span>Siap (Ready)</span>
         </Badge>
@@ -107,7 +112,7 @@ function StatusBadge({ status, safeErrorMessage }: { status: string; safeErrorMe
       );
     case 'QUEUED':
       return (
-        <Badge variant="outline" className="bg-amber-500/10 text-amber-600 border-amber-500/20 text-xs gap-1">
+        <Badge variant="outline" className="bg-warning text-warning-foreground border-transparent text-xs gap-1">
           <Clock className="h-3 w-3" />
           <span>Dalam Antrean</span>
         </Badge>
@@ -115,12 +120,12 @@ function StatusBadge({ status, safeErrorMessage }: { status: string; safeErrorMe
     case 'FAILED':
       return (
         <div className="space-y-1">
-          <Badge variant="outline" className="bg-destructive/10 text-destructive border-destructive/20 text-xs gap-1">
+          <Badge variant="outline" className="bg-danger text-danger-foreground border-transparent text-xs gap-1">
             <AlertTriangle className="h-3 w-3" />
             <span>Gagal Ekstraksi</span>
           </Badge>
           {safeErrorMessage && (
-            <p className="text-[10px] text-destructive max-w-xs truncate" title={safeErrorMessage}>
+            <p className="text-xs font-medium text-destructive max-w-xs truncate" title={safeErrorMessage}>
               {safeErrorMessage}
             </p>
           )}
@@ -372,7 +377,7 @@ function AdminMaterialsContent() {
             <p className="text-2xl font-bold text-foreground mt-1 tabular-nums">
               {metrics.totalItems.toLocaleString('id-ID')}
             </p>
-            <p className="text-[11px] text-muted-foreground mt-0.5">Dokumen PDF aktif</p>
+            <p className="text-xs text-muted-foreground mt-0.5">Dokumen PDF aktif</p>
           </Card>
         </StaggerItem>
 
@@ -381,12 +386,12 @@ function AdminMaterialsContent() {
           <Card className="border-border bg-card shadow-xs p-4">
             <div className="flex items-center justify-between text-muted-foreground text-xs">
               <span>Siap Dipakai (Ready)</span>
-              <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+              <CheckCircle2 className="h-4 w-4 text-success-foreground" />
             </div>
-            <p className="text-2xl font-bold text-emerald-600 dark:text-emerald-400 mt-1 tabular-nums">
+            <p className="text-2xl font-bold text-success-foreground mt-1 tabular-nums">
               {metrics.readyCount.toLocaleString('id-ID')}
             </p>
-            <p className="text-[11px] text-muted-foreground mt-0.5">Teks berhasil diekstrak</p>
+            <p className="text-xs text-muted-foreground mt-0.5">Teks berhasil diekstrak</p>
           </Card>
         </StaggerItem>
 
@@ -395,12 +400,12 @@ function AdminMaterialsContent() {
           <Card className="border-border bg-card shadow-xs p-4">
             <div className="flex items-center justify-between text-muted-foreground text-xs">
               <span>Sedang Diproses</span>
-              <Clock className="h-4 w-4 text-amber-500" />
+              <Clock className="h-4 w-4 text-warning-foreground" />
             </div>
-            <p className="text-2xl font-bold text-amber-600 dark:text-amber-400 mt-1 tabular-nums">
+            <p className="text-2xl font-bold text-warning-foreground mt-1 tabular-nums">
               {metrics.processingCount.toLocaleString('id-ID')}
             </p>
-            <p className="text-[11px] text-muted-foreground mt-0.5">Dalam antrean worker</p>
+            <p className="text-xs text-muted-foreground mt-0.5">Dalam antrean worker</p>
           </Card>
         </StaggerItem>
 
@@ -414,7 +419,7 @@ function AdminMaterialsContent() {
             <p className={`text-2xl font-bold mt-1 tabular-nums ${metrics.failedCount > 0 ? 'text-destructive' : 'text-foreground'}`}>
               {metrics.failedCount.toLocaleString('id-ID')}
             </p>
-            <p className="text-[11px] text-muted-foreground mt-0.5">
+            <p className="text-xs text-muted-foreground mt-0.5">
               {metrics.failedCount > 0 ? 'Perlu tindakan coba ulang' : 'Tidak ada berkas gagal'}
             </p>
           </Card>
@@ -445,7 +450,7 @@ function AdminMaterialsContent() {
             )}
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <Select
               value={status || 'ALL'}
               onValueChange={(val) => {
@@ -505,7 +510,8 @@ function AdminMaterialsContent() {
       {/* Data Table */}
       {(!isLoading || data) && (
         <FadeIn>
-          <Card className="overflow-hidden border-border bg-card shadow-xs">
+          {/* Desktop Table (>= 768px) */}
+          <Card className="hidden md:block overflow-hidden border-border bg-card shadow-xs">
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
@@ -515,7 +521,7 @@ function AdminMaterialsContent() {
                       onClick={() => handleSort('title')}
                     >
                       <div className="flex items-center gap-1.5">
-                        <span>Judul Materi & Berkas</span>
+                        <span>Judul Materi &amp; Berkas</span>
                         <ArrowUpDown className="h-3.5 w-3.5 text-muted-foreground" />
                       </div>
                     </TableHead>
@@ -530,7 +536,7 @@ function AdminMaterialsContent() {
                       onClick={() => handleSort('bytes')}
                     >
                       <div className="flex items-center gap-1.5">
-                        <span>Ukuran & Halaman</span>
+                        <span>Ukuran &amp; Halaman</span>
                         <ArrowUpDown className="h-3.5 w-3.5 text-muted-foreground" />
                       </div>
                     </TableHead>
@@ -594,7 +600,7 @@ function AdminMaterialsContent() {
                         <TableCell className="py-3 text-right">
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="icon" className="h-8 w-8 p-0">
+                              <Button variant="ghost" size="icon" className="h-8 w-8 p-0" aria-label={`Aksi untuk materi ${item.title}`}>
                                 <span className="sr-only">Buka menu aksi</span>
                                 <MoreHorizontal className="h-4 w-4" />
                               </Button>
@@ -613,7 +619,7 @@ function AdminMaterialsContent() {
                                   onClick={() => handleRetryExtraction(item)}
                                   className="cursor-pointer text-xs"
                                 >
-                                  <RotateCcw className="mr-2 h-4 w-4 text-amber-500" />
+                                  <RotateCcw className="mr-2 h-4 w-4 text-warning-foreground" />
                                   <span>Coba Ulang Ekstraksi</span>
                                 </DropdownMenuItem>
                               )}
@@ -636,8 +642,8 @@ function AdminMaterialsContent() {
                     <TableRow>
                       <TableCell colSpan={7} className="text-center py-12 text-muted-foreground text-xs">
                         <Files className="h-8 w-8 mx-auto text-muted-foreground/40 mb-2" />
-                        <p className="font-medium text-foreground">Tidak ada berkas materi ditemukan</p>
-                        <p className="mt-0.5">
+                        <p className="font-medium text-foreground text-sm">Tidak ada berkas materi ditemukan</p>
+                        <p className="mt-1 text-xs">
                           {debouncedSearch || status
                             ? 'Tidak ada berkas materi yang cocok dengan filter yang dipilih.'
                             : 'Belum ada berkas PDF yang diunggah mahasiswa.'}
@@ -648,6 +654,151 @@ function AdminMaterialsContent() {
                 </TableBody>
               </Table>
             </div>
+          </Card>
+
+          {/* Mobile Cards View (< 768px) */}
+          <div className="grid grid-cols-1 gap-3 md:hidden">
+            {data?.items && data.items.length > 0 ? (
+              data.items.map((item: AdminMaterialListItem) => (
+                <Card key={item.id} className="border-border bg-card shadow-xs p-4 flex flex-col justify-between gap-3">
+                  <div className="space-y-2">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0 flex-1">
+                        <p className="font-semibold text-sm text-foreground break-words">{item.title}</p>
+                        <p className="text-xs text-muted-foreground font-mono truncate" title={item.originalFilename}>
+                          {item.originalFilename}
+                        </p>
+                      </div>
+                      <StatusBadge status={item.status} safeErrorMessage={item.safeErrorMessage} />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2 text-xs pt-1 border-t border-border/50">
+                      <div>
+                        <span className="text-muted-foreground block">Mata Kuliah</span>
+                        <span className="font-medium text-foreground truncate block">{item.courseName}</span>
+                      </div>
+                      <div>
+                        <span className="text-muted-foreground block">Mahasiswa</span>
+                        <Link
+                          href={`/users/${item.userId}`}
+                          className="font-medium text-primary hover:underline truncate block"
+                        >
+                          {item.userName}
+                        </Link>
+                      </div>
+                      <div>
+                        <span className="text-muted-foreground block">Ukuran / Hal.</span>
+                        <span className="text-foreground tabular-nums">
+                          {formatBytes(item.bytes)} • {item.pageCount ? `${item.pageCount} hal.` : '-'}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-muted-foreground block">Diupload</span>
+                        <span className="text-foreground tabular-nums">
+                          {new Date(item.createdAt).toLocaleDateString('id-ID', {
+                            day: 'numeric',
+                            month: 'short',
+                            year: 'numeric',
+                          })}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Mobile Action Bar with accessible touch targets */}
+                  <div className="flex items-center gap-2 border-t border-border/60 pt-2.5 mt-1">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => openEditTitleModal(item)}
+                      className="flex-1 h-10 text-xs gap-1.5 font-medium"
+                    >
+                      <Edit2 className="h-3.5 w-3.5 text-primary" />
+                      <span>Ubah Judul</span>
+                    </Button>
+
+                    {item.status === 'FAILED' && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleRetryExtraction(item)}
+                        className="h-10 px-3.5 text-xs gap-1.5 text-warning-foreground border-warning/30 hover:bg-warning/10 font-medium"
+                      >
+                        <RotateCcw className="h-3.5 w-3.5" />
+                        <span>Coba Ulang</span>
+                      </Button>
+                    )}
+
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-10 px-3.5 text-xs shrink-0"
+                          aria-label={`Aksi untuk materi ${item.title}`}
+                        >
+                          <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-48">
+                        <DropdownMenuItem
+                          onClick={() => openEditTitleModal(item)}
+                          className="cursor-pointer text-xs"
+                        >
+                          <Edit2 className="mr-2 h-4 w-4 text-primary" />
+                          <span>Ubah Judul</span>
+                        </DropdownMenuItem>
+
+                        {item.status === 'FAILED' && (
+                          <DropdownMenuItem
+                            onClick={() => handleRetryExtraction(item)}
+                            className="cursor-pointer text-xs"
+                          >
+                            <RotateCcw className="mr-2 h-4 w-4 text-warning-foreground" />
+                            <span>Coba Ulang Ekstraksi</span>
+                          </DropdownMenuItem>
+                        )}
+
+                        <DropdownMenuSeparator />
+
+                        <DropdownMenuItem
+                          onClick={() => setDeletingMaterial(item)}
+                          className="cursor-pointer text-xs text-destructive focus:bg-destructive/10 focus:text-destructive"
+                        >
+                          <Trash2 className="mr-2 h-4 w-4" />
+                          <span>Hapus Berkas</span>
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+                </Card>
+              ))
+            ) : (
+              <Card className="p-8 text-center border-border bg-card shadow-xs">
+                <Files className="h-8 w-8 mx-auto text-muted-foreground/40 mb-2" />
+                <p className="font-medium text-foreground text-sm">Tidak ada berkas materi ditemukan</p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  {debouncedSearch || status
+                    ? 'Tidak ada berkas materi yang cocok dengan filter yang dipilih.'
+                    : 'Belum ada berkas PDF yang diunggah mahasiswa.'}
+                </p>
+                {(debouncedSearch || status) && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setSearch('');
+                      setStatus('');
+                      setPage(1);
+                    }}
+                    className="mt-3 text-xs"
+                  >
+                    Hapus Filter
+                  </Button>
+                )}
+              </Card>
+            )}
+          </div>
 
             {/* Pagination */}
             {data && data.pagination.totalPages > 1 && (
@@ -662,7 +813,6 @@ function AdminMaterialsContent() {
                 onPageChange={setPage}
               />
             )}
-          </Card>
         </FadeIn>
       )}
 

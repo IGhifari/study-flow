@@ -40,38 +40,38 @@ export function AdminHeader() {
   const title = getPageTitle(pathname);
 
   return (
-    <header className="sticky top-0 z-10 flex h-16 shrink-0 items-center justify-between gap-2 rounded-t-xl border-b border-border/60 bg-background/95 px-4 backdrop-blur-xs transition-[width,height] ease-linear">
-      <div className="flex items-center gap-2">
-        <SidebarTrigger className="-ml-1" />
-        <Separator orientation="vertical" className="mr-2 h-4" />
-        <Breadcrumb>
-          <BreadcrumbList>
-            <BreadcrumbItem className="hidden md:block text-muted-foreground">
+    <header className="sticky top-0 z-10 flex h-16 shrink-0 items-center justify-between gap-2 rounded-t-xl border-b border-border/60 bg-background/95 px-3 sm:px-4 backdrop-blur-xs transition-[width,height] ease-linear">
+      <div className="flex items-center gap-2 min-w-0">
+        <SidebarTrigger className="-ml-1 shrink-0" />
+        <Separator orientation="vertical" className="mr-2 h-4 shrink-0" />
+        <Breadcrumb className="min-w-0">
+          <BreadcrumbList className="flex-nowrap">
+            <BreadcrumbItem className="hidden md:block text-muted-foreground shrink-0">
               StudyFlow Admin
             </BreadcrumbItem>
-            <BreadcrumbSeparator className="hidden md:block" />
+            <BreadcrumbSeparator className="hidden md:block shrink-0" />
             {isUserDetail ? (
               <>
-                <BreadcrumbItem>
+                <BreadcrumbItem className="shrink-0">
                   <BreadcrumbLink asChild>
                     <Link href="/users">Pengguna</Link>
                   </BreadcrumbLink>
                 </BreadcrumbItem>
-                <BreadcrumbSeparator />
-                <BreadcrumbItem>
-                  <BreadcrumbPage>Detail</BreadcrumbPage>
+                <BreadcrumbSeparator className="shrink-0" />
+                <BreadcrumbItem className="min-w-0">
+                  <BreadcrumbPage className="truncate max-w-[120px] sm:max-w-none">Detail</BreadcrumbPage>
                 </BreadcrumbItem>
               </>
             ) : (
-              <BreadcrumbItem>
-                <BreadcrumbPage>{title}</BreadcrumbPage>
+              <BreadcrumbItem className="min-w-0">
+                <BreadcrumbPage className="truncate max-w-[140px] sm:max-w-none">{title}</BreadcrumbPage>
               </BreadcrumbItem>
             )}
           </BreadcrumbList>
         </Breadcrumb>
       </div>
 
-      <div className="flex items-center gap-2 sm:gap-3">
+      <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
         <CommandPaletteTrigger onClick={() => setCommandOpen(true)} />
         <ThemeToggle />
       </div>

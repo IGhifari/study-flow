@@ -242,11 +242,11 @@ export default function AdminProfilePage() {
                     Status Email
                   </span>
                   {user?.emailVerifiedAt ? (
-                    <Badge variant="outline" className="bg-emerald-500/10 text-emerald-600 border-emerald-500/20 text-[10px]">
+                    <Badge variant="outline" className="bg-success text-success-foreground border-transparent text-xs">
                       Terverifikasi
                     </Badge>
                   ) : (
-                    <Badge variant="outline" className="bg-amber-500/10 text-amber-600 border-amber-500/20 text-[10px]">
+                    <Badge variant="outline" className="bg-warning text-warning-foreground border-transparent text-xs">
                       Belum Verifikasi
                     </Badge>
                   )}
@@ -345,7 +345,7 @@ export default function AdminProfilePage() {
                     value={user?.email || ''}
                     className="h-9 text-xs font-mono bg-muted/40 cursor-not-allowed opacity-80"
                   />
-                  <p className="text-[11px] text-muted-foreground">
+                  <p className="text-xs text-muted-foreground">
                     Perubahan alamat email administrator dikunci untuk menjaga integritas kredensial akses.
                   </p>
                 </div>
@@ -542,7 +542,7 @@ export default function AdminProfilePage() {
                           </TableCell>
                           <TableCell className="py-2.5">
                             {sess.isCurrent ? (
-                              <Badge variant="outline" className="bg-emerald-500/10 text-emerald-600 border-emerald-500/20 text-xs gap-1">
+                              <Badge variant="outline" className="bg-success text-success-foreground border-transparent text-xs gap-1">
                                 <CheckCircle2 className="h-3 w-3" />
                                 <span>Sesi Ini</span>
                               </Badge>

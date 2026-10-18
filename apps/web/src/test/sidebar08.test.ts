@@ -104,7 +104,7 @@ describe('shadcn/ui sidebar-08 Architecture & Invariant Tests', () => {
     expect(adminAppSidebar).toContain('<NavSecondary items={navSecondary} className="mt-auto" />');
     expect(adminAppSidebar).toContain('Pekerjaan Gagal');
     expect(adminAppSidebar).toContain('/jobs?status=FAILED');
-    expect(adminAppSidebar).toContain('Direktori Mahasiswa');
+    expect(adminAppSidebar).toContain('Profil & Keamanan');
     expect(adminNavSecondary).toContain('size="sm"');
     expect(adminNavUser).toContain('ChevronsUpDown');
     expect(adminHeader).toContain('rounded-t-xl border-b border-border/60');

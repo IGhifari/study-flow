@@ -64,7 +64,7 @@ function AssignmentsTableSkeleton() {
 function StatusBadge({ status, isOverdue }: { status: string; isOverdue: boolean }) {
   if (status === 'DONE') {
     return (
-      <Badge variant="outline" className="bg-emerald-500/10 text-emerald-600 border-emerald-500/20 text-xs gap-1">
+      <Badge variant="outline" className="bg-success text-success-foreground border-transparent text-xs gap-1">
         <CheckCircle2 className="h-3 w-3" />
         <span>Selesai</span>
       </Badge>
@@ -82,7 +82,7 @@ function StatusBadge({ status, isOverdue }: { status: string; isOverdue: boolean
 
   if (status === 'IN_PROGRESS') {
     return (
-      <Badge variant="outline" className="bg-sky-500/10 text-sky-600 border-sky-500/20 text-xs gap-1">
+      <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20 text-xs gap-1">
         <CircleDot className="h-3 w-3" />
         <span>Dikerjakan</span>
       </Badge>
@@ -101,13 +101,13 @@ function PriorityBadge({ priority }: { priority: string }) {
   switch (priority) {
     case 'HIGH':
       return (
-        <Badge variant="outline" className="bg-rose-500/10 text-rose-600 border-rose-500/20 text-xs">
+        <Badge variant="outline" className="bg-destructive/10 text-destructive border-destructive/20 text-xs font-medium">
           Tinggi
         </Badge>
       );
     case 'MEDIUM':
       return (
-        <Badge variant="outline" className="bg-amber-500/10 text-amber-600 border-amber-500/20 text-xs">
+        <Badge variant="outline" className="bg-warning text-warning-foreground border-transparent text-xs font-medium">
           Sedang
         </Badge>
       );

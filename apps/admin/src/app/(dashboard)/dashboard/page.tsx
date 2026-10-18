@@ -397,7 +397,7 @@ export default function AdminDashboardPage() {
               href="/jobs?status=FAILED"
               className={`flex items-center justify-between gap-3 rounded-lg border p-3.5 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
                 failedJobs24h > 0
-                  ? 'border-rose-500/40 bg-rose-500/5 hover:bg-rose-500/10'
+                  ? 'border-destructive/40 bg-destructive/5 hover:bg-destructive/10'
                   : 'border-border bg-card hover:bg-muted/50 hover:border-primary/50'
               }`}
             >
@@ -405,8 +405,8 @@ export default function AdminDashboardPage() {
                 <div
                   className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-md border ${
                     failedJobs24h > 0
-                      ? 'border-rose-500/30 bg-rose-500/10 text-rose-600 dark:text-rose-400'
-                      : 'border-emerald-500/20 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
+                      ? 'border-destructive/30 bg-destructive/10 text-destructive'
+                      : 'border-success/30 bg-success text-success-foreground'
                   }`}
                 >
                   {failedJobs24h > 0 ? (
@@ -484,14 +484,14 @@ export default function AdminDashboardPage() {
                   ) : queuesSummary?.redisStatus === 'connected' ? (
                     <Badge
                       variant="outline"
-                      className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20 text-xs font-medium"
+                      className="bg-success text-success-foreground border-transparent text-xs font-medium"
                     >
                       Tersambung
                     </Badge>
                   ) : (
                     <Badge
                       variant="outline"
-                      className="bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20 text-xs font-medium"
+                      className="bg-destructive text-destructive-foreground border-transparent text-xs font-medium"
                     >
                       Tidak Tersedia
                     </Badge>
@@ -573,14 +573,14 @@ export default function AdminDashboardPage() {
                           {isAvailable ? (
                             <Badge
                               variant="outline"
-                              className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20 text-xs"
+                              className="bg-success text-success-foreground border-transparent text-xs"
                             >
                               Tersambung
                             </Badge>
                           ) : (
                             <Badge
                               variant="outline"
-                              className="bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20 text-xs"
+                              className="bg-destructive text-destructive-foreground border-transparent text-xs"
                             >
                               Tidak Tersedia
                             </Badge>
@@ -743,7 +743,7 @@ export default function AdminDashboardPage() {
                             {user.emailVerifiedAt ? (
                               <Badge
                                 variant="outline"
-                                className="gap-1 border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-300 text-xs font-medium"
+                                className="gap-1 bg-success text-success-foreground border-transparent text-xs font-medium"
                               >
                                 <CheckCircle2 className="h-3 w-3 shrink-0" />
                                 <span>Terverifikasi</span>
@@ -751,7 +751,7 @@ export default function AdminDashboardPage() {
                             ) : (
                               <Badge
                                 variant="outline"
-                                className="gap-1 border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-800 dark:bg-amber-950/50 dark:text-amber-300 text-xs font-medium"
+                                className="gap-1 bg-warning text-warning-foreground border-transparent text-xs font-medium"
                               >
                                 <Clock className="h-3 w-3 shrink-0" />
                                 <span>Belum Verifikasi</span>

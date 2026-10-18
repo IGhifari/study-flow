@@ -274,11 +274,11 @@ export function CommandPaletteTrigger({ onClick }: { onClick?: () => void }) {
       variant="outline"
       size="sm"
       onClick={onClick}
-      className="relative h-9 w-full justify-start rounded-lg bg-muted/40 text-xs font-normal text-muted-foreground shadow-none sm:w-64 md:w-80 lg:w-96 hover:bg-muted/70 hover:text-foreground"
+      className="relative h-9 w-9 p-0 sm:w-64 md:w-80 lg:w-96 sm:px-3 sm:justify-start justify-center rounded-lg bg-muted/40 text-xs font-normal text-muted-foreground shadow-none sm:shadow-none hover:bg-muted/70 hover:text-foreground shrink-0"
       aria-label="Buka pencarian cepat (Ctrl+K)"
     >
-      <Search className="mr-2 h-3.5 w-3.5 shrink-0 opacity-60" />
-      <span className="inline-flex">Cari atau navigasi cepat...</span>
+      <Search className="h-3.5 w-3.5 shrink-0 opacity-60 sm:mr-2" />
+      <span className="hidden sm:inline-flex">Cari atau navigasi cepat...</span>
       <kbd className="pointer-events-none absolute right-2 top-2 hidden h-5 select-none items-center gap-1 rounded border bg-background px-1.5 font-mono text-xs font-medium text-muted-foreground opacity-100 sm:flex">
         <span>⌘</span>K
       </kbd>

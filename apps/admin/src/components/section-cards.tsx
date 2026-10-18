@@ -195,7 +195,7 @@ export function SectionCards({ summary, isLoading = false }: SectionCardsProps) 
                 ) : (
                   <Badge
                     variant="outline"
-                    className="flex items-center gap-1 rounded-lg text-xs border-emerald-500/20 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+                    className="flex items-center gap-1 rounded-lg text-xs bg-success text-success-foreground border-transparent"
                   >
                     <CheckCircle2 className="size-3" />
                     Normal

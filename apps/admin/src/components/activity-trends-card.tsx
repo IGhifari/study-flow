@@ -134,7 +134,7 @@ export function ActivityTrendsCard() {
                   )}
                 </p>
               </div>
-              <Badge variant="outline" className="bg-amber-500/10 text-amber-600 border-amber-500/20 text-xs gap-1">
+              <Badge variant="outline" className="bg-warning text-warning-foreground border-transparent text-xs gap-1">
                 <CheckSquare className="h-3 w-3" />
                 <span>Tugas</span>
               </Badge>

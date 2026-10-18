@@ -601,7 +601,7 @@ function UserDetailContent() {
                 <div className="flex flex-col gap-1">
                   {userDetail.emailVerifiedAt ? (
                     <>
-                      <Badge variant="outline" className="w-fit bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950 dark:text-emerald-300 dark:border-emerald-800 text-xs">
+                      <Badge variant="outline" className="w-fit bg-success text-success-foreground border-transparent text-xs">
                         Terverifikasi
                       </Badge>
                       <span className="text-xs text-muted-foreground tabular-nums">
@@ -613,7 +613,7 @@ function UserDetailContent() {
                       </span>
                     </>
                   ) : (
-                    <Badge variant="outline" className="w-fit bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950 dark:text-amber-300 dark:border-amber-800 text-xs">
+                    <Badge variant="outline" className="w-fit bg-warning text-warning-foreground border-transparent text-xs">
                       Belum Verifikasi
                     </Badge>
                   )}
@@ -633,7 +633,7 @@ function UserDetailContent() {
                     </Badge>
                   )}
                   {userDetail.authMethods.hasGoogle && (
-                    <Badge variant="outline" className="gap-1 text-xs bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950 dark:text-blue-300 dark:border-blue-800">
+                    <Badge variant="outline" className="gap-1 text-xs bg-primary/10 text-primary border-primary/20">
                       <Mail className="h-3 w-3" />
                       Google OAuth
                     </Badge>
@@ -807,7 +807,7 @@ function UserDetailContent() {
                   </SelectContent>
                 </Select>
                 {isCurrentAdmin && (
-                  <p className="text-[10px] text-muted-foreground mt-0.5">
+                  <p className="text-xs text-muted-foreground mt-0.5">
                     Peran akun sendiri tidak dapat diturunkan.
                   </p>
                 )}

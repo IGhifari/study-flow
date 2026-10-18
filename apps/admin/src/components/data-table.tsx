@@ -86,9 +86,9 @@ function getStatusBadge(status: AdminModuleStatus) {
       return (
         <Badge
           variant="outline"
-          className="gap-1.5 border-emerald-200 bg-emerald-50 text-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-300 dark:border-emerald-800 font-medium text-xs px-2.5 py-0.5"
+          className="gap-1.5 bg-success text-success-foreground border-transparent font-medium text-xs px-2.5 py-0.5"
         >
-          <CheckCircle2Icon className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+          <CheckCircle2Icon className="h-3.5 w-3.5 shrink-0" />
           <span>Normal</span>
         </Badge>
       )
@@ -96,9 +96,9 @@ function getStatusBadge(status: AdminModuleStatus) {
       return (
         <Badge
           variant="outline"
-          className="gap-1.5 border-amber-200 bg-amber-50 text-amber-800 dark:bg-amber-950/50 dark:text-amber-300 dark:border-amber-800 font-medium text-xs px-2.5 py-0.5"
+          className="gap-1.5 bg-warning text-warning-foreground border-transparent font-medium text-xs px-2.5 py-0.5"
         >
-          <AlertTriangleIcon className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400 shrink-0" />
+          <AlertTriangleIcon className="h-3.5 w-3.5 shrink-0" />
           <span>Degradasi</span>
         </Badge>
       )

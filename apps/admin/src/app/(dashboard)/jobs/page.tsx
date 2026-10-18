@@ -110,10 +110,15 @@ function JobsSkeleton() {
         <Skeleton className="h-36 rounded-lg" />
         <Skeleton className="h-36 rounded-lg" />
       </div>
-      <div className="rounded-lg border border-border p-4 space-y-4">
+      <div className="hidden md:block rounded-lg border border-border p-4 space-y-4">
         <Skeleton className="h-10 w-full" />
         {Array.from({ length: 6 }).map((_, idx) => (
           <Skeleton key={idx} className="h-12 w-full" />
+        ))}
+      </div>
+      <div className="grid grid-cols-1 gap-3 md:hidden">
+        {Array.from({ length: 4 }).map((_, idx) => (
+          <Skeleton key={idx} className="h-40 w-full rounded-xl" />
         ))}
       </div>
     </div>
@@ -465,11 +470,11 @@ function AdminJobsContent() {
                       <CardTitle className="text-base font-semibold">{q.label}</CardTitle>
                     </div>
                     {q.status === 'available' ? (
-                      <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950 dark:text-emerald-300 text-xs">
+                      <Badge variant="outline" className="bg-success text-success-foreground border-transparent text-xs">
                         Tersambung
                       </Badge>
                     ) : (
-                      <Badge variant="outline" className="bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950 dark:text-rose-300 text-xs">
+                      <Badge variant="outline" className="bg-muted text-muted-foreground border-border text-xs">
                         Tidak Tersedia
                       </Badge>
                     )}
@@ -478,7 +483,7 @@ function AdminJobsContent() {
                 </CardHeader>
                 <CardContent>
                   {q.status === 'available' && q.counts ? (
-                    <div className="grid grid-cols-4 gap-2 text-center">
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center">
                       <div className="rounded-md border border-border/70 p-2 bg-muted/20">
                         <span className="text-lg font-bold text-foreground block tabular-nums">
                           {q.counts.waiting}
@@ -486,19 +491,19 @@ function AdminJobsContent() {
                         <span className="text-xs text-muted-foreground block mt-0.5">Menunggu</span>
                       </div>
                       <div className="rounded-md border border-border/70 p-2 bg-muted/20">
-                        <span className="text-lg font-bold text-blue-600 dark:text-blue-400 block tabular-nums">
+                        <span className="text-lg font-bold text-primary block tabular-nums">
                           {q.counts.active}
                         </span>
                         <span className="text-xs text-muted-foreground block mt-0.5">Aktif</span>
                       </div>
                       <div className="rounded-md border border-border/70 p-2 bg-muted/20">
-                        <span className="text-lg font-bold text-amber-600 dark:text-amber-400 block tabular-nums">
+                        <span className="text-lg font-bold text-warning-foreground block tabular-nums">
                           {q.counts.delayed}
                         </span>
                         <span className="text-xs text-muted-foreground block mt-0.5">Tertunda</span>
                       </div>
                       <div className="rounded-md border border-border/70 p-2 bg-muted/20">
-                        <span className="text-lg font-bold text-rose-600 dark:text-rose-400 block tabular-nums">
+                        <span className="text-lg font-bold text-destructive block tabular-nums">
                           {q.counts.failed}
                         </span>
                         <span className="text-xs text-muted-foreground block mt-0.5">Gagal</span>
@@ -650,8 +655,8 @@ function AdminJobsContent() {
         </Alert>
       )}
 
-      {/* Jobs Table */}
-      <Card className="overflow-hidden shadow-xs">
+      {/* Jobs Presentation: Desktop Table (>= 768px) */}
+      <Card className="hidden md:block overflow-hidden shadow-xs">
         <div className="overflow-x-auto">
           <Table>
             <TableHeader>
@@ -708,7 +713,7 @@ function AdminJobsContent() {
                       </Link>
                     </TableCell>
                     <TableCell>
-                      <JobStatusBadge status={job.status} />
+                      <JobStatusBadge status={job.status} safeErrorMessage={job.safeErrorMessage} />
                     </TableCell>
                     <TableCell className="text-xs text-muted-foreground font-mono tabular-nums">
                       {job.attempts} / {job.maxAttempts}
@@ -722,7 +727,7 @@ function AdminJobsContent() {
                     <TableCell className="text-right py-2.5" onClick={(e) => e.stopPropagation()}>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon" className="h-8 w-8 p-0">
+                          <Button variant="ghost" size="icon" className="h-8 w-8 p-0" aria-label={`Aksi untuk pekerjaan ${job.id}`}>
                             <span className="sr-only">Buka menu aksi</span>
                             <MoreHorizontal className="h-4 w-4" />
                           </Button>
@@ -741,7 +746,7 @@ function AdminJobsContent() {
                               onClick={() => handleRetryJob(job.id)}
                               className="cursor-pointer text-xs"
                             >
-                              <RotateCcw className="mr-2 h-4 w-4 text-amber-500" />
+                              <RotateCcw className="mr-2 h-4 w-4 text-warning-foreground" />
                               <span>Coba Ulang</span>
                             </DropdownMenuItem>
                           )}
@@ -783,19 +788,182 @@ function AdminJobsContent() {
             </TableBody>
           </Table>
         </div>
-
-        {/* Pagination Footer */}
-        <AdminPagination
-          page={page}
-          limit={limit}
-          totalItems={totalItems}
-          totalPages={totalPages}
-          currentItemsCount={jobsData?.items.length ?? 0}
-          itemLabel="pekerjaan"
-          isLoading={isJobsLoading}
-          onPageChange={setPage}
-        />
       </Card>
+
+      {/* Mobile Cards View (< 768px) */}
+      <div className="grid grid-cols-1 gap-3 md:hidden">
+        {isJobsLoading ? (
+          Array.from({ length: 4 }).map((_, idx) => (
+            <Skeleton key={idx} className="h-40 w-full rounded-xl" />
+          ))
+        ) : jobsData && jobsData.items.length > 0 ? (
+          jobsData.items.map((job: AdminJobListItem) => (
+            <Card
+              key={job.id}
+              className="border-border bg-card shadow-xs p-4 flex flex-col justify-between gap-3 cursor-pointer hover:border-primary/40 transition-colors"
+              onClick={() => setSelectedJobId(job.id)}
+            >
+              <div className="space-y-2">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0 flex-1">
+                    <Badge variant="secondary" className="font-medium text-xs mb-1">
+                      {getJobTypeLabel(job.type)}
+                    </Badge>
+                    <p className="text-xs text-muted-foreground font-mono truncate" title={job.id}>
+                      ID: {job.id}
+                    </p>
+                  </div>
+                  <JobStatusBadge status={job.status} safeErrorMessage={job.safeErrorMessage} />
+                </div>
+
+                <div className="grid grid-cols-2 gap-2 text-xs pt-1 border-t border-border/50">
+                  <div>
+                    <span className="text-muted-foreground block">Pengguna</span>
+                    <Link
+                      href={`/users/${job.userId}`}
+                      onClick={(e) => e.stopPropagation()}
+                      className="font-medium text-primary hover:underline truncate block"
+                    >
+                      {job.userName}
+                    </Link>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground block">Percobaan</span>
+                    <span className="font-mono text-foreground tabular-nums">
+                      {job.attempts} / {job.maxAttempts}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground block">Durasi</span>
+                    <span className="font-mono text-foreground tabular-nums">
+                      {formatJobDuration(job.durationMs)}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground block">Waktu Dibuat</span>
+                    <span className="text-foreground tabular-nums">
+                      {formatLocalDateTime(job.createdAt, false)}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div
+                className="flex items-center gap-2 border-t border-border/60 pt-2.5 mt-1"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setSelectedJobId(job.id)}
+                  className="flex-1 h-10 text-xs gap-1.5 font-medium"
+                >
+                  <Eye className="h-3.5 w-3.5" />
+                  <span>Detail</span>
+                </Button>
+
+                {job.status === 'FAILED' && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleRetryJob(job.id)}
+                    className="h-10 px-3.5 text-xs gap-1.5 text-warning-foreground border-warning/30 hover:bg-warning/10 font-medium"
+                  >
+                    <RotateCcw className="h-3.5 w-3.5" />
+                    <span>Coba Ulang</span>
+                  </Button>
+                )}
+
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-10 px-3.5 text-xs shrink-0"
+                      aria-label={`Aksi untuk pekerjaan ${job.id}`}
+                    >
+                      <MoreHorizontal className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-48">
+                    <DropdownMenuItem
+                      onClick={() => setSelectedJobId(job.id)}
+                      className="cursor-pointer text-xs"
+                    >
+                      <Eye className="mr-2 h-4 w-4" />
+                      <span>Lihat Detail</span>
+                    </DropdownMenuItem>
+
+                    {job.status === 'FAILED' && (
+                      <DropdownMenuItem
+                        onClick={() => handleRetryJob(job.id)}
+                        className="cursor-pointer text-xs"
+                      >
+                        <RotateCcw className="mr-2 h-4 w-4 text-warning-foreground" />
+                        <span>Coba Ulang</span>
+                      </DropdownMenuItem>
+                    )}
+
+                    {(job.status === 'FAILED' || job.status === 'COMPLETED') && (
+                      <>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                          onClick={() => handleDeleteJob(job.id)}
+                          className="cursor-pointer text-xs text-destructive focus:bg-destructive/10 focus:text-destructive"
+                        >
+                          <Trash2 className="mr-2 h-4 w-4" />
+                          <span>Hapus Riwayat</span>
+                        </DropdownMenuItem>
+                      </>
+                    )}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+            </Card>
+          ))
+        ) : (
+          <Card className="p-8 text-center border-border bg-card shadow-xs">
+            <Activity className="h-8 w-8 mx-auto text-muted-foreground/40 mb-2" />
+            <p className="font-medium text-foreground text-sm">
+              Tidak ada riwayat pekerjaan ditemukan
+            </p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              {debouncedSearch || status || type
+                ? 'Coba sesuaikan kata kunci pencarian atau filter status yang dipilih.'
+                : 'Belum ada antrean pekerjaan yang tercatat pada sistem.'}
+            </p>
+            {(debouncedSearch || status || type) && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setStatus('');
+                  setType('');
+                  setSearchInput('');
+                  setDebouncedSearch('');
+                  setPage(1);
+                }}
+                className="mt-3 text-xs"
+              >
+                Hapus Filter
+              </Button>
+            )}
+          </Card>
+        )}
+      </div>
+
+      {/* Pagination Footer */}
+      <AdminPagination
+        page={page}
+        limit={limit}
+        totalItems={totalItems}
+        totalPages={totalPages}
+        currentItemsCount={jobsData?.items.length ?? 0}
+        itemLabel="pekerjaan"
+        isLoading={isJobsLoading}
+        onPageChange={setPage}
+      />
 
       {/* Slide-over Sheet for Job Operational Detail */}
       <JobDetailSheet

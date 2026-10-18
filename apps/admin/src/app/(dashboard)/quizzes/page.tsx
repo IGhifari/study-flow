@@ -65,7 +65,7 @@ function StatusBadge({ status }: { status: string }) {
   switch (status) {
     case 'READY':
       return (
-        <Badge variant="outline" className="bg-emerald-500/10 text-emerald-600 border-emerald-500/20 text-xs gap-1">
+        <Badge variant="outline" className="bg-success text-success-foreground border-transparent text-xs gap-1">
           <CheckCircle2 className="h-3 w-3" />
           <span>Siap (Ready)</span>
         </Badge>
@@ -79,7 +79,7 @@ function StatusBadge({ status }: { status: string }) {
       );
     case 'QUEUED':
       return (
-        <Badge variant="outline" className="bg-amber-500/10 text-amber-600 border-amber-500/20 text-xs gap-1">
+        <Badge variant="outline" className="bg-warning text-warning-foreground border-transparent text-xs gap-1">
           <Clock className="h-3 w-3" />
           <span>Dalam Antrean</span>
         </Badge>
@@ -398,7 +398,7 @@ function AdminQuizzesContent() {
                               <span className="text-xs tabular-nums text-muted-foreground">
                                 {item.attemptsCount}x
                               </span>
-                              <Badge variant="outline" className="bg-amber-500/10 text-amber-600 border-amber-500/20 text-xs gap-1 font-semibold tabular-nums">
+                              <Badge variant="outline" className="bg-warning text-warning-foreground border-transparent text-xs gap-1 font-semibold tabular-nums">
                                 <Award className="h-3 w-3" />
                                 <span>{item.averageScore}%</span>
                               </Badge>
