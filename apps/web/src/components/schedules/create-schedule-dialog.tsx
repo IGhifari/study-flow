@@ -6,6 +6,7 @@ import {
   CourseSchedule,
   CourseScheduleConflict,
   CreateCourseScheduleInput,
+  CreateCourseScheduleInputSchema,
   DAY_NAMES_ID,
   getDayNameId,
 } from '@studyflow/shared';
@@ -83,43 +84,22 @@ export function CreateScheduleDialog({
     setErrorMsg(null);
 
     const selectedCourseId = preselectedCourseId || courseId;
-    if (!selectedCourseId) {
-      setErrorMsg('Silakan pilih mata kuliah');
-      return;
-    }
+    const validationResult = CreateCourseScheduleInputSchema.safeParse({
+      courseId: selectedCourseId,
+      dayOfWeek: parseInt(dayOfWeek, 10),
+      startTime,
+      endTime,
+      room: room.trim() || null,
+    });
 
-    if (!startTime) {
-      setErrorMsg('Waktu mulai wajib diisi');
-      return;
-    }
-    if (!endTime) {
-      setErrorMsg('Waktu selesai wajib diisi');
-      return;
-    }
-
-    if (startTime === endTime) {
-      setErrorMsg('Waktu selesai harus lebih besar daripada waktu mulai');
-      return;
-    }
-
-    if (startTime > endTime) {
-      setErrorMsg(
-        'Sesi jadwal lintas tengah malam belum didukung. Harap tentukan waktu mulai dan selesai dalam hari yang sama.'
-      );
+    if (!validationResult.success) {
+      setErrorMsg(validationResult.error.errors[0]?.message || 'Input jadwal kuliah tidak valid');
       return;
     }
 
     setIsSubmitting(true);
     try {
-      const input: CreateCourseScheduleInput = {
-        courseId: selectedCourseId,
-        dayOfWeek: parseInt(dayOfWeek, 10),
-        startTime,
-        endTime,
-        room: room.trim() || null,
-      };
-
-      const res = await createSchedule(input);
+      const res = await createSchedule(validationResult.data);
       onOpenChange(false);
       onSuccess(res.schedule, res.hasConflict, res.conflicts);
     } catch (err: any) {

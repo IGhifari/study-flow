@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { Assignment, toUserDateTimeInputValue } from '@studyflow/shared';
+import { Assignment, toUserDateTimeInputValue, UpdateAssignmentInputSchema } from '@studyflow/shared';
 import { updateAssignment } from '@/lib/assignment-client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -77,26 +77,23 @@ export function EditTaskDialog({
   const executeSubmit = async () => {
     if (!assignment) return;
 
-    const trimmedTitle = title.trim();
-    if (!trimmedTitle || trimmedTitle.length < 2) {
-      setErrorMsg('Judul tugas minimal 2 karakter.');
-      return;
-    }
-    if (!dueDate) {
-      setErrorMsg('Tenggat waktu wajib diisi.');
+    const validationResult = UpdateAssignmentInputSchema.safeParse({
+      title: title.trim(),
+      description: description.trim() || undefined,
+      dueDate,
+      priority,
+      status,
+    });
+
+    if (!validationResult.success) {
+      setErrorMsg(validationResult.error.errors[0]?.message || 'Input pembaruan tugas tidak valid.');
       return;
     }
 
     setIsSubmitting(true);
     setErrorMsg(null);
     try {
-      await updateAssignment(assignment.id, {
-        title: trimmedTitle,
-        description: description.trim() || undefined,
-        dueDate,
-        priority,
-        status,
-      });
+      await updateAssignment(assignment.id, validationResult.data);
 
       onOpenChange(false);
       onSuccess();

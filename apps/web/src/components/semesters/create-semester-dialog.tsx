@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { Loader2, AlertCircle } from 'lucide-react';
-import { CreateSemesterInput } from '@studyflow/shared';
+import { CreateSemesterInput, CreateSemesterInputSchema } from '@studyflow/shared';
 import { createSemester } from '@/lib/semester-client';
 import {
   Dialog,
@@ -50,27 +50,20 @@ export function CreateSemesterDialog({
     e.preventDefault();
     setError(null);
 
-    const trimmedName = name.trim();
-    const trimmedYear = academicYear.trim();
+    const validationResult = CreateSemesterInputSchema.safeParse({
+      name: name.trim(),
+      academicYear: academicYear.trim(),
+      makeActive,
+    });
 
-    if (!trimmedName || trimmedName.length < 2) {
-      setError('Nama semester wajib diisi minimal 2 karakter.');
-      return;
-    }
-    if (!trimmedYear || trimmedYear.length < 4) {
-      setError('Tahun ajaran wajib diisi minimal 4 karakter (contoh: 2026/2027).');
+    if (!validationResult.success) {
+      setError(validationResult.error.errors[0]?.message || 'Input semester tidak valid.');
       return;
     }
 
     setIsSubmitting(true);
     try {
-      const payload: CreateSemesterInput = {
-        name: trimmedName,
-        academicYear: trimmedYear,
-        makeActive,
-      };
-
-      await createSemester(payload);
+      await createSemester(validationResult.data);
       await onSuccess();
       onOpenChange(false);
     } catch (err: any) {

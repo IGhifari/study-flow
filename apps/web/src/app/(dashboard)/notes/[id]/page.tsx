@@ -32,7 +32,7 @@ import {
   FileText,
   Pin,
 } from 'lucide-react';
-import { Note, formatUserDateTime, UserProfile, MaterialListItem } from '@studyflow/shared';
+import { Note, formatUserDateTime, UserProfile, MaterialListItem, UpdateNoteInputSchema } from '@studyflow/shared';
 import { getNote, updateNote } from '@/lib/note-client';
 import { pinNote } from '@/lib/pin-client';
 import { listMaterials } from '@/lib/material-client';
@@ -236,9 +236,23 @@ export default function NoteDetailPage(): React.JSX.Element {
   // Perform Save
   const handleSave = React.useCallback(async (overrideVersion?: number): Promise<{ success: boolean; stillDirty: boolean }> => {
     if (!note) return { success: false, stillDirty: false };
-    const currentTitle = titleRef.current;
-    if (!currentTitle.trim()) {
-      setSaveErrorMessage('Judul catatan wajib diisi.');
+
+    const targetVersion = overrideVersion ?? note.version;
+    const snapshotBeingSaved = {
+      title: titleRef.current,
+      content: contentRef.current,
+      materialId: materialIdRef.current,
+    };
+
+    const validationResult = UpdateNoteInputSchema.safeParse({
+      title: snapshotBeingSaved.title.trim(),
+      content: snapshotBeingSaved.content,
+      materialId: snapshotBeingSaved.materialId,
+      version: targetVersion,
+    });
+
+    if (!validationResult.success) {
+      setSaveErrorMessage(validationResult.error.errors[0]?.message || 'Input catatan tidak valid.');
       setSaveStatus('ERROR');
       return { success: false, stillDirty: true };
     }
@@ -247,20 +261,8 @@ export default function NoteDetailPage(): React.JSX.Element {
     setSaveErrorMessage(null);
     setVersionConflict(null);
 
-    const snapshotBeingSaved = {
-      title: titleRef.current,
-      content: contentRef.current,
-      materialId: materialIdRef.current,
-    };
-
     try {
-      const targetVersion = overrideVersion ?? note.version;
-      const updated = await updateNote(note.id, {
-        title: snapshotBeingSaved.title.trim(),
-        content: snapshotBeingSaved.content,
-        materialId: snapshotBeingSaved.materialId,
-        version: targetVersion,
-      });
+      const updated = await updateNote(note.id, validationResult.data);
 
       // Update current note metadata (including new version)
       setNote(updated);

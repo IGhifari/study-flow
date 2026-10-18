@@ -5,6 +5,7 @@ import {
   CourseSchedule,
   CourseScheduleConflict,
   UpdateCourseScheduleInput,
+  UpdateCourseScheduleInputSchema,
   getDayNameId,
 } from '@studyflow/shared';
 import { updateSchedule } from '@/lib/schedule-client';
@@ -68,37 +69,21 @@ export function EditScheduleDialog({
     if (!schedule) return;
     setErrorMsg(null);
 
-    if (!startTime) {
-      setErrorMsg('Waktu mulai wajib diisi');
-      return;
-    }
-    if (!endTime) {
-      setErrorMsg('Waktu selesai wajib diisi');
-      return;
-    }
+    const validationResult = UpdateCourseScheduleInputSchema.safeParse({
+      dayOfWeek: parseInt(dayOfWeek, 10),
+      startTime,
+      endTime,
+      room: room.trim() || null,
+    });
 
-    if (startTime === endTime) {
-      setErrorMsg('Waktu selesai harus lebih besar daripada waktu mulai');
-      return;
-    }
-
-    if (startTime > endTime) {
-      setErrorMsg(
-        'Sesi jadwal lintas tengah malam belum didukung. Harap tentukan waktu mulai dan selesai dalam hari yang sama.'
-      );
+    if (!validationResult.success) {
+      setErrorMsg(validationResult.error.errors[0]?.message || 'Input pembaruan jadwal kuliah tidak valid');
       return;
     }
 
     setIsSubmitting(true);
     try {
-      const input: UpdateCourseScheduleInput = {
-        dayOfWeek: parseInt(dayOfWeek, 10),
-        startTime,
-        endTime,
-        room: room.trim() || null,
-      };
-
-      const res = await updateSchedule(schedule.id, input);
+      const res = await updateSchedule(schedule.id, validationResult.data);
       onOpenChange(false);
       onSuccess(res.schedule, res.hasConflict, res.conflicts);
     } catch (err: any) {

@@ -1,6 +1,7 @@
 'use client';
 
 import * as React from 'react';
+import { CreateNoteInputSchema } from '@studyflow/shared';
 import { AlertCircle, Loader2 } from 'lucide-react';
 import { createNote } from '@/lib/note-client';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -47,19 +48,22 @@ export function CourseQuickNoteDialog({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!title.trim()) {
-      setError('Judul catatan wajib diisi');
+
+    const validationResult = CreateNoteInputSchema.safeParse({
+      courseId,
+      title: title.trim(),
+      content: content.trim() || '',
+    });
+
+    if (!validationResult.success) {
+      setError(validationResult.error.errors[0]?.message || 'Input catatan tidak valid');
       return;
     }
 
     setIsSubmitting(true);
     setError(null);
     try {
-      const created = await createNote({
-        courseId,
-        title: title.trim(),
-        content: content.trim() || '',
-      });
+      const created = await createNote(validationResult.data);
       onOpenChange(false);
       setTitle('');
       setContent('');

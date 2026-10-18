@@ -600,6 +600,14 @@ export const AdminChangePasswordInputSchema = z.object({
 });
 export type AdminChangePasswordInput = z.infer<typeof AdminChangePasswordInputSchema>;
 
+export const AdminChangePasswordFormSchema = AdminChangePasswordInputSchema.extend({
+  confirmPassword: z.string().min(1, 'Konfirmasi kata sandi wajib diisi'),
+}).refine(data => data.newPassword === data.confirmPassword, {
+  message: 'Konfirmasi kata sandi tidak cocok dengan kata sandi baru',
+  path: ['confirmPassword'],
+});
+export type AdminChangePasswordFormInput = z.infer<typeof AdminChangePasswordFormSchema>;
+
 export const AdminSessionItemSchema = z.object({
   id: z.string(),
   familyId: z.string(),

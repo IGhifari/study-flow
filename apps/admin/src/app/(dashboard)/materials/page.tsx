@@ -67,6 +67,7 @@ import {
   deleteAdminMaterialApi,
 } from '@/lib/admin-api';
 import type { AdminMaterialListItem, AdminMaterialListResponse, AdminMaterialStatus } from '@studyflow/shared';
+import { AdminUpdateMaterialInputSchema } from '@studyflow/shared';
 import { downloadCsvFile, formatBytes } from '@/lib/admin-formatters';
 import { AdminPagination } from '@/components/admin-pagination';
 import { toast } from 'sonner';
@@ -284,10 +285,17 @@ function AdminMaterialsContent() {
   const handleEditTitleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingMaterial) return;
-    setIsEditSubmitting(true);
     setEditError(null);
+
+    const validationResult = AdminUpdateMaterialInputSchema.safeParse({ title: editTitle });
+    if (!validationResult.success) {
+      setEditError(validationResult.error.errors[0]?.message || 'Judul materi tidak valid');
+      return;
+    }
+
+    setIsEditSubmitting(true);
     try {
-      await updateAdminMaterialApi(editingMaterial.id, { title: editTitle });
+      await updateAdminMaterialApi(editingMaterial.id, validationResult.data);
       toast.success('Judul materi berhasil diperbarui');
       setEditingMaterial(null);
       loadData();

@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { Course } from '@studyflow/shared';
+import { Course, CreateAssignmentInputSchema } from '@studyflow/shared';
 import { createAssignment } from '@/lib/assignment-client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -91,31 +91,24 @@ export function CreateTaskDialog({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    const trimmedTitle = title.trim();
-    if (!trimmedTitle || trimmedTitle.length < 2) {
-      setErrorMsg('Judul tugas minimal 2 karakter.');
-      return;
-    }
-    if (!courseId) {
-      setErrorMsg('Mata kuliah wajib dipilih.');
-      return;
-    }
-    if (!dueDate) {
-      setErrorMsg('Tenggat waktu wajib diisi.');
+    const validationResult = CreateAssignmentInputSchema.safeParse({
+      courseId,
+      title: title.trim(),
+      description: description.trim() || undefined,
+      dueDate,
+      priority,
+      status,
+    });
+
+    if (!validationResult.success) {
+      setErrorMsg(validationResult.error.errors[0]?.message || 'Input tugas tidak valid.');
       return;
     }
 
     setIsSubmitting(true);
     setErrorMsg(null);
     try {
-      await createAssignment({
-        courseId,
-        title: trimmedTitle,
-        description: description.trim() || undefined,
-        dueDate,
-        priority,
-        status,
-      });
+      await createAssignment(validationResult.data);
 
       onOpenChange(false);
       onSuccess();

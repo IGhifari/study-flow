@@ -48,6 +48,7 @@ import {
   KeyConcept,
   SummarySection,
   KeyTerm,
+  UpdateMaterialInputSchema,
 } from '@studyflow/shared';
 import {
   getMaterial,
@@ -249,11 +250,15 @@ export default function MaterialDetailPage(): React.JSX.Element {
 
   const handleUpdateTitle = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!editTitle.trim()) return;
+    const validationResult = UpdateMaterialInputSchema.safeParse({ title: editTitle.trim() });
+    if (!validationResult.success) {
+      setEditError(validationResult.error.errors[0]?.message || 'Judul materi tidak valid');
+      return;
+    }
     setIsSubmittingEdit(true);
     setEditError(null);
     try {
-      await updateMaterial(materialId, { title: editTitle.trim() });
+      await updateMaterial(materialId, validationResult.data);
       await loadMaterialData();
       setIsEditOpen(false);
     } catch (err: any) {

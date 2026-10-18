@@ -18,3 +18,4 @@ export * from './contracts/admin.js';
 export * from './utils/timezone.js';
 export * from './utils/format.js';
 export * from './constants/index.js';
+export { z } from 'zod';

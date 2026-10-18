@@ -1,6 +1,7 @@
 'use client';
 
 import * as React from 'react';
+import { CreateAssignmentInputSchema } from '@studyflow/shared';
 import { AlertCircle, Loader2 } from 'lucide-react';
 import { createAssignment } from '@/lib/assignment-client';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -61,26 +62,25 @@ export function CourseQuickAssignmentDialog({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!title.trim()) {
-      setError('Judul tugas wajib diisi');
-      return;
-    }
-    if (!dueDate) {
-      setError('Tenggat waktu wajib diisi');
+
+    const validationResult = CreateAssignmentInputSchema.safeParse({
+      courseId,
+      title: title.trim(),
+      description: description.trim() || undefined,
+      dueDate,
+      priority,
+      status: 'TODO',
+    });
+
+    if (!validationResult.success) {
+      setError(validationResult.error.errors[0]?.message || 'Input tugas tidak valid');
       return;
     }
 
     setIsSubmitting(true);
     setError(null);
     try {
-      await createAssignment({
-        courseId,
-        title: title.trim(),
-        description: description.trim() || undefined,
-        dueDate,
-        priority,
-        status: 'TODO',
-      });
+      await createAssignment(validationResult.data);
       onOpenChange(false);
       setTitle('');
       setDescription('');

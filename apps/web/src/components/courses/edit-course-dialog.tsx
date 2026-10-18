@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { Course, UpdateCourseInput } from '@studyflow/shared';
+import { Course, UpdateCourseInput, UpdateCourseInputSchema } from '@studyflow/shared';
 import { updateCourse } from '@/lib/course-client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -58,24 +58,21 @@ export function EditCourseDialog({
     if (!course) return;
     setErrorMsg(null);
 
-    if (!name.trim()) {
-      setErrorMsg('Nama mata kuliah wajib diisi');
-      return;
-    }
-    if (name.trim().length < 2) {
-      setErrorMsg('Nama mata kuliah minimal 2 karakter');
+    const validationResult = UpdateCourseInputSchema.safeParse({
+      name: name.trim(),
+      code: code.trim() || null,
+      lecturer: lecturer.trim() || null,
+      description: description.trim() || null,
+    });
+
+    if (!validationResult.success) {
+      setErrorMsg(validationResult.error.errors[0]?.message || 'Input pembaruan mata kuliah tidak valid');
       return;
     }
 
     setIsSubmitting(true);
     try {
-      const input: UpdateCourseInput = {
-        name: name.trim(),
-        code: code.trim() || null,
-        lecturer: lecturer.trim() || null,
-        description: description.trim() || null,
-      };
-      const updated = await updateCourse(course.id, input);
+      const updated = await updateCourse(course.id, validationResult.data);
       onOpenChange(false);
       onSuccess(updated);
     } catch (err: any) {

@@ -57,6 +57,10 @@ import {
   revokeAdminSessionApi,
 } from '@/lib/admin-api';
 import type { AdminSessionItem } from '@studyflow/shared';
+import {
+  AdminUpdateProfileInputSchema,
+  AdminChangePasswordFormSchema,
+} from '@studyflow/shared';
 import { formatLocalDateTime } from '@/lib/admin-formatters';
 import { toast } from 'sonner';
 
@@ -116,13 +120,21 @@ export default function AdminProfilePage() {
   // Handle Profile Update
   const handleProfileSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsUpdatingProfile(true);
     setProfileError(null);
+
+    const validationResult = AdminUpdateProfileInputSchema.safeParse({
+      name: profileName,
+      timezone: profileTimezone,
+    });
+
+    if (!validationResult.success) {
+      setProfileError(validationResult.error.errors[0]?.message || 'Input profil administrator tidak valid');
+      return;
+    }
+
+    setIsUpdatingProfile(true);
     try {
-      await updateAdminProfileApi({
-        name: profileName,
-        timezone: profileTimezone as 'Asia/Jakarta' | 'Asia/Makassar' | 'Asia/Jayapura' | 'UTC',
-      });
+      await updateAdminProfileApi(validationResult.data);
       await refreshUser();
       toast.success('Profil administrator berhasil diperbarui');
     } catch (err: any) {
@@ -135,21 +147,24 @@ export default function AdminProfilePage() {
   // Handle Change Password
   const handlePasswordSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (newPassword !== confirmPassword) {
-      setPasswordError('Konfirmasi kata sandi tidak cocok dengan kata sandi baru');
-      return;
-    }
-    if (newPassword.length < 8) {
-      setPasswordError('Kata sandi baru minimal 8 karakter');
+    setPasswordError(null);
+
+    const validationResult = AdminChangePasswordFormSchema.safeParse({
+      currentPassword,
+      newPassword,
+      confirmPassword,
+    });
+
+    if (!validationResult.success) {
+      setPasswordError(validationResult.error.errors[0]?.message || 'Input kata sandi tidak valid');
       return;
     }
 
     setIsChangingPassword(true);
-    setPasswordError(null);
     try {
       await changeAdminPasswordApi({
-        currentPassword,
-        newPassword,
+        currentPassword: validationResult.data.currentPassword,
+        newPassword: validationResult.data.newPassword,
       });
       toast.success('Kata sandi administrator berhasil diperbarui tanpa memutus sesi aktif Anda');
       setCurrentPassword('');

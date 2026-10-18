@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { Course, Note } from '@studyflow/shared';
+import { Course, CreateNoteInputSchema, Note } from '@studyflow/shared';
 import { createNote } from '@/lib/note-client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -72,24 +72,21 @@ export function CreateNoteDialog({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    const trimmedTitle = title.trim();
-    if (!trimmedTitle) {
-      setErrorMsg('Judul catatan wajib diisi.');
-      return;
-    }
-    if (!courseId) {
-      setErrorMsg('Mata kuliah wajib dipilih.');
+    const validationResult = CreateNoteInputSchema.safeParse({
+      courseId,
+      title: title.trim(),
+      content: content.trim() || '',
+    });
+
+    if (!validationResult.success) {
+      setErrorMsg(validationResult.error.errors[0]?.message || 'Input catatan tidak valid.');
       return;
     }
 
     setIsSubmitting(true);
     setErrorMsg(null);
     try {
-      const created = await createNote({
-        courseId,
-        title: trimmedTitle,
-        content: content.trim() || '',
-      });
+      const created = await createNote(validationResult.data);
       onOpenChange(false);
       onSuccess(created);
     } catch (err: any) {

@@ -3,6 +3,7 @@
 import * as React from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Eye, EyeOff, Loader2, AlertCircle, ShieldAlert } from 'lucide-react';
+import { AdminLoginInputSchema } from '@studyflow/shared';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -35,10 +36,17 @@ export function LoginForm({
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setErrorMsg(null);
+
+    const validationResult = AdminLoginInputSchema.safeParse({ email, password });
+    if (!validationResult.success) {
+      setErrorMsg(validationResult.error.errors[0]?.message || 'Input login admin tidak valid.');
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
-      await loginAdminApi({ email, password });
+      await loginAdminApi(validationResult.data);
       await refreshUser();
       router.push(from);
     } catch (err) {

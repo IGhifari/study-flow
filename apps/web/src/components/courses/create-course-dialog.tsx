@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { Course, CreateCourseInput, Semester } from '@studyflow/shared';
+import { Course, CreateCourseInput, CreateCourseInputSchema, Semester } from '@studyflow/shared';
 import { createCourse } from '@/lib/course-client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -77,29 +77,22 @@ export function CreateCourseDialog({
     e.preventDefault();
     setErrorMsg(null);
 
-    if (!semesterId) {
-      setErrorMsg('Silakan pilih semester untuk mata kuliah ini');
-      return;
-    }
-    if (!name.trim()) {
-      setErrorMsg('Nama mata kuliah wajib diisi');
-      return;
-    }
-    if (name.trim().length < 2) {
-      setErrorMsg('Nama mata kuliah minimal 2 karakter');
+    const validationResult = CreateCourseInputSchema.safeParse({
+      semesterId,
+      name: name.trim(),
+      code: code.trim() || null,
+      lecturer: lecturer.trim() || null,
+      description: description.trim() || null,
+    });
+
+    if (!validationResult.success) {
+      setErrorMsg(validationResult.error.errors[0]?.message || 'Input mata kuliah tidak valid');
       return;
     }
 
     setIsSubmitting(true);
     try {
-      const input: CreateCourseInput = {
-        semesterId,
-        name: name.trim(),
-        code: code.trim() || null,
-        lecturer: lecturer.trim() || null,
-        description: description.trim() || null,
-      };
-      const created = await createCourse(input);
+      const created = await createCourse(validationResult.data);
       onOpenChange(false);
       onSuccess(created);
     } catch (err: any) {

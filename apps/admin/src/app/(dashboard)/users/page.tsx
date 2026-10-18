@@ -71,6 +71,10 @@ import {
 } from '@/lib/admin-api';
 import { useAdminAuth } from '@/components/admin-auth-context';
 import type { AdminUserListItem, AdminUserListResponse, Role } from '@studyflow/shared';
+import {
+  AdminCreateUserInputSchema,
+  AdminUpdateUserInputSchema,
+} from '@studyflow/shared';
 import { downloadCsvFile } from '@/lib/admin-formatters';
 import { AdminPagination } from '@/components/admin-pagination';
 import { toast } from 'sonner';
@@ -333,10 +337,17 @@ function AdminUsersContent() {
   // Create User Handler
   const handleCreateSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsCreateSubmitting(true);
     setCreateError(null);
+
+    const validationResult = AdminCreateUserInputSchema.safeParse(createForm);
+    if (!validationResult.success) {
+      setCreateError(validationResult.error.errors[0]?.message || 'Input pengguna baru tidak valid');
+      return;
+    }
+
+    setIsCreateSubmitting(true);
     try {
-      await createAdminUserApi(createForm);
+      await createAdminUserApi(validationResult.data);
       toast.success(`Pengguna ${createForm.name} berhasil dibuat`);
       setIsCreateOpen(false);
       setCreateForm({
@@ -372,10 +383,17 @@ function AdminUsersContent() {
   const handleEditSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingUser) return;
-    setIsEditSubmitting(true);
     setEditError(null);
+
+    const validationResult = AdminUpdateUserInputSchema.safeParse(editForm);
+    if (!validationResult.success) {
+      setEditError(validationResult.error.errors[0]?.message || 'Input pembaruan pengguna tidak valid');
+      return;
+    }
+
+    setIsEditSubmitting(true);
     try {
-      await updateAdminUserApi(editingUser.id, editForm);
+      await updateAdminUserApi(editingUser.id, validationResult.data);
       toast.success(`Data pengguna ${editForm.name} berhasil diperbarui`);
       setEditingUser(null);
       loadUsers();

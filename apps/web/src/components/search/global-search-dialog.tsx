@@ -22,6 +22,7 @@ import {
   Semester,
   SearchResultItem,
   SearchResponse,
+  SearchQuerySchema,
 } from '@studyflow/shared';
 import { listSemesters } from '@/lib/semester-client';
 import { searchGlobalClient } from '@/lib/search-client';
@@ -117,10 +118,34 @@ export function GlobalSearchDialog({
   const performSearch = React.useCallback(
     async (q: string, scope: string, targetActiveSem: Semester | null) => {
       const trimmed = q.trim();
-      if (trimmed.length < 2) {
+      if (!trimmed) {
         setSearchResponse(null);
         setIsLoading(false);
         setErrorMessage(null);
+        return;
+      }
+
+      const semesterParam =
+        scope === 'all'
+          ? 'all'
+          : targetActiveSem
+          ? targetActiveSem.id
+          : undefined;
+
+      const validationResult = SearchQuerySchema.safeParse({
+        q: trimmed,
+        semesterId: semesterParam,
+        limit: 5,
+      });
+
+      if (!validationResult.success) {
+        setSearchResponse(null);
+        setIsLoading(false);
+        if (trimmed.length < 2) {
+          setErrorMessage(null); // Silent when typing less than min length
+        } else {
+          setErrorMessage(validationResult.error.errors[0]?.message || 'Input pencarian tidak valid');
+        }
         return;
       }
 
@@ -136,18 +161,11 @@ export function GlobalSearchDialog({
       setErrorMessage(null);
 
       try {
-        const semesterParam =
-          scope === 'all'
-            ? 'all'
-            : targetActiveSem
-            ? targetActiveSem.id
-            : undefined;
-
         const data = await searchGlobalClient(
           {
-            q: trimmed,
-            semesterId: semesterParam,
-            limit: 5,
+            q: validationResult.data.q,
+            semesterId: validationResult.data.semesterId,
+            limit: validationResult.data.limit,
           },
           controller.signal
         );

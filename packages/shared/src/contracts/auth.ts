@@ -51,17 +51,32 @@ export const UpdateProfileInputSchema = z.object({
 });
 export type UpdateProfileInput = z.infer<typeof UpdateProfileInputSchema>;
 
-export const ChangePasswordInputSchema = z.object({
+export const ChangePasswordBaseSchema = z.object({
   currentPassword: z.string().min(1, 'Password saat ini wajib diisi'),
   newPassword: z
     .string()
     .min(12, 'Password baru minimal 12 karakter')
     .max(128, 'Password baru maksimal 128 karakter'),
-}).refine(data => data.currentPassword !== data.newPassword, {
+});
+
+export const ChangePasswordInputSchema = ChangePasswordBaseSchema.refine(data => data.currentPassword !== data.newPassword, {
   message: 'Password baru harus berbeda dari password saat ini',
   path: ['newPassword'],
 });
 export type ChangePasswordInput = z.infer<typeof ChangePasswordInputSchema>;
+
+export const ChangePasswordFormSchema = ChangePasswordBaseSchema.extend({
+  confirmPassword: z.string().min(1, 'Konfirmasi password baru wajib diisi'),
+})
+  .refine(data => data.currentPassword !== data.newPassword, {
+    message: 'Password baru harus berbeda dari password saat ini',
+    path: ['newPassword'],
+  })
+  .refine(data => data.newPassword === data.confirmPassword, {
+    message: 'Konfirmasi password baru tidak cocok',
+    path: ['confirmPassword'],
+  });
+export type ChangePasswordFormInput = z.infer<typeof ChangePasswordFormSchema>;
 
 export const UserProfileSchema = z.object({
   id: z.string(),

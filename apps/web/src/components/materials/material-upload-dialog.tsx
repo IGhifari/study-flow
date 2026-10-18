@@ -8,7 +8,7 @@ import {
   Loader2,
   CheckCircle2,
 } from 'lucide-react';
-import { Course, FILE_UPLOAD_LIMITS } from '@studyflow/shared';
+import { Course, FILE_UPLOAD_LIMITS, InitiateUploadInputSchema } from '@studyflow/shared';
 import { initiateUpload, finalizeUpload } from '@/lib/material-client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -137,16 +137,21 @@ export function MaterialUploadDialog({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!courseId) {
-      setErrorMessage('Pilih mata kuliah terlebih dahulu.');
-      return;
-    }
-    if (!title.trim()) {
-      setErrorMessage('Judul materi wajib diisi.');
-      return;
-    }
     if (!file) {
       setErrorMessage('Pilih file PDF yang akan diunggah.');
+      return;
+    }
+
+    const validationResult = InitiateUploadInputSchema.safeParse({
+      courseId,
+      title: title.trim(),
+      filename: file.name,
+      fileSize: file.size,
+      mimeType: file.type || 'application/pdf',
+    });
+
+    if (!validationResult.success) {
+      setErrorMessage(validationResult.error.errors[0]?.message || 'Input unggah materi tidak valid.');
       return;
     }
 
@@ -156,13 +161,7 @@ export function MaterialUploadDialog({
 
     try {
       // 1. Inisiasi Upload via BFF -> Express API
-      const initRes = await initiateUpload({
-        courseId,
-        title: title.trim(),
-        filename: file.name,
-        fileSize: file.size,
-        mimeType: 'application/pdf',
-      });
+      const initRes = await initiateUpload(validationResult.data);
 
       // 2. Unggah file langsung ke Storage (Supabase Storage upload URL atau mock endpoint)
       await new Promise<void>((resolve, reject) => {

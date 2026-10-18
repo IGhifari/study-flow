@@ -87,6 +87,7 @@ import {
   AdminQueuesSummaryResponse,
   AdminJobType,
   AdminJobStatus,
+  AdminCleanupJobsInputSchema,
 } from '@studyflow/shared';
 import {
   downloadCsvFile,
@@ -172,10 +173,21 @@ function AdminJobsContent() {
 
   const handleCleanupSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsCleaningUp(true);
     setCleanupError(null);
+
+    const validationResult = AdminCleanupJobsInputSchema.safeParse({
+      status: cleanupStatus,
+      olderThanDays: cleanupOlderThanDays,
+    });
+
+    if (!validationResult.success) {
+      setCleanupError(validationResult.error.errors[0]?.message || 'Input pembersihan tidak valid');
+      return;
+    }
+
+    setIsCleaningUp(true);
     try {
-      const res = await cleanupAdminJobsApi({ status: cleanupStatus, olderThanDays: cleanupOlderThanDays });
+      const res = await cleanupAdminJobsApi(validationResult.data);
       toast.success(`${res.deletedCount} riwayat pekerjaan berhasil dibersihkan`);
       setIsCleanupOpen(false);
       handleRefreshAll();

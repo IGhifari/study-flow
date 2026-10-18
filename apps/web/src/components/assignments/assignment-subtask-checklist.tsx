@@ -1,7 +1,11 @@
 'use client';
 
 import * as React from 'react';
-import { AssignmentSubtask } from '@studyflow/shared';
+import {
+  AssignmentSubtask,
+  CreateSubtaskInputSchema,
+  UpdateSubtaskInputSchema,
+} from '@studyflow/shared';
 import {
   listSubtasks,
   createSubtask,
@@ -146,11 +150,17 @@ export function AssignmentSubtaskChecklist({
       return;
     }
 
+    const validationResult = CreateSubtaskInputSchema.safeParse({ title: trimmed });
+    if (!validationResult.success) {
+      setErrorMsg(validationResult.error.errors[0]?.message || 'Judul subtugas tidak valid');
+      return;
+    }
+
     setIsAdding(true);
     setErrorMsg(null);
 
     try {
-      const created = await createSubtask(assignmentId, { title: trimmed });
+      const created = await createSubtask(assignmentId, validationResult.data);
       setNewTitle('');
       const updated = [...subtasks, created];
       setSubtasks(updated);
@@ -192,11 +202,17 @@ export function AssignmentSubtaskChecklist({
       return;
     }
 
+    const validationResult = UpdateSubtaskInputSchema.safeParse({ title: trimmed });
+    if (!validationResult.success) {
+      setErrorMsg(validationResult.error.errors[0]?.message || 'Judul subtugas tidak valid');
+      return;
+    }
+
     setIsSavingEdit(true);
     setErrorMsg(null);
 
     try {
-      const res = await updateSubtask(assignmentId, sub.id, { title: trimmed });
+      const res = await updateSubtask(assignmentId, sub.id, validationResult.data);
       setSubtasks((prev) =>
         prev.map((item) => (item.id === sub.id ? res : item))
       );

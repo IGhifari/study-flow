@@ -57,3 +57,14 @@ export const DashboardChartsResponseSchema = z.object({
 });
 export type DashboardChartsResponse = z.infer<typeof DashboardChartsResponseSchema>;
 
+export const DashboardPinnedQuerySchema = z.object({
+  semesterId: z.string().optional(),
+});
+export type DashboardPinnedQuery = z.infer<typeof DashboardPinnedQuerySchema>;
+
+export const DashboardChartsQuerySchema = z.object({
+  period: DashboardChartPeriodSchema.default('7d').optional(),
+  semesterId: z.string().optional(),
+});
+export type DashboardChartsQuery = z.infer<typeof DashboardChartsQuerySchema>;
+

@@ -26,6 +26,8 @@ import {
   UpdateProfileInput,
   UpdateProfileInputSchema,
   ChangePasswordInput,
+  ChangePasswordFormSchema,
+  GoogleLinkInitInputSchema,
   formatFileSize,
   StorageUsageResponse,
   UserProfile,
@@ -301,36 +303,23 @@ function SettingsContent(): React.JSX.Element {
     setPasswordError(null);
     setPasswordSuccess(null);
 
-    if (!currentPassword) {
-      setPasswordError('Password saat ini wajib diisi.');
-      return;
-    }
+    const parseResult = ChangePasswordFormSchema.safeParse({
+      currentPassword,
+      newPassword,
+      confirmPassword,
+    });
 
-    if (newPassword.length < 12) {
-      setPasswordError('Password baru minimal 12 karakter.');
-      return;
-    }
-
-    if (newPassword.length > 128) {
-      setPasswordError('Password baru maksimal 128 karakter.');
-      return;
-    }
-
-    if (currentPassword === newPassword) {
-      setPasswordError('Password baru harus berbeda dari password saat ini.');
-      return;
-    }
-
-    if (newPassword !== confirmPassword) {
-      setPasswordError('Konfirmasi password baru tidak cocok.');
+    if (!parseResult.success) {
+      const firstError = parseResult.error.issues[0]?.message || 'Input password tidak valid';
+      setPasswordError(firstError);
       return;
     }
 
     setIsPasswordSubmitting(true);
     try {
       const payload: ChangePasswordInput = {
-        currentPassword,
-        newPassword,
+        currentPassword: parseResult.data.currentPassword,
+        newPassword: parseResult.data.newPassword,
       };
 
       const msg = await apiChangePassword(payload);
@@ -361,15 +350,19 @@ function SettingsContent(): React.JSX.Element {
 
   const handleConfirmLink = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!linkPassword) {
-      setLinkModalError('Password saat ini wajib diisi.');
+    const parseResult = GoogleLinkInitInputSchema.safeParse({
+      currentPassword: linkPassword,
+    });
+
+    if (!parseResult.success) {
+      setLinkModalError(parseResult.error.issues[0]?.message || 'Password saat ini wajib diisi.');
       return;
     }
 
     setIsLinkingSubmitting(true);
     setLinkModalError(null);
     try {
-      const { url } = await initiateGoogleLink(linkPassword);
+      const { url } = await initiateGoogleLink(parseResult.data.currentPassword);
       window.location.assign(url);
     } catch (err: any) {
       setLinkModalError(err.message || 'Gagal memulai pengaitan akun Google.');
