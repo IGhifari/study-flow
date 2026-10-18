@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import Link from 'next/link';
-import { useParams, useSearchParams } from 'next/navigation';
+import { useParams, useSearchParams, useRouter } from 'next/navigation';
 import {
   ArrowLeft,
   RefreshCw,
@@ -23,6 +23,14 @@ import {
   HardDrive,
   Info,
   UserX,
+  Edit2,
+  Trash2,
+  RotateCcw,
+  LogOut,
+  Sparkles,
+  Activity,
+  Layers,
+  Loader2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -33,11 +41,40 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Progress } from '@/components/ui/progress';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { FadeIn, StaggerGroup, StaggerItem } from '@/components/ui/motion';
-import { fetchAdminUserDetail, AdminApiError } from '@/lib/admin-api';
-import { AdminUserDetail } from '@studyflow/shared';
+import {
+  fetchAdminUserDetail,
+  updateAdminUserApi,
+  deleteAdminUserApi,
+  AdminApiError,
+} from '@/lib/admin-api';
+import { useAdminAuth } from '@/components/admin-auth-context';
+import type { AdminUserDetail, Role } from '@studyflow/shared';
+import { formatBytes } from '@/lib/admin-formatters';
+import { toast } from 'sonner';
+
+const MAX_STORAGE_BYTES = 200 * 1024 * 1024; // 200 MB per PRD
 
 function UserDetailSkeleton() {
   return (
@@ -84,8 +121,10 @@ function UserDetailSkeleton() {
 }
 
 function UserDetailContent() {
+  const router = useRouter();
   const params = useParams();
   const searchParams = useSearchParams();
+  const { user: currentAdmin } = useAdminAuth();
 
   const userId = typeof params?.id === 'string' ? params.id : '';
 
@@ -102,6 +141,27 @@ function UserDetailContent() {
 
   // Copy feedback state
   const [copiedKey, setCopiedKey] = React.useState<string | null>(null);
+
+  // CRUD Dialog states
+  const [isEditOpen, setIsEditOpen] = React.useState(false);
+  const [isEditSubmitting, setIsEditSubmitting] = React.useState(false);
+  const [editForm, setEditForm] = React.useState({
+    name: '',
+    email: '',
+    role: 'USER' as Role,
+    timezone: 'Asia/Jakarta',
+    emailVerified: true,
+  });
+  const [editError, setEditError] = React.useState<string | null>(null);
+
+  const [isPasswordOpen, setIsPasswordOpen] = React.useState(false);
+  const [isPasswordSubmitting, setIsPasswordSubmitting] = React.useState(false);
+  const [newPassword, setNewPassword] = React.useState('');
+  const [passwordError, setPasswordError] = React.useState<string | null>(null);
+
+  const [isDeleteOpen, setIsDeleteOpen] = React.useState(false);
+  const [isDeleteSubmitting, setIsDeleteSubmitting] = React.useState(false);
+  const [deleteError, setDeleteError] = React.useState<string | null>(null);
 
   const handleCopy = (text: string, key: string) => {
     navigator.clipboard.writeText(text);
@@ -122,6 +182,13 @@ function UserDetailContent() {
       fetchAdminUserDetail(userId, { signal })
         .then((res) => {
           setUserDetail(res);
+          setEditForm({
+            name: res.name,
+            email: res.email,
+            role: res.role,
+            timezone: res.timezone || 'Asia/Jakarta',
+            emailVerified: Boolean(res.emailVerifiedAt),
+          });
         })
         .catch((err: any) => {
           if (signal?.aborted) return;
@@ -149,8 +216,81 @@ function UserDetailContent() {
     };
   }, [loadDetail]);
 
-  const handleRetry = () => {
-    loadDetail();
+  // Edit user submit
+  const handleEditSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!userDetail) return;
+    setIsEditSubmitting(true);
+    setEditError(null);
+    try {
+      const updated = await updateAdminUserApi(userDetail.id, editForm);
+      setUserDetail(updated.user);
+      toast.success('Profil & peran pengguna berhasil diperbarui');
+      setIsEditOpen(false);
+    } catch (err: any) {
+      setEditError(err.message || 'Gagal memperbarui pengguna');
+    } finally {
+      setIsEditSubmitting(false);
+    }
+  };
+
+  // Change password submit
+  const handlePasswordSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!userDetail) return;
+    setIsPasswordSubmitting(true);
+    setPasswordError(null);
+    try {
+      const updated = await updateAdminUserApi(userDetail.id, { newPassword });
+      setUserDetail(updated.user);
+      toast.success('Kata sandi berhasil direset dan sesi lama telah dicabut');
+      setIsPasswordOpen(false);
+      setNewPassword('');
+    } catch (err: any) {
+      setPasswordError(err.message || 'Gagal mereset kata sandi');
+    } finally {
+      setIsPasswordSubmitting(false);
+    }
+  };
+
+  // Reset Quota submit
+  const handleResetQuota = async () => {
+    if (!userDetail) return;
+    try {
+      const updated = await updateAdminUserApi(userDetail.id, { resetQuota: true });
+      setUserDetail(updated.user);
+      toast.success(`Kuota AI dan unggahan untuk ${userDetail.name} berhasil direset penuh`);
+    } catch (err: any) {
+      toast.error('Gagal mereset kuota: ' + err.message);
+    }
+  };
+
+  // Revoke Sessions submit
+  const handleRevokeSessions = async () => {
+    if (!userDetail) return;
+    try {
+      const updated = await updateAdminUserApi(userDetail.id, { revokeSessions: true });
+      setUserDetail(updated.user);
+      toast.success(`Seluruh sesi login aktif untuk ${userDetail.name} berhasil dicabut`);
+    } catch (err: any) {
+      toast.error('Gagal mencabut sesi login: ' + err.message);
+    }
+  };
+
+  // Delete User submit
+  const handleDeleteSubmit = async () => {
+    if (!userDetail) return;
+    setIsDeleteSubmitting(true);
+    setDeleteError(null);
+    try {
+      await deleteAdminUserApi(userDetail.id);
+      toast.success(`Akun ${userDetail.name} berhasil dihapus permanen`);
+      setIsDeleteOpen(false);
+      router.push(backHref);
+    } catch (err: any) {
+      setDeleteError(err.message || 'Gagal menghapus pengguna');
+      setIsDeleteSubmitting(false);
+    }
   };
 
   if (isLoading) {
@@ -199,7 +339,7 @@ function UserDetailContent() {
             <Button
               variant="outline"
               size="sm"
-              onClick={handleRetry}
+              onClick={() => loadDetail()}
               className="bg-card text-foreground"
             >
               Coba Lagi
@@ -210,43 +350,159 @@ function UserDetailContent() {
     );
   }
 
+  const isCurrentAdmin = currentAdmin?.id === userDetail.id;
+  const usedStorageBytes = userDetail.usageSummary.storageUsage?.usedBytes ?? 0;
+  const storagePercentage = Math.min(100, Math.round((usedStorageBytes / MAX_STORAGE_BYTES) * 100));
+
+  const dailyGenLimit = userDetail.usageSummary.aiQuota?.dailyLimit ?? 20;
+  const dailyGenCount = userDetail.usageSummary.aiQuota?.dailyGenerationCount ?? 0;
+  const aiPercentage = Math.min(100, Math.round((dailyGenCount / dailyGenLimit) * 100));
+  const activeJobsCount = userDetail.usageSummary.aiQuota?.activeJobsCount ?? 0;
+  const activeSessionsCount = userDetail.usageSummary.activeSessionsCount ?? 0;
+
   return (
     <FadeIn className="flex flex-1 flex-col gap-6 p-4 md:p-8 max-w-5xl mx-auto w-full">
-      {/* Page Header and Back Action */}
+      {/* Top Header & Actions Bar */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div className="flex items-center gap-3">
           <Button variant="outline" size="sm" asChild>
-            <Link href={backHref} className="gap-2">
+            <Link href={backHref} className="gap-2 h-9">
               <ArrowLeft className="h-4 w-4" />
               <span>Kembali</span>
             </Link>
           </Button>
           <div>
-            <h1 className="text-2xl font-bold tracking-tight text-foreground md:text-3xl">
-              Detail Pengguna
+            <h1 className="text-2xl font-bold tracking-tight text-foreground md:text-3xl flex items-center gap-2">
+              {userDetail.name}
+              {isCurrentAdmin && (
+                <Badge variant="outline" className="text-xs bg-primary/10 text-primary border-primary/20">
+                  Akun Anda
+                </Badge>
+              )}
             </h1>
-            <p className="text-xs text-muted-foreground mt-0.5">
-              Informasi akun dan ringkasan penggunaan platform
+            <p className="text-xs text-muted-foreground mt-0.5 font-mono">
+              {userDetail.email} &bull; ID: {userDetail.id}
             </p>
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2 self-start sm:self-auto">
           <Button
             variant="outline"
             size="sm"
-            onClick={handleRetry}
-            disabled={isLoading}
-            className="gap-2"
+            onClick={() => setIsEditOpen(true)}
+            className="gap-1.5 h-9 text-xs"
           >
-            <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
-            Segarkan
+            <Edit2 className="h-3.5 w-3.5" />
+            <span>Edit Profil</span>
+          </Button>
+
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setIsPasswordOpen(true)}
+            className="gap-1.5 h-9 text-xs"
+          >
+            <KeyRound className="h-3.5 w-3.5" />
+            <span>Reset Password</span>
+          </Button>
+
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleResetQuota}
+            className="gap-1.5 h-9 text-xs text-amber-600 dark:text-amber-400 hover:text-amber-700"
+          >
+            <RotateCcw className="h-3.5 w-3.5" />
+            <span>Reset Kuota</span>
+          </Button>
+
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleRevokeSessions}
+            className="gap-1.5 h-9 text-xs text-orange-600 dark:text-orange-400 hover:text-orange-700"
+          >
+            <LogOut className="h-3.5 w-3.5" />
+            <span>Cabut Sesi</span>
+          </Button>
+
+          <Button
+            variant="destructive"
+            size="sm"
+            onClick={() => setIsDeleteOpen(true)}
+            disabled={isCurrentAdmin}
+            className="gap-1.5 h-9 text-xs"
+          >
+            <Trash2 className="h-3.5 w-3.5" />
+            <span>Hapus Akun</span>
           </Button>
         </div>
       </div>
 
       <div className="grid grid-cols-1 gap-6">
-        {/* Card 1: Informasi Akun */}
+        {/* Card 1: Kuota & Kapasitas Akun (Progress Gauges) */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Storage Quota Card */}
+          <Card className="border-border bg-card shadow-xs">
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <HardDrive className="h-4 w-4 text-primary" />
+                  <CardTitle className="text-base">Kapasitas Penyimpanan PDF</CardTitle>
+                </div>
+                <Badge variant="outline" className="text-xs font-mono tabular-nums">
+                  {storagePercentage}% Terpakai
+                </Badge>
+              </div>
+              <CardDescription className="text-xs">
+                Batas kuota penyimpanan berkas PDF mahasiswa ({formatBytes(MAX_STORAGE_BYTES)}).
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <Progress value={storagePercentage} className="h-2.5" />
+              <div className="flex items-center justify-between text-xs text-muted-foreground">
+                <span className="font-medium text-foreground">
+                  {formatBytes(usedStorageBytes)} digunakan
+                </span>
+                <span>Tersisa {formatBytes(Math.max(0, MAX_STORAGE_BYTES - usedStorageBytes))}</span>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* AI Quota Card */}
+          <Card className="border-border bg-card shadow-xs">
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Sparkles className="h-4 w-4 text-amber-500" />
+                  <CardTitle className="text-base">Kuota Generasi AI Harian</CardTitle>
+                </div>
+                <Badge variant="outline" className="text-xs font-mono tabular-nums">
+                  {dailyGenCount} / {dailyGenLimit} Hari Ini
+                </Badge>
+              </div>
+              <CardDescription className="text-xs">
+                Penggunaan ringkasan, flashcard, dan kuis AI yang direset setiap hari (00:00 UTC).
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <Progress value={aiPercentage} className="h-2.5" />
+              <div className="flex items-center justify-between text-xs text-muted-foreground">
+                <span className="flex items-center gap-1 font-medium text-foreground">
+                  <Activity className="h-3 w-3 text-primary" />
+                  {activeJobsCount} pekerjaan AI aktif
+                </span>
+                <span className="flex items-center gap-1">
+                  <Layers className="h-3 w-3 text-muted-foreground" />
+                  {activeSessionsCount} sesi login aktif
+                </span>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Card 2: Informasi Akun */}
         <Card className="border-border bg-card shadow-xs">
           <CardHeader className="pb-4">
             <div className="flex items-center gap-2">
@@ -415,30 +671,22 @@ function UserDetailContent() {
                 </div>
               </div>
             </div>
-
-            {/* Note alert */}
-            <div className="flex items-start gap-2.5 rounded-lg border border-primary/20 bg-primary/5 p-3 text-xs text-muted-foreground">
-              <Info className="h-4 w-4 text-primary shrink-0 mt-0.5" />
-              <span>
-                Halaman ini bersifat <strong>read-only</strong>. Modifikasi profil, perubahan peran, dan aksi administratif lanjutan dilindungi demi menjaga integritas data akademik pengguna.
-              </span>
-            </div>
           </CardContent>
         </Card>
 
-        {/* Card 2: Ringkasan Penggunaan Platform */}
+        {/* Card 3: Ringkasan Penggunaan Platform */}
         <Card className="border-border bg-card shadow-xs">
           <CardHeader className="pb-4">
             <div className="flex items-center gap-2">
               <GraduationCap className="h-5 w-5 text-primary" />
-              <CardTitle className="text-lg">Ringkasan Penggunaan</CardTitle>
+              <CardTitle className="text-lg">Ringkasan Entitas Akademik</CardTitle>
             </div>
             <CardDescription>
-              Jumlah entitas akademik dan penggunaan ruang penyimpanan pengguna (hitungan materi hanya mencakup materi aktif).
+              Jumlah entitas akademik aktif yang dibuat pengguna di sistem StudyFlow.
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <StaggerGroup className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+            <StaggerGroup className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
               {/* Semester */}
               <StaggerItem className="rounded-lg border border-border/70 p-4 bg-muted/30 flex flex-col items-center justify-center text-center">
                 <div className="rounded-full bg-primary/10 p-2 mb-2 text-primary">
@@ -493,23 +741,243 @@ function UserDetailContent() {
                 </span>
                 <span className="text-xs text-muted-foreground mt-1">Catatan Belajar</span>
               </StaggerItem>
-
-              {/* Penyimpanan */}
-              <StaggerItem className="rounded-lg border border-border/70 p-4 bg-muted/30 flex flex-col items-center justify-center text-center">
-                <div className="rounded-full bg-primary/10 p-2 mb-2 text-primary">
-                  <HardDrive className="h-4 w-4" />
-                </div>
-                <span className="text-lg font-bold text-foreground truncate max-w-full tabular-nums">
-                  {userDetail.usageSummary.storageUsage
-                    ? userDetail.usageSummary.storageUsage.formatted
-                    : '0 B'}
-                </span>
-                <span className="text-xs text-muted-foreground mt-1">Penyimpanan</span>
-              </StaggerItem>
             </StaggerGroup>
           </CardContent>
         </Card>
       </div>
+
+      {/* Modal 1: Edit Akun & Peran */}
+      <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Edit2 className="h-5 w-5 text-primary" />
+              Edit Profil &amp; Peran
+            </DialogTitle>
+            <DialogDescription>
+              Ubah rincian akun, hak akses peran, serta zona waktu pengguna.
+            </DialogDescription>
+          </DialogHeader>
+
+          <form onSubmit={handleEditSubmit} className="space-y-4 py-2">
+            {editError && (
+              <Alert variant="destructive" className="py-2">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription className="text-xs">{editError}</AlertDescription>
+              </Alert>
+            )}
+
+            <div className="space-y-1.5">
+              <Label htmlFor="edit-name" className="text-xs font-semibold">Nama Lengkap</Label>
+              <Input
+                id="edit-name"
+                required
+                value={editForm.name}
+                onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+                className="h-9 text-xs"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="edit-email" className="text-xs font-semibold">Alamat Email</Label>
+              <Input
+                id="edit-email"
+                type="email"
+                required
+                value={editForm.email}
+                onChange={(e) => setEditForm({ ...editForm, email: e.target.value })}
+                className="h-9 text-xs"
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label className="text-xs font-semibold">Peran Akses</Label>
+                <Select
+                  value={editForm.role}
+                  onValueChange={(val: Role) => setEditForm({ ...editForm, role: val })}
+                  disabled={isCurrentAdmin}
+                >
+                  <SelectTrigger className="h-9 text-xs">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="USER" className="text-xs">Mahasiswa (USER)</SelectItem>
+                    <SelectItem value="ADMIN" className="text-xs">Administrator</SelectItem>
+                  </SelectContent>
+                </Select>
+                {isCurrentAdmin && (
+                  <p className="text-[10px] text-muted-foreground mt-0.5">
+                    Peran akun sendiri tidak dapat diturunkan.
+                  </p>
+                )}
+              </div>
+
+              <div className="space-y-1.5">
+                <Label className="text-xs font-semibold">Zona Waktu</Label>
+                <Select
+                  value={editForm.timezone}
+                  onValueChange={(val) => setEditForm({ ...editForm, timezone: val })}
+                >
+                  <SelectTrigger className="h-9 text-xs">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Asia/Jakarta" className="text-xs">WIB (Asia/Jakarta)</SelectItem>
+                    <SelectItem value="Asia/Makassar" className="text-xs">WITA (Asia/Makassar)</SelectItem>
+                    <SelectItem value="Asia/Jayapura" className="text-xs">WIT (Asia/Jayapura)</SelectItem>
+                    <SelectItem value="UTC" className="text-xs">UTC</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="flex items-center space-x-2 pt-2">
+              <Checkbox
+                id="edit-verified-checkbox"
+                checked={editForm.emailVerified}
+                onCheckedChange={(checked) =>
+                  setEditForm({ ...editForm, emailVerified: Boolean(checked) })
+                }
+              />
+              <Label htmlFor="edit-verified-checkbox" className="text-xs cursor-pointer">
+                Email terverifikasi
+              </Label>
+            </div>
+
+            <DialogFooter className="pt-3">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setIsEditOpen(false)}
+                disabled={isEditSubmitting}
+                className="h-9 text-xs"
+              >
+                Batal
+              </Button>
+              <Button
+                type="submit"
+                size="sm"
+                disabled={isEditSubmitting}
+                className="h-9 text-xs gap-1.5"
+              >
+                {isEditSubmitting && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+                <span>Simpan Perubahan</span>
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal 2: Reset Kata Sandi */}
+      <Dialog open={isPasswordOpen} onOpenChange={setIsPasswordOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <KeyRound className="h-5 w-5 text-primary" />
+              Reset Kata Sandi Pengguna
+            </DialogTitle>
+            <DialogDescription>
+              Masukkan kata sandi baru untuk pengguna ini. Seluruh sesi aktif pengguna akan otomatis dicabut.
+            </DialogDescription>
+          </DialogHeader>
+
+          <form onSubmit={handlePasswordSubmit} className="space-y-4 py-2">
+            {passwordError && (
+              <Alert variant="destructive" className="py-2">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription className="text-xs">{passwordError}</AlertDescription>
+              </Alert>
+            )}
+
+            <div className="space-y-1.5">
+              <Label htmlFor="new-password" className="text-xs font-semibold">Kata Sandi Baru</Label>
+              <Input
+                id="new-password"
+                type="password"
+                required
+                minLength={8}
+                placeholder="Minimal 8 karakter..."
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                className="h-9 text-xs"
+              />
+            </div>
+
+            <DialogFooter className="pt-3">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setIsPasswordOpen(false);
+                  setNewPassword('');
+                }}
+                disabled={isPasswordSubmitting}
+                className="h-9 text-xs"
+              >
+                Batal
+              </Button>
+              <Button
+                type="submit"
+                size="sm"
+                disabled={isPasswordSubmitting}
+                className="h-9 text-xs gap-1.5"
+              >
+                {isPasswordSubmitting && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+                <span>Reset Kata Sandi</span>
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal 3: Konfirmasi Hapus Akun */}
+      <Dialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-destructive">
+              <Trash2 className="h-5 w-5" />
+              Hapus Akun Pengguna
+            </DialogTitle>
+            <DialogDescription>
+              Apakah Anda yakin ingin menghapus akun <strong>{userDetail.name}</strong>? Tindakan ini permanen dan akan menghapus seluruh data akademik terkait.
+            </DialogDescription>
+          </DialogHeader>
+
+          {deleteError && (
+            <Alert variant="destructive" className="py-2 my-2">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription className="text-xs">{deleteError}</AlertDescription>
+            </Alert>
+          )}
+
+          <DialogFooter className="pt-3">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setIsDeleteOpen(false)}
+              disabled={isDeleteSubmitting}
+              className="h-9 text-xs"
+            >
+              Batal
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              size="sm"
+              onClick={handleDeleteSubmit}
+              disabled={isDeleteSubmitting || isCurrentAdmin}
+              className="h-9 text-xs gap-1.5"
+            >
+              {isDeleteSubmitting && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+              <span>Konfirmasi Hapus Akun</span>
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </FadeIn>
   );
 }

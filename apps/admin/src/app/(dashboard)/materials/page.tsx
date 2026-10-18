@@ -14,6 +14,14 @@ import {
   FileCheck2,
   Clock,
   AlertTriangle,
+  MoreHorizontal,
+  Edit2,
+  RotateCcw,
+  Trash2,
+  Loader2,
+  CheckCircle2,
+  FileText,
+  Layers,
 } from 'lucide-react';
 import {
   Table,
@@ -29,18 +37,39 @@ import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
+import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Card } from '@/components/ui/card';
-import { FadeIn } from '@/components/ui/motion';
-import { fetchAdminMaterials } from '@/lib/admin-api';
-import { AdminMaterialListItem, AdminMaterialListResponse } from '@studyflow/shared';
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { FadeIn, StaggerGroup, StaggerItem } from '@/components/ui/motion';
+import {
+  fetchAdminMaterials,
+  updateAdminMaterialApi,
+  deleteAdminMaterialApi,
+} from '@/lib/admin-api';
+import type { AdminMaterialListItem, AdminMaterialListResponse, AdminMaterialStatus } from '@studyflow/shared';
 import { downloadCsvFile, formatBytes } from '@/lib/admin-formatters';
 import { AdminPagination } from '@/components/admin-pagination';
+import { toast } from 'sonner';
 
 function MaterialsTableSkeleton() {
   return (
@@ -60,7 +89,7 @@ function MaterialsTableSkeleton() {
   );
 }
 
-function StatusBadge({ status }: { status: string }) {
+function StatusBadge({ status, safeErrorMessage }: { status: string; safeErrorMessage?: string | null }) {
   switch (status) {
     case 'READY':
       return (
@@ -85,10 +114,17 @@ function StatusBadge({ status }: { status: string }) {
       );
     case 'FAILED':
       return (
-        <Badge variant="outline" className="bg-destructive/10 text-destructive border-destructive/20 text-xs gap-1">
-          <AlertTriangle className="h-3 w-3" />
-          <span>Gagal Ekstraksi</span>
-        </Badge>
+        <div className="space-y-1">
+          <Badge variant="outline" className="bg-destructive/10 text-destructive border-destructive/20 text-xs gap-1">
+            <AlertTriangle className="h-3 w-3" />
+            <span>Gagal Ekstraksi</span>
+          </Badge>
+          {safeErrorMessage && (
+            <p className="text-[10px] text-destructive max-w-xs truncate" title={safeErrorMessage}>
+              {safeErrorMessage}
+            </p>
+          )}
+        </div>
       );
     default:
       return <Badge variant="outline" className="text-xs">{status}</Badge>;
@@ -117,6 +153,16 @@ function AdminMaterialsContent() {
   const [limit, setLimit] = React.useState(initialLimit);
   const [sortBy, setSortBy] = React.useState<'createdAt' | 'title' | 'bytes'>('createdAt');
   const [sortOrder, setSortOrder] = React.useState<'asc' | 'desc'>('desc');
+
+  // Dialog states for Edit Title & Delete
+  const [editingMaterial, setEditingMaterial] = React.useState<AdminMaterialListItem | null>(null);
+  const [editTitle, setEditTitle] = React.useState('');
+  const [isEditSubmitting, setIsEditSubmitting] = React.useState(false);
+  const [editError, setEditError] = React.useState<string | null>(null);
+
+  const [deletingMaterial, setDeletingMaterial] = React.useState<AdminMaterialListItem | null>(null);
+  const [isDeleteSubmitting, setIsDeleteSubmitting] = React.useState(false);
+  const [deleteError, setDeleteError] = React.useState<string | null>(null);
 
   // Debounce search
   React.useEffect(() => {
@@ -149,7 +195,7 @@ function AdminMaterialsContent() {
       const res = await fetchAdminMaterials(
         {
           search: debouncedSearch || undefined,
-          status: status || undefined,
+          status: (status as AdminMaterialStatus) || undefined,
           page,
           limit,
           sortBy,
@@ -171,6 +217,16 @@ function AdminMaterialsContent() {
     loadData(controller.signal);
     return () => controller.abort();
   }, [loadData]);
+
+  // Metric counts derived from current items or summary
+  const metrics = React.useMemo(() => {
+    const totalItems = data?.pagination.totalItems ?? 0;
+    const items = data?.items ?? [];
+    const readyCount = items.filter((i) => i.status === 'READY').length;
+    const processingCount = items.filter((i) => i.status === 'PROCESSING' || i.status === 'QUEUED').length;
+    const failedCount = items.filter((i) => i.status === 'FAILED').length;
+    return { totalItems, readyCount, processingCount, failedCount };
+  }, [data]);
 
   const handleExportCsv = () => {
     if (!data || data.items.length === 0) return;
@@ -199,6 +255,7 @@ function AdminMaterialsContent() {
       new Date(item.createdAt).toLocaleString('id-ID'),
     ]);
     downloadCsvFile('data-materi-pdf-studyflow.csv', [headers, ...rows]);
+    toast.success('Daftar materi PDF berhasil diekspor ke CSV');
   };
 
   const handleSort = (field: 'createdAt' | 'title' | 'bytes') => {
@@ -211,17 +268,70 @@ function AdminMaterialsContent() {
     setPage(1);
   };
 
+  // Open Edit Title modal
+  const openEditTitleModal = (item: AdminMaterialListItem) => {
+    setEditingMaterial(item);
+    setEditTitle(item.title);
+    setEditError(null);
+  };
+
+  // Submit Edit Title
+  const handleEditTitleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingMaterial) return;
+    setIsEditSubmitting(true);
+    setEditError(null);
+    try {
+      await updateAdminMaterialApi(editingMaterial.id, { title: editTitle });
+      toast.success('Judul materi berhasil diperbarui');
+      setEditingMaterial(null);
+      loadData();
+    } catch (err: any) {
+      setEditError(err.message || 'Gagal memperbarui judul materi');
+    } finally {
+      setIsEditSubmitting(false);
+    }
+  };
+
+  // Retry Extraction
+  const handleRetryExtraction = async (item: AdminMaterialListItem) => {
+    try {
+      await updateAdminMaterialApi(item.id, { action: 'retry' });
+      toast.success(`Ekstraksi untuk "${item.title}" dijadwalkan ulang`);
+      loadData();
+    } catch (err: any) {
+      toast.error('Gagal menjadwalkan ulang ekstraksi: ' + err.message);
+    }
+  };
+
+  // Submit Delete Material
+  const handleDeleteSubmit = async () => {
+    if (!deletingMaterial) return;
+    setIsDeleteSubmitting(true);
+    setDeleteError(null);
+    try {
+      await deleteAdminMaterialApi(deletingMaterial.id);
+      toast.success(`Materi "${deletingMaterial.title}" berhasil dihapus dan kuota dikembalikan`);
+      setDeletingMaterial(null);
+      loadData();
+    } catch (err: any) {
+      setDeleteError(err.message || 'Gagal menghapus materi');
+    } finally {
+      setIsDeleteSubmitting(false);
+    }
+  };
+
   return (
-    <div className="space-y-6">
-      {/* Header */}
+    <div className="space-y-6 max-w-7xl mx-auto w-full p-4 md:p-8">
+      {/* Cockpit Header */}
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
-            <Files className="h-6 w-6 text-primary" />
-            Materi Kuliah (Dokumen PDF)
+          <h1 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2 md:text-3xl">
+            <Files className="h-7 w-7 text-primary" />
+            Manajemen Materi PDF
           </h1>
-          <p className="text-xs text-muted-foreground mt-0.5">
-            Daftar seluruh berkas materi pembelajaran PDF yang diunggah mahasiswa.
+          <p className="text-sm text-muted-foreground mt-0.5">
+            Daftar seluruh berkas pembelajaran PDF yang diunggah mahasiswa, pemantauan status ekstraksi, dan tindakan moderasi.
           </p>
         </div>
 
@@ -249,6 +359,67 @@ function AdminMaterialsContent() {
           </Button>
         </div>
       </div>
+
+      {/* 4 Summary Metric Cards */}
+      <StaggerGroup className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        {/* Total Materi */}
+        <StaggerItem>
+          <Card className="border-border bg-card shadow-xs p-4">
+            <div className="flex items-center justify-between text-muted-foreground text-xs">
+              <span>Total Materi Terdaftar</span>
+              <Files className="h-4 w-4 text-primary" />
+            </div>
+            <p className="text-2xl font-bold text-foreground mt-1 tabular-nums">
+              {metrics.totalItems.toLocaleString('id-ID')}
+            </p>
+            <p className="text-[11px] text-muted-foreground mt-0.5">Dokumen PDF aktif</p>
+          </Card>
+        </StaggerItem>
+
+        {/* READY */}
+        <StaggerItem>
+          <Card className="border-border bg-card shadow-xs p-4">
+            <div className="flex items-center justify-between text-muted-foreground text-xs">
+              <span>Siap Dipakai (Ready)</span>
+              <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+            </div>
+            <p className="text-2xl font-bold text-emerald-600 dark:text-emerald-400 mt-1 tabular-nums">
+              {metrics.readyCount.toLocaleString('id-ID')}
+            </p>
+            <p className="text-[11px] text-muted-foreground mt-0.5">Teks berhasil diekstrak</p>
+          </Card>
+        </StaggerItem>
+
+        {/* PROCESSING / QUEUED */}
+        <StaggerItem>
+          <Card className="border-border bg-card shadow-xs p-4">
+            <div className="flex items-center justify-between text-muted-foreground text-xs">
+              <span>Sedang Diproses</span>
+              <Clock className="h-4 w-4 text-amber-500" />
+            </div>
+            <p className="text-2xl font-bold text-amber-600 dark:text-amber-400 mt-1 tabular-nums">
+              {metrics.processingCount.toLocaleString('id-ID')}
+            </p>
+            <p className="text-[11px] text-muted-foreground mt-0.5">Dalam antrean worker</p>
+          </Card>
+        </StaggerItem>
+
+        {/* FAILED */}
+        <StaggerItem>
+          <Card className={`border-border bg-card shadow-xs p-4 ${metrics.failedCount > 0 ? 'border-destructive/40' : ''}`}>
+            <div className="flex items-center justify-between text-muted-foreground text-xs">
+              <span>Gagal Ekstraksi</span>
+              <AlertTriangle className={`h-4 w-4 ${metrics.failedCount > 0 ? 'text-destructive' : 'text-muted-foreground'}`} />
+            </div>
+            <p className={`text-2xl font-bold mt-1 tabular-nums ${metrics.failedCount > 0 ? 'text-destructive' : 'text-foreground'}`}>
+              {metrics.failedCount.toLocaleString('id-ID')}
+            </p>
+            <p className="text-[11px] text-muted-foreground mt-0.5">
+              {metrics.failedCount > 0 ? 'Perlu tindakan coba ulang' : 'Tidak ada berkas gagal'}
+            </p>
+          </Card>
+        </StaggerItem>
+      </StaggerGroup>
 
       {/* Filter Bar */}
       <Card className="p-3.5 border-border bg-card shadow-xs">
@@ -282,7 +453,7 @@ function AdminMaterialsContent() {
                 setPage(1);
               }}
             >
-              <SelectTrigger className="h-9 w-36 text-xs">
+              <SelectTrigger className="h-9 w-38 text-xs">
                 <SelectValue placeholder="Semua Status" />
               </SelectTrigger>
               <SelectContent>
@@ -319,8 +490,11 @@ function AdminMaterialsContent() {
         <Alert variant="destructive">
           <AlertCircle className="h-4 w-4" />
           <AlertTitle className="text-xs font-semibold">Gagal Mengambil Data</AlertTitle>
-          <AlertDescription className="text-xs">
-            {error}. Silakan klik tombol Segarkan untuk mencoba kembali.
+          <AlertDescription className="text-xs flex items-center justify-between">
+            <span>{error}</span>
+            <Button variant="outline" size="sm" onClick={() => loadData()} className="h-7 text-xs">
+              Coba Lagi
+            </Button>
           </AlertDescription>
         </Alert>
       )}
@@ -372,6 +546,9 @@ function AdminMaterialsContent() {
                         <ArrowUpDown className="h-3.5 w-3.5 text-muted-foreground" />
                       </div>
                     </TableHead>
+                    <TableHead className="text-right text-xs font-semibold text-foreground w-16">
+                      Aksi
+                    </TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -394,7 +571,7 @@ function AdminMaterialsContent() {
                           >
                             {item.userName}
                           </Link>
-                          <span className="text-muted-foreground">{item.userEmail}</span>
+                          <span className="text-muted-foreground font-mono">{item.userEmail}</span>
                         </TableCell>
                         <TableCell className="py-3 text-xs">
                           <p className="font-medium text-foreground tabular-nums">
@@ -405,20 +582,59 @@ function AdminMaterialsContent() {
                           </p>
                         </TableCell>
                         <TableCell className="py-3 text-xs">
-                          <StatusBadge status={item.status} />
+                          <StatusBadge status={item.status} safeErrorMessage={item.safeErrorMessage} />
                         </TableCell>
-                        <TableCell className="py-3 text-xs text-right text-muted-foreground tabular-nums">
+                        <TableCell className="py-3 text-xs text-right text-muted-foreground tabular-nums whitespace-nowrap">
                           {new Date(item.createdAt).toLocaleDateString('id-ID', {
                             day: 'numeric',
                             month: 'short',
                             year: 'numeric',
                           })}
                         </TableCell>
+                        <TableCell className="py-3 text-right">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon" className="h-8 w-8 p-0">
+                                <span className="sr-only">Buka menu aksi</span>
+                                <MoreHorizontal className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="w-48">
+                              <DropdownMenuItem
+                                onClick={() => openEditTitleModal(item)}
+                                className="cursor-pointer text-xs"
+                              >
+                                <Edit2 className="mr-2 h-4 w-4 text-primary" />
+                                <span>Ubah Judul</span>
+                              </DropdownMenuItem>
+
+                              {item.status === 'FAILED' && (
+                                <DropdownMenuItem
+                                  onClick={() => handleRetryExtraction(item)}
+                                  className="cursor-pointer text-xs"
+                                >
+                                  <RotateCcw className="mr-2 h-4 w-4 text-amber-500" />
+                                  <span>Coba Ulang Ekstraksi</span>
+                                </DropdownMenuItem>
+                              )}
+
+                              <DropdownMenuSeparator />
+
+                              <DropdownMenuItem
+                                onClick={() => setDeletingMaterial(item)}
+                                className="cursor-pointer text-xs text-destructive focus:bg-destructive/10 focus:text-destructive"
+                              >
+                                <Trash2 className="mr-2 h-4 w-4" />
+                                <span>Hapus Berkas</span>
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </TableCell>
                       </TableRow>
                     ))
                   ) : (
                     <TableRow>
-                      <TableCell colSpan={6} className="text-center py-12 text-muted-foreground text-xs">
+                      <TableCell colSpan={7} className="text-center py-12 text-muted-foreground text-xs">
                         <Files className="h-8 w-8 mx-auto text-muted-foreground/40 mb-2" />
                         <p className="font-medium text-foreground">Tidak ada berkas materi ditemukan</p>
                         <p className="mt-0.5">
@@ -449,6 +665,128 @@ function AdminMaterialsContent() {
           </Card>
         </FadeIn>
       )}
+
+      {/* Modal 1: Ubah Judul Materi */}
+      <Dialog open={Boolean(editingMaterial)} onOpenChange={(open) => !open && setEditingMaterial(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Edit2 className="h-5 w-5 text-primary" />
+              Ubah Judul Materi PDF
+            </DialogTitle>
+            <DialogDescription>
+              Perbarui judul dokumen pembelajaran agar lebih deskriptif dan mudah diidentifikasi.
+            </DialogDescription>
+          </DialogHeader>
+
+          <form onSubmit={handleEditTitleSubmit} className="space-y-4 py-2">
+            {editError && (
+              <Alert variant="destructive" className="py-2">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription className="text-xs">{editError}</AlertDescription>
+              </Alert>
+            )}
+
+            <div className="space-y-1.5">
+              <Label htmlFor="material-title" className="text-xs font-semibold">Judul Materi</Label>
+              <Input
+                id="material-title"
+                required
+                minLength={2}
+                maxLength={200}
+                value={editTitle}
+                onChange={(e) => setEditTitle(e.target.value)}
+                className="h-9 text-xs"
+              />
+            </div>
+
+            {editingMaterial && (
+              <div className="rounded-lg border border-border bg-muted/20 p-2.5 text-xs text-muted-foreground space-y-0.5">
+                <p><strong>Nama Berkas:</strong> {editingMaterial.originalFilename}</p>
+                <p><strong>Mata Kuliah:</strong> {editingMaterial.courseName}</p>
+                <p><strong>Pengunggah:</strong> {editingMaterial.userName}</p>
+              </div>
+            )}
+
+            <DialogFooter className="pt-3">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setEditingMaterial(null)}
+                disabled={isEditSubmitting}
+                className="h-9 text-xs"
+              >
+                Batal
+              </Button>
+              <Button
+                type="submit"
+                size="sm"
+                disabled={isEditSubmitting}
+                className="h-9 text-xs gap-1.5"
+              >
+                {isEditSubmitting && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+                <span>Simpan Judul</span>
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal 2: Konfirmasi Hapus Materi */}
+      <Dialog open={Boolean(deletingMaterial)} onOpenChange={(open) => !open && setDeletingMaterial(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-destructive">
+              <Trash2 className="h-5 w-5" />
+              Hapus Berkas Materi
+            </DialogTitle>
+            <DialogDescription>
+              Materi ini akan dihapus dari sistem, antrean pemrosesan aktif akan dibatalkan, dan kuota penyimpanan mahasiswa akan dikembalikan.
+            </DialogDescription>
+          </DialogHeader>
+
+          {deleteError && (
+            <Alert variant="destructive" className="py-2 my-2">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription className="text-xs">{deleteError}</AlertDescription>
+            </Alert>
+          )}
+
+          {deletingMaterial && (
+            <div className="rounded-lg border border-border bg-muted/20 p-3 my-2 text-xs space-y-1">
+              <p><strong className="text-foreground">Judul:</strong> {deletingMaterial.title}</p>
+              <p><strong className="text-foreground">Nama Berkas:</strong> {deletingMaterial.originalFilename}</p>
+              <p><strong className="text-foreground">Ukuran:</strong> {formatBytes(deletingMaterial.bytes)}</p>
+              <p><strong className="text-foreground">Pemilik:</strong> {deletingMaterial.userName} ({deletingMaterial.userEmail})</p>
+            </div>
+          )}
+
+          <DialogFooter className="pt-3">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setDeletingMaterial(null)}
+              disabled={isDeleteSubmitting}
+              className="h-9 text-xs"
+            >
+              Batal
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              size="sm"
+              onClick={handleDeleteSubmit}
+              disabled={isDeleteSubmitting}
+              className="h-9 text-xs gap-1.5"
+            >
+              {isDeleteSubmitting && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+              <span>Konfirmasi Hapus</span>
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

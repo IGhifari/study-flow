@@ -23,6 +23,10 @@ import {
   FileText,
   User,
   Download,
+  RotateCcw,
+  Trash2,
+  Loader2,
+  MoreHorizontal,
 } from 'lucide-react';
 import {
   Table,
@@ -51,11 +55,30 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { Label } from '@/components/ui/label';
 import { FadeIn, StaggerGroup, StaggerItem } from '@/components/ui/motion';
 import {
   fetchAdminJobs,
   fetchAdminJobDetail,
   fetchAdminQueuesSummary,
+  retryAdminJobApi,
+  deleteAdminJobApi,
+  cleanupAdminJobsApi,
 } from '@/lib/admin-api';
 import {
   AdminJobListItem,
@@ -74,6 +97,7 @@ import {
 import { JobStatusBadge } from '@/components/jobs/job-status-badge';
 import { JobDetailSheet } from '@/components/jobs/job-detail-sheet';
 import { AdminPagination } from '@/components/admin-pagination';
+import { toast } from 'sonner';
 
 function JobsSkeleton() {
   return (
@@ -133,6 +157,49 @@ function AdminJobsContent() {
   const [detailError, setDetailError] = React.useState<string | null>(null);
 
   const [isExporting, setIsExporting] = React.useState(false);
+
+  // Cleanup & operational action states
+  const [isCleanupOpen, setIsCleanupOpen] = React.useState(false);
+  const [cleanupStatus, setCleanupStatus] = React.useState<'FAILED' | 'COMPLETED'>('FAILED');
+  const [cleanupOlderThanDays, setCleanupOlderThanDays] = React.useState<number>(0);
+  const [isCleaningUp, setIsCleaningUp] = React.useState(false);
+  const [cleanupError, setCleanupError] = React.useState<string | null>(null);
+
+  const handleCleanupSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsCleaningUp(true);
+    setCleanupError(null);
+    try {
+      const res = await cleanupAdminJobsApi({ status: cleanupStatus, olderThanDays: cleanupOlderThanDays });
+      toast.success(`${res.deletedCount} riwayat pekerjaan berhasil dibersihkan`);
+      setIsCleanupOpen(false);
+      handleRefreshAll();
+    } catch (err: any) {
+      setCleanupError(err.message || 'Gagal membersihkan riwayat pekerjaan');
+    } finally {
+      setIsCleaningUp(false);
+    }
+  };
+
+  const handleRetryJob = async (jobId: string) => {
+    try {
+      await retryAdminJobApi(jobId);
+      toast.success(`Pekerjaan ${jobId.slice(0, 8)} berhasil dijadwalkan ulang`);
+      handleRefreshAll();
+    } catch (err: any) {
+      toast.error('Gagal mencoba ulang pekerjaan: ' + err.message);
+    }
+  };
+
+  const handleDeleteJob = async (jobId: string) => {
+    try {
+      await deleteAdminJobApi(jobId);
+      toast.success(`Riwayat pekerjaan ${jobId.slice(0, 8)} berhasil dihapus`);
+      handleRefreshAll();
+    } catch (err: any) {
+      toast.error('Gagal menghapus riwayat pekerjaan: ' + err.message);
+    }
+  };
 
   const handleExportJobsCsv = async () => {
     try {
@@ -346,13 +413,22 @@ function AdminJobsContent() {
             Pantau status operasional antrean BullMQ dan riwayat pemrosesan dokumen serta AI.
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setIsCleanupOpen(true)}
+            className="gap-2 text-destructive hover:bg-destructive/10 h-9"
+          >
+            <Trash2 className="h-4 w-4" />
+            <span>Bersihkan Riwayat</span>
+          </Button>
           <Button
             variant="outline"
             size="sm"
             onClick={handleExportJobsCsv}
             disabled={isExporting || isJobsLoading}
-            className="gap-2"
+            className="gap-2 h-9"
           >
             <Download className={`h-4 w-4 ${isExporting ? 'animate-bounce' : ''}`} />
             <span>{isExporting ? 'Mengekspor...' : 'Ekspor CSV'}</span>
@@ -362,7 +438,7 @@ function AdminJobsContent() {
             size="sm"
             onClick={handleRefreshAll}
             disabled={isJobsLoading || isQueuesLoading}
-            className="gap-2"
+            className="gap-2 h-9"
           >
             <RefreshCw
               className={`h-4 w-4 ${isJobsLoading || isQueuesLoading ? 'animate-spin' : ''}`}
@@ -643,16 +719,47 @@ function AdminJobsContent() {
                     <TableCell className="text-xs text-muted-foreground whitespace-nowrap tabular-nums">
                       {formatLocalDateTime(job.createdAt, true)}
                     </TableCell>
-                    <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setSelectedJobId(job.id)}
-                        className="h-8 px-2 text-xs gap-1"
-                      >
-                        <Eye className="h-3.5 w-3.5" />
-                        <span>Detail</span>
-                      </Button>
+                    <TableCell className="text-right py-2.5" onClick={(e) => e.stopPropagation()}>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-8 w-8 p-0">
+                            <span className="sr-only">Buka menu aksi</span>
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-44">
+                          <DropdownMenuItem
+                            onClick={() => setSelectedJobId(job.id)}
+                            className="cursor-pointer text-xs"
+                          >
+                            <Eye className="mr-2 h-4 w-4" />
+                            <span>Lihat Detail</span>
+                          </DropdownMenuItem>
+
+                          {job.status === 'FAILED' && (
+                            <DropdownMenuItem
+                              onClick={() => handleRetryJob(job.id)}
+                              className="cursor-pointer text-xs"
+                            >
+                              <RotateCcw className="mr-2 h-4 w-4 text-amber-500" />
+                              <span>Coba Ulang</span>
+                            </DropdownMenuItem>
+                          )}
+
+                          {(job.status === 'FAILED' || job.status === 'COMPLETED') && (
+                            <>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem
+                                onClick={() => handleDeleteJob(job.id)}
+                                className="cursor-pointer text-xs text-destructive focus:bg-destructive/10 focus:text-destructive"
+                              >
+                                <Trash2 className="mr-2 h-4 w-4" />
+                                <span>Hapus Riwayat</span>
+                              </DropdownMenuItem>
+                            </>
+                          )}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </TableCell>
                   </TableRow>
                 ))
@@ -695,10 +802,91 @@ function AdminJobsContent() {
         selectedJobId={selectedJobId}
         onClose={() => setSelectedJobId(null)}
         onRetry={() => selectedJobId && setSelectedJobId(selectedJobId)}
+        onJobActionCompleted={handleRefreshAll}
         isDetailLoading={isDetailLoading}
         detailError={detailError}
         jobDetail={jobDetail}
       />
+
+      {/* Cleanup Dialog */}
+      <Dialog open={isCleanupOpen} onOpenChange={setIsCleanupOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-destructive">
+              <Trash2 className="h-5 w-5" />
+              Bersihkan Riwayat Pekerjaan
+            </DialogTitle>
+            <DialogDescription>
+              Hapus massal catatan riwayat pemrosesan latar belakang yang telah selesai atau gagal secara permanen.
+            </DialogDescription>
+          </DialogHeader>
+
+          <form onSubmit={handleCleanupSubmit} className="space-y-4 py-2">
+            {cleanupError && (
+              <Alert variant="destructive" className="py-2">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription className="text-xs">{cleanupError}</AlertDescription>
+              </Alert>
+            )}
+
+            <div className="space-y-1.5">
+              <Label className="text-xs font-semibold">Status Riwayat yang Dibersihkan</Label>
+              <Select
+                value={cleanupStatus}
+                onValueChange={(val: 'FAILED' | 'COMPLETED') => setCleanupStatus(val)}
+              >
+                <SelectTrigger className="h-9 text-xs">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="FAILED" className="text-xs">Hanya Pekerjaan Gagal (FAILED)</SelectItem>
+                  <SelectItem value="COMPLETED" className="text-xs">Hanya Pekerjaan Selesai (COMPLETED)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label className="text-xs font-semibold">Batas Usia Riwayat</Label>
+              <Select
+                value={String(cleanupOlderThanDays)}
+                onValueChange={(val) => setCleanupOlderThanDays(Number(val))}
+              >
+                <SelectTrigger className="h-9 text-xs">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="0" className="text-xs">Semua riwayat (0 hari / hapus seluruhnya)</SelectItem>
+                  <SelectItem value="7" className="text-xs">Lebih dari 7 hari yang lalu</SelectItem>
+                  <SelectItem value="30" className="text-xs">Lebih dari 30 hari yang lalu</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <DialogFooter className="pt-3">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setIsCleanupOpen(false)}
+                disabled={isCleaningUp}
+                className="h-9 text-xs"
+              >
+                Batal
+              </Button>
+              <Button
+                type="submit"
+                variant="destructive"
+                size="sm"
+                disabled={isCleaningUp}
+                className="h-9 text-xs gap-1.5"
+              >
+                {isCleaningUp && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+                <span>Bersihkan Riwayat</span>
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </FadeIn>
   );
 }

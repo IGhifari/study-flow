@@ -1,10 +1,12 @@
 "use client"
 
-import * as React from "react"
+import Link from "next/link"
 import {
   ChevronsUpDown,
   LogOutIcon,
   ShieldCheckIcon,
+  UserCog,
+  Users,
 } from "lucide-react"
 
 import {
@@ -103,9 +105,21 @@ export function NavUser({
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
-              <DropdownMenuItem className="cursor-default">
+              <DropdownMenuItem className="cursor-default text-xs text-muted-foreground">
                 <ShieldCheckIcon className="size-4 mr-2 text-primary" />
-                <span>Role: Administrator</span>
+                <span>Peran: Administrator</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <Link href="/profile" className="flex items-center cursor-pointer">
+                  <UserCog className="size-4 mr-2 text-muted-foreground" />
+                  <span>Profil & Keamanan</span>
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <Link href="/users" className="flex items-center cursor-pointer">
+                  <Users className="size-4 mr-2 text-muted-foreground" />
+                  <span>Kelola Pengguna</span>
+                </Link>
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />

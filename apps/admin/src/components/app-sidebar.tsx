@@ -15,6 +15,7 @@ import {
   FileText,
   CalendarClock,
   BrainCircuit,
+  UserCog,
 } from "lucide-react"
 
 import { NavMain, type NavMainGroup, type NavMainItem } from "@/components/nav-main"
@@ -52,6 +53,12 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           isActive: pathname.startsWith("/users"),
         },
         {
+          title: "Materi Kuliah",
+          url: "/materials",
+          icon: FileText,
+          isActive: pathname.startsWith("/materials"),
+        },
+        {
           title: "Pekerjaan",
           url: "/jobs",
           icon: Activity,
@@ -67,12 +74,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           url: "/courses",
           icon: BookOpen,
           isActive: pathname.startsWith("/courses"),
-        },
-        {
-          title: "Materi Kuliah",
-          url: "/materials",
-          icon: Files,
-          isActive: pathname.startsWith("/materials"),
         },
         {
           title: "Tugas Kuliah",
@@ -111,9 +112,9 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       icon: AlertTriangle,
     },
     {
-      title: "Direktori Mahasiswa",
-      url: "/users",
-      icon: Users,
+      title: "Profil & Keamanan",
+      url: "/profile",
+      icon: UserCog,
     },
   ]
 

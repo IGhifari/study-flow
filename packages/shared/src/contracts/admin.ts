@@ -19,6 +19,9 @@ export const AdminSummarySchema = z.object({
   totalAssignments: z.number().int().nonnegative(),
   failedJobs24h: z.number().int().nonnegative(),
   calculatedAt: z.string().datetime(),
+  totalAdmins: z.number().int().nonnegative().optional(),
+  totalCourses: z.number().int().nonnegative().optional(),
+  totalStorageBytes: z.number().nonnegative().optional(),
 });
 export type AdminSummary = z.infer<typeof AdminSummarySchema>;
 
@@ -36,6 +39,8 @@ export const AdminUserListQuerySchema = z.object({
   page: z.coerce.number().int().min(1).default(1),
   limit: z.coerce.number().int().min(1).max(100).default(20),
   search: z.string().trim().max(100).optional(),
+  role: RoleEnum.optional(),
+  verified: z.enum(['true', 'false']).optional(),
   sortBy: z.enum(['createdAt', 'name', 'email']).default('createdAt'),
   sortOrder: z.enum(['asc', 'desc']).default('desc'),
 });
@@ -73,6 +78,14 @@ export const AdminUserUsageSummarySchema = z.object({
       formatted: z.string(),
     })
     .nullable(),
+  aiQuota: z
+    .object({
+      dailyGenerationCount: z.number().int().nonnegative(),
+      dailyLimit: z.number().int().positive(),
+      activeJobsCount: z.number().int().nonnegative(),
+    })
+    .optional(),
+  activeSessionsCount: z.number().int().nonnegative().optional(),
 });
 export type AdminUserUsageSummary = z.infer<typeof AdminUserUsageSummarySchema>;
 
@@ -88,6 +101,28 @@ export const AdminUserDetailSchema = z.object({
   usageSummary: AdminUserUsageSummarySchema,
 });
 export type AdminUserDetail = z.infer<typeof AdminUserDetailSchema>;
+
+export const AdminCreateUserInputSchema = z.object({
+  name: z.string().trim().min(2, 'Nama minimal 2 karakter').max(100),
+  email: z.string().trim().toLowerCase().email('Format email tidak valid'),
+  password: z.string().min(8, 'Password minimal 8 karakter').max(128),
+  role: RoleEnum.default('USER'),
+  timezone: z.string().trim().default('Asia/Jakarta'),
+  emailVerified: z.boolean().default(true),
+});
+export type AdminCreateUserInput = z.infer<typeof AdminCreateUserInputSchema>;
+
+export const AdminUpdateUserInputSchema = z.object({
+  name: z.string().trim().min(2).max(100).optional(),
+  email: z.string().trim().toLowerCase().email().optional(),
+  role: RoleEnum.optional(),
+  timezone: z.string().trim().optional(),
+  emailVerified: z.boolean().optional(),
+  newPassword: z.string().min(8).max(128).optional(),
+  resetQuota: z.boolean().optional(),
+  revokeSessions: z.boolean().optional(),
+});
+export type AdminUpdateUserInput = z.infer<typeof AdminUpdateUserInputSchema>;
 
 // ==========================================
 // Phase 3 — Job & Queue Monitoring Contracts
@@ -328,19 +363,33 @@ export const AdminCourseListResponseSchema = z.object({
 });
 export type AdminCourseListResponse = z.infer<typeof AdminCourseListResponseSchema>;
 
+export const AdminMaterialStatusEnum = z.enum([
+  'UPLOADING',
+  'QUEUED',
+  'PROCESSING',
+  'READY',
+  'FAILED',
+]);
+export type AdminMaterialStatus = z.infer<typeof AdminMaterialStatusEnum>;
+
 export const AdminMaterialListItemSchema = z.object({
   id: z.string(),
   title: z.string(),
   originalFilename: z.string(),
-  mimeType: z.string(),
+  mimeType: z.string().optional(),
   bytes: z.number().int().nonnegative(),
+  formattedSize: z.string(),
   pageCount: z.number().int().nullable(),
-  status: z.string(),
-  courseName: z.string(),
+  status: AdminMaterialStatusEnum,
+  errorCode: z.string().nullable().optional(),
+  safeErrorMessage: z.string().nullable().optional(),
   userId: z.string(),
   userName: z.string(),
   userEmail: z.string(),
+  courseId: z.string(),
+  courseName: z.string(),
   createdAt: z.string().datetime(),
+  updatedAt: z.string().datetime(),
 });
 export type AdminMaterialListItem = z.infer<typeof AdminMaterialListItemSchema>;
 
@@ -348,7 +397,8 @@ export const AdminMaterialListQuerySchema = z.object({
   page: z.coerce.number().int().min(1).default(1),
   limit: z.coerce.number().int().min(1).max(100).default(20),
   search: z.string().trim().max(100).optional(),
-  status: z.string().trim().optional(),
+  status: AdminMaterialStatusEnum.optional(),
+  userId: z.string().trim().optional(),
   sortBy: z.enum(['createdAt', 'title', 'bytes']).default('createdAt'),
   sortOrder: z.enum(['asc', 'desc']).default('desc'),
 });
@@ -366,6 +416,12 @@ export const AdminMaterialListResponseSchema = z.object({
   }),
 });
 export type AdminMaterialListResponse = z.infer<typeof AdminMaterialListResponseSchema>;
+
+export const AdminUpdateMaterialInputSchema = z.object({
+  title: z.string().trim().min(2, 'Judul minimal 2 karakter').max(200).optional(),
+  action: z.enum(['retry']).optional(),
+});
+export type AdminUpdateMaterialInput = z.infer<typeof AdminUpdateMaterialInputSchema>;
 
 export const AdminAssignmentListItemSchema = z.object({
   id: z.string(),
@@ -517,6 +573,47 @@ export const AdminQuizListResponseSchema = z.object({
   }),
 });
 export type AdminQuizListResponse = z.infer<typeof AdminQuizListResponseSchema>;
+
+// ==========================================
+// Admin Background Job Cleanup Contracts
+// ==========================================
+
+export const AdminCleanupJobsInputSchema = z.object({
+  status: z.enum(['FAILED', 'COMPLETED']).default('FAILED'),
+  olderThanDays: z.number().int().min(0).max(365).default(0),
+});
+export type AdminCleanupJobsInput = z.infer<typeof AdminCleanupJobsInputSchema>;
+
+// ==========================================
+// Admin Profile & Security Contracts
+// ==========================================
+
+export const AdminUpdateProfileInputSchema = z.object({
+  name: z.string().trim().min(2, 'Nama minimal 2 karakter').max(100).optional(),
+  timezone: z.enum(['Asia/Jakarta', 'Asia/Makassar', 'Asia/Jayapura', 'UTC']).optional(),
+});
+export type AdminUpdateProfileInput = z.infer<typeof AdminUpdateProfileInputSchema>;
+
+export const AdminChangePasswordInputSchema = z.object({
+  currentPassword: z.string().min(1, 'Password saat ini wajib diisi'),
+  newPassword: z.string().min(8, 'Password baru minimal 8 karakter').max(128),
+});
+export type AdminChangePasswordInput = z.infer<typeof AdminChangePasswordInputSchema>;
+
+export const AdminSessionItemSchema = z.object({
+  id: z.string(),
+  familyId: z.string(),
+  createdAt: z.string().datetime(),
+  expiresAt: z.string().datetime(),
+  isCurrent: z.boolean(),
+});
+export type AdminSessionItem = z.infer<typeof AdminSessionItemSchema>;
+
+export const AdminSessionsResponseSchema = z.object({
+  sessions: z.array(AdminSessionItemSchema),
+});
+export type AdminSessionsResponse = z.infer<typeof AdminSessionsResponseSchema>;
+
 
 
 

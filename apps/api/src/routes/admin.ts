@@ -1,10 +1,14 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import {
   AdminUserListQuerySchema,
+  AdminCreateUserInputSchema,
+  AdminUpdateUserInputSchema,
   AdminJobListQuerySchema,
+  AdminCleanupJobsInputSchema,
   AdminTrendsQuerySchema,
   AdminCourseListQuerySchema,
   AdminMaterialListQuerySchema,
+  AdminUpdateMaterialInputSchema,
   AdminAssignmentListQuerySchema,
   AdminNoteListQuerySchema,
   AdminScheduleListQuerySchema,
@@ -15,13 +19,21 @@ import {
   getAdminSummary,
   listAdminUsers,
   getAdminUserDetail,
+  createAdminUser,
+  updateAdminUser,
+  deleteAdminUser,
   listAdminJobs,
   getAdminJobDetail,
+  retryAdminJob,
+  deleteAdminJob,
+  cleanupAdminJobs,
   getAdminQueuesSummary,
   getAdminTrends,
   getAdminSystemStatus,
   listAdminCourses,
   listAdminMaterials,
+  updateAdminMaterial,
+  deleteAdminMaterial,
   listAdminAssignments,
   listAdminNotes,
   listAdminSchedules,
@@ -91,6 +103,90 @@ adminRouter.get('/users/:id', async (req: Request, res: Response, next: NextFunc
   }
 });
 
+// POST /api/admin/users
+adminRouter.post('/users', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const parseResult = AdminCreateUserInputSchema.safeParse(req.body);
+    if (!parseResult.success) {
+      res.status(400).json({
+        error: {
+          code: 'VALIDATION_ERROR',
+          message: 'Data pembuatan pengguna tidak valid',
+          details: parseResult.error.flatten().fieldErrors,
+        },
+      });
+      return;
+    }
+
+    const createdUser = await createAdminUser(parseResult.data);
+    res.status(201).json({
+      message: 'Pengguna berhasil dibuat',
+      user: createdUser,
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// PATCH /api/admin/users/:id
+adminRouter.patch('/users/:id', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const userId = req.params.id;
+    if (!userId || typeof userId !== 'string' || userId.trim().length === 0) {
+      res.status(400).json({
+        error: {
+          code: 'VALIDATION_ERROR',
+          message: 'ID pengguna tidak valid',
+        },
+      });
+      return;
+    }
+
+    const parseResult = AdminUpdateUserInputSchema.safeParse(req.body);
+    if (!parseResult.success) {
+      res.status(400).json({
+        error: {
+          code: 'VALIDATION_ERROR',
+          message: 'Data pembaruan pengguna tidak valid',
+          details: parseResult.error.flatten().fieldErrors,
+        },
+      });
+      return;
+    }
+
+    const updatedUser = await updateAdminUser(req.adminUser!.id, userId.trim(), parseResult.data);
+    res.status(200).json({
+      message: 'Data pengguna berhasil diperbarui',
+      user: updatedUser,
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// DELETE /api/admin/users/:id
+adminRouter.delete('/users/:id', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const userId = req.params.id;
+    if (!userId || typeof userId !== 'string' || userId.trim().length === 0) {
+      res.status(400).json({
+        error: {
+          code: 'VALIDATION_ERROR',
+          message: 'ID pengguna tidak valid',
+        },
+      });
+      return;
+    }
+
+    await deleteAdminUser(req.adminUser!.id, userId.trim());
+    res.status(200).json({
+      message: 'Pengguna berhasil dihapus',
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
 // GET /api/admin/jobs/queues/summary (registered before /jobs/:id to avoid parameter shadowing)
 adminRouter.get('/jobs/queues/summary', async (_req: Request, res: Response, next: NextFunction) => {
   try {
@@ -142,6 +238,75 @@ adminRouter.get('/jobs/:id', async (req: Request, res: Response, next: NextFunct
     const detail = await getAdminJobDetail(jobId.trim());
     res.setHeader('Cache-Control', 'no-store, private');
     res.status(200).json(detail);
+  } catch (err) {
+    next(err);
+  }
+});
+
+// POST /api/admin/jobs/cleanup (registered before :id to prevent shadow)
+adminRouter.post('/jobs/cleanup', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const parseResult = AdminCleanupJobsInputSchema.safeParse(req.body);
+    if (!parseResult.success) {
+      res.status(400).json({
+        error: {
+          code: 'VALIDATION_ERROR',
+          message: 'Parameter pembersihan pekerjaan tidak valid',
+          details: parseResult.error.flatten().fieldErrors,
+        },
+      });
+      return;
+    }
+
+    const result = await cleanupAdminJobs(parseResult.data);
+    res.status(200).json({
+      message: `Berhasil membersihkan ${result.deletedCount} riwayat pekerjaan`,
+      deletedCount: result.deletedCount,
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// POST /api/admin/jobs/:id/retry
+adminRouter.post('/jobs/:id/retry', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const jobId = req.params.id;
+    if (!jobId || typeof jobId !== 'string' || jobId.trim().length === 0) {
+      res.status(400).json({
+        error: {
+          code: 'VALIDATION_ERROR',
+          message: 'ID pekerjaan tidak valid',
+        },
+      });
+      return;
+    }
+
+    const result = await retryAdminJob(jobId.trim());
+    res.status(200).json(result);
+  } catch (err) {
+    next(err);
+  }
+});
+
+// DELETE /api/admin/jobs/:id
+adminRouter.delete('/jobs/:id', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const jobId = req.params.id;
+    if (!jobId || typeof jobId !== 'string' || jobId.trim().length === 0) {
+      res.status(400).json({
+        error: {
+          code: 'VALIDATION_ERROR',
+          message: 'ID pekerjaan tidak valid',
+        },
+      });
+      return;
+    }
+
+    await deleteAdminJob(jobId.trim());
+    res.status(200).json({
+      message: 'Riwayat pekerjaan berhasil dihapus',
+    });
   } catch (err) {
     next(err);
   }
@@ -220,6 +385,62 @@ adminRouter.get('/materials', async (req: Request, res: Response, next: NextFunc
     const result = await listAdminMaterials(parseResult.data);
     res.setHeader('Cache-Control', 'no-store, private');
     res.status(200).json(result);
+  } catch (err) {
+    next(err);
+  }
+});
+
+// PATCH /api/admin/materials/:id
+adminRouter.patch('/materials/:id', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const materialId = req.params.id;
+    if (!materialId || typeof materialId !== 'string' || materialId.trim().length === 0) {
+      res.status(400).json({
+        error: {
+          code: 'VALIDATION_ERROR',
+          message: 'ID materi tidak valid',
+        },
+      });
+      return;
+    }
+
+    const parseResult = AdminUpdateMaterialInputSchema.safeParse(req.body);
+    if (!parseResult.success) {
+      res.status(400).json({
+        error: {
+          code: 'VALIDATION_ERROR',
+          message: 'Data pembaruan materi tidak valid',
+          details: parseResult.error.flatten().fieldErrors,
+        },
+      });
+      return;
+    }
+
+    const result = await updateAdminMaterial(materialId.trim(), parseResult.data);
+    res.status(200).json(result);
+  } catch (err) {
+    next(err);
+  }
+});
+
+// DELETE /api/admin/materials/:id
+adminRouter.delete('/materials/:id', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const materialId = req.params.id;
+    if (!materialId || typeof materialId !== 'string' || materialId.trim().length === 0) {
+      res.status(400).json({
+        error: {
+          code: 'VALIDATION_ERROR',
+          message: 'ID materi tidak valid',
+        },
+      });
+      return;
+    }
+
+    await deleteAdminMaterial(materialId.trim());
+    res.status(200).json({
+      message: 'Materi berhasil dihapus dan kuota telah dikembalikan',
+    });
   } catch (err) {
     next(err);
   }

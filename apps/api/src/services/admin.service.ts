@@ -6,6 +6,10 @@ import type {
   AdminUserListQuery,
   AdminUserListResponse,
   AdminUserDetail,
+  AdminCreateUserInput,
+  AdminUpdateUserInput,
+  AdminUpdateMaterialInput,
+  AdminCleanupJobsInput,
   AdminJobListQuery,
   AdminJobListResponse,
   AdminJobDetail,
@@ -24,6 +28,7 @@ import type {
   AdminCourseListResponse,
   AdminMaterialListQuery,
   AdminMaterialListResponse,
+  AdminMaterialStatus,
   AdminAssignmentListQuery,
   AdminAssignmentListResponse,
   AdminNoteListQuery,
@@ -35,11 +40,15 @@ import type {
   UserProfile,
   Role,
 } from '@studyflow/shared';
-import { QUEUE_NAMES } from '@studyflow/shared';
+import { QUEUE_NAMES, AI_QUOTA_LIMITS } from '@studyflow/shared';
 import { env } from '../config/env.js';
 import { getStorageAdapter, StorageUnavailableAdapter } from './storage.service.js';
-import { getDocumentProcessingQueue, getAiGenerationQueue } from './outbox.service.js';
-import { verifyPassword } from './password.service.js';
+import {
+  getDocumentProcessingQueue,
+  getAiGenerationQueue,
+  dispatchOutboxEvents,
+} from './outbox.service.js';
+import { verifyPassword, hashPassword } from './password.service.js';
 import {
   createAccessToken,
   generateRandomToken,
@@ -47,6 +56,7 @@ import {
   getRefreshTokenExpiryDate,
 } from './token.service.js';
 import { toUserProfile, rotateRefreshToken, logoutUser } from './auth.service.js';
+import { retryMaterialProcessing, deleteMaterial } from './material.service.js';
 import { AppError } from '../middleware/errorHandler.js';
 
 export async function loginAdmin(input: AdminLoginInput): Promise<{
@@ -139,7 +149,15 @@ export async function logoutAdmin(rawRefreshToken?: string): Promise<void> {
 export async function getAdminSummary(): Promise<AdminSummary> {
   const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
 
-  const [totalUsers, totalMaterials, totalAssignments, failedJobs24h] = await Promise.all([
+  const [
+    totalUsers,
+    totalMaterials,
+    totalAssignments,
+    failedJobs24h,
+    totalAdmins,
+    totalCourses,
+    storageAggregate,
+  ] = await Promise.all([
     prisma.user.count(),
     prisma.material.count({ where: { deletedAt: null } }),
     prisma.assignment.count(),
@@ -149,7 +167,16 @@ export async function getAdminSummary(): Promise<AdminSummary> {
         createdAt: { gte: oneDayAgo },
       },
     }),
+    prisma.user.count({ where: { role: 'ADMIN' } }),
+    prisma.course.count(),
+    prisma.storageUsage.aggregate({
+      _sum: { usedBytes: true },
+    }),
   ]);
+
+  const totalStorageBytes = storageAggregate._sum.usedBytes
+    ? Number(storageAggregate._sum.usedBytes)
+    : 0;
 
   return {
     totalUsers,
@@ -157,6 +184,9 @@ export async function getAdminSummary(): Promise<AdminSummary> {
     totalAssignments,
     failedJobs24h,
     calculatedAt: new Date().toISOString(),
+    totalAdmins,
+    totalCourses,
+    totalStorageBytes,
   };
 }
 
@@ -173,6 +203,16 @@ export async function listAdminUsers(query: AdminUserListQuery): Promise<AdminUs
       { name: { contains: search, mode: 'insensitive' } },
       { email: { contains: search, mode: 'insensitive' } },
     ];
+  }
+
+  if (query.role) {
+    where.role = query.role;
+  }
+
+  if (query.verified === 'true') {
+    where.emailVerifiedAt = { not: null };
+  } else if (query.verified === 'false') {
+    where.emailVerifiedAt = null;
   }
 
   const [totalItems, users] = await Promise.all([
@@ -251,7 +291,17 @@ export async function getAdminUserDetail(userId: string): Promise<AdminUserDetai
   }
 
   // Efficient aggregate queries in parallel
-  const [semesters, courses, materials, assignments, notes, storageRecord] = await Promise.all([
+  const [
+    semesters,
+    courses,
+    materials,
+    assignments,
+    notes,
+    storageRecord,
+    aiUsageRecord,
+    activeJobsCount,
+    activeSessionsCount,
+  ] = await Promise.all([
     prisma.semester.count({ where: { userId } }),
     prisma.course.count({ where: { userId } }),
     prisma.material.count({ where: { userId, deletedAt: null } }),
@@ -260,6 +310,23 @@ export async function getAdminUserDetail(userId: string): Promise<AdminUserDetai
     prisma.storageUsage.findUnique({
       where: { userId },
       select: { usedBytes: true },
+    }),
+    prisma.aiUsage.findUnique({
+      where: { userId },
+      select: { dailyGenerationCount: true, activeJobsCount: true },
+    }),
+    prisma.processingJob.count({
+      where: {
+        userId,
+        status: { in: ['PENDING', 'PROCESSING'] },
+      },
+    }),
+    prisma.refreshSession.count({
+      where: {
+        userId,
+        revokedAt: null,
+        expiresAt: { gt: new Date() },
+      },
     }),
   ]);
 
@@ -298,8 +365,211 @@ export async function getAdminUserDetail(userId: string): Promise<AdminUserDetai
       assignments,
       notes,
       storageUsage,
+      aiQuota: {
+        dailyGenerationCount: aiUsageRecord?.dailyGenerationCount ?? 0,
+        dailyLimit: AI_QUOTA_LIMITS.dailyGenerations,
+        activeJobsCount: Math.max(activeJobsCount, aiUsageRecord?.activeJobsCount ?? 0),
+      },
+      activeSessionsCount,
     },
   };
+}
+
+export async function createAdminUser(input: AdminCreateUserInput): Promise<{
+  id: string;
+  name: string;
+  email: string;
+  role: Role;
+}> {
+  const normalizedEmail = input.email.toLowerCase().trim();
+  const existing = await prisma.user.findUnique({
+    where: { email: normalizedEmail },
+  });
+  if (existing) {
+    const error: AppError = new Error('Email sudah terdaftar. Silakan gunakan email lain.');
+    error.statusCode = 409;
+    error.code = 'EMAIL_ALREADY_EXISTS';
+    throw error;
+  }
+
+  const passwordHash = await hashPassword(input.password);
+  const user = await prisma.user.create({
+    data: {
+      name: input.name.trim(),
+      email: normalizedEmail,
+      passwordHash,
+      role: input.role,
+      timezone: input.timezone || 'Asia/Jakarta',
+      emailVerifiedAt: input.emailVerified ? new Date() : null,
+    },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      role: true,
+    },
+  });
+
+  return {
+    id: user.id,
+    name: user.name,
+    email: user.email,
+    role: user.role as Role,
+  };
+}
+
+export async function updateAdminUser(
+  actorAdminId: string,
+  targetUserId: string,
+  input: AdminUpdateUserInput
+): Promise<AdminUserDetail> {
+  const targetUser = await prisma.user.findUnique({
+    where: { id: targetUserId },
+  });
+  if (!targetUser) {
+    const error: AppError = new Error('Pengguna tidak ditemukan');
+    error.statusCode = 404;
+    error.code = 'USER_NOT_FOUND';
+    throw error;
+  }
+
+  // Guard Anti-Lockout: Demoting self is strictly rejected
+  if (actorAdminId === targetUserId && input.role === 'USER') {
+    const error: AppError = new Error('Anda tidak dapat menurunkan peran administrator akun Anda sendiri.');
+    error.statusCode = 400;
+    error.code = 'CANNOT_DEMOTE_SELF';
+    throw error;
+  }
+
+  let normalizedEmail: string | undefined;
+  if (input.email && input.email.toLowerCase().trim() !== targetUser.email.toLowerCase().trim()) {
+    normalizedEmail = input.email.toLowerCase().trim();
+    const existing = await prisma.user.findUnique({
+      where: { email: normalizedEmail },
+    });
+    if (existing) {
+      const error: AppError = new Error('Email sudah digunakan oleh akun lain');
+      error.statusCode = 409;
+      error.code = 'EMAIL_ALREADY_EXISTS';
+      throw error;
+    }
+  }
+
+  await prisma.$transaction(async (tx) => {
+    const updateData: any = {};
+    if (input.name !== undefined) updateData.name = input.name.trim();
+    if (normalizedEmail) updateData.email = normalizedEmail;
+    if (input.role !== undefined) updateData.role = input.role;
+    if (input.timezone !== undefined) updateData.timezone = input.timezone;
+
+    if (input.emailVerified !== undefined) {
+      if (input.emailVerified) {
+        updateData.emailVerifiedAt = targetUser.emailVerifiedAt ?? new Date();
+      } else {
+        updateData.emailVerifiedAt = null;
+      }
+    }
+
+    if (input.newPassword) {
+      updateData.passwordHash = await hashPassword(input.newPassword);
+      updateData.tokenVersion = { increment: 1 };
+    } else if (input.revokeSessions) {
+      updateData.tokenVersion = { increment: 1 };
+    }
+
+    await tx.user.update({
+      where: { id: targetUserId },
+      data: updateData,
+    });
+
+    if (input.newPassword || input.revokeSessions) {
+      await tx.refreshSession.updateMany({
+        where: {
+          userId: targetUserId,
+          revokedAt: null,
+        },
+        data: {
+          revokedAt: new Date(),
+        },
+      });
+    }
+
+    if (input.resetQuota) {
+      await tx.aiUsage.upsert({
+        where: { userId: targetUserId },
+        update: {
+          dailyGenerationCount: 0,
+          activeJobsCount: 0,
+        },
+        create: {
+          userId: targetUserId,
+          dailyGenerationCount: 0,
+          activeJobsCount: 0,
+          lastResetUtc: new Date(),
+        },
+      });
+
+      const todayUtcStr = new Date().toISOString().slice(0, 10);
+      await tx.dailyUploadCounter.updateMany({
+        where: {
+          userId: targetUserId,
+          uploadDate: todayUtcStr,
+        },
+        data: {
+          uploadCount: 0,
+        },
+      });
+    }
+  });
+
+  return getAdminUserDetail(targetUserId);
+}
+
+export async function deleteAdminUser(actorAdminId: string, targetUserId: string): Promise<void> {
+  // Guard Anti-Self-Delete
+  if (actorAdminId === targetUserId) {
+    const error: AppError = new Error('Anda tidak dapat menghapus akun administrator yang sedang Anda gunakan.');
+    error.statusCode = 400;
+    error.code = 'CANNOT_DELETE_SELF';
+    throw error;
+  }
+
+  const user = await prisma.user.findUnique({
+    where: { id: targetUserId },
+  });
+  if (!user) {
+    const error: AppError = new Error('Pengguna tidak ditemukan');
+    error.statusCode = 404;
+    error.code = 'USER_NOT_FOUND';
+    throw error;
+  }
+
+  await prisma.$transaction(async (tx) => {
+    // Delete all child and referenced entities in dependency order
+    await tx.quizAttempt.deleteMany({ where: { userId: targetUserId } });
+    await tx.quiz.deleteMany({ where: { userId: targetUserId } });
+    await tx.flashcardSet.deleteMany({ where: { userId: targetUserId } });
+    await tx.materialSummary.deleteMany({ where: { userId: targetUserId } });
+    await tx.materialPage.deleteMany({ where: { material: { userId: targetUserId } } });
+    await tx.pinnedItem.deleteMany({ where: { userId: targetUserId } });
+    await tx.assignmentReminderLog.deleteMany({ where: { userId: targetUserId } });
+    await tx.assignmentSubtask.deleteMany({ where: { assignment: { userId: targetUserId } } });
+    await tx.assignment.deleteMany({ where: { userId: targetUserId } });
+    await tx.note.deleteMany({ where: { userId: targetUserId } });
+    await tx.processingJob.deleteMany({ where: { userId: targetUserId } });
+    await tx.material.deleteMany({ where: { userId: targetUserId } });
+    await tx.courseSchedule.deleteMany({ where: { userId: targetUserId } });
+    await tx.course.deleteMany({ where: { userId: targetUserId } });
+    await tx.semester.deleteMany({ where: { userId: targetUserId } });
+    await tx.storageUsage.deleteMany({ where: { userId: targetUserId } });
+    await tx.dailyUploadCounter.deleteMany({ where: { userId: targetUserId } });
+    await tx.aiUsage.deleteMany({ where: { userId: targetUserId } });
+    await tx.refreshSession.deleteMany({ where: { userId: targetUserId } });
+    await tx.passwordResetToken.deleteMany({ where: { userId: targetUserId } });
+    await tx.emailVerificationToken.deleteMany({ where: { userId: targetUserId } });
+    await tx.federatedIdentity.deleteMany({ where: { userId: targetUserId } });
+    await tx.user.delete({ where: { id: targetUserId } });
+  });
 }
 
 export function formatSafeErrorMessage(errorCode: string | null): string | null {
@@ -940,12 +1210,15 @@ export async function listAdminCourses(
 export async function listAdminMaterials(
   query: AdminMaterialListQuery
 ): Promise<AdminMaterialListResponse> {
-  const { page = 1, limit = 20, search, status, sortBy = 'createdAt', sortOrder = 'desc' } = query;
+  const { page = 1, limit = 20, search, status, userId, sortBy = 'createdAt', sortOrder = 'desc' } = query;
   const skip = (page - 1) * limit;
 
   const where: any = { deletedAt: null };
   if (status) {
     where.status = status;
+  }
+  if (userId) {
+    where.userId = userId;
   }
   if (search) {
     where.OR = [
@@ -965,7 +1238,7 @@ export async function listAdminMaterials(
       take: limit,
       orderBy: { [sortBy]: sortOrder },
       include: {
-        course: { select: { name: true } },
+        course: { select: { id: true, name: true } },
         user: { select: { id: true, name: true, email: true } },
       },
     }),
@@ -980,13 +1253,18 @@ export async function listAdminMaterials(
       originalFilename: m.originalFilename,
       mimeType: m.mimeType,
       bytes: m.bytes,
+      formattedSize: formatStorageBytes(m.bytes),
       pageCount: m.pageCount,
-      status: m.status,
-      courseName: m.course.name,
+      status: m.status as AdminMaterialStatus,
+      errorCode: m.errorCode,
+      safeErrorMessage: formatSafeErrorMessage(m.errorCode),
       userId: m.user.id,
       userName: m.user.name,
       userEmail: m.user.email,
+      courseId: m.course.id,
+      courseName: m.course.name,
       createdAt: m.createdAt.toISOString(),
+      updatedAt: m.updatedAt.toISOString(),
     })),
     pagination: {
       page,
@@ -996,6 +1274,178 @@ export async function listAdminMaterials(
       hasNext: page < totalPages,
       hasPrev: page > 1,
     },
+  };
+}
+
+export async function updateAdminMaterial(
+  materialId: string,
+  input: AdminUpdateMaterialInput
+): Promise<{ message: string; materialId: string }> {
+  const material = await prisma.material.findFirst({
+    where: { id: materialId, deletedAt: null },
+  });
+  if (!material) {
+    const error: AppError = new Error('Materi tidak ditemukan');
+    error.statusCode = 404;
+    error.code = 'MATERIAL_NOT_FOUND';
+    throw error;
+  }
+
+  if (input.title) {
+    await prisma.material.update({
+      where: { id: materialId },
+      data: { title: input.title },
+    });
+  }
+
+  if (input.action === 'retry') {
+    if (material.status !== 'FAILED') {
+      const error: AppError = new Error('Hanya materi dengan status FAILED yang dapat diproses ulang.');
+      error.statusCode = 400;
+      error.code = 'MATERIAL_NOT_FAILED';
+      throw error;
+    }
+    await retryMaterialProcessing(material.userId, material.id);
+  }
+
+  return {
+    message: 'Materi berhasil diperbarui',
+    materialId,
+  };
+}
+
+export async function deleteAdminMaterial(materialId: string): Promise<void> {
+  const material = await prisma.material.findFirst({
+    where: { id: materialId, deletedAt: null },
+  });
+  if (!material) {
+    const error: AppError = new Error('Materi tidak ditemukan');
+    error.statusCode = 404;
+    error.code = 'MATERIAL_NOT_FOUND';
+    throw error;
+  }
+
+  await deleteMaterial(material.userId, material.id);
+}
+
+export async function retryAdminJob(jobId: string): Promise<{ message: string; jobId: string }> {
+  const job = await prisma.processingJob.findUnique({
+    where: { id: jobId },
+  });
+  if (!job) {
+    const error: AppError = new Error('Pekerjaan tidak ditemukan');
+    error.statusCode = 404;
+    error.code = 'JOB_NOT_FOUND';
+    throw error;
+  }
+
+  if (job.status !== 'FAILED') {
+    const error: AppError = new Error('Hanya pekerjaan dengan status FAILED yang dapat dicoba ulang.');
+    error.statusCode = 400;
+    error.code = 'JOB_NOT_FAILED';
+    throw error;
+  }
+
+  if (job.type === 'DOCUMENT_EXTRACTION' && job.materialId) {
+    await retryMaterialProcessing(job.userId, job.materialId);
+    return {
+      message: 'Pemrosesan ulang PDF berhasil dijadwalkan',
+      jobId,
+    };
+  }
+
+  if (
+    job.type === 'AI_SUMMARY_GENERATION' ||
+    job.type === 'AI_FLASHCARD_GENERATION' ||
+    job.type === 'AI_QUIZ_GENERATION'
+  ) {
+    await prisma.processingJob.update({
+      where: { id: jobId },
+      data: {
+        status: 'PENDING',
+        attempts: 0,
+        errorCode: null,
+        errorMessage: null,
+        failedAt: null,
+        startedAt: null,
+        completedAt: null,
+      },
+    });
+
+    const eventTypeMap: Record<string, string> = {
+      AI_SUMMARY_GENERATION: 'AI_SUMMARY_REQUESTED',
+      AI_FLASHCARD_GENERATION: 'AI_FLASHCARDS_REQUESTED',
+      AI_QUIZ_GENERATION: 'AI_QUIZ_REQUESTED',
+    };
+    const eventType = eventTypeMap[job.type];
+    if (eventType) {
+      await prisma.outboxEvent.create({
+        data: {
+          eventType,
+          aggregateId: job.materialId || job.id,
+          payload: {
+            jobId: job.id,
+            userId: job.userId,
+            materialId: job.materialId,
+            ...(typeof job.payload === 'object' && job.payload !== null ? job.payload : {}),
+          },
+        },
+      });
+      dispatchOutboxEvents().catch(() => {});
+    }
+
+    return {
+      message: 'Pekerjaan AI berhasil dijadwalkan ulang',
+      jobId,
+    };
+  }
+
+  const error: AppError = new Error(`Jenis pekerjaan ${job.type} tidak mendukung retry otomatis.`);
+  error.statusCode = 400;
+  error.code = 'UNSUPPORTED_JOB_RETRY';
+  throw error;
+}
+
+export async function deleteAdminJob(jobId: string): Promise<void> {
+  const job = await prisma.processingJob.findUnique({
+    where: { id: jobId },
+  });
+  if (!job) {
+    const error: AppError = new Error('Pekerjaan tidak ditemukan');
+    error.statusCode = 404;
+    error.code = 'JOB_NOT_FOUND';
+    throw error;
+  }
+
+  if (job.status !== 'COMPLETED' && job.status !== 'FAILED') {
+    const error: AppError = new Error('Pekerjaan yang masih berjalan atau dalam antrean tidak dapat dihapus.');
+    error.statusCode = 409;
+    error.code = 'JOB_STILL_ACTIVE';
+    throw error;
+  }
+
+  await prisma.processingJob.delete({
+    where: { id: jobId },
+  });
+}
+
+export async function cleanupAdminJobs(
+  input: AdminCleanupJobsInput
+): Promise<{ deletedCount: number }> {
+  const where: any = {
+    status: input.status,
+  };
+  if (input.olderThanDays > 0) {
+    const cutoff = new Date(Date.now() - input.olderThanDays * 24 * 60 * 60 * 1000);
+    where.createdAt = { lt: cutoff };
+  }
+
+  const result = await prisma.processingJob.deleteMany({
+    where,
+  });
+
+  return {
+    deletedCount: result.count,
   };
 }
 

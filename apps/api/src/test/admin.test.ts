@@ -886,6 +886,308 @@ describe('Admin Endpoints & Authorization Invariants', () => {
       expect(dbMod.metricValue).toContain('ms');
     });
   });
+
+  describe('User CRUD & Management (/api/admin/users)', () => {
+    it('POST /api/admin/users creates a new user successfully and rejects duplicate email', async () => {
+      const newUserEmail = `test.admin.newuser.${Date.now()}@example.com`;
+      const res = await request(app)
+        .post('/api/admin/users')
+        .set('Origin', TRUSTED_ORIGIN)
+        .set('Cookie', adminUserCookie)
+        .send({
+          name: 'Mahasiswa Baru',
+          email: newUserEmail,
+          password: 'PasswordBaru123!',
+          role: 'USER',
+          timezone: 'Asia/Makassar',
+          emailVerified: true,
+        });
+
+      expect(res.status).toBe(201);
+      expect(res.body.user.id).toBeDefined();
+      expect(res.body.user.name).toBe('Mahasiswa Baru');
+      expect(res.body.user.email).toBe(newUserEmail);
+      expect(res.body.user.role).toBe('USER');
+
+      // Duplicate email rejection
+      const dupRes = await request(app)
+        .post('/api/admin/users')
+        .set('Origin', TRUSTED_ORIGIN)
+        .set('Cookie', adminUserCookie)
+        .send({
+          name: 'Duplicate User',
+          email: newUserEmail,
+          password: 'PasswordBaru123!',
+        });
+      expect(dupRes.status).toBe(409);
+      expect(dupRes.body.error.code).toBe('EMAIL_ALREADY_EXISTS');
+    });
+
+    it('PATCH /api/admin/users/:id updates user details and resets quota', async () => {
+      // Set ai usage and upload counter on normalUser
+      await prisma.aiUsage.upsert({
+        where: { userId: normalUserId },
+        update: { dailyGenerationCount: 15, activeJobsCount: 2 },
+        create: { userId: normalUserId, dailyGenerationCount: 15, activeJobsCount: 2 },
+      });
+
+      const res = await request(app)
+        .patch(`/api/admin/users/${normalUserId}`)
+        .set('Origin', TRUSTED_ORIGIN)
+        .set('Cookie', adminUserCookie)
+        .send({
+          name: 'Normal User Renamed',
+          resetQuota: true,
+          timezone: 'Asia/Jayapura',
+        });
+
+      expect(res.status).toBe(200);
+      expect(res.body.user.name).toBe('Normal User Renamed');
+      expect(res.body.user.timezone).toBe('Asia/Jayapura');
+      expect(res.body.user.usageSummary.aiQuota.dailyGenerationCount).toBe(0);
+    });
+
+    it('PATCH /api/admin/users/:id protects against self-demote with 400 CANNOT_DEMOTE_SELF', async () => {
+      const res = await request(app)
+        .patch(`/api/admin/users/${adminUserId}`)
+        .set('Origin', TRUSTED_ORIGIN)
+        .set('Cookie', adminUserCookie)
+        .send({
+          role: 'USER',
+        });
+
+      expect(res.status).toBe(400);
+      expect(res.body.error.code).toBe('CANNOT_DEMOTE_SELF');
+    });
+
+    it('DELETE /api/admin/users/:id protects against self-delete with 400 CANNOT_DELETE_SELF', async () => {
+      const res = await request(app)
+        .delete(`/api/admin/users/${adminUserId}`)
+        .set('Origin', TRUSTED_ORIGIN)
+        .set('Cookie', adminUserCookie);
+
+      expect(res.status).toBe(400);
+      expect(res.body.error.code).toBe('CANNOT_DELETE_SELF');
+    });
+
+    it('DELETE /api/admin/users/:id deletes target user and dependent entities cleanly', async () => {
+      // Create user to delete
+      const delUserEmail = `test.admin.del.${Date.now()}@example.com`;
+      const reg = await request(app)
+        .post('/api/admin/users')
+        .set('Origin', TRUSTED_ORIGIN)
+        .set('Cookie', adminUserCookie)
+        .send({
+          name: 'User To Delete',
+          email: delUserEmail,
+          password: 'PasswordDel123!',
+        });
+      const toDeleteId = reg.body.user.id;
+
+      const delRes = await request(app)
+        .delete(`/api/admin/users/${toDeleteId}`)
+        .set('Origin', TRUSTED_ORIGIN)
+        .set('Cookie', adminUserCookie);
+
+      expect(delRes.status).toBe(200);
+
+      // Verify user no longer exists
+      const checkRes = await request(app)
+        .get(`/api/admin/users/${toDeleteId}`)
+        .set('Cookie', adminUserCookie);
+      expect(checkRes.status).toBe(404);
+    });
+  });
+
+  describe('Materials CRUD & Moderation (/api/admin/materials)', () => {
+    let testMaterialId: string;
+
+    beforeEach(async () => {
+      const semester = await prisma.semester.create({
+        data: {
+          userId: normalUserId,
+          name: 'Semester Moderasi',
+          academicYear: '2026/2027',
+          isActive: true,
+        },
+      });
+      const course = await prisma.course.create({
+        data: {
+          userId: normalUserId,
+          semesterId: semester.id,
+          name: 'Matkul Moderasi',
+        },
+      });
+      const mat = await prisma.material.create({
+        data: {
+          userId: normalUserId,
+          courseId: course.id,
+          title: 'Materi Uji Moderasi',
+          originalFilename: 'mod.pdf',
+          storageKey: `materials/test/mod-${Date.now()}.pdf`,
+          bytes: 2048,
+          status: 'FAILED',
+          errorCode: 'PDF_ENCRYPTED',
+        },
+      });
+      testMaterialId = mat.id;
+    });
+
+    it('GET /api/admin/materials returns materials with formattedSize and courseId', async () => {
+      const res = await request(app)
+        .get('/api/admin/materials')
+        .set('Cookie', adminUserCookie);
+
+      expect(res.status).toBe(200);
+      expect(Array.isArray(res.body.items)).toBe(true);
+      const found = res.body.items.find((m: any) => m.id === testMaterialId);
+      expect(found).toBeDefined();
+      expect(found.formattedSize).toBeDefined();
+      expect(found.courseId).toBeDefined();
+      expect(found.safeErrorMessage).toBeDefined();
+    });
+
+    it('PATCH /api/admin/materials/:id updates title and handles retry', async () => {
+      const res = await request(app)
+        .patch(`/api/admin/materials/${testMaterialId}`)
+        .set('Origin', TRUSTED_ORIGIN)
+        .set('Cookie', adminUserCookie)
+        .send({
+          title: 'Materi Uji Moderasi Diperbarui',
+          action: 'retry',
+        });
+
+      expect(res.status).toBe(200);
+      expect(res.body.materialId).toBe(testMaterialId);
+
+      const updated = await prisma.material.findUnique({
+        where: { id: testMaterialId },
+      });
+      expect(updated?.title).toBe('Materi Uji Moderasi Diperbarui');
+    });
+
+    it('DELETE /api/admin/materials/:id soft-deletes material', async () => {
+      const res = await request(app)
+        .delete(`/api/admin/materials/${testMaterialId}`)
+        .set('Origin', TRUSTED_ORIGIN)
+        .set('Cookie', adminUserCookie);
+
+      expect(res.status).toBe(200);
+
+      const check = await prisma.material.findUnique({
+        where: { id: testMaterialId },
+      });
+      expect(check?.deletedAt).not.toBeNull();
+    });
+  });
+
+  describe('Jobs Operations & Cleanup (/api/admin/jobs)', () => {
+    it('DELETE /api/admin/jobs/:id rejects active job and deletes terminal job', async () => {
+      const activeJob = await prisma.processingJob.create({
+        data: {
+          userId: normalUserId,
+          type: 'DOCUMENT_EXTRACTION',
+          status: 'PROCESSING',
+        },
+      });
+
+      const termJob = await prisma.processingJob.create({
+        data: {
+          userId: normalUserId,
+          type: 'DOCUMENT_EXTRACTION',
+          status: 'COMPLETED',
+        },
+      });
+
+      // Active job rejection
+      const rejRes = await request(app)
+        .delete(`/api/admin/jobs/${activeJob.id}`)
+        .set('Origin', TRUSTED_ORIGIN)
+        .set('Cookie', adminUserCookie);
+      expect(rejRes.status).toBe(409);
+      expect(rejRes.body.error.code).toBe('JOB_STILL_ACTIVE');
+
+      // Terminal job deletion
+      const delRes = await request(app)
+        .delete(`/api/admin/jobs/${termJob.id}`)
+        .set('Origin', TRUSTED_ORIGIN)
+        .set('Cookie', adminUserCookie);
+      expect(delRes.status).toBe(200);
+    });
+
+    it('POST /api/admin/jobs/cleanup deletes jobs by status', async () => {
+      await prisma.processingJob.create({
+        data: {
+          userId: normalUserId,
+          type: 'DOCUMENT_EXTRACTION',
+          status: 'FAILED',
+        },
+      });
+
+      const res = await request(app)
+        .post('/api/admin/jobs/cleanup')
+        .set('Origin', TRUSTED_ORIGIN)
+        .set('Cookie', adminUserCookie)
+        .send({
+          status: 'FAILED',
+          olderThanDays: 0,
+        });
+
+      expect(res.status).toBe(200);
+      expect(typeof res.body.deletedCount).toBe('number');
+      expect(res.body.deletedCount).toBeGreaterThanOrEqual(1);
+    });
+  });
+
+  describe('Admin Profile, Password & Sessions (/api/admin/auth/*)', () => {
+    it('PATCH /api/admin/auth/profile updates admin profile', async () => {
+      const res = await request(app)
+        .patch('/api/admin/auth/profile')
+        .set('Origin', TRUSTED_ORIGIN)
+        .set('Cookie', adminUserCookie)
+        .send({
+          name: 'Super Admin Updated',
+          timezone: 'Asia/Makassar',
+        });
+
+      expect(res.status).toBe(200);
+      expect(res.body.user.name).toBe('Super Admin Updated');
+      expect(res.body.user.timezone).toBe('Asia/Makassar');
+    });
+
+    it('GET /api/admin/auth/sessions returns active sessions with isCurrent flag', async () => {
+      const res = await request(app)
+        .get('/api/admin/auth/sessions')
+        .set('Cookie', adminUserCookie);
+
+      expect(res.status).toBe(200);
+      expect(Array.isArray(res.body.sessions)).toBe(true);
+      expect(res.body.sessions.length).toBeGreaterThanOrEqual(1);
+      const current = res.body.sessions.find((s: any) => s.isCurrent);
+      expect(current).toBeDefined();
+    });
+
+    it('POST /api/admin/auth/change-password updates password and refreshes current cookies', async () => {
+      const res = await request(app)
+        .post('/api/admin/auth/change-password')
+        .set('Origin', TRUSTED_ORIGIN)
+        .set('Cookie', adminUserCookie)
+        .send({
+          currentPassword: 'PasswordAdmin123!',
+          newPassword: 'PasswordAdminNew999!',
+        });
+
+      expect(res.status).toBe(200);
+      const setCookie = res.headers['set-cookie'] as unknown as string[];
+      expect(setCookie).toBeDefined();
+
+      // Next request using new cookie must succeed
+      const profileRes = await request(app)
+        .get('/api/admin/auth/me')
+        .set('Cookie', setCookie);
+      expect(profileRes.status).toBe(200);
+    });
+  });
 });
 
 

@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import Link from 'next/link';
-import { Activity, AlertCircle, Check, Copy, User } from 'lucide-react';
+import { Activity, AlertCircle, Check, Copy, User, RotateCcw, Trash2, Loader2 } from 'lucide-react';
 import type { AdminJobDetail } from '@studyflow/shared';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
@@ -20,11 +20,14 @@ import {
   getJobTypeLabel,
 } from '@/lib/admin-formatters';
 import { JobQueueStatusBadge, JobStatusBadge } from './job-status-badge';
+import { retryAdminJobApi, deleteAdminJobApi } from '@/lib/admin-api';
+import { toast } from 'sonner';
 
 interface JobDetailSheetProps {
   selectedJobId: string | null;
   onClose: () => void;
   onRetry: () => void;
+  onJobActionCompleted?: () => void;
   isDetailLoading: boolean;
   detailError: string | null;
   jobDetail: AdminJobDetail | null;
@@ -34,11 +37,44 @@ export function JobDetailSheet({
   selectedJobId,
   onClose,
   onRetry,
+  onJobActionCompleted,
   isDetailLoading,
   detailError,
   jobDetail,
 }: JobDetailSheetProps): React.JSX.Element {
   const [copiedKey, setCopiedKey] = React.useState<string | null>(null);
+  const [isRetrying, setIsRetrying] = React.useState(false);
+  const [isDeleting, setIsDeleting] = React.useState(false);
+
+  const handleRetryJob = async () => {
+    if (!jobDetail) return;
+    setIsRetrying(true);
+    try {
+      await retryAdminJobApi(jobDetail.id);
+      toast.success(`Pekerjaan ${jobDetail.id.slice(0, 8)} berhasil dijadwalkan ulang`);
+      onJobActionCompleted?.();
+      onClose();
+    } catch (err: any) {
+      toast.error('Gagal mencoba ulang pekerjaan: ' + err.message);
+    } finally {
+      setIsRetrying(false);
+    }
+  };
+
+  const handleDeleteJob = async () => {
+    if (!jobDetail) return;
+    setIsDeleting(true);
+    try {
+      await deleteAdminJobApi(jobDetail.id);
+      toast.success(`Riwayat pekerjaan ${jobDetail.id.slice(0, 8)} berhasil dihapus`);
+      onJobActionCompleted?.();
+      onClose();
+    } catch (err: any) {
+      toast.error('Gagal menghapus riwayat pekerjaan: ' + err.message);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   const handleCopy = (text: string, key: string) => {
     navigator.clipboard.writeText(text);
@@ -219,12 +255,31 @@ export function JobDetailSheet({
               </div>
             )}
 
-            {/* Privacy Notice */}
-            <div className="rounded-md bg-muted/50 p-2.5 text-xs text-muted-foreground leading-relaxed">
-              <span className="font-semibold block text-foreground mb-0.5">
-                Proteksi Privasi Pengguna:
-              </span>
-              Isi dokumen PDF, teks prompt, respons model AI mentah, kredensial, dan URL unduhan materi dilindungi secara ketat dan tidak diekspos melalui portal administrator.
+            {/* Action Buttons in Sheet */}
+            <div className="flex items-center gap-2 pt-2 border-t border-border">
+              {jobDetail.status === 'FAILED' && (
+                <Button
+                  size="sm"
+                  onClick={handleRetryJob}
+                  disabled={isRetrying}
+                  className="flex-1 gap-1.5 text-xs h-9"
+                >
+                  {isRetrying ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RotateCcw className="h-3.5 w-3.5" />}
+                  <span>Coba Ulang</span>
+                </Button>
+              )}
+              {(jobDetail.status === 'FAILED' || jobDetail.status === 'COMPLETED') && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleDeleteJob}
+                  disabled={isDeleting}
+                  className="flex-1 gap-1.5 text-xs h-9 text-destructive hover:bg-destructive/10"
+                >
+                  {isDeleting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}
+                  <span>Hapus Riwayat</span>
+                </Button>
+              )}
             </div>
           </div>
         ) : null}

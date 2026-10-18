@@ -21,6 +21,7 @@ import {
   StickyNote,
   Calendar,
   HelpCircle,
+  UserCog,
 } from 'lucide-react';
 
 import {
@@ -132,8 +133,15 @@ export function AdminCommandPalette({
             onSelect={() => handleSelect(() => router.push('/jobs'))}
           >
             <Briefcase className="h-4 w-4 text-blue-500" />
-            <span>Monitoring Pekerjaan & Antrean AI</span>
+            <span>Monitoring Pekerjaan &amp; Antrean AI</span>
             <CommandShortcut>G J</CommandShortcut>
+          </CommandItem>
+          <CommandItem
+            onSelect={() => handleSelect(() => router.push('/profile'))}
+          >
+            <UserCog className="h-4 w-4 text-primary" />
+            <span>Profil &amp; Keamanan Administrator</span>
+            <CommandShortcut>G P</CommandShortcut>
           </CommandItem>
         </CommandGroup>
 

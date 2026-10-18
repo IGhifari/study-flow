@@ -4,6 +4,13 @@ import {
   AdminUserListQuery,
   AdminUserListResponse,
   AdminUserDetail,
+  AdminCreateUserInput,
+  AdminUpdateUserInput,
+  AdminUpdateMaterialInput,
+  AdminCleanupJobsInput,
+  AdminUpdateProfileInput,
+  AdminChangePasswordInput,
+  AdminSessionsResponse,
   AdminJobListQuery,
   AdminJobListResponse,
   AdminJobDetail,
@@ -197,6 +204,8 @@ export async function fetchAdminUsers(
   if (query.page) params.set('page', String(query.page));
   if (query.limit) params.set('limit', String(query.limit));
   if (query.search) params.set('search', query.search);
+  if (query.role) params.set('role', query.role);
+  if (query.verified) params.set('verified', query.verified);
   if (query.sortBy) params.set('sortBy', query.sortBy);
   if (query.sortOrder) params.set('sortOrder', query.sortOrder);
 
@@ -410,6 +419,131 @@ export async function fetchAdminQuizzes(
   });
   return handleResponse<AdminQuizListResponse>(res);
 }
+
+// ==========================================
+// User Full CRUD Operations
+// ==========================================
+
+export async function createAdminUserApi(
+  input: AdminCreateUserInput
+): Promise<{ message: string; user: { id: string; name: string; email: string; role: string } }> {
+  const res = await adminFetch('/api/admin/users', {
+    method: 'POST',
+    body: JSON.stringify(input),
+  });
+  return handleResponse<{ message: string; user: { id: string; name: string; email: string; role: string } }>(res);
+}
+
+export async function updateAdminUserApi(
+  userId: string,
+  input: AdminUpdateUserInput
+): Promise<{ message: string; user: AdminUserDetail }> {
+  const res = await adminFetch(`/api/admin/users/${encodeURIComponent(userId)}`, {
+    method: 'PATCH',
+    body: JSON.stringify(input),
+  });
+  return handleResponse<{ message: string; user: AdminUserDetail }>(res);
+}
+
+export async function deleteAdminUserApi(userId: string): Promise<{ message: string }> {
+  const res = await adminFetch(`/api/admin/users/${encodeURIComponent(userId)}`, {
+    method: 'DELETE',
+  });
+  return handleResponse<{ message: string }>(res);
+}
+
+// ==========================================
+// Material Full CRUD & Moderation Operations
+// ==========================================
+
+export async function updateAdminMaterialApi(
+  materialId: string,
+  input: AdminUpdateMaterialInput
+): Promise<{ message: string; materialId: string }> {
+  const res = await adminFetch(`/api/admin/materials/${encodeURIComponent(materialId)}`, {
+    method: 'PATCH',
+    body: JSON.stringify(input),
+  });
+  return handleResponse<{ message: string; materialId: string }>(res);
+}
+
+export async function deleteAdminMaterialApi(materialId: string): Promise<{ message: string }> {
+  const res = await adminFetch(`/api/admin/materials/${encodeURIComponent(materialId)}`, {
+    method: 'DELETE',
+  });
+  return handleResponse<{ message: string }>(res);
+}
+
+// ==========================================
+// Job Management & Cleanup Operations
+// ==========================================
+
+export async function retryAdminJobApi(jobId: string): Promise<{ message: string; jobId: string }> {
+  const res = await adminFetch(`/api/admin/jobs/${encodeURIComponent(jobId)}/retry`, {
+    method: 'POST',
+  });
+  return handleResponse<{ message: string; jobId: string }>(res);
+}
+
+export async function deleteAdminJobApi(jobId: string): Promise<{ message: string }> {
+  const res = await adminFetch(`/api/admin/jobs/${encodeURIComponent(jobId)}`, {
+    method: 'DELETE',
+  });
+  return handleResponse<{ message: string }>(res);
+}
+
+export async function cleanupAdminJobsApi(
+  input: AdminCleanupJobsInput
+): Promise<{ message: string; deletedCount: number }> {
+  const res = await adminFetch('/api/admin/jobs/cleanup', {
+    method: 'POST',
+    body: JSON.stringify(input),
+  });
+  return handleResponse<{ message: string; deletedCount: number }>(res);
+}
+
+// ==========================================
+// Administrator Profile & Security Operations
+// ==========================================
+
+export async function updateAdminProfileApi(
+  input: AdminUpdateProfileInput
+): Promise<{ message: string; user: UserProfile }> {
+  const res = await adminFetch('/api/admin/auth/profile', {
+    method: 'PATCH',
+    body: JSON.stringify(input),
+  });
+  return handleResponse<{ message: string; user: UserProfile }>(res);
+}
+
+export async function changeAdminPasswordApi(
+  input: AdminChangePasswordInput
+): Promise<{ message: string }> {
+  const res = await adminFetch('/api/admin/auth/change-password', {
+    method: 'POST',
+    body: JSON.stringify(input),
+  });
+  return handleResponse<{ message: string }>(res);
+}
+
+export async function fetchAdminSessionsApi(
+  options?: { signal?: AbortSignal }
+): Promise<AdminSessionsResponse> {
+  const res = await adminFetch('/api/admin/auth/sessions', {
+    method: 'GET',
+    cache: 'no-store',
+    signal: options?.signal,
+  });
+  return handleResponse<AdminSessionsResponse>(res);
+}
+
+export async function revokeAdminSessionApi(sessionId: string): Promise<{ message: string }> {
+  const res = await adminFetch(`/api/admin/auth/sessions/${encodeURIComponent(sessionId)}`, {
+    method: 'DELETE',
+  });
+  return handleResponse<{ message: string }>(res);
+}
+
 
 
 
