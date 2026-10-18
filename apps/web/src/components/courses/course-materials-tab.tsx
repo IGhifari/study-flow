@@ -7,6 +7,7 @@ import { MaterialListItem, formatFileSize, formatUserDateTime } from '@studyflow
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card } from '@/components/ui/card';
+import { EmptyState } from '@/components/ui/empty-state';
 import {
   Table,
   TableHeader,
@@ -58,26 +59,24 @@ export function CourseMaterialsTab({
           <Skeleton className="h-12 w-full rounded-lg" />
         </div>
       ) : materials.length === 0 ? (
-        <div className="rounded-xl border border-dashed border-border bg-card/40 p-8 text-center sm:p-10">
-          <FileUp className="h-8 w-8 text-muted-foreground mx-auto" aria-hidden="true" />
-          <h3 className="mt-2 text-sm font-semibold text-foreground">
-            Belum ada materi untuk mata kuliah ini
-          </h3>
-          <p className="mt-1 text-xs text-muted-foreground max-w-sm mx-auto">
-            Unggah dokumen PDF kuliah untuk ekstraksi teks, ringkasan, flashcard, dan kuis.
-          </p>
-          {!isArchived && (
-            <Button
-              size="standard"
-              variant="outline"
-              onClick={onUploadMaterial}
-              className="mt-4 gap-1.5"
-            >
-              <FileUp className="h-4 w-4" />
-              <span>Unggah materi sekarang</span>
-            </Button>
-          )}
-        </div>
+        <EmptyState
+          icon={FileUp}
+          title="Belum ada materi untuk mata kuliah ini"
+          description="Unggah dokumen PDF kuliah untuk ekstraksi teks, ringkasan, flashcard, dan kuis."
+          action={
+            !isArchived && (
+              <Button
+                size="standard"
+                variant="outline"
+                onClick={onUploadMaterial}
+                className="gap-1.5"
+              >
+                <FileUp className="h-4 w-4" />
+                <span>Unggah materi sekarang</span>
+              </Button>
+            )
+          }
+        />
       ) : (
         <>
           {/* Desktop Materials Table */}

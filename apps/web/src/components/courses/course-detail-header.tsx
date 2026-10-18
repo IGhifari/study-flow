@@ -85,7 +85,7 @@ export function CourseDetailHeader({
             variant="ghost"
             size="sm"
             onClick={onDelete}
-            className="h-8 gap-1.5 text-danger hover:bg-danger/10"
+            className="h-8 gap-1.5 text-destructive hover:bg-destructive/10 hover:text-destructive"
           >
             <Trash2 className="h-3.5 w-3.5" />
             <span>Hapus</span>

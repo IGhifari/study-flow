@@ -16,6 +16,7 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 import { UserProfile } from '@studyflow/shared';
+import { StudyFlowLogo } from '@/components/brand/studyflow-logo';
 import { SidebarSemesterSelector } from './sidebar-semester-selector';
 import { NavUser } from './nav-user';
 import {
@@ -125,17 +126,7 @@ export function AppSidebar({ user, ...props }: AppSidebarProps): React.JSX.Eleme
                 onClick={() => setOpenMobile(false)}
                 aria-label="StudyFlow Beranda"
               >
-                <div className="bg-primary text-primary-foreground flex aspect-square size-8 shrink-0 items-center justify-center rounded-lg shadow-xs">
-                  <BookOpen className="size-4" aria-hidden="true" />
-                </div>
-                <div className="grid flex-1 text-left text-sm leading-tight group-data-[collapsible=icon]:hidden group-data-[state=collapsed]:hidden">
-                  <span className="truncate font-semibold text-sidebar-foreground">
-                    StudyFlow
-                  </span>
-                  <span className="truncate text-xs text-muted-foreground">
-                    Ruang Belajar
-                  </span>
-                </div>
+                <StudyFlowLogo subtitle="Ruang Belajar" hideTextOnCollapsed />
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>

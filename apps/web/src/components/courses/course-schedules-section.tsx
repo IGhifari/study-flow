@@ -17,6 +17,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { EmptyState } from '@/components/ui/empty-state';
 import {
   Card,
   CardHeader,
@@ -96,26 +97,26 @@ export function CourseSchedulesSection({
             <Skeleton className="h-24 w-full rounded-lg" />
           </div>
         ) : schedules.length === 0 ? (
-          <div className="rounded-lg border border-dashed border-border bg-card/40 p-6 text-center">
-            <CalendarClock className="h-7 w-7 text-muted-foreground mx-auto" aria-hidden="true" />
-            <p className="mt-2 text-sm font-medium text-foreground">
-              Belum ada sesi jadwal perkuliahan
-            </p>
-            <p className="mt-1 text-xs text-muted-foreground max-w-sm mx-auto">
-              Tambahkan sesi mingguan (hari, rentang jam, dan ruangan) untuk mata kuliah ini.
-            </p>
-            {!isArchived && (
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={onAddSchedule}
-                className="mt-3 gap-1.5 text-xs"
-              >
-                <Plus className="h-3.5 w-3.5" />
-                <span>Tambah jadwal pertama</span>
-              </Button>
-            )}
-          </div>
+          <EmptyState
+            size="sm"
+            icon={CalendarClock}
+            title="Belum ada sesi jadwal perkuliahan"
+            description="Tambahkan sesi mingguan (hari, rentang jam, dan ruangan) untuk mata kuliah ini."
+            headingAs="p"
+            action={
+              !isArchived && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={onAddSchedule}
+                  className="gap-1.5 text-xs"
+                >
+                  <Plus className="h-3.5 w-3.5" />
+                  <span>Tambah jadwal pertama</span>
+                </Button>
+              )
+            }
+          />
         ) : (
           <StaggerGroup className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {schedules.map((sched) => {
@@ -189,7 +190,7 @@ export function CourseSchedulesSection({
                         variant="ghost"
                         size="sm"
                         onClick={() => onDeleteSchedule(sched)}
-                        className="h-7 px-2 text-xs gap-1 text-danger hover:bg-danger/10"
+                        className="h-7 px-2 text-xs gap-1 text-destructive hover:bg-destructive/10 hover:text-destructive"
                       >
                         <Trash2 className="h-3 w-3" />
                         <span>Hapus</span>

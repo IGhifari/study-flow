@@ -7,7 +7,6 @@ import {
   LayoutDashboard,
   Users,
   Activity,
-  Shield,
   AlertTriangle,
   BookOpen,
   Files,
@@ -18,6 +17,7 @@ import {
   UserCog,
 } from "lucide-react"
 
+import { StudyFlowLogo } from "@/components/brand/studyflow-logo"
 import { NavMain, type NavMainGroup, type NavMainItem } from "@/components/nav-main"
 import { NavSecondary } from "@/components/nav-secondary"
 import { NavUser } from "@/components/nav-user"
@@ -134,18 +134,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
               asChild
               className="data-[slot=sidebar-menu-button]:!p-1.5 hover:bg-sidebar-accent"
             >
-              <Link href="/dashboard" className="flex items-center gap-3">
-                <div className="bg-primary text-primary-foreground flex aspect-square size-8 items-center justify-center rounded-lg shadow-xs shrink-0">
-                  <Shield className="size-4" />
-                </div>
-                <div className="grid flex-1 text-left text-sm leading-tight group-data-[collapsible=icon]:hidden group-data-[state=collapsed]:hidden">
-                  <span className="truncate font-semibold text-foreground">
-                    StudyFlow Admin
-                  </span>
-                  <span className="truncate text-xs text-muted-foreground">
-                    Panel Pengelola
-                  </span>
-                </div>
+              <Link href="/dashboard">
+                <StudyFlowLogo subtitle="Panel Pengelola" badge="Admin" hideTextOnCollapsed />
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>

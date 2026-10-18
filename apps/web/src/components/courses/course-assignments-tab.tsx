@@ -13,6 +13,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card } from '@/components/ui/card';
+import { EmptyState } from '@/components/ui/empty-state';
 import {
   Table,
   TableHeader,
@@ -68,26 +69,24 @@ export function CourseAssignmentsTab({
           <Skeleton className="h-12 w-full rounded-lg" />
         </div>
       ) : assignments.length === 0 ? (
-        <div className="rounded-xl border border-dashed border-border bg-card/40 p-8 text-center sm:p-10">
-          <ListTodo className="h-8 w-8 text-muted-foreground mx-auto" aria-hidden="true" />
-          <h3 className="mt-2 text-sm font-semibold text-foreground">
-            Belum ada tugas pada mata kuliah ini
-          </h3>
-          <p className="mt-1 text-xs text-muted-foreground max-w-sm mx-auto">
-            Tambahkan tugas untuk mencatat deadline praktikum, proyek akhir, atau kuis.
-          </p>
-          {!isArchived && (
-            <Button
-              size="standard"
-              variant="outline"
-              onClick={onAddAssignment}
-              className="mt-4 gap-1.5"
-            >
-              <Plus className="h-4 w-4" />
-              <span>Tambah tugas pertama</span>
-            </Button>
-          )}
-        </div>
+        <EmptyState
+          icon={ListTodo}
+          title="Belum ada tugas pada mata kuliah ini"
+          description="Tambahkan tugas untuk mencatat deadline praktikum, proyek akhir, atau kuis."
+          action={
+            !isArchived && (
+              <Button
+                size="standard"
+                variant="outline"
+                onClick={onAddAssignment}
+                className="gap-1.5"
+              >
+                <Plus className="h-4 w-4" />
+                <span>Tambah tugas pertama</span>
+              </Button>
+            )
+          }
+        />
       ) : (
         <>
           {/* Desktop Assignments Table */}
@@ -149,7 +148,7 @@ export function CourseAssignmentsTab({
                       <TableCell className="px-4 py-3 whitespace-nowrap text-xs text-muted-foreground tabular-nums">
                         {formatUserDateTime(asg.dueDate, timezone)}
                         {asg.isOverdue && !isDone && (
-                          <span className="block text-danger font-semibold mt-0.5">Terlambat</span>
+                          <span className="block text-destructive font-semibold mt-0.5">Terlambat</span>
                         )}
                       </TableCell>
                       <TableCell className="px-4 py-3 whitespace-nowrap">
@@ -238,7 +237,7 @@ export function CourseAssignmentsTab({
                     <p className="mt-1.5 text-xs text-muted-foreground tabular-nums">
                       {formatUserDateTime(asg.dueDate, timezone)}
                       {asg.isOverdue && !isDone && (
-                        <span className="text-danger font-semibold ml-1.5">Terlambat</span>
+                        <span className="text-destructive font-semibold ml-1.5">Terlambat</span>
                       )}
                     </p>
                   </div>

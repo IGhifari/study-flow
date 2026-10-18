@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import Link from 'next/link';
-import { Menu, BookOpen, ArrowRight, Layers, HelpCircle, CalendarRange } from 'lucide-react';
+import { Menu, ArrowRight, Layers, HelpCircle, CalendarRange } from 'lucide-react';
 import {
   Sheet,
   SheetContent,
@@ -13,6 +13,7 @@ import {
 } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { ThemeToggle } from '@/components/theme-toggle';
+import { StudyFlowLogo } from '@/components/brand/studyflow-logo';
 
 export interface PublicMobileNavProps {
   user?: { name?: string | null; email?: string } | null;
@@ -43,16 +44,17 @@ export function PublicMobileNav({ user }: PublicMobileNavProps): React.JSX.Eleme
         className="w-[300px] sm:w-[340px] flex flex-col justify-between bg-card text-foreground p-5 border-l border-border"
       >
         <div className="space-y-6">
-          <SheetHeader className="text-left space-y-1.5 pb-3 border-b border-border">
-            <div className="flex items-center gap-2.5">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-xs">
-                <BookOpen className="h-4 w-4" aria-hidden="true" />
-              </div>
-              <SheetTitle className="text-lg font-bold tracking-tight text-foreground">
-                StudyFlow
-              </SheetTitle>
-            </div>
-            <SheetDescription className="text-xs text-muted-foreground">
+          <SheetHeader className="text-left pb-3 border-b border-border">
+            <SheetTitle asChild>
+              <Link
+                href="/"
+                onClick={handleLinkClick}
+                className="inline-flex transition-opacity hover:opacity-90"
+              >
+                <StudyFlowLogo subtitle="Ruang belajar pribadi mahasiswa" />
+              </Link>
+            </SheetTitle>
+            <SheetDescription className="sr-only">
               Ruang belajar pribadi mahasiswa
             </SheetDescription>
           </SheetHeader>

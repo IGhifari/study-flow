@@ -1,22 +1,17 @@
 import * as React from 'react';
 import Link from 'next/link';
-import { GraduationCap, ShieldCheck } from 'lucide-react';
+import { ShieldCheck } from 'lucide-react';
 import { LoginForm } from '@/components/login-form';
 import { FadeIn } from '@/components/ui/motion';
+import { StudyFlowLogo } from '@/components/brand/studyflow-logo';
 
 export default function LoginPage() {
   return (
     <div className="grid min-h-svh lg:grid-cols-2">
       <div className="flex flex-col gap-4 p-6 md:p-10">
         <div className="flex justify-center gap-2 md:justify-start">
-          <Link href="/login" className="flex items-center gap-2 font-semibold tracking-tight">
-            <div className="flex h-7 w-7 items-center justify-center rounded-md bg-primary text-primary-foreground shadow-xs">
-              <GraduationCap className="size-4" />
-            </div>
-            <span>StudyFlow</span>
-            <span className="rounded bg-muted px-1.5 py-0.5 text-xs font-medium text-muted-foreground">
-              Admin
-            </span>
+          <Link href="/login" className="flex items-center gap-2">
+            <StudyFlowLogo badge="Admin" size="lg" />
           </Link>
         </div>
         <div className="flex flex-1 items-center justify-center">

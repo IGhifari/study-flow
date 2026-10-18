@@ -6,6 +6,7 @@ import { FileText, Plus, Clock, ExternalLink } from 'lucide-react';
 import { NoteListItem, formatUserDateTime } from '@studyflow/shared';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
+import { EmptyState } from '@/components/ui/empty-state';
 import {
   Card,
   CardHeader,
@@ -56,26 +57,24 @@ export function CourseNotesTab({
           <Skeleton className="h-12 w-full rounded-lg" />
         </div>
       ) : notes.length === 0 ? (
-        <div className="rounded-xl border border-dashed border-border bg-card/40 p-8 text-center sm:p-10">
-          <FileText className="h-8 w-8 text-muted-foreground mx-auto" aria-hidden="true" />
-          <h3 className="mt-2 text-sm font-semibold text-foreground">
-            Belum ada catatan untuk mata kuliah ini
-          </h3>
-          <p className="mt-1 text-xs text-muted-foreground max-w-sm mx-auto">
-            Tulis rangkuman materi perkuliahan dengan format Markdown yang rapi.
-          </p>
-          {!isArchived && (
-            <Button
-              size="standard"
-              variant="outline"
-              onClick={onAddNote}
-              className="mt-4 gap-1.5"
-            >
-              <Plus className="h-4 w-4" />
-              <span>Buat catatan pertama</span>
-            </Button>
-          )}
-        </div>
+        <EmptyState
+          icon={FileText}
+          title="Belum ada catatan untuk mata kuliah ini"
+          description="Tulis rangkuman materi perkuliahan dengan format Markdown yang rapi."
+          action={
+            !isArchived && (
+              <Button
+                size="standard"
+                variant="outline"
+                onClick={onAddNote}
+                className="gap-1.5"
+              >
+                <Plus className="h-4 w-4" />
+                <span>Buat catatan pertama</span>
+              </Button>
+            )
+          }
+        />
       ) : (
         <StaggerGroup className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {notes.map((n) => (

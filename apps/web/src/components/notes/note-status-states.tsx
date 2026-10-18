@@ -22,9 +22,9 @@ export interface NoteErrorStateProps {
 
 export function NoteErrorState({ loadError }: NoteErrorStateProps): React.JSX.Element {
   return (
-    <div className="flex flex-col items-center justify-center rounded-xl border border-danger/30 bg-danger/5 p-8 text-center my-8">
-      <AlertCircle className="h-10 w-10 text-danger" />
-      <h3 className="mt-3 text-base font-semibold text-danger">Catatan Tidak Ditemukan</h3>
+    <div className="flex flex-col items-center justify-center rounded-xl border border-destructive/30 bg-destructive/5 p-8 text-center my-8">
+      <AlertCircle className="h-10 w-10 text-destructive" />
+      <h3 className="mt-3 text-base font-semibold text-destructive">Catatan Tidak Ditemukan</h3>
       <p className="mt-1 text-sm text-muted-foreground max-w-md">
         {loadError || 'Catatan tidak ada atau Anda tidak memiliki akses.'}
       </p>

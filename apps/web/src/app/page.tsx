@@ -15,6 +15,7 @@ import { FadeIn, StaggerGroup, StaggerItem } from '@/components/ui/motion';
 import { PublicMobileNav } from '@/components/landing/public-mobile-nav';
 import { ProductShowcase } from '@/components/landing/product-showcase';
 import { FaqSection } from '@/components/landing/faq-section';
+import { StudyFlowLogo } from '@/components/brand/studyflow-logo';
 import {
   BookOpen,
   CalendarRange,
@@ -41,12 +42,7 @@ export default async function HomePage(): Promise<React.JSX.Element> {
             className="flex items-center gap-2 sm:gap-2.5 shrink-0 transition-opacity hover:opacity-90"
             aria-label="Kembali ke beranda StudyFlow"
           >
-            <div className="flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-xs">
-              <BookOpen className="h-4 w-4 sm:h-5 sm:w-5" aria-hidden="true" />
-            </div>
-            <span className="text-base sm:text-lg font-bold tracking-tight text-foreground">
-              StudyFlow
-            </span>
+            <StudyFlowLogo />
           </Link>
 
           {/* Section Anchors & Theme / Auth Actions */}
@@ -506,7 +502,16 @@ export default async function HomePage(): Promise<React.JSX.Element> {
       {/* 3. Footer */}
       <footer className="border-t border-border bg-card py-8 text-xs text-muted-foreground">
         <div className="mx-auto max-w-6xl px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <p>StudyFlow &copy; 2026. Platform Belajar Pribadi Mahasiswa.</p>
+          <div className="flex items-center gap-3">
+            <Link
+              href="/"
+              className="transition-opacity hover:opacity-90"
+              aria-label="Kembali ke beranda StudyFlow"
+            >
+              <StudyFlowLogo size="sm" />
+            </Link>
+            <p>StudyFlow &copy; 2026. Platform Belajar Pribadi Mahasiswa.</p>
+          </div>
 
           <nav
             className="flex flex-wrap items-center gap-4 sm:gap-6 font-medium"

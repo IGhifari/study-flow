@@ -77,7 +77,7 @@ function renderInline(text: string): React.ReactNode[] {
       } else {
         // Disallowed protocol (e.g. javascript:)
         elements.push(
-          <span key={`unsafe-${key++}`} className="line-through text-danger">
+          <span key={`unsafe-${key++}`} className="line-through text-destructive">
             {linkText}
           </span>
         );
