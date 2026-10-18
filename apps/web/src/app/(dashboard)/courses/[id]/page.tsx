@@ -72,20 +72,24 @@ export default function CourseDetailPage(): React.JSX.Element {
   // Course Assignments state
   const [assignments, setAssignments] = React.useState<Assignment[]>([]);
   const [isAssignmentsLoading, setIsAssignmentsLoading] = React.useState(false);
+  const [assignmentsError, setAssignmentsError] = React.useState<string | null>(null);
   const [pendingAssignmentIds, setPendingAssignmentIds] = React.useState<Set<string>>(new Set());
 
   // Course Notes state
   const [notes, setNotes] = React.useState<NoteListItem[]>([]);
   const [isNotesLoading, setIsNotesLoading] = React.useState(false);
+  const [notesError, setNotesError] = React.useState<string | null>(null);
 
   // Course Materials state
   const [materials, setMaterials] = React.useState<MaterialListItem[]>([]);
   const [isMaterialsLoading, setIsMaterialsLoading] = React.useState(false);
+  const [materialsError, setMaterialsError] = React.useState<string | null>(null);
   const [isUploadOpen, setIsUploadOpen] = React.useState(false);
 
   // Course Schedules state
   const [schedules, setSchedules] = React.useState<CourseSchedule[]>([]);
   const [isSchedulesLoading, setIsSchedulesLoading] = React.useState(false);
+  const [schedulesError, setSchedulesError] = React.useState<string | null>(null);
   const [scheduleConflictBanner, setScheduleConflictBanner] = React.useState<string | null>(null);
   const [isCreateScheduleOpen, setIsCreateScheduleOpen] = React.useState(false);
   const [editingSchedule, setEditingSchedule] = React.useState<CourseSchedule | null>(null);
@@ -101,6 +105,14 @@ export default function CourseDetailPage(): React.JSX.Element {
 
   const timezone = userProfile?.timezone || 'Asia/Jakarta';
 
+  const isMountedRef = React.useRef(true);
+  React.useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
+
   const fetchCourseData = React.useCallback(async () => {
     if (!courseId) return;
     setIsLoading(true);
@@ -110,64 +122,92 @@ export default function CourseDetailPage(): React.JSX.Element {
         getProfile().catch(() => null),
         getCourse(courseId),
       ]);
+      if (!isMountedRef.current) return;
       if (profile) setUserProfile(profile);
       setCourse(courseData);
-    } catch (err: any) {
-      setErrorMsg(err.message || 'Gagal memuat mata kuliah');
+    } catch (err: unknown) {
+      if (!isMountedRef.current) return;
+      setErrorMsg(err instanceof Error ? err.message : 'Gagal memuat mata kuliah');
     } finally {
-      setIsLoading(false);
+      if (isMountedRef.current) {
+        setIsLoading(false);
+      }
     }
   }, [courseId]);
 
   const fetchAssignmentsData = React.useCallback(async () => {
     if (!courseId) return;
     setIsAssignmentsLoading(true);
+    setAssignmentsError(null);
     try {
       const res = await listAssignments({ courseId, limit: 100 });
+      if (!isMountedRef.current) return;
       setAssignments(res.assignments);
-    } catch (err) {
+    } catch (err: unknown) {
+      if (!isMountedRef.current) return;
       console.error('Failed to load assignments:', err);
+      setAssignmentsError(err instanceof Error ? err.message : 'Gagal memuat daftar tugas');
     } finally {
-      setIsAssignmentsLoading(false);
+      if (isMountedRef.current) {
+        setIsAssignmentsLoading(false);
+      }
     }
   }, [courseId]);
 
   const fetchNotesData = React.useCallback(async () => {
     if (!courseId) return;
     setIsNotesLoading(true);
+    setNotesError(null);
     try {
       const res = await listNotes({ courseId, limit: 100 });
+      if (!isMountedRef.current) return;
       setNotes(res.notes);
-    } catch (err) {
+    } catch (err: unknown) {
+      if (!isMountedRef.current) return;
       console.error('Failed to load notes:', err);
+      setNotesError(err instanceof Error ? err.message : 'Gagal memuat daftar catatan');
     } finally {
-      setIsNotesLoading(false);
+      if (isMountedRef.current) {
+        setIsNotesLoading(false);
+      }
     }
   }, [courseId]);
 
   const fetchMaterialsData = React.useCallback(async () => {
     if (!courseId) return;
     setIsMaterialsLoading(true);
+    setMaterialsError(null);
     try {
       const res = await listMaterials({ courseId, limit: 100 });
+      if (!isMountedRef.current) return;
       setMaterials(res.materials);
-    } catch (err) {
+    } catch (err: unknown) {
+      if (!isMountedRef.current) return;
       console.error('Failed to load materials:', err);
+      setMaterialsError(err instanceof Error ? err.message : 'Gagal memuat daftar materi');
     } finally {
-      setIsMaterialsLoading(false);
+      if (isMountedRef.current) {
+        setIsMaterialsLoading(false);
+      }
     }
   }, [courseId]);
 
   const fetchSchedulesData = React.useCallback(async () => {
     if (!courseId) return;
     setIsSchedulesLoading(true);
+    setSchedulesError(null);
     try {
       const res = await listSchedules({ courseId });
+      if (!isMountedRef.current) return;
       setSchedules(res.schedules);
-    } catch (err) {
+    } catch (err: unknown) {
+      if (!isMountedRef.current) return;
       console.error('Failed to load schedules:', err);
+      setSchedulesError(err instanceof Error ? err.message : 'Gagal memuat jadwal perkuliahan');
     } finally {
-      setIsSchedulesLoading(false);
+      if (isMountedRef.current) {
+        setIsSchedulesLoading(false);
+      }
     }
   }, [courseId]);
 
@@ -226,10 +266,12 @@ export default function CourseDetailPage(): React.JSX.Element {
     setActionError(null);
     try {
       const updated = await archiveCourse(courseId);
+      if (!isMountedRef.current) return;
       setCourse(updated);
       router.refresh();
-    } catch (err: any) {
-      setActionError(err.message || 'Gagal mengarsipkan mata kuliah.');
+    } catch (err: unknown) {
+      if (!isMountedRef.current) return;
+      setActionError(err instanceof Error ? err.message : 'Gagal mengarsipkan mata kuliah.');
     }
   };
 
@@ -237,10 +279,12 @@ export default function CourseDetailPage(): React.JSX.Element {
     setActionError(null);
     try {
       const updated = await unarchiveCourse(courseId);
+      if (!isMountedRef.current) return;
       setCourse(updated);
       router.refresh();
-    } catch (err: any) {
-      setActionError(err.message || 'Gagal memulihkan mata kuliah.');
+    } catch (err: unknown) {
+      if (!isMountedRef.current) return;
+      setActionError(err instanceof Error ? err.message : 'Gagal memulihkan mata kuliah.');
     }
   };
 
@@ -257,18 +301,21 @@ export default function CourseDetailPage(): React.JSX.Element {
     try {
       await updateAssignment(asg.id, { status: nextStatus });
       await fetchAssignmentsData();
-    } catch (err: any) {
+    } catch (err: unknown) {
+      if (!isMountedRef.current) return;
       // Revert optimistic update
       setAssignments((prev) =>
         prev.map((item) => (item.id === asg.id ? asg : item))
       );
-      setActionError(err.message || 'Gagal memperbarui status tugas.');
+      setActionError(err instanceof Error ? err.message : 'Gagal memperbarui status tugas.');
     } finally {
-      setPendingAssignmentIds((prev) => {
-        const next = new Set(prev);
-        next.delete(asg.id);
-        return next;
-      });
+      if (isMountedRef.current) {
+        setPendingAssignmentIds((prev) => {
+          const next = new Set(prev);
+          next.delete(asg.id);
+          return next;
+        });
+      }
     }
   };
 
@@ -303,6 +350,8 @@ export default function CourseDetailPage(): React.JSX.Element {
         course={course}
         schedules={schedules}
         isLoading={isSchedulesLoading}
+        error={schedulesError}
+        onRetry={fetchSchedulesData}
         isArchived={isArchived}
         conflictBanner={scheduleConflictBanner}
         onAddSchedule={() => setIsCreateScheduleOpen(true)}
@@ -339,6 +388,8 @@ export default function CourseDetailPage(): React.JSX.Element {
             <CourseAssignmentsTab
               assignments={assignments}
               isLoading={isAssignmentsLoading}
+              error={assignmentsError}
+              onRetry={fetchAssignmentsData}
               isArchived={isArchived}
               timezone={timezone}
               pendingAssignmentIds={pendingAssignmentIds}
@@ -354,6 +405,8 @@ export default function CourseDetailPage(): React.JSX.Element {
             <CourseNotesTab
               notes={notes}
               isLoading={isNotesLoading}
+              error={notesError}
+              onRetry={fetchNotesData}
               isArchived={isArchived}
               timezone={timezone}
               onAddNote={() => setIsCreateNoteOpen(true)}
@@ -367,6 +420,8 @@ export default function CourseDetailPage(): React.JSX.Element {
             <CourseMaterialsTab
               materials={materials}
               isLoading={isMaterialsLoading}
+              error={materialsError}
+              onRetry={fetchMaterialsData}
               isArchived={isArchived}
               timezone={timezone}
               onUploadMaterial={() => setIsUploadOpen(true)}

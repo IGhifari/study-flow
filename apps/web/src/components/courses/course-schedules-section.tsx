@@ -26,6 +26,7 @@ import {
   CardContent,
 } from '@/components/ui/card';
 import { StaggerGroup, StaggerItem } from '@/components/ui/motion';
+import { CourseTabErrorState } from './course-status-states';
 
 export interface CourseSchedulesSectionProps {
   course: Course;
@@ -36,6 +37,8 @@ export interface CourseSchedulesSectionProps {
   onAddSchedule: () => void;
   onEditSchedule: (schedule: CourseSchedule) => void;
   onDeleteSchedule: (schedule: CourseSchedule) => void;
+  error?: string | null;
+  onRetry?: () => void;
 }
 
 export function CourseSchedulesSection({
@@ -47,6 +50,8 @@ export function CourseSchedulesSection({
   onAddSchedule,
   onEditSchedule,
   onDeleteSchedule,
+  error,
+  onRetry,
 }: CourseSchedulesSectionProps): React.JSX.Element {
   return (
     <Card className="shadow-xs">
@@ -96,6 +101,12 @@ export function CourseSchedulesSection({
             <Skeleton className="h-24 w-full rounded-lg" />
             <Skeleton className="h-24 w-full rounded-lg" />
           </div>
+        ) : error ? (
+          <CourseTabErrorState
+            title="Gagal Memuat Jadwal Perkuliahan"
+            errorMessage={error}
+            onRetry={onRetry}
+          />
         ) : schedules.length === 0 ? (
           <EmptyState
             size="sm"

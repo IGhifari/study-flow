@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import Link from 'next/link';
-import { ArrowLeft, AlertCircle } from 'lucide-react';
+import { ArrowLeft, AlertCircle, RotateCcw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -44,5 +44,41 @@ export function CourseErrorAlert({ errorMsg }: CourseErrorAlertProps): React.JSX
         </AlertDescription>
       </Alert>
     </div>
+  );
+}
+
+export interface CourseTabErrorStateProps {
+  title: string;
+  errorMessage?: string | null;
+  onRetry?: () => void;
+}
+
+export function CourseTabErrorState({
+  title,
+  errorMessage,
+  onRetry,
+}: CourseTabErrorStateProps): React.JSX.Element {
+  return (
+    <Alert variant="destructive" role="alert" className="p-4 sm:p-5">
+      <AlertCircle className="h-4 w-4" />
+      <AlertTitle className="text-sm font-semibold">{title}</AlertTitle>
+      <AlertDescription className="mt-2 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <span className="text-xs sm:text-sm leading-relaxed text-muted-foreground">
+          {errorMessage || 'Terjadi kesalahan saat memuat data. Silakan coba lagi.'}
+        </span>
+        {onRetry && (
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={onRetry}
+            className="gap-1.5 shrink-0 self-start sm:self-auto text-xs h-8"
+          >
+            <RotateCcw className="h-3.5 w-3.5" />
+            <span>Coba Lagi</span>
+          </Button>
+        )}
+      </AlertDescription>
+    </Alert>
   );
 }

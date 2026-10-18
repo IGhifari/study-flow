@@ -12,7 +12,7 @@ export interface FadeInProps extends HTMLMotionProps<'div'> {
 }
 
 /**
- * FadeIn: Animasi masuk halus (DESIGN.md §12: <= 200ms, menghormati prefers-reduced-motion).
+  * FadeIn: Animasi masuk halus (DESIGN.md §12: <= 200ms, menghormati prefers-reduced-motion).
  */
 export function FadeIn({
   delay = 0,
@@ -20,13 +20,22 @@ export function FadeIn({
   yOffset = 8,
   className,
   children,
+  initial,
   ...props
 }: FadeInProps): React.JSX.Element {
   const prefersReducedMotion = useReducedMotion();
 
+  // Cegah pemblokiran FCP/LCP: jika initial bernilai false atau reduced-motion, render konten terlihat penuh tanpa opacity 0
+  const resolvedInitial =
+    prefersReducedMotion || initial === false
+      ? false
+      : initial !== undefined
+        ? initial
+        : false;
+
   return (
     <motion.div
-      initial={prefersReducedMotion ? false : { opacity: 0, y: yOffset }}
+      initial={resolvedInitial}
       animate={{ opacity: 1, y: 0 }}
       transition={
         prefersReducedMotion
@@ -55,16 +64,23 @@ export function StaggerGroup({
   delayChildren = 0,
   className,
   children,
+  initial,
   ...props
 }: StaggerGroupProps): React.JSX.Element {
   const prefersReducedMotion = useReducedMotion();
+  const resolvedInitial =
+    prefersReducedMotion || initial === false
+      ? false
+      : initial !== undefined
+        ? initial
+        : false;
 
   return (
     <motion.div
-      initial={prefersReducedMotion ? false : 'hidden'}
+      initial={resolvedInitial}
       animate="visible"
       variants={{
-        hidden: { opacity: 0 },
+        hidden: { opacity: prefersReducedMotion ? 1 : 0 },
         visible: {
           opacity: 1,
           transition: prefersReducedMotion

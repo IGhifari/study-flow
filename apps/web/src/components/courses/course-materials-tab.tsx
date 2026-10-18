@@ -17,6 +17,7 @@ import {
   TableCell,
 } from '@/components/ui/table';
 import { MaterialStatusBadge } from '@/components/materials/material-status-badge';
+import { CourseTabErrorState } from './course-status-states';
 
 export interface CourseMaterialsTabProps {
   materials: MaterialListItem[];
@@ -24,6 +25,8 @@ export interface CourseMaterialsTabProps {
   isArchived: boolean;
   timezone: string;
   onUploadMaterial: () => void;
+  error?: string | null;
+  onRetry?: () => void;
 }
 
 export function CourseMaterialsTab({
@@ -32,6 +35,8 @@ export function CourseMaterialsTab({
   isArchived,
   timezone,
   onUploadMaterial,
+  error,
+  onRetry,
 }: CourseMaterialsTabProps): React.JSX.Element {
   return (
     <div className="space-y-4">
@@ -58,6 +63,12 @@ export function CourseMaterialsTab({
           <Skeleton className="h-10 w-full rounded-lg" />
           <Skeleton className="h-12 w-full rounded-lg" />
         </div>
+      ) : error ? (
+        <CourseTabErrorState
+          title="Gagal Memuat Materi PDF"
+          errorMessage={error}
+          onRetry={onRetry}
+        />
       ) : materials.length === 0 ? (
         <EmptyState
           icon={FileUp}

@@ -1,3 +1,4 @@
+import type { Metadata } from 'next';
 import Link from 'next/link';
 import Image from 'next/image';
 import { getServerSessionUser } from '@/lib/auth-server';
@@ -22,6 +23,12 @@ import {
   CheckCircle2,
   Clock,
 } from 'lucide-react';
+
+export const metadata: Metadata = {
+  title: 'StudyFlow — Ruang Belajar Pribadi Mahasiswa',
+  description:
+    'Platform belajar pribadi untuk mahasiswa: kelola semester, mata kuliah, tugas, catatan, dan materi PDF dengan bantuan ringkasan, flashcard, dan kuis AI.',
+};
 
 // Asset references (including backwards-compatible references for /images/hero-studyflow-workspace.svg, /images/feature-pdf-citation.svg, /images/feature-semester-schedule.svg, /images/feature-flashcard-quiz.svg)
 
@@ -75,7 +82,7 @@ export default async function HomePage(): Promise<React.JSX.Element> {
               </Link>
             ) : (
               <div className="flex items-center gap-1 sm:gap-2">
-                <Link href="/login">
+                <Link href="/login" prefetch={false}>
                   <Button
                     variant="ghost"
                     size="sm"
@@ -84,7 +91,7 @@ export default async function HomePage(): Promise<React.JSX.Element> {
                     Masuk
                   </Button>
                 </Link>
-                <Link href="/register">
+                <Link href="/register" prefetch={false}>
                   <Button
                     size="sm"
                     className="h-8 px-2.5 sm:h-9 sm:px-3.5 text-xs sm:text-sm font-semibold"
@@ -102,10 +109,10 @@ export default async function HomePage(): Promise<React.JSX.Element> {
       <main className="flex-1">
         <div className="mx-auto max-w-6xl px-4 sm:px-6">
           {/* Hero Section: 2 Kolom Asimetris Editorial */}
-          <section className="py-12 sm:py-16 lg:py-20 border-b border-border/60">
+          <section className="py-8 sm:py-12 lg:py-16 border-b border-border/60">
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 items-center">
               {/* Kolom Kiri (6 cols) */}
-              <FadeIn className="lg:col-span-6">
+              <div className="lg:col-span-6">
                 <Badge
                   variant="secondary"
                   className="mb-4 font-mono text-xs uppercase tracking-wider"
@@ -141,7 +148,7 @@ export default async function HomePage(): Promise<React.JSX.Element> {
                     </>
                   ) : (
                     <>
-                      <Link href="/register">
+                      <Link href="/register" prefetch={false}>
                         <Button size="lg" className="h-11 px-6 font-semibold gap-2">
                           <span>Mulai Belajar Sekarang</span>
                           <ArrowRight className="h-4 w-4" aria-hidden="true" />
@@ -171,21 +178,25 @@ export default async function HomePage(): Promise<React.JSX.Element> {
                     <span>WIB &bull; WITA &bull; WIT</span>
                   </div>
                 </div>
-              </FadeIn>
+              </div>
 
-              {/* Kolom Kanan (6 cols): Visual Editorial Utama */}
-              <FadeIn delay={0.08} className="lg:col-span-6">
-                <div className="relative">
+              {/* Kolom Kanan (6 cols): Visual Editorial Utama (LCP Element) */}
+              <div className="lg:col-span-6">
+                <div className="relative aspect-[17/12] w-full overflow-hidden rounded-2xl border border-border shadow-sm">
                   <Image
                     src="/images/hero-editorial-workspace.svg"
                     alt="Pratinjau ruang kerja akademik StudyFlow dengan pembaca PDF dan rujukan halaman"
                     width={680}
                     height={480}
                     priority
-                    className="w-full h-auto rounded-2xl border border-border shadow-sm"
+                    loading="eager"
+                    fetchPriority="high"
+                    decoding="sync"
+                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 680px"
+                    className="w-full h-auto"
                   />
                 </div>
-              </FadeIn>
+              </div>
             </div>
           </section>
 
@@ -195,7 +206,7 @@ export default async function HomePage(): Promise<React.JSX.Element> {
           {/* Section: Fitur Utama (Swiss Bento Visual Grid) */}
           <section id="fitur" className="py-14 sm:py-20 border-b border-border/60 scroll-mt-20">
             <FadeIn className="max-w-2xl">
-              <div className="font-mono text-xs text-primary font-bold tracking-wider uppercase mb-2">
+              <div className="font-mono text-xs text-primary dark:text-indigo-400 font-bold tracking-wider uppercase mb-2">
                 {'// FITUR UTAMA BENTO'}
               </div>
               <h2 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
@@ -221,7 +232,7 @@ export default async function HomePage(): Promise<React.JSX.Element> {
                   </div>
                   <CardHeader className="pt-5">
                     <div className="flex items-center gap-2 mb-1.5">
-                      <span className="font-mono text-xs font-bold text-primary">{'// 01 DOKUMEN & RUJUKAN'}</span>
+                      <span className="font-mono text-xs font-bold text-primary dark:text-indigo-400">{'// 01 DOKUMEN & RUJUKAN'}</span>
                     </div>
                     <CardTitle className="text-lg sm:text-xl">
                       Materi PDF &amp; Rujukan Halaman Presisi
@@ -238,17 +249,17 @@ export default async function HomePage(): Promise<React.JSX.Element> {
                 <div className="flex flex-col justify-between w-full rounded-xl bg-primary text-primary-foreground p-6 shadow-sm overflow-hidden">
                   <div>
                     <div className="flex items-center justify-between mb-4">
-                      <span className="font-mono text-xs font-bold uppercase tracking-wider text-primary-foreground/80">
+                      <span className="font-mono text-xs font-bold uppercase tracking-wider text-white">
                         {'// 02 ACTIVE RECALL'}
                       </span>
-                      <span className="rounded-md bg-white/10 px-2 py-0.5 font-mono text-[11px] font-semibold text-white">
+                      <span className="rounded-md bg-black/30 border border-white/20 px-2 py-0.5 font-mono text-[11px] font-semibold text-white">
                         Kuis &amp; Kartu
                       </span>
                     </div>
                     <h3 className="text-lg sm:text-xl font-bold tracking-tight text-white">
                       Latihan Flashcard &amp; Kuis Evaluasi
                     </h3>
-                    <p className="mt-2 text-sm text-primary-foreground/90 leading-relaxed">
+                    <p className="mt-2 text-sm text-white/95 leading-relaxed">
                       Latih retensi ingatan jangka panjang melalui kartu Active Recall berspasi. Uji pemahaman secara mandiri melalui kuis pilihan ganda yang menyajikan evaluasi skor instan beserta pembahasan rujukan halaman.
                     </p>
                   </div>
@@ -269,7 +280,7 @@ export default async function HomePage(): Promise<React.JSX.Element> {
                 <Card className="flex flex-col justify-between w-full border-border bg-card shadow-xs overflow-hidden">
                   <CardHeader className="pb-4">
                     <div className="flex items-center gap-2 mb-1.5">
-                      <span className="font-mono text-xs font-bold text-primary">{'// 03 MANAJEMEN AKADEMIK'}</span>
+                      <span className="font-mono text-xs font-bold text-primary dark:text-indigo-400">{'// 03 MANAJEMEN AKADEMIK'}</span>
                     </div>
                     <CardTitle className="text-lg sm:text-xl">
                       Semester, Jadwal Kuliah, &amp; Deteksi Benturan
@@ -295,7 +306,7 @@ export default async function HomePage(): Promise<React.JSX.Element> {
                 <Card className="flex flex-col justify-between w-full border-border bg-card shadow-xs p-6">
                   <div>
                     <div className="flex items-center justify-between mb-2">
-                      <span className="font-mono text-xs font-bold text-primary">{'// 04 PRODUKTIVITAS BELAJAR'}</span>
+                      <span className="font-mono text-xs font-bold text-primary dark:text-indigo-400">{'// 04 PRODUKTIVITAS BELAJAR'}</span>
                       <span className="font-mono text-xs text-muted-foreground">SUBTUGAS &bull; MARKDOWN</span>
                     </div>
                     <CardTitle className="text-lg sm:text-xl">
@@ -307,23 +318,23 @@ export default async function HomePage(): Promise<React.JSX.Element> {
                   </div>
 
                   {/* Pratinjau Mikro Bento: Checklist Subtugas & Editor Markdown */}
-                  <div className="mt-5 grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                  <div aria-hidden="true" className="mt-5 grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                     {/* Subtugas Preview Mini */}
                     <div className="rounded-lg border border-border/80 bg-muted/40 p-3.5 space-y-2">
                       <div className="flex items-center justify-between text-xs font-semibold text-foreground">
                         <span>Laporan Praktikum</span>
-                        <span className="font-mono text-primary">2 / 3</span>
+                        <span className="font-mono text-primary dark:text-indigo-400">2 / 3</span>
                       </div>
                       <div className="h-1.5 w-full bg-border rounded-full overflow-hidden">
                         <div className="h-full bg-primary rounded-full w-2/3" />
                       </div>
                       <div className="space-y-1 text-xs text-muted-foreground">
-                        <div className="flex items-center gap-2 line-through opacity-75">
-                          <CheckCircle2 className="size-3.5 text-emerald-600 shrink-0" />
+                        <div className="flex items-center gap-2 line-through text-muted-foreground dark:text-zinc-400">
+                          <CheckCircle2 className="size-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
                           <span>Normalisasi relasi tabel 3NF</span>
                         </div>
-                        <div className="flex items-center gap-2 line-through opacity-75">
-                          <CheckCircle2 className="size-3.5 text-emerald-600 shrink-0" />
+                        <div className="flex items-center gap-2 line-through text-muted-foreground dark:text-zinc-400">
+                          <CheckCircle2 className="size-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
                           <span>Query agregasi &amp; indeks</span>
                         </div>
                         <div className="flex items-center gap-2 text-foreground font-medium">
@@ -339,7 +350,7 @@ export default async function HomePage(): Promise<React.JSX.Element> {
                         <span>catatan-algoritma.md</span>
                         <span className="text-emerald-600 font-semibold">Tersimpan</span>
                       </div>
-                      <p className="text-primary font-bold">## Analisis Kompleksitas</p>
+                      <p className="text-primary dark:text-indigo-400 font-bold">## Analisis Kompleksitas</p>
                       <p className="text-foreground/80">- BFS: O(V + E) antrean FIFO</p>
                       <p className="text-foreground/80">- DFS: O(V + E) tumpukan/rekursi</p>
                       <div className="rounded bg-muted px-2 py-1 text-muted-foreground text-[11px]">
@@ -355,7 +366,7 @@ export default async function HomePage(): Promise<React.JSX.Element> {
           {/* Section: 3 Pilar Integritas Akademik & Keamanan */}
           <section className="py-14 sm:py-20 border-b border-border/60">
             <FadeIn className="max-w-2xl">
-              <div className="font-mono text-xs text-primary font-bold tracking-wider uppercase mb-2">
+              <div className="font-mono text-xs text-primary dark:text-indigo-400 font-bold tracking-wider uppercase mb-2">
                 {'// KEJUJURAN & PRIVASI'}
               </div>
               <h2 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
@@ -371,7 +382,7 @@ export default async function HomePage(): Promise<React.JSX.Element> {
               <StaggerItem className="flex">
                 <Card className="w-full border-border bg-card shadow-xs">
                   <CardHeader>
-                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary mb-2">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary dark:text-indigo-400 mb-2">
                       <CheckCircle2 className="h-5 w-5" aria-hidden="true" />
                     </div>
                     <CardTitle className="text-base">
@@ -388,7 +399,7 @@ export default async function HomePage(): Promise<React.JSX.Element> {
               <StaggerItem className="flex">
                 <Card className="w-full border-border bg-card shadow-xs">
                   <CardHeader>
-                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary mb-2">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary dark:text-indigo-400 mb-2">
                       <ShieldCheck className="h-5 w-5" aria-hidden="true" />
                     </div>
                     <CardTitle className="text-base">
@@ -405,7 +416,7 @@ export default async function HomePage(): Promise<React.JSX.Element> {
               <StaggerItem className="flex">
                 <Card className="w-full border-border bg-card shadow-xs">
                   <CardHeader>
-                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary mb-2">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary dark:text-indigo-400 mb-2">
                       <Clock className="h-5 w-5" aria-hidden="true" />
                     </div>
                     <CardTitle className="text-base">
@@ -423,7 +434,7 @@ export default async function HomePage(): Promise<React.JSX.Element> {
           {/* Section: Alur Kerja Editorial (3 Langkah) */}
           <section id="cara-kerja" className="py-14 sm:py-20 border-b border-border/60 scroll-mt-20">
             <FadeIn className="max-w-2xl">
-              <div className="font-mono text-xs text-primary font-bold tracking-wider uppercase mb-2">
+              <div className="font-mono text-xs text-primary dark:text-indigo-400 font-bold tracking-wider uppercase mb-2">
                 {'// METODE 3 LANGKAH'}
               </div>
               <h2 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
@@ -438,11 +449,18 @@ export default async function HomePage(): Promise<React.JSX.Element> {
               {/* Langkah 1 */}
               <StaggerItem className="flex">
                 <Card className="w-full border-border bg-card shadow-xs relative overflow-hidden">
-                  <div className="absolute top-4 right-4 text-3xl font-extrabold text-muted/60 font-mono select-none">
-                    01
-                  </div>
+                  <svg
+                    aria-hidden="true"
+                    className="absolute top-4 right-4 h-9 w-12 text-muted/40 font-mono select-none pointer-events-none"
+                    viewBox="0 0 48 32"
+                    fill="currentColor"
+                  >
+                    <text x="44" y="26" textAnchor="end" fontSize="28" fontWeight="800" fontFamily="monospace">
+                      01
+                    </text>
+                  </svg>
                   <CardHeader>
-                    <div className="font-mono text-xs font-bold text-primary mb-2">
+                    <div className="font-mono text-xs font-bold text-primary dark:text-indigo-400 mb-2">
                       01 // STRUKTUR
                     </div>
                     <CardTitle className="text-lg">
@@ -464,11 +482,18 @@ export default async function HomePage(): Promise<React.JSX.Element> {
               {/* Langkah 2 */}
               <StaggerItem className="flex">
                 <Card className="w-full border-border bg-card shadow-xs relative overflow-hidden">
-                  <div className="absolute top-4 right-4 text-3xl font-extrabold text-muted/60 font-mono select-none">
-                    02
-                  </div>
+                  <svg
+                    aria-hidden="true"
+                    className="absolute top-4 right-4 h-9 w-12 text-muted/40 font-mono select-none pointer-events-none"
+                    viewBox="0 0 48 32"
+                    fill="currentColor"
+                  >
+                    <text x="44" y="26" textAnchor="end" fontSize="28" fontWeight="800" fontFamily="monospace">
+                      02
+                    </text>
+                  </svg>
                   <CardHeader>
-                    <div className="font-mono text-xs font-bold text-primary mb-2">
+                    <div className="font-mono text-xs font-bold text-primary dark:text-indigo-400 mb-2">
                       02 // UNGGAH &amp; CATAT
                     </div>
                     <CardTitle className="text-lg">
@@ -481,7 +506,7 @@ export default async function HomePage(): Promise<React.JSX.Element> {
                   <CardContent className="pt-0">
                     <div className="rounded-md border border-border/80 bg-muted/40 p-2.5 text-xs font-mono text-muted-foreground flex items-center justify-between">
                       <span>modul-kuliah.pdf</span>
-                      <span className="text-primary font-semibold">Maks 100 Hal</span>
+                      <span className="text-primary dark:text-indigo-400 font-semibold">Maks 100 Hal</span>
                     </div>
                   </CardContent>
                 </Card>
@@ -490,11 +515,18 @@ export default async function HomePage(): Promise<React.JSX.Element> {
               {/* Langkah 3 */}
               <StaggerItem className="flex">
                 <Card className="w-full border-border bg-card shadow-xs relative overflow-hidden">
-                  <div className="absolute top-4 right-4 text-3xl font-extrabold text-muted/60 font-mono select-none">
-                    03
-                  </div>
+                  <svg
+                    aria-hidden="true"
+                    className="absolute top-4 right-4 h-9 w-12 text-muted/40 font-mono select-none pointer-events-none"
+                    viewBox="0 0 48 32"
+                    fill="currentColor"
+                  >
+                    <text x="44" y="26" textAnchor="end" fontSize="28" fontWeight="800" fontFamily="monospace">
+                      03
+                    </text>
+                  </svg>
                   <CardHeader>
-                    <div className="font-mono text-xs font-bold text-primary mb-2">
+                    <div className="font-mono text-xs font-bold text-primary dark:text-indigo-400 mb-2">
                       03 // EVALUASI MANDIRI
                     </div>
                     <CardTitle className="text-lg">
@@ -543,13 +575,13 @@ export default async function HomePage(): Promise<React.JSX.Element> {
                       </Link>
                     ) : (
                       <>
-                        <Link href="/register">
+                        <Link href="/register" prefetch={false}>
                           <Button size="lg" className="h-11 px-6 font-semibold gap-2">
                             <span>Daftar Akun StudyFlow</span>
                             <ArrowRight className="h-4 w-4" aria-hidden="true" />
                           </Button>
                         </Link>
-                        <Link href="/login">
+                        <Link href="/login" prefetch={false}>
                           <Button size="lg" variant="outline" className="h-11 px-6 font-medium">
                             Masuk ke Akun
                           </Button>
@@ -561,12 +593,12 @@ export default async function HomePage(): Promise<React.JSX.Element> {
 
                 {/* Right side (5 cols): Data Sovereignty & Security Spec Block */}
                 <div className="lg:col-span-5 rounded-xl border border-border/80 bg-muted/40 p-5 font-mono text-xs space-y-3">
-                  <div className="text-[11px] font-bold text-primary uppercase tracking-wider">
+                  <div className="text-[11px] font-bold text-primary dark:text-indigo-400 uppercase tracking-wider">
                     {'// SPESIFIKASI KEAMANAN & PRIVASI'}
                   </div>
                   <div className="space-y-2 text-muted-foreground">
                     <div className="flex items-start gap-2">
-                      <ShieldCheck className="size-4 text-primary shrink-0 mt-0.5" />
+                      <ShieldCheck className="size-4 text-primary dark:text-indigo-400 shrink-0 mt-0.5" />
                       <span className="text-foreground">Data tersimpan terisolasi per akun mahasiswa</span>
                     </div>
                     <div className="flex items-start gap-2">
@@ -574,7 +606,7 @@ export default async function HomePage(): Promise<React.JSX.Element> {
                       <span>Dokumen PDF privat tidak digunakan untuk pelatihan model publik</span>
                     </div>
                     <div className="flex items-start gap-2">
-                      <Clock className="size-4 text-primary shrink-0 mt-0.5" />
+                      <Clock className="size-4 text-primary dark:text-indigo-400 shrink-0 mt-0.5" />
                       <span>Sinkronisasi deadline otomatis sesuai zona waktu lokal kampus</span>
                     </div>
                   </div>
@@ -619,7 +651,7 @@ export default async function HomePage(): Promise<React.JSX.Element> {
               FAQ
             </Link>
             {user ? (
-              <Link href="/dashboard" className="text-primary hover:underline">
+              <Link href="/dashboard" className="text-primary dark:text-indigo-400 hover:underline">
                 Dashboard
               </Link>
             ) : (

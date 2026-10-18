@@ -22,6 +22,7 @@ import {
   TableHead,
   TableCell,
 } from '@/components/ui/table';
+import { CourseTabErrorState } from './course-status-states';
 
 export interface CourseAssignmentsTabProps {
   assignments: Assignment[];
@@ -31,6 +32,8 @@ export interface CourseAssignmentsTabProps {
   pendingAssignmentIds: Set<string>;
   onToggleStatus: (assignment: Assignment) => void;
   onAddAssignment: () => void;
+  error?: string | null;
+  onRetry?: () => void;
 }
 
 export function CourseAssignmentsTab({
@@ -41,6 +44,8 @@ export function CourseAssignmentsTab({
   pendingAssignmentIds,
   onToggleStatus,
   onAddAssignment,
+  error,
+  onRetry,
 }: CourseAssignmentsTabProps): React.JSX.Element {
   return (
     <div className="space-y-4">
@@ -68,6 +73,12 @@ export function CourseAssignmentsTab({
           <Skeleton className="h-12 w-full rounded-lg" />
           <Skeleton className="h-12 w-full rounded-lg" />
         </div>
+      ) : error ? (
+        <CourseTabErrorState
+          title="Gagal Memuat Tugas Kuliah"
+          errorMessage={error}
+          onRetry={onRetry}
+        />
       ) : assignments.length === 0 ? (
         <EmptyState
           icon={ListTodo}

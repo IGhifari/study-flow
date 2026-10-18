@@ -7,6 +7,8 @@ import './globals.css';
 const geistSans = Geist({
   variable: '--font-sans',
   subsets: ['latin'],
+  display: 'optional',
+  preload: true,
 });
 
 export const metadata: Metadata = {
@@ -22,6 +24,19 @@ export default function RootLayout({
 }>): React.JSX.Element {
   return (
     <html lang="id" className="scroll-smooth" suppressHydrationWarning>
+      <head>
+        <meta
+          name="description"
+          content="Platform belajar pribadi untuk mahasiswa: kelola semester, mata kuliah, tugas, catatan, dan materi PDF dengan bantuan ringkasan, flashcard, dan kuis AI."
+        />
+        <link
+          rel="preload"
+          as="image"
+          href="/images/hero-editorial-workspace.svg"
+          type="image/svg+xml"
+          fetchPriority="high"
+        />
+      </head>
       <body className={`${geistSans.variable} font-sans antialiased min-h-screen bg-background text-foreground`}>
         <ThemeProvider
           attribute="class"

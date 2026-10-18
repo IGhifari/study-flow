@@ -56,7 +56,7 @@ export function FaqSection(): React.JSX.Element {
       <FadeIn className="max-w-2xl mx-auto text-center mb-10 sm:mb-12">
         <Badge
           variant="secondary"
-          className="mb-3 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-primary"
+          className="mb-3 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-primary dark:text-indigo-400"
         >
           Tanya Jawab
         </Badge>
@@ -76,7 +76,7 @@ export function FaqSection(): React.JSX.Element {
               <AccordionItem key={item.id} value={item.id} className="px-4 sm:px-6">
                 <AccordionTrigger className="py-4 sm:py-5 text-sm sm:text-base font-semibold text-foreground hover:no-underline">
                   <span className="flex items-center gap-2.5 text-left">
-                    <span className="text-xs font-mono text-primary font-bold tabular-nums">
+                    <span className="text-xs font-mono text-primary dark:text-indigo-400 font-bold tabular-nums">
                       0{index + 1}
                     </span>
                     <span>{item.question}</span>

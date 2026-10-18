@@ -79,7 +79,7 @@ export function ProductShowcase(): React.JSX.Element {
       <FadeIn className="text-center max-w-2xl mx-auto mb-8 sm:mb-10">
         <Badge
           variant="secondary"
-          className="mb-3 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-primary"
+          className="mb-3 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-primary dark:text-indigo-400"
         >
           Antarmuka Produk Nyata
         </Badge>
@@ -178,7 +178,7 @@ export function ProductShowcase(): React.JSX.Element {
                           Algoritma Dijkstra menemukan lintasan dengan bobot minimum dari suatu simpul asal <em>s</em> ke semua simpul lain dalam graf berarah dengan bobot sisi bernilai non-negatif:
                         </p>
                         <div className="rounded-lg bg-card border border-border p-3 font-mono text-xs text-foreground space-y-1">
-                          <div className="text-primary font-semibold">
+                          <div className="text-primary dark:text-indigo-400 font-semibold">
                             {'// Inisialisasi jarak simpul'}
                           </div>
                           <div>dist[s] = 0; dist[v] = ∞ untuk setiap v ≠ s;</div>
@@ -195,7 +195,7 @@ export function ProductShowcase(): React.JSX.Element {
                       <div>
                         <CardHeader className="pb-3">
                           <div className="flex items-center justify-between">
-                            <CardTitle className="text-sm font-semibold text-primary flex items-center gap-1.5">
+                            <CardTitle className="text-sm font-semibold text-primary dark:text-indigo-400 flex items-center gap-1.5">
                               <BookOpen className="h-4 w-4" />
                               <span>Ringkasan Konsep AI</span>
                             </CardTitle>
@@ -214,7 +214,7 @@ export function ProductShowcase(): React.JSX.Element {
                               <button
                                 type="button"
                                 onClick={() => setHighlightPage((prev) => !prev)}
-                                className="inline-flex items-center gap-1 text-xs font-semibold text-primary hover:underline bg-primary/10 hover:bg-primary/20 px-2 py-0.5 rounded transition-colors cursor-pointer"
+                                className="inline-flex items-center gap-1 text-xs font-semibold text-primary dark:text-indigo-400 hover:underline bg-primary/10 hover:bg-primary/20 px-2 py-0.5 rounded transition-colors cursor-pointer"
                                 title="Klik untuk menyorot rujukan halaman"
                               >
                                 <BookOpen className="h-3 w-3" />
@@ -245,7 +245,7 @@ export function ProductShowcase(): React.JSX.Element {
                       <CardFooter className="pt-3 border-t border-border/80 flex items-center justify-between text-xs text-muted-foreground">
                         <span>
                           Klik badge{' '}
-                          <strong className="text-primary font-semibold">Hal. 4</strong>{' '}
+                          <strong className="text-primary dark:text-indigo-400 font-semibold">Hal. 4</strong>{' '}
                           di atas untuk melihat rujukan
                         </span>
                         <ExternalLink className="h-3.5 w-3.5 shrink-0" />
@@ -465,7 +465,7 @@ export function ProductShowcase(): React.JSX.Element {
                         </p>
                       </div>
 
-                      <div className="flex items-center gap-1.5 text-xs font-semibold text-primary group-hover:underline pt-3 border-t border-border/40">
+                      <div className="flex items-center gap-1.5 text-xs font-semibold text-primary dark:text-indigo-400 group-hover:underline pt-3 border-t border-border/40">
                         <RotateCw className="h-3.5 w-3.5" />
                         <span>
                           {isFlipped

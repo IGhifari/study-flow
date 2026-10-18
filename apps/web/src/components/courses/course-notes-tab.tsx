@@ -15,6 +15,7 @@ import {
   CardFooter,
 } from '@/components/ui/card';
 import { StaggerGroup, StaggerItem } from '@/components/ui/motion';
+import { CourseTabErrorState } from './course-status-states';
 
 export interface CourseNotesTabProps {
   notes: NoteListItem[];
@@ -22,6 +23,8 @@ export interface CourseNotesTabProps {
   isArchived: boolean;
   timezone: string;
   onAddNote: () => void;
+  error?: string | null;
+  onRetry?: () => void;
 }
 
 export function CourseNotesTab({
@@ -30,6 +33,8 @@ export function CourseNotesTab({
   isArchived,
   timezone,
   onAddNote,
+  error,
+  onRetry,
 }: CourseNotesTabProps): React.JSX.Element {
   return (
     <div className="space-y-4">
@@ -56,6 +61,12 @@ export function CourseNotesTab({
           <Skeleton className="h-10 w-full rounded-lg" />
           <Skeleton className="h-12 w-full rounded-lg" />
         </div>
+      ) : error ? (
+        <CourseTabErrorState
+          title="Gagal Memuat Catatan Mata Kuliah"
+          errorMessage={error}
+          onRetry={onRetry}
+        />
       ) : notes.length === 0 ? (
         <EmptyState
           icon={FileText}

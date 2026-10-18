@@ -6,6 +6,7 @@ import {
   Settings,
   CheckCircle2,
   AlertCircle,
+  RotateCcw,
 } from 'lucide-react';
 import {
   StorageUsageResponse,
@@ -16,6 +17,7 @@ import {
   getGoogleAuthStatus,
 } from '@/lib/auth-client';
 import { getStorageUsage } from '@/lib/material-client';
+import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Skeleton } from '@/components/ui/skeleton';
 import { FadeIn, StaggerGroup, StaggerItem } from '@/components/ui/motion';
@@ -35,10 +37,20 @@ function SettingsContent(): React.JSX.Element {
   // User & Storage State
   const [currentUser, setCurrentUser] = React.useState<UserProfile | null>(null);
   const [initialLoading, setInitialLoading] = React.useState(true);
+  const [userError, setUserError] = React.useState<string | null>(null);
   const [storageUsage, setStorageUsage] = React.useState<StorageUsageResponse | null>(null);
   const [storageLoading, setStorageLoading] = React.useState(true);
   const [isGoogleConfigured, setIsGoogleConfigured] = React.useState<boolean | null>(null);
   const [googleAlert, setGoogleAlert] = React.useState<{ type: 'success' | 'error'; message: string } | null>(null);
+
+  const isMountedRef = React.useRef(true);
+
+  React.useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
 
   // Check URL search parameters for Google Linking outcome
   React.useEffect(() => {
@@ -58,50 +70,69 @@ function SettingsContent(): React.JSX.Element {
     }
   }, [searchParams]);
 
-  // Load User Data, Storage, & Google Auth Status on Mount
-  React.useEffect(() => {
-    let isMounted = true;
+  // Load User Data, Storage, & Google Auth Status
+  const loadData = React.useCallback(async () => {
+    setInitialLoading(true);
+    setUserError(null);
+    setStorageLoading(true);
 
-    async function loadData() {
-      try {
-        const user = await getCurrentUser();
-        if (isMounted && user) {
-          setCurrentUser(user);
-        }
-      } catch (err) {
-        console.error('Failed to load current user:', err);
-      } finally {
-        if (isMounted) setInitialLoading(false);
+    try {
+      const user = await getCurrentUser();
+      if (!isMountedRef.current) return;
+      if (user) {
+        setCurrentUser(user);
+        setUserError(null);
+      } else {
+        setUserError('Gagal memuat profil pengguna. Silakan coba lagi.');
       }
-
-      try {
-        const usage = await getStorageUsage();
-        if (isMounted) setStorageUsage(usage);
-      } catch (err) {
-        console.error('Failed to load storage usage:', err);
-      } finally {
-        if (isMounted) setStorageLoading(false);
+    } catch (err: any) {
+      console.error('Failed to load current user:', err);
+      if (isMountedRef.current) {
+        setUserError(err?.message || 'Gagal memuat profil pengguna. Periksa koneksi Anda dan coba lagi.');
       }
-
-      try {
-        const configured = await getGoogleAuthStatus();
-        if (isMounted) setIsGoogleConfigured(configured);
-      } catch {
-        if (isMounted) setIsGoogleConfigured(false);
+    } finally {
+      if (isMountedRef.current) {
+        setInitialLoading(false);
       }
     }
 
-    loadData();
+    try {
+      const usage = await getStorageUsage();
+      if (isMountedRef.current) setStorageUsage(usage);
+    } catch (err) {
+      console.error('Failed to load storage usage:', err);
+    } finally {
+      if (isMountedRef.current) setStorageLoading(false);
+    }
 
-    return () => {
-      isMounted = false;
-    };
+    try {
+      const configured = await getGoogleAuthStatus();
+      if (isMountedRef.current) setIsGoogleConfigured(configured);
+    } catch {
+      if (isMountedRef.current) setIsGoogleConfigured(false);
+    }
   }, []);
 
-  if (initialLoading || !currentUser) {
+  React.useEffect(() => {
+    loadData();
+  }, [loadData]);
+
+  // 1. Loading State (Initial mount or while retrying)
+  if (initialLoading) {
     return <SettingsSkeleton />;
   }
 
+  // 2. Error State (Failed loading user profile)
+  if (userError || !currentUser) {
+    return (
+      <SettingsErrorState
+        errorMessage={userError || 'Gagal memuat data pengaturan akun. Silakan coba lagi.'}
+        onRetry={loadData}
+      />
+    );
+  }
+
+  // 3. Success State
   return (
     <FadeIn className="space-y-6 max-w-3xl">
       {/* 1. Header Halaman */}
@@ -167,9 +198,51 @@ function SettingsContent(): React.JSX.Element {
   );
 }
 
-function SettingsSkeleton(): React.JSX.Element {
+function SettingsErrorState({
+  errorMessage,
+  onRetry,
+}: {
+  errorMessage: string;
+  onRetry: () => void;
+}): React.JSX.Element {
   return (
     <div className="space-y-6 max-w-3xl">
+      <div className="border-b border-border pb-5">
+        <h1 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl flex items-center gap-2.5">
+          <Settings className="h-7 w-7 text-primary" aria-hidden="true" />
+          Pengaturan Akun
+        </h1>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Kelola profil pengguna, zona waktu akademik, preferensi tampilan, dan keamanan akun Anda.
+        </p>
+      </div>
+
+      <Alert variant="destructive" role="alert" className="p-5 sm:p-6">
+        <AlertCircle className="h-5 w-5" />
+        <AlertTitle className="text-base font-semibold">Gagal Memuat Pengaturan Akun</AlertTitle>
+        <AlertDescription className="mt-2 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <span className="text-sm leading-relaxed text-muted-foreground">
+            {errorMessage}
+          </span>
+          <Button
+            type="button"
+            onClick={onRetry}
+            variant="outline"
+            size="sm"
+            className="gap-2 shrink-0 self-start sm:self-auto"
+          >
+            <RotateCcw className="h-4 w-4" />
+            <span>Coba Lagi</span>
+          </Button>
+        </AlertDescription>
+      </Alert>
+    </div>
+  );
+}
+
+function SettingsSkeleton(): React.JSX.Element {
+  return (
+    <div className="space-y-6 max-w-3xl" data-testid="settings-skeleton">
       <div>
         <Skeleton className="h-8 w-48" />
         <Skeleton className="mt-2 h-4 w-96" />
