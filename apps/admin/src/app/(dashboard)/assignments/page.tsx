@@ -511,8 +511,10 @@ function AdminAssignmentsContent() {
 
 export default function AdminAssignmentsPage(): React.JSX.Element {
   return (
-    <React.Suspense fallback={<AssignmentsTableSkeleton />}>
-      <AdminAssignmentsContent />
-    </React.Suspense>
+    <div className="flex flex-1 flex-col p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto w-full">
+      <React.Suspense fallback={<AssignmentsTableSkeleton />}>
+        <AdminAssignmentsContent />
+      </React.Suspense>
+    </div>
   );
 }

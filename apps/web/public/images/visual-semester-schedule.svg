@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 220" fill="none">
+  <!-- Latar Kanvas Jadwal Mingguan -->
+  <rect width="400" height="220" rx="16" fill="#FAFAF9" />
+  <rect x="1" y="1" width="398" height="218" rx="15" stroke="#E4E4E7" stroke-width="2" />
+
+  <!-- Baris Hari Mingguan (Sen s/d Jum) -->
+  <rect x="16" y="16" width="368" height="24" rx="6" fill="#F4F4F5" />
+  <text x="36" y="32" fill="#52525B" font-family="monospace" font-size="10" font-weight="700">SEN</text>
+  <text x="110" y="32" fill="#52525B" font-family="monospace" font-size="10" font-weight="700">SEL</text>
+  <text x="184" y="32" fill="#52525B" font-family="monospace" font-size="10" font-weight="700">RAB</text>
+  <text x="258" y="32" fill="#52525B" font-family="monospace" font-size="10" font-weight="700">KAM</text>
+  <text x="332" y="32" fill="#52525B" font-family="monospace" font-size="10" font-weight="700">JUM</text>
+
+  <!-- Garis Pemisah Kolom -->
+  <line x1="90" y1="40" x2="90" y2="168" stroke="#E4E4E7" stroke-dasharray="2 2" />
+  <line x1="164" y1="40" x2="164" y2="168" stroke="#E4E4E7" stroke-dasharray="2 2" />
+  <line x1="238" y1="40" x2="238" y2="168" stroke="#E4E4E7" stroke-dasharray="2 2" />
+  <line x1="312" y1="40" x2="312" y2="168" stroke="#E4E4E7" stroke-dasharray="2 2" />
+
+  <!-- Blok Kuliah Aktif SEN (Indigo Utama) -->
+  <rect x="18" y="48" width="70" height="74" rx="8" fill="#4F46E5" />
+  <text x="24" y="62" fill="#E0E7FF" font-family="monospace" font-size="7" font-weight="700">08:00 - 09:40</text>
+  <text x="24" y="76" fill="#FAFAF9" font-family="sans-serif" font-size="9" font-weight="700">IF2110</text>
+  <text x="24" y="88" fill="#E0E7FF" font-family="sans-serif" font-size="7">Struktur Data</text>
+  <rect x="24" y="96" width="58" height="14" rx="4" fill="#6366F1" />
+  <text x="28" y="106" fill="#FAFAF9" font-family="sans-serif" font-size="7">Lab Komp 2</text>
+
+  <!-- Blok Kuliah RAB (Soft Indigo) -->
+  <rect x="166" y="68" width="70" height="66" rx="8" fill="#EEF2FF" stroke="#4F46E5" stroke-width="1.5" />
+  <text x="172" y="82" fill="#4F46E5" font-family="monospace" font-size="7" font-weight="700">10:00 - 11:40</text>
+  <text x="172" y="96" fill="#18181B" font-family="sans-serif" font-size="9" font-weight="700">IF2150</text>
+  <text x="172" y="108" fill="#52525B" font-family="sans-serif" font-size="7">Basis Data</text>
+  <text x="172" y="120" fill="#4F46E5" font-family="sans-serif" font-size="7">R. Kuliah 7601</text>
+
+  <!-- Blok Kuliah KAM (Netral) -->
+  <rect x="240" y="52" width="70" height="60" rx="8" fill="#FFFFFF" stroke="#E4E4E7" stroke-width="1.5" />
+  <text x="246" y="66" fill="#71717A" font-family="monospace" font-size="7" font-weight="700">13:00 - 14:40</text>
+  <text x="246" y="80" fill="#18181B" font-family="sans-serif" font-size="9" font-weight="700">IF2120</text>
+  <text x="246" y="92" fill="#71717A" font-family="sans-serif" font-size="7">Matdis</text>
+  <text x="246" y="104" fill="#71717A" font-family="sans-serif" font-size="7">R. Seminar 2</text>
+
+  <!-- Blok Kuliah JUM (Praktikum) -->
+  <rect x="314" y="88" width="68" height="54" rx="8" fill="#FFFFFF" stroke="#E4E4E7" stroke-width="1.5" />
+  <text x="320" y="102" fill="#71717A" font-family="monospace" font-size="7" font-weight="700">13:30 - 16:30</text>
+  <text x="320" y="116" fill="#18181B" font-family="sans-serif" font-size="8" font-weight="700">Praktikum</text>
+  <text x="320" y="128" fill="#71717A" font-family="sans-serif" font-size="7">Lab Jaringan</text>
+
+  <!-- Bar Status: Bebas Benturan Jadwal -->
+  <rect x="16" y="176" width="368" height="30" rx="8" fill="#ECFDF5" stroke="#10B981" stroke-width="1" />
+  <circle cx="32" cy="191" r="6" fill="#10B981" />
+  <path d="M29 191L31 193L35 189" stroke="#FAFAF9" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+  <text x="44" y="195" fill="#065F46" font-family="sans-serif" font-size="10" font-weight="600">Terverifikasi: 0 Benturan Waktu &amp; Ruangan Kuliah</text>
+  <rect x="296" y="181" width="80" height="20" rx="4" fill="#10B981" />
+  <text x="304" y="195" fill="#FAFAF9" font-family="monospace" font-size="8" font-weight="700">Aktif • 21 SKS</text>
+</svg>

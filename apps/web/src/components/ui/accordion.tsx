@@ -166,7 +166,7 @@ const AccordionTrigger = React.forwardRef<
       >
         {children}
         <ChevronDown
-          className="h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-200"
+          className="h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-300 ease-out"
           aria-hidden="true"
         />
       </button>
@@ -187,10 +187,6 @@ const AccordionContent = React.forwardRef<
     throw new Error('AccordionContent must be used within an AccordionItem');
   }
 
-  if (!item.isOpen) {
-    return null;
-  }
-
   return (
     <div
       ref={ref}
@@ -198,10 +194,13 @@ const AccordionContent = React.forwardRef<
       role="region"
       aria-labelledby={item.triggerId}
       data-state={item.isOpen ? 'open' : 'closed'}
-      className="overflow-hidden text-sm text-muted-foreground transition-all"
+      aria-hidden={!item.isOpen}
+      className="accordion-content-grid text-sm text-muted-foreground"
       {...props}
     >
-      <div className={cn('pb-4 pt-0', className)}>{children}</div>
+      <div className="accordion-content-inner">
+        <div className={cn('pb-4 pt-0', className)}>{children}</div>
+      </div>
     </div>
   );
 });

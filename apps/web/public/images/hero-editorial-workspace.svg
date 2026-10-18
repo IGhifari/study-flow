@@ -1,0 +1,72 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 680 480" fill="none">
+  <!-- Latar Kanvas Editorial dengan Blok Aksen Indigo Sudut -->
+  <rect width="680" height="480" rx="24" fill="#F4F4F5" />
+  <path d="M0 24C0 10.7452 10.7452 0 24 0H240L160 480H24C10.7452 480 0 469.255 0 456V24Z" fill="#4F46E5" fill-opacity="0.08" />
+  <rect x="28" y="28" width="140" height="110" rx="16" fill="#4F46E5" />
+  <text x="46" y="64" fill="#FAFAF9" font-family="monospace" font-size="13" font-weight="700">STUDYFLOW // 01</text>
+  <text x="46" y="88" fill="#E0E7FF" font-family="sans-serif" font-size="11">Ruang Belajar</text>
+  <text x="46" y="106" fill="#E0E7FF" font-family="sans-serif" font-size="11">Berbasis Sumber</text>
+
+  <!-- Jendela Utama Ruang Baca PDF & Ringkasan (Tengah-Kanan) -->
+  <rect x="76" y="56" width="564" height="340" rx="16" fill="#FAFAF9" stroke="#E4E4E7" stroke-width="2" />
+  <!-- Top Bar Jendela -->
+  <rect x="76" y="56" width="564" height="42" rx="16" fill="#F4F4F5" />
+  <circle cx="100" cy="77" r="5" fill="#D4D4D8" />
+  <circle cx="116" cy="77" r="5" fill="#D4D4D8" />
+  <circle cx="132" cy="77" r="5" fill="#D4D4D8" />
+  <rect x="240" y="67" width="180" height="20" rx="6" fill="#FAFAF9" stroke="#E4E4E7" />
+  <text x="262" y="81" fill="#52525B" font-family="monospace" font-size="10">modul-algoritma-bab3.pdf</text>
+  <rect x="556" y="67" width="66" height="20" rx="6" fill="#EEF2FF" />
+  <text x="570" y="81" fill="#4F46E5" font-family="monospace" font-size="10" font-weight="700">Hal 4/28</text>
+
+  <!-- Panel Kiri: Halaman Dokumen PDF -->
+  <rect x="96" y="114" width="250" height="262" rx="10" fill="#FFFFFF" stroke="#E4E4E7" />
+  <text x="114" y="140" fill="#18181B" font-family="sans-serif" font-size="12" font-weight="700">3.2 Penelusuran Graf (BFS &amp; DFS)</text>
+  <rect x="114" y="152" width="190" height="6" rx="3" fill="#E4E4E7" />
+  <rect x="114" y="164" width="210" height="6" rx="3" fill="#E4E4E7" />
+  <!-- Blok Kalimat yang Disorot pada PDF -->
+  <rect x="110" y="180" width="222" height="54" rx="8" fill="#EEF2FF" stroke="#4F46E5" stroke-width="1.5" />
+  <rect x="120" y="192" width="196" height="6" rx="3" fill="#4F46E5" />
+  <rect x="120" y="204" width="180" height="6" rx="3" fill="#4F46E5" />
+  <rect x="120" y="216" width="140" height="6" rx="3" fill="#6366F1" />
+  <!-- Isi Paragraf Bawah PDF -->
+  <rect x="114" y="248" width="205" height="6" rx="3" fill="#E4E4E7" />
+  <rect x="114" y="260" width="185" height="6" rx="3" fill="#E4E4E7" />
+  <!-- Ilustrasi Simpul Graf di dalam PDF -->
+  <circle cx="155" cy="316" r="14" fill="#EEF2FF" stroke="#4F46E5" stroke-width="2" />
+  <circle cx="215" cy="298" r="14" fill="#F4F4F5" stroke="#71717A" stroke-width="1.5" />
+  <circle cx="215" cy="336" r="14" fill="#EEF2FF" stroke="#4F46E5" stroke-width="2" />
+  <line x1="169" y1="312" x2="201" y2="302" stroke="#71717A" stroke-width="1.5" />
+  <line x1="169" y1="320" x2="201" y2="332" stroke="#4F46E5" stroke-width="2" />
+
+  <!-- Panel Kanan: Ringkasan Konsep & Flashcard Ber-rujukan -->
+  <rect x="364" y="114" width="256" height="156" rx="10" fill="#FFFFFF" stroke="#E4E4E7" />
+  <rect x="380" y="130" width="96" height="20" rx="6" fill="#EEF2FF" />
+  <text x="390" y="144" fill="#4F46E5" font-family="sans-serif" font-size="10" font-weight="700">Ringkasan Konsep</text>
+  <rect x="546" y="130" width="58" height="20" rx="6" fill="#4F46E5" />
+  <text x="558" y="144" fill="#FAFAF9" font-family="monospace" font-size="10" font-weight="700">Hal. 04</text>
+  <text x="380" y="172" fill="#18181B" font-family="sans-serif" font-size="12" font-weight="700">Kompleksitas Waktu O(V + E)</text>
+  <rect x="380" y="184" width="216" height="6" rx="3" fill="#71717A" />
+  <rect x="380" y="196" width="196" height="6" rx="3" fill="#A1A1AA" />
+  <rect x="380" y="208" width="170" height="6" rx="3" fill="#A1A1AA" />
+  <rect x="380" y="230" width="110" height="24" rx="6" fill="#F4F4F5" />
+  <text x="392" y="246" fill="#18181B" font-family="sans-serif" font-size="10" font-weight="600">Buat 10 Flashcard →</text>
+
+  <!-- Garis Konektor Kutipan Halaman -->
+  <path d="M332 206C352 206 348 140 376 140" stroke="#4F46E5" stroke-width="2" stroke-dasharray="4 4" />
+  <circle cx="332" cy="206" r="4" fill="#4F46E5" />
+
+  <!-- Kartu Melayang Bawah (Dark Editorial Card: Tenggat & Subtugas) -->
+  <rect x="336" y="290" width="316" height="156" rx="16" fill="#18181B" />
+  <text x="360" y="320" fill="#A1A1AA" font-family="monospace" font-size="10" font-weight="600">TENGGAT HARI INI • 23:59 WIB</text>
+  <rect x="562" y="306" width="68" height="20" rx="6" fill="#4F46E5" />
+  <text x="575" y="320" fill="#FAFAF9" font-family="sans-serif" font-size="10" font-weight="700">Prioritas</text>
+  <text x="360" y="346" fill="#FAFAF9" font-family="sans-serif" font-size="14" font-weight="700">Laporan Praktikum Struktur Data</text>
+  <!-- Progress Bar Subtugas -->
+  <text x="360" y="372" fill="#D4D4D8" font-family="monospace" font-size="11">Subtugas selesai: 2 / 3 (67%)</text>
+  <rect x="360" y="382" width="268" height="8" rx="4" fill="#27272A" />
+  <rect x="360" y="382" width="180" height="8" rx="4" fill="#4F46E5" />
+  <!-- Item Checklist Mini -->
+  <circle cx="368" cy="414" r="6" fill="#10B981" />
+  <text x="382" y="418" fill="#E4E4E7" font-family="sans-serif" font-size="11">Analisis kompleksitas BFS &amp; DFS (Hal. 04)</text>
+</svg>
