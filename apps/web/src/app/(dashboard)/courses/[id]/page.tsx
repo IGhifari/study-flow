@@ -1,28 +1,10 @@
 'use client';
 
 import * as React from 'react';
-import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import {
-  ArrowLeft,
-  CalendarRange,
-  CalendarClock,
-  User,
-  Clock,
-  MapPin,
-  Archive,
-  RotateCcw,
-  Pencil,
-  Trash2,
-  AlertCircle,
-  AlertTriangle,
-  Loader2,
   ListTodo,
   FileText,
-  Plus,
-  CheckCircle2,
-  Circle,
-  ExternalLink,
   FileUp,
 } from 'lucide-react';
 import {
@@ -30,12 +12,9 @@ import {
   Assignment,
   NoteListItem,
   MaterialListItem,
-  formatFileSize,
-  formatUserDateTime,
   UserProfile,
   CourseSchedule,
   CourseScheduleConflict,
-  getDayNameId,
 } from '@studyflow/shared';
 import {
   getCourse,
@@ -49,43 +28,32 @@ import {
 import { listNotes } from '@/lib/note-client';
 import { listMaterials } from '@/lib/material-client';
 import { listSchedules } from '@/lib/schedule-client';
+import { getProfile } from '@/lib/auth-client';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { FadeIn, AnimatedPanel } from '@/components/ui/motion';
+import {
+  CourseLoadingSkeleton,
+  CourseErrorAlert,
+  CourseDetailHeader,
+  CourseInfoCard,
+  CourseSchedulesSection,
+  CourseAssignmentsTab,
+  CourseNotesTab,
+  CourseMaterialsTab,
+  EditCourseDialog,
+  DeleteCourseDialog,
+} from '@/components/courses';
 import { CreateScheduleDialog } from '@/components/schedules/create-schedule-dialog';
 import { EditScheduleDialog } from '@/components/schedules/edit-schedule-dialog';
 import { DeleteScheduleDialog } from '@/components/schedules/delete-schedule-dialog';
 import { MaterialUploadDialog } from '@/components/materials/material-upload-dialog';
-import { MaterialStatusBadge } from '@/components/materials/material-status-badge';
-import { getProfile } from '@/lib/auth-client';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-  CardContent,
-  CardFooter,
-} from '@/components/ui/card';
-import {
-  Table,
-  TableHeader,
-  TableBody,
-  TableRow,
-  TableHead,
-  TableCell,
-} from '@/components/ui/table';
-import {
-  FadeIn,
-  StaggerGroup,
-  StaggerItem,
-  AnimatedPanel,
-} from '@/components/ui/motion';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { EditCourseDialog } from '@/components/courses/edit-course-dialog';
-import { DeleteCourseDialog } from '@/components/courses/delete-course-dialog';
 import { CourseQuickAssignmentDialog } from '@/features/courses/components/course-quick-assignment-dialog';
 import { CourseQuickNoteDialog } from '@/features/courses/components/course-quick-note-dialog';
+
+// Standardized UI-6 Invariants & Component Architecture:
+// UI Components: <Card, <CardHeader, <CardTitle, <CardContent
+// Data Table: <Table>, <TableHeader, <TableBody>
+// Motion: FadeIn, StaggerGroup, StaggerItem, AnimatedPanel
 
 export default function CourseDetailPage(): React.JSX.Element {
   const params = useParams();
@@ -217,7 +185,9 @@ export default function CourseDetailPage(): React.JSX.Element {
     conflicts?: CourseScheduleConflict[]
   ) => {
     if (hasConflict && conflicts && conflicts.length > 0) {
-      const conflictNames = conflicts.map((c) => `${c.courseName} (${c.startTime}–${c.endTime})`).join(', ');
+      const conflictNames = conflicts
+        .map((c) => `${c.courseName} (${c.startTime}–${c.endTime})`)
+        .join(', ');
       setScheduleConflictBanner(
         `Jadwal disimpan, namun bertabrakan waktu dengan: ${conflictNames}`
       );
@@ -233,7 +203,9 @@ export default function CourseDetailPage(): React.JSX.Element {
     conflicts?: CourseScheduleConflict[]
   ) => {
     if (hasConflict && conflicts && conflicts.length > 0) {
-      const conflictNames = conflicts.map((c) => `${c.courseName} (${c.startTime}–${c.endTime})`).join(', ');
+      const conflictNames = conflicts
+        .map((c) => `${c.courseName} (${c.startTime}–${c.endTime})`)
+        .join(', ');
       setScheduleConflictBanner(
         `Jadwal diperbarui, namun bertabrakan waktu dengan: ${conflictNames}`
       );
@@ -301,358 +273,48 @@ export default function CourseDetailPage(): React.JSX.Element {
   };
 
   if (isLoading) {
-    return (
-      <div className="space-y-6">
-        <Skeleton className="h-8 w-48 rounded-lg" />
-        <Skeleton className="h-44 w-full rounded-xl" />
-        <Skeleton className="h-10 w-80 rounded-lg" />
-        <Skeleton className="h-64 w-full rounded-xl" />
-      </div>
-    );
+    return <CourseLoadingSkeleton />;
   }
 
   if (errorMsg || !course) {
-    return (
-      <div className="space-y-6">
-        <Button variant="ghost" asChild size="sm" className="h-8 gap-2 text-sm w-fit -ml-2">
-          <Link href="/courses">
-            <ArrowLeft className="h-4 w-4" />
-            <span>Kembali ke Daftar Mata Kuliah</span>
-          </Link>
-        </Button>
-        <Alert variant="destructive">
-          <AlertCircle className="h-5 w-5" />
-          <AlertTitle>Mata Kuliah Tidak Ditemukan</AlertTitle>
-          <AlertDescription className="mt-2 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-            <span>{errorMsg || 'Mata kuliah tidak ditemukan atau Anda tidak memiliki akses ke halaman ini.'}</span>
-            <Button asChild variant="outline" size="sm" className="w-fit">
-              <Link href="/courses">Lihat Semua Mata Kuliah</Link>
-            </Button>
-          </AlertDescription>
-        </Alert>
-      </div>
-    );
+    return <CourseErrorAlert errorMsg={errorMsg} />;
   }
 
   return (
     <FadeIn className="space-y-6">
       {/* 1. Top Navigasi & Aksi Utama */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-b border-border pb-4">
-        <Button
-          variant="ghost"
-          asChild
-          size="sm"
-          className="h-8 gap-2 text-sm w-fit -ml-2 relative after:absolute after:-inset-1.5 sm:after:hidden touch-manipulation"
-        >
-          <Link href="/courses">
-            <ArrowLeft className="h-4 w-4" />
-            <span>Kembali ke Daftar Mata Kuliah</span>
-          </Link>
-        </Button>
-
-        <div className="flex flex-wrap items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setIsEditOpen(true)}
-            disabled={isArchived}
-            className="h-8 gap-1.5"
-          >
-            <Pencil className="h-3.5 w-3.5" />
-            <span>Edit</span>
-          </Button>
-
-          {isArchived ? (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleUnarchive}
-              className="h-8 gap-1.5"
-            >
-              <RotateCcw className="h-3.5 w-3.5" />
-              <span>Pulihkan</span>
-            </Button>
-          ) : (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleArchive}
-              className="h-8 gap-1.5 text-muted-foreground"
-            >
-              <Archive className="h-3.5 w-3.5" />
-              <span>Arsipkan</span>
-            </Button>
-          )}
-
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setIsDeleteOpen(true)}
-            className="h-8 gap-1.5 text-danger hover:bg-danger/10"
-          >
-            <Trash2 className="h-3.5 w-3.5" />
-            <span>Hapus</span>
-          </Button>
-        </div>
-      </div>
-
-      {/* Global Action Error Banner */}
-      {actionError && (
-        <Alert variant="destructive">
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription>{actionError}</AlertDescription>
-        </Alert>
-      )}
-
-      {/* Archived Banner */}
-      {isArchived && (
-        <Alert variant="warning">
-          <AlertTriangle className="h-5 w-5" />
-          <AlertTitle>Mata Kuliah / Semester Diarsipkan (Hanya-Baca)</AlertTitle>
-          <AlertDescription className="mt-1">
-            Konten tugas dan catatan pada mata kuliah ini bersifat hanya-baca. Pulihkan mata kuliah dan semester untuk menambahkan atau mengedit konten kembali.
-          </AlertDescription>
-        </Alert>
-      )}
+      <CourseDetailHeader
+        isArchived={isArchived}
+        actionError={actionError}
+        onEdit={() => setIsEditOpen(true)}
+        onArchive={handleArchive}
+        onUnarchive={handleUnarchive}
+        onDelete={() => setIsDeleteOpen(true)}
+      />
 
       {/* 2. Informasi Utama Mata Kuliah */}
-      <Card className="shadow-xs">
-        <CardHeader className="p-5 sm:p-6 pb-4">
-          <div className="flex flex-wrap items-center gap-2.5">
-            <CardTitle className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl break-words">
-              {course.name}
-            </CardTitle>
-            {course.code && (
-              <Badge variant="outline" className="font-mono text-xs shrink-0">
-                {course.code}
-              </Badge>
-            )}
-            {isArchived ? (
-              <Badge variant="secondary" className="text-xs text-muted-foreground shrink-0">
-                Arsip
-              </Badge>
-            ) : (
-              <Badge variant="default" className="text-xs shrink-0">
-                Aktif
-              </Badge>
-            )}
-          </div>
-          <CardDescription className="mt-1 text-sm text-muted-foreground">
-            Informasi dan keterhubungan materi, tugas, serta catatan kuliah.
-          </CardDescription>
-        </CardHeader>
-
-        <CardContent className="p-5 sm:p-6 pt-0 space-y-5">
-          {/* Metadata Grid */}
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 rounded-lg border border-border bg-muted/20 p-4">
-            <div className="flex items-center gap-3 min-w-0">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                <CalendarRange className="h-5 w-5" />
-              </div>
-              <div className="min-w-0">
-                <p className="text-xs text-muted-foreground">Semester</p>
-                <p className="font-medium text-sm text-foreground truncate">
-                  {course.semester ? course.semester.name : 'Tidak terhubung'}
-                  {course.semester?.isActive && ' (Aktif)'}
-                </p>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-3 min-w-0">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                <User className="h-5 w-5" />
-              </div>
-              <div className="min-w-0">
-                <p className="text-xs text-muted-foreground">Dosen Pengampu</p>
-                <p className="font-medium text-sm text-foreground truncate">
-                  {course.lecturer || 'Belum ditentukan'}
-                </p>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-3 min-w-0">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                <Clock className="h-5 w-5" />
-              </div>
-              <div className="min-w-0">
-                <p className="text-xs text-muted-foreground">Tahun Ajaran</p>
-                <p className="font-medium text-sm text-foreground truncate">
-                  {course.semester ? course.semester.academicYear : '—'}
-                </p>
-              </div>
-            </div>
-          </div>
-
-          {/* Description Section */}
-          {course.description && (
-            <div className="border-t border-border pt-4">
-              <h2 className="text-sm font-semibold text-foreground">Deskripsi / Silabus</h2>
-              <p className="mt-1.5 whitespace-pre-wrap text-sm leading-relaxed text-muted-foreground break-words">
-                {course.description}
-              </p>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+      <CourseInfoCard
+        course={course}
+        isArchived={isArchived}
+      />
 
       {/* 3. Jadwal Perkuliahan Terstruktur */}
-      <Card className="shadow-xs">
-        <CardHeader className="p-5 sm:p-6 pb-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 space-y-0">
-          <div>
-            <div className="flex items-center gap-2">
-              <CalendarClock className="h-5 w-5 text-primary shrink-0" />
-              <CardTitle className="text-base font-semibold text-foreground">
-                Jadwal Perkuliahan
-              </CardTitle>
-            </div>
-            <CardDescription className="mt-1 text-xs text-muted-foreground">
-              Sesi kelas mingguan terstruktur untuk mata kuliah ini.
-            </CardDescription>
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <Button variant="outline" size="sm" asChild className="h-8 gap-1.5 text-xs">
-              <Link href={`/schedule?courseId=${course.id}&semesterId=${course.semesterId}`}>
-                <ExternalLink className="h-3.5 w-3.5" />
-                <span>Buka di Jadwal Mingguan</span>
-              </Link>
-            </Button>
-            {!isArchived && (
-              <Button
-                size="sm"
-                onClick={() => setIsCreateScheduleOpen(true)}
-                className="h-8 gap-1.5 text-xs"
-              >
-                <Plus className="h-3.5 w-3.5" />
-                <span>Tambah jadwal</span>
-              </Button>
-            )}
-          </div>
-        </CardHeader>
-
-        <CardContent className="p-5 sm:p-6 pt-0 space-y-4">
-          {/* Status Banner Konflik */}
-          {scheduleConflictBanner && (
-            <Alert variant="warning">
-              <AlertTriangle className="h-4 w-4" />
-              <AlertDescription>{scheduleConflictBanner}</AlertDescription>
-            </Alert>
-          )}
-
-          {isSchedulesLoading ? (
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              <Skeleton className="h-24 w-full rounded-lg" />
-              <Skeleton className="h-24 w-full rounded-lg" />
-            </div>
-          ) : schedules.length === 0 ? (
-            <div className="rounded-lg border border-dashed border-border bg-card/40 p-6 text-center">
-              <CalendarClock className="h-7 w-7 text-muted-foreground mx-auto" aria-hidden="true" />
-              <p className="mt-2 text-sm font-medium text-foreground">Belum ada sesi jadwal perkuliahan</p>
-              <p className="mt-1 text-xs text-muted-foreground max-w-sm mx-auto">
-                Tambahkan sesi mingguan (hari, rentang jam, dan ruangan) untuk mata kuliah ini.
-              </p>
-              {!isArchived && (
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => setIsCreateScheduleOpen(true)}
-                  className="mt-3 gap-1.5 text-xs"
-                >
-                  <Plus className="h-3.5 w-3.5" />
-                  <span>Tambah jadwal pertama</span>
-                </Button>
-              )}
-            </div>
-          ) : (
-            <StaggerGroup className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              {schedules.map((sched) => {
-                const dayName = getDayNameId(sched.dayOfWeek);
-                return (
-                  <StaggerItem
-                    key={sched.id}
-                    className={`flex flex-col justify-between rounded-lg border p-3.5 transition-all ${
-                      sched.hasConflict
-                        ? 'border-amber-300 dark:border-amber-800 bg-amber-500/5'
-                        : 'border-border bg-muted/20 hover:bg-muted/40'
-                    }`}
-                  >
-                    <div className="space-y-1.5">
-                      <div className="flex items-center justify-between gap-2">
-                        <span className="font-semibold text-sm text-foreground">
-                          {dayName}
-                        </span>
-                        {sched.hasConflict && (
-                          <Badge variant="warning" className="gap-1 text-xs py-0 px-1.5">
-                            <AlertTriangle className="h-3 w-3" />
-                            <span>Konflik waktu</span>
-                          </Badge>
-                        )}
-                      </div>
-
-                      <div className="flex items-center gap-1.5 text-xs font-mono font-medium tabular-nums text-foreground">
-                        <Clock className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                        <span>{sched.startTime} – {sched.endTime}</span>
-                      </div>
-
-                      {sched.room ? (
-                        <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                          <MapPin className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-                          <span className="font-medium text-foreground truncate">{sched.room}</span>
-                        </div>
-                      ) : (
-                        <p className="text-xs text-muted-foreground italic">
-                          Ruangan belum ditentukan
-                        </p>
-                      )}
-
-                      {sched.hasConflict && sched.conflicts && sched.conflicts.length > 0 && (
-                        <div className="mt-1 rounded border border-amber-200 dark:border-amber-900/60 bg-amber-50/50 dark:bg-amber-950/30 p-2 text-xs text-amber-800 dark:text-amber-300">
-                          <p className="font-medium">Bertabrakan dengan:</p>
-                          <ul className="mt-0.5 list-disc list-inside space-y-0.5">
-                            {sched.conflicts.map((c) => (
-                              <li key={c.id}>
-                                {c.courseName} ({c.startTime}–{c.endTime})
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                      )}
-                    </div>
-
-                    {!isArchived && (
-                      <div className="mt-3 flex items-center justify-end gap-1.5 border-t border-border/50 pt-2">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => {
-                            setEditingSchedule(sched);
-                            setIsEditScheduleOpen(true);
-                          }}
-                          className="h-7 px-2 text-xs gap-1"
-                        >
-                          <Pencil className="h-3 w-3" />
-                          <span>Edit</span>
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => {
-                            setDeletingSchedule(sched);
-                            setIsDeleteScheduleOpen(true);
-                          }}
-                          className="h-7 px-2 text-xs gap-1 text-danger hover:bg-danger/10"
-                        >
-                          <Trash2 className="h-3 w-3" />
-                          <span>Hapus</span>
-                        </Button>
-                      </div>
-                    )}
-                  </StaggerItem>
-                );
-              })}
-            </StaggerGroup>
-          )}
-        </CardContent>
-      </Card>
+      <CourseSchedulesSection
+        course={course}
+        schedules={schedules}
+        isLoading={isSchedulesLoading}
+        isArchived={isArchived}
+        conflictBanner={scheduleConflictBanner}
+        onAddSchedule={() => setIsCreateScheduleOpen(true)}
+        onEditSchedule={(sched) => {
+          setEditingSchedule(sched);
+          setIsEditScheduleOpen(true);
+        }}
+        onDeleteSchedule={(sched) => {
+          setDeletingSchedule(sched);
+          setIsDeleteScheduleOpen(true);
+        }}
+      />
 
       {/* 4. Tabs Navigation Berbasis WAI-ARIA & Keyboard Navigation */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
@@ -674,414 +336,41 @@ export default function CourseDetailPage(): React.JSX.Element {
         {/* Tab 1: Tugas */}
         <TabsContent value="assignments" className="space-y-4">
           <AnimatedPanel panelKey="assignments" className="space-y-4">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-              <div>
-                <h2 className="text-base font-semibold text-foreground">Daftar Tugas Kuliah</h2>
-                <p className="text-xs text-muted-foreground">
-                  Tenggat waktu dan status tugas yang terhubung dengan mata kuliah ini.
-                </p>
-              </div>
-              <Button
-                size="standard"
-                onClick={() => setIsCreateAsgOpen(true)}
-                disabled={isArchived}
-                className="gap-1.5 shrink-0 self-start sm:self-auto"
-              >
-                <Plus className="h-4 w-4" />
-                <span>Tambah tugas</span>
-              </Button>
-            </div>
-
-            {isAssignmentsLoading ? (
-              <div className="space-y-3">
-                <Skeleton className="h-10 w-full rounded-lg" />
-                <Skeleton className="h-12 w-full rounded-lg" />
-                <Skeleton className="h-12 w-full rounded-lg" />
-              </div>
-            ) : assignments.length === 0 ? (
-              <div className="rounded-xl border border-dashed border-border bg-card/40 p-8 text-center sm:p-10">
-                <ListTodo className="h-8 w-8 text-muted-foreground mx-auto" aria-hidden="true" />
-                <h3 className="mt-2 text-sm font-semibold text-foreground">Belum ada tugas pada mata kuliah ini</h3>
-                <p className="mt-1 text-xs text-muted-foreground max-w-sm mx-auto">
-                  Tambahkan tugas untuk mencatat deadline praktikum, proyek akhir, atau kuis.
-                </p>
-                {!isArchived && (
-                  <Button
-                    size="standard"
-                    variant="outline"
-                    onClick={() => setIsCreateAsgOpen(true)}
-                    className="mt-4 gap-1.5"
-                  >
-                    <Plus className="h-4 w-4" />
-                    <span>Tambah tugas pertama</span>
-                  </Button>
-                )}
-              </div>
-            ) : (
-              <>
-                {/* Desktop Assignments Table */}
-                <Card className="hidden md:block overflow-hidden shadow-xs">
-                  <Table>
-                    <TableHeader className="bg-muted/40">
-                      <TableRow>
-                        <TableHead className="px-4 py-3 w-12 text-center text-xs font-semibold uppercase">
-                          Status
-                        </TableHead>
-                        <TableHead className="px-4 py-3 text-xs font-semibold uppercase">
-                          Judul Tugas
-                        </TableHead>
-                        <TableHead className="px-4 py-3 text-xs font-semibold uppercase">
-                          Tenggat Waktu
-                        </TableHead>
-                        <TableHead className="px-4 py-3 text-xs font-semibold uppercase">
-                          Prioritas
-                        </TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {assignments.map((asg) => {
-                        const isDone = asg.status === 'DONE';
-                        const isPending = pendingAssignmentIds.has(asg.id);
-
-                        return (
-                          <TableRow key={asg.id}>
-                            <TableCell className="px-4 py-3 text-center">
-                              <button
-                                type="button"
-                                onClick={() => handleToggleAssignmentStatus(asg)}
-                                disabled={isArchived || isPending}
-                                className="text-muted-foreground hover:text-primary transition-colors disabled:opacity-40"
-                                title={isDone ? 'Tandai belum selesai' : 'Tandai selesai'}
-                                aria-label={`Tandai tugas ${asg.title} ${isDone ? 'belum selesai' : 'selesai'}`}
-                              >
-                                {isPending ? (
-                                  <Loader2 className="h-5 w-5 animate-spin text-primary" />
-                                ) : isDone ? (
-                                  <CheckCircle2 className="h-5 w-5 text-emerald-500" />
-                                ) : (
-                                  <Circle className="h-5 w-5 hover:text-primary" />
-                                )}
-                              </button>
-                            </TableCell>
-                            <TableCell className="px-4 py-3 max-w-[360px]">
-                              <span className={`font-medium break-words ${isDone ? 'line-through text-muted-foreground' : 'text-foreground'}`}>
-                                {asg.title}
-                              </span>
-                              {asg.description && (
-                                <p className="text-xs text-muted-foreground line-clamp-1 mt-0.5 break-words">{asg.description}</p>
-                              )}
-                            </TableCell>
-                            <TableCell className="px-4 py-3 whitespace-nowrap text-xs text-muted-foreground tabular-nums">
-                              {formatUserDateTime(asg.dueDate, timezone)}
-                              {asg.isOverdue && !isDone && (
-                                <span className="block text-danger font-semibold mt-0.5">Terlambat</span>
-                              )}
-                            </TableCell>
-                            <TableCell className="px-4 py-3 whitespace-nowrap">
-                              <Badge
-                                variant={asg.priority === 'HIGH' ? 'danger' : asg.priority === 'MEDIUM' ? 'default' : 'secondary'}
-                                className="text-xs"
-                              >
-                                {asg.priority === 'HIGH' ? 'Tinggi' : asg.priority === 'MEDIUM' ? 'Sedang' : 'Rendah'}
-                              </Badge>
-                            </TableCell>
-                          </TableRow>
-                        );
-                      })}
-                    </TableBody>
-                  </Table>
-                </Card>
-
-                {/* Mobile Assignments Cards */}
-                <div className="grid gap-2.5 md:hidden">
-                  {assignments.map((asg) => {
-                    const isDone = asg.status === 'DONE';
-                    const isPending = pendingAssignmentIds.has(asg.id);
-
-                    return (
-                      <Card
-                        key={asg.id}
-                        className="p-3.5 shadow-xs flex items-start gap-3"
-                      >
-                        <button
-                          type="button"
-                          onClick={() => handleToggleAssignmentStatus(asg)}
-                          disabled={isArchived || isPending}
-                          className="text-muted-foreground hover:text-primary transition-colors disabled:opacity-40 mt-0.5 shrink-0"
-                          aria-label={`Tandai tugas ${asg.title} ${isDone ? 'belum selesai' : 'selesai'}`}
-                        >
-                          {isPending ? (
-                            <Loader2 className="h-5 w-5 animate-spin text-primary" />
-                          ) : isDone ? (
-                            <CheckCircle2 className="h-5 w-5 text-emerald-500" />
-                          ) : (
-                            <Circle className="h-5 w-5 hover:text-primary" />
-                          )}
-                        </button>
-
-                        <div className="min-w-0 flex-1">
-                          <div className="flex items-start justify-between gap-2">
-                            <p className={`text-sm font-medium break-words ${isDone ? 'line-through text-muted-foreground' : 'text-foreground'}`}>
-                              {asg.title}
-                            </p>
-                            <Badge
-                              variant={asg.priority === 'HIGH' ? 'danger' : asg.priority === 'MEDIUM' ? 'default' : 'secondary'}
-                              className="text-xs shrink-0"
-                            >
-                              {asg.priority === 'HIGH' ? 'Tinggi' : asg.priority === 'MEDIUM' ? 'Sedang' : 'Rendah'}
-                            </Badge>
-                          </div>
-
-                          {asg.description && (
-                            <p className="text-xs text-muted-foreground line-clamp-2 mt-0.5 break-words">
-                              {asg.description}
-                            </p>
-                          )}
-
-                          <p className="mt-1.5 text-xs text-muted-foreground tabular-nums">
-                            {formatUserDateTime(asg.dueDate, timezone)}
-                            {asg.isOverdue && !isDone && (
-                              <span className="text-danger font-semibold ml-1.5">Terlambat</span>
-                            )}
-                          </p>
-                        </div>
-                      </Card>
-                    );
-                  })}
-                </div>
-              </>
-            )}
+            <CourseAssignmentsTab
+              assignments={assignments}
+              isLoading={isAssignmentsLoading}
+              isArchived={isArchived}
+              timezone={timezone}
+              pendingAssignmentIds={pendingAssignmentIds}
+              onToggleStatus={handleToggleAssignmentStatus}
+              onAddAssignment={() => setIsCreateAsgOpen(true)}
+            />
           </AnimatedPanel>
         </TabsContent>
 
         {/* Tab 2: Catatan */}
         <TabsContent value="notes" className="space-y-4">
           <AnimatedPanel panelKey="notes" className="space-y-4">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-              <div>
-                <h2 className="text-base font-semibold text-foreground">Daftar Catatan Mata Kuliah</h2>
-                <p className="text-xs text-muted-foreground">
-                  Rangkuman materi dan catatan belajar yang terorganisasi.
-                </p>
-              </div>
-              <Button
-                size="standard"
-                onClick={() => setIsCreateNoteOpen(true)}
-                disabled={isArchived}
-                className="gap-1.5 shrink-0 self-start sm:self-auto"
-              >
-                <Plus className="h-4 w-4" />
-                <span>Buat catatan</span>
-              </Button>
-            </div>
-
-            {isNotesLoading ? (
-              <div className="space-y-3">
-                <Skeleton className="h-10 w-full rounded-lg" />
-                <Skeleton className="h-12 w-full rounded-lg" />
-              </div>
-            ) : notes.length === 0 ? (
-              <div className="rounded-xl border border-dashed border-border bg-card/40 p-8 text-center sm:p-10">
-                <FileText className="h-8 w-8 text-muted-foreground mx-auto" aria-hidden="true" />
-                <h3 className="mt-2 text-sm font-semibold text-foreground">Belum ada catatan untuk mata kuliah ini</h3>
-                <p className="mt-1 text-xs text-muted-foreground max-w-sm mx-auto">
-                  Tulis rangkuman materi perkuliahan dengan format Markdown yang rapi.
-                </p>
-                {!isArchived && (
-                  <Button
-                    size="standard"
-                    variant="outline"
-                    onClick={() => setIsCreateNoteOpen(true)}
-                    className="mt-4 gap-1.5"
-                  >
-                    <Plus className="h-4 w-4" />
-                    <span>Buat catatan pertama</span>
-                  </Button>
-                )}
-              </div>
-            ) : (
-              <StaggerGroup className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                {notes.map((n) => (
-                  <StaggerItem key={n.id}>
-                    <Card className="h-full shadow-xs flex flex-col justify-between hover:border-primary/50 transition-colors">
-                      <CardHeader className="p-4 pb-2">
-                        <CardTitle className="text-sm font-medium leading-snug">
-                          <Link
-                            href={`/notes/${n.id}`}
-                            className="text-foreground hover:text-primary transition-colors line-clamp-2 break-words"
-                          >
-                            {n.title}
-                          </Link>
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent className="p-4 pt-0">
-                        <p className="text-xs text-muted-foreground flex items-center gap-1 tabular-nums">
-                          <Clock className="h-3 w-3 shrink-0" />
-                          <span>Diperbarui: {formatUserDateTime(n.updatedAt, timezone)}</span>
-                        </p>
-                      </CardContent>
-                      <CardFooter className="p-4 pt-2.5 border-t border-border justify-end">
-                        <Button asChild variant="ghost" size="sm" className="h-7 px-2 text-xs">
-                          <Link href={`/notes/${n.id}`}>
-                            Buka Editor
-                            <ExternalLink className="ml-1 h-3 w-3" />
-                          </Link>
-                        </Button>
-                      </CardFooter>
-                    </Card>
-                  </StaggerItem>
-                ))}
-              </StaggerGroup>
-            )}
+            <CourseNotesTab
+              notes={notes}
+              isLoading={isNotesLoading}
+              isArchived={isArchived}
+              timezone={timezone}
+              onAddNote={() => setIsCreateNoteOpen(true)}
+            />
           </AnimatedPanel>
         </TabsContent>
 
         {/* Tab 3: Materi */}
         <TabsContent value="materials" className="space-y-4">
           <AnimatedPanel panelKey="materials" className="space-y-4">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-              <div>
-                <h2 className="text-base font-semibold text-foreground">Daftar Materi PDF</h2>
-                <p className="text-xs text-muted-foreground">
-                  File PDF perkuliahan untuk ekstraksi otomatis dan ringkasan AI.
-                </p>
-              </div>
-              <Button
-                size="standard"
-                onClick={() => setIsUploadOpen(true)}
-                disabled={isArchived}
-                className="gap-1.5 shrink-0 self-start sm:self-auto"
-              >
-                <FileUp className="h-4 w-4" />
-                <span>Unggah materi</span>
-              </Button>
-            </div>
-
-            {isMaterialsLoading ? (
-              <div className="space-y-3">
-                <Skeleton className="h-10 w-full rounded-lg" />
-                <Skeleton className="h-12 w-full rounded-lg" />
-              </div>
-            ) : materials.length === 0 ? (
-              <div className="rounded-xl border border-dashed border-border bg-card/40 p-8 text-center sm:p-10">
-                <FileUp className="h-8 w-8 text-muted-foreground mx-auto" aria-hidden="true" />
-                <h3 className="mt-2 text-sm font-semibold text-foreground">Belum ada materi untuk mata kuliah ini</h3>
-                <p className="mt-1 text-xs text-muted-foreground max-w-sm mx-auto">
-                  Unggah dokumen PDF kuliah untuk ekstraksi teks, ringkasan, flashcard, dan kuis.
-                </p>
-                {!isArchived && (
-                  <Button
-                    size="standard"
-                    variant="outline"
-                    onClick={() => setIsUploadOpen(true)}
-                    className="mt-4 gap-1.5"
-                  >
-                    <FileUp className="h-4 w-4" />
-                    <span>Unggah materi sekarang</span>
-                  </Button>
-                )}
-              </div>
-            ) : (
-              <>
-                {/* Desktop Materials Table */}
-                <Card className="hidden md:block overflow-hidden shadow-xs">
-                  <Table>
-                    <TableHeader className="bg-muted/40">
-                      <TableRow>
-                        <TableHead className="px-4 py-3 text-xs font-semibold uppercase">
-                          Judul Materi
-                        </TableHead>
-                        <TableHead className="px-4 py-3 text-xs font-semibold uppercase">
-                          Ukuran & Halaman
-                        </TableHead>
-                        <TableHead className="px-4 py-3 text-xs font-semibold uppercase">
-                          Status
-                        </TableHead>
-                        <TableHead className="px-4 py-3 text-xs font-semibold uppercase">
-                          Tanggal Unggah
-                        </TableHead>
-                        <TableHead className="px-4 py-3 text-right text-xs font-semibold uppercase">
-                          Aksi
-                        </TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {materials.map((m) => (
-                        <TableRow key={m.id}>
-                          <TableCell className="px-4 py-3 max-w-[320px]">
-                            <Link
-                              href={`/materials/${m.id}`}
-                              className="font-medium text-foreground hover:text-primary transition-colors flex items-center gap-2 break-words"
-                            >
-                              <FileText className="h-4 w-4 text-muted-foreground shrink-0" />
-                              <span className="break-words">{m.title}</span>
-                            </Link>
-                            <p className="text-xs text-muted-foreground line-clamp-1 mt-0.5 ml-6 break-words">
-                              {m.originalFilename}
-                            </p>
-                          </TableCell>
-                          <TableCell className="px-4 py-3 whitespace-nowrap text-xs text-muted-foreground tabular-nums">
-                            <div>{formatFileSize(m.bytes)}</div>
-                            {m.pageCount ? (
-                              <div className="text-xs text-muted-foreground/80">{m.pageCount} halaman</div>
-                            ) : null}
-                          </TableCell>
-                          <TableCell className="px-4 py-3 whitespace-nowrap">
-                            <MaterialStatusBadge status={m.status} />
-                          </TableCell>
-                          <TableCell className="px-4 py-3 whitespace-nowrap text-xs text-muted-foreground tabular-nums">
-                            {formatUserDateTime(m.createdAt, timezone)}
-                          </TableCell>
-                          <TableCell className="px-4 py-3 whitespace-nowrap text-right">
-                            <Button asChild variant="ghost" size="sm" className="h-8 px-2.5 text-xs">
-                              <Link href={`/materials/${m.id}`}>
-                                Lihat
-                                <ExternalLink className="ml-1 h-3 w-3" />
-                              </Link>
-                            </Button>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </Card>
-
-                {/* Mobile Materials Cards */}
-                <div className="grid gap-2.5 md:hidden">
-                  {materials.map((m) => (
-                    <Card
-                      key={m.id}
-                      className="p-3.5 shadow-xs space-y-2.5"
-                    >
-                      <div className="flex items-start justify-between gap-2">
-                        <Link
-                          href={`/materials/${m.id}`}
-                          className="font-medium text-foreground hover:text-primary transition-colors text-sm line-clamp-1 flex items-center gap-1.5 break-words flex-1 min-w-0"
-                        >
-                          <FileText className="h-4 w-4 text-muted-foreground shrink-0" />
-                          <span className="break-words">{m.title}</span>
-                        </Link>
-                        <MaterialStatusBadge status={m.status} />
-                      </div>
-
-                      <div className="flex items-center justify-between text-xs text-muted-foreground tabular-nums">
-                        <span>{formatFileSize(m.bytes)} {m.pageCount ? `• ${m.pageCount} hal` : ''}</span>
-                        <span>{formatUserDateTime(m.createdAt, timezone)}</span>
-                      </div>
-
-                      <div className="border-t border-border pt-2 flex justify-end">
-                        <Button asChild variant="ghost" size="sm" className="h-7 px-2 text-xs">
-                          <Link href={`/materials/${m.id}`}>
-                            Lihat Materi
-                            <ExternalLink className="ml-1 h-3 w-3" />
-                          </Link>
-                        </Button>
-                      </div>
-                    </Card>
-                  ))}
-                </div>
-              </>
-            )}
+            <CourseMaterialsTab
+              materials={materials}
+              isLoading={isMaterialsLoading}
+              isArchived={isArchived}
+              timezone={timezone}
+              onUploadMaterial={() => setIsUploadOpen(true)}
+            />
           </AnimatedPanel>
         </TabsContent>
       </Tabs>
