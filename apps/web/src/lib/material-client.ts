@@ -13,7 +13,10 @@ import {
 } from '@studyflow/shared';
 import { authFetch } from './auth-client';
 
-export async function listMaterials(params?: MaterialListQuery): Promise<MaterialListResponse> {
+export async function listMaterials(
+  params?: MaterialListQuery,
+  options?: { signal?: AbortSignal }
+): Promise<MaterialListResponse> {
   const searchParams = new URLSearchParams();
   if (params?.semesterId) searchParams.set('semesterId', params.semesterId);
   if (params?.courseId) searchParams.set('courseId', params.courseId);
@@ -23,7 +26,7 @@ export async function listMaterials(params?: MaterialListQuery): Promise<Materia
   if (params?.limit) searchParams.set('limit', String(params.limit));
 
   const query = searchParams.toString() ? `?${searchParams.toString()}` : '';
-  const res = await authFetch(`/api/materials${query}`);
+  const res = await authFetch(`/api/materials${query}`, { signal: options?.signal });
   if (!res.ok) {
     const errorData = await res.json().catch(() => ({}));
     throw new Error(errorData.error?.message || 'Gagal memuat daftar materi');

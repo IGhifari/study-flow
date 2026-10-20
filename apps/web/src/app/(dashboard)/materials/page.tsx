@@ -18,6 +18,8 @@ import {
   Download,
   Trash2,
   Pin,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react';
 import {
   MaterialListItem,
@@ -81,17 +83,31 @@ import {
 import { MaterialUploadDialog } from '@/components/materials/material-upload-dialog';
 import { MaterialStatusBadge } from '@/components/materials/material-status-badge';
 
+export interface MaterialPaginationInfo {
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}
+
 export default function MaterialsPage(): React.JSX.Element {
   const [materials, setMaterials] = React.useState<MaterialListItem[]>([]);
+  const [pagination, setPagination] = React.useState<MaterialPaginationInfo | null>(null);
   const [courses, setCourses] = React.useState<Course[]>([]);
   const [activeSemester, setActiveSemester] = React.useState<Semester | null>(null);
   const [userProfile, setUserProfile] = React.useState<UserProfile | null>(null);
+
   const [isLoading, setIsLoading] = React.useState(true);
   const [errorMsg, setErrorMsg] = React.useState<string | null>(null);
+
+  // Search & Filter State
   const [search, setSearch] = React.useState('');
+  const [debouncedSearch, setDebouncedSearch] = React.useState('');
   const [courseFilter, setCourseFilter] = React.useState('');
   const [statusFilter, setStatusFilter] = React.useState('');
+  const [page, setPage] = React.useState(1);
 
+  // Dialogs & Actions State
   const [isUploadOpen, setIsUploadOpen] = React.useState(false);
   const [retryingId, setRetryingId] = React.useState<string | null>(null);
   const [downloadingId, setDownloadingId] = React.useState<string | null>(null);
@@ -101,47 +117,129 @@ export default function MaterialsPage(): React.JSX.Element {
 
   const timezone = userProfile?.timezone || 'Asia/Jakarta';
 
-  // Fetch initial data
-  const loadData = React.useCallback(async () => {
-    setIsLoading(true);
-    setErrorMsg(null);
+  // Race condition & lifecycle guards
+  const fetchRequestIdRef = React.useRef(0);
+  const abortControllerRef = React.useRef<AbortController | null>(null);
+  const isMountedRef = React.useRef(true);
+
+  React.useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+    };
+  }, []);
+
+  // 1. Debounce search input by ~300ms
+  React.useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch((prev) => {
+        if (prev !== search) {
+          setPage(1);
+          return search;
+        }
+        return prev;
+      });
+    }, 300);
+
+    return () => {
+      clearTimeout(timer);
+    };
+  }, [search]);
+
+  // 2. Fetch metadata (Profile, Courses, Active Semester) independently
+  const loadMetadata = React.useCallback(async () => {
     try {
-      const [profile, courseRes, semesterRes, materialRes] = await Promise.all([
+      const [profile, courseRes, semesterRes] = await Promise.all([
         getProfile().catch(() => null),
         listCourses({ isArchived: false }).catch(() => ({ courses: [] })),
         listSemesters().catch(() => ({ semesters: [], activeSemester: null, activeSemesterId: null })),
-        listMaterials({
-          search: search.trim() || undefined,
-          courseId: courseFilter || undefined,
-          status: (statusFilter as any) || undefined,
-        }),
       ]);
 
+      if (!isMountedRef.current) return;
       if (profile) setUserProfile(profile);
-      setCourses(courseRes.courses);
+      if (courseRes?.courses) setCourses(courseRes.courses);
       if (semesterRes?.activeSemester) setActiveSemester(semesterRes.activeSemester);
-      setMaterials(materialRes.materials);
-    } catch (err: any) {
-      setErrorMsg(err.message || 'Gagal memuat daftar materi kuliah.');
-    } finally {
-      setIsLoading(false);
+    } catch (err: unknown) {
+      console.error('Failed to load materials metadata:', err);
     }
-  }, [search, courseFilter, statusFilter]);
+  }, []);
 
+  // 3. Fetch materials data with sequence counter & abort signal
+  const fetchMaterialsData = React.useCallback(async () => {
+    // Abort previous in-flight request
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+
+    const requestId = ++fetchRequestIdRef.current;
+    setIsLoading(true);
+    setErrorMsg(null);
+
+    try {
+      const res = await listMaterials(
+        {
+          search: debouncedSearch.trim() || undefined,
+          courseId: courseFilter || undefined,
+          status: (statusFilter as any) || undefined,
+          page,
+          limit: 20,
+        },
+        { signal: controller.signal }
+      );
+
+      // Only apply state update if this request is still the latest and component is mounted
+      if (isMountedRef.current && requestId === fetchRequestIdRef.current) {
+        setMaterials(res.materials);
+        setPagination(res.pagination);
+      }
+    } catch (err: unknown) {
+      if (err instanceof Error && err.name === 'AbortError') {
+        // Ignored: request was superseded by a newer query or unmount
+        return;
+      }
+      if (isMountedRef.current && requestId === fetchRequestIdRef.current) {
+        console.error('Failed to load materials:', err);
+        const message = err instanceof Error ? err.message : 'Gagal memuat daftar materi kuliah.';
+        setErrorMsg(message);
+      }
+    } finally {
+      if (isMountedRef.current && requestId === fetchRequestIdRef.current) {
+        setIsLoading(false);
+      }
+    }
+  }, [debouncedSearch, courseFilter, statusFilter, page]);
+
+  const fetchMaterialsDataRef = React.useRef(fetchMaterialsData);
   React.useEffect(() => {
-    loadData();
+    fetchMaterialsDataRef.current = fetchMaterialsData;
+  }, [fetchMaterialsData]);
+
+  // Mount effect: load metadata once and listen for semester changes
+  React.useEffect(() => {
+    loadMetadata();
 
     const handleSemesterChange = () => {
-      loadData();
+      loadMetadata();
+      fetchMaterialsDataRef.current();
     };
     window.addEventListener('studyflow:semester-changed', handleSemesterChange);
 
     return () => {
       window.removeEventListener('studyflow:semester-changed', handleSemesterChange);
     };
-  }, [loadData]);
+  }, [loadMetadata]);
 
-  // Polling for any active materials (QUEUED, PROCESSING, or UPLOADING)
+  // Query effect: fetch materials whenever debounced search, filters, or page change
+  React.useEffect(() => {
+    fetchMaterialsData();
+  }, [fetchMaterialsData]);
+
+  // Polling for active background jobs (QUEUED, PROCESSING, UPLOADING)
   React.useEffect(() => {
     const hasActiveJobs = materials.some(
       (m) => m.status === 'QUEUED' || m.status === 'PROCESSING' || m.status === 'UPLOADING'
@@ -153,15 +251,20 @@ export default function MaterialsPage(): React.JSX.Element {
     let timer: NodeJS.Timeout;
 
     const poll = async () => {
-      if (document.hidden) return;
+      if (document.hidden || !isMountedRef.current) return;
 
       try {
         const res = await listMaterials({
-          search: search.trim() || undefined,
+          search: debouncedSearch.trim() || undefined,
           courseId: courseFilter || undefined,
           status: (statusFilter as any) || undefined,
+          page,
+          limit: 20,
         });
-        setMaterials(res.materials);
+        if (isMountedRef.current) {
+          setMaterials(res.materials);
+          setPagination(res.pagination);
+        }
       } catch {
         pollInterval = Math.min(pollInterval * 1.5, 30000);
       }
@@ -180,7 +283,7 @@ export default function MaterialsPage(): React.JSX.Element {
       clearInterval(timer);
       document.removeEventListener('visibilitychange', handleVisibility);
     };
-  }, [materials, search, courseFilter, statusFilter]);
+  }, [materials, debouncedSearch, courseFilter, statusFilter, page]);
 
   const handleRetry = async (id: string, e?: React.MouseEvent) => {
     if (e) {
@@ -190,11 +293,16 @@ export default function MaterialsPage(): React.JSX.Element {
     setRetryingId(id);
     try {
       await retryMaterialProcessing(id);
-      await loadData();
-    } catch (err: any) {
-      setErrorMsg(err.message || 'Gagal mengulang pemrosesan');
+      if (!isMountedRef.current) return;
+      await fetchMaterialsData();
+    } catch (err: unknown) {
+      if (!isMountedRef.current) return;
+      const message = err instanceof Error ? err.message : 'Gagal mengulang pemrosesan';
+      setErrorMsg(message);
     } finally {
-      setRetryingId(null);
+      if (isMountedRef.current) {
+        setRetryingId(null);
+      }
     }
   };
 
@@ -206,13 +314,18 @@ export default function MaterialsPage(): React.JSX.Element {
     setDownloadingId(id);
     try {
       const data = await getMaterialDownloadUrl(id);
+      if (!isMountedRef.current) return;
       if (data?.downloadUrl) {
         window.open(data.downloadUrl, '_blank', 'noopener,noreferrer');
       }
-    } catch (err: any) {
-      setErrorMsg(err.message || 'Gagal mendapatkan tautan unduhan.');
+    } catch (err: unknown) {
+      if (!isMountedRef.current) return;
+      const message = err instanceof Error ? err.message : 'Gagal mendapatkan tautan unduhan.';
+      setErrorMsg(message);
     } finally {
-      setDownloadingId(null);
+      if (isMountedRef.current) {
+        setDownloadingId(null);
+      }
     }
   };
 
@@ -221,12 +334,17 @@ export default function MaterialsPage(): React.JSX.Element {
     setIsDeleting(true);
     try {
       await deleteMaterial(deleteTarget.id);
+      if (!isMountedRef.current) return;
       setDeleteTarget(null);
-      await loadData();
-    } catch (err: any) {
-      setErrorMsg(err.message || 'Gagal menghapus materi.');
+      await fetchMaterialsData();
+    } catch (err: unknown) {
+      if (!isMountedRef.current) return;
+      const message = err instanceof Error ? err.message : 'Gagal menghapus materi.';
+      setErrorMsg(message);
     } finally {
-      setIsDeleting(false);
+      if (isMountedRef.current) {
+        setIsDeleting(false);
+      }
     }
   };
 
@@ -242,23 +360,39 @@ export default function MaterialsPage(): React.JSX.Element {
 
     try {
       await pinMaterial(material.id, nextPinned);
-    } catch (err: any) {
+    } catch (err: unknown) {
+      if (!isMountedRef.current) return;
       // Rollback on failure
       setMaterials((prev) =>
         prev.map((m) => (m.id === material.id ? { ...m, isPinned: material.isPinned } : m))
       );
-      setErrorMsg(err.message || 'Gagal memperbarui status sematan materi');
+      const message = err instanceof Error ? err.message : 'Gagal memperbarui status sematan materi';
+      setErrorMsg(message);
     } finally {
-      setPinningId(null);
+      if (isMountedRef.current) {
+        setPinningId(null);
+      }
     }
   };
 
-  const hasFilter = Boolean(search || courseFilter || statusFilter);
+  const handleCourseFilterChange = (val: string) => {
+    setCourseFilter(val === 'ALL' ? '' : val);
+    setPage(1);
+  };
+
+  const handleStatusFilterChange = (val: string) => {
+    setStatusFilter(val === 'ALL' ? '' : val);
+    setPage(1);
+  };
+
+  const hasFilter = Boolean(search || courseFilter || statusFilter || page > 1);
 
   const resetFilters = () => {
     setSearch('');
+    setDebouncedSearch('');
     setCourseFilter('');
     setStatusFilter('');
+    setPage(1);
   };
 
   return (
@@ -280,7 +414,7 @@ export default function MaterialsPage(): React.JSX.Element {
                 <span>•</span>
               </>
             ) : null}
-            <span>{materials.length} berkas materi</span>
+            <span>{pagination ? pagination.total : materials.length} berkas materi</span>
           </div>
         </div>
 
@@ -314,7 +448,7 @@ export default function MaterialsPage(): React.JSX.Element {
               <div className="w-full sm:w-[200px]">
                 <Select
                   value={courseFilter || 'ALL'}
-                  onValueChange={(val) => setCourseFilter(val === 'ALL' ? '' : val)}
+                  onValueChange={handleCourseFilterChange}
                 >
                   <SelectTrigger className="h-9 text-xs sm:text-sm">
                     <SelectValue placeholder="Semua Mata Kuliah" />
@@ -333,7 +467,7 @@ export default function MaterialsPage(): React.JSX.Element {
               <div className="w-full sm:w-[170px]">
                 <Select
                   value={statusFilter || 'ALL'}
-                  onValueChange={(val) => setStatusFilter(val === 'ALL' ? '' : val)}
+                  onValueChange={handleStatusFilterChange}
                 >
                   <SelectTrigger className="h-9 text-xs sm:text-sm">
                     <SelectValue placeholder="Semua Status" />
@@ -413,7 +547,7 @@ export default function MaterialsPage(): React.JSX.Element {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => loadData()}
+              onClick={() => fetchMaterialsData()}
               className="gap-1.5 w-fit h-8"
             >
               <RefreshCw className="h-3.5 w-3.5" />
@@ -812,6 +946,60 @@ export default function MaterialsPage(): React.JSX.Element {
               );
             })}
           </StaggerGroup>
+
+          {/* Pagination Controls */}
+          {pagination && pagination.totalPages > 1 && (
+            <div
+              className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 rounded-xl border border-border px-4 py-3 bg-card shadow-xs text-xs text-muted-foreground tabular-nums"
+              data-testid="materials-pagination"
+            >
+              <div>
+                Menampilkan{' '}
+                <span className="font-semibold text-foreground">
+                  {materials.length > 0 ? (pagination.page - 1) * pagination.limit + 1 : 0}
+                </span>{' '}
+                hingga{' '}
+                <span className="font-semibold text-foreground">
+                  {materials.length > 0 ? Math.min(pagination.page * pagination.limit, pagination.total) : 0}
+                </span>{' '}
+                dari{' '}
+                <span className="font-semibold text-foreground">
+                  {pagination.total.toLocaleString('id-ID')}
+                </span>{' '}
+                berkas materi
+              </div>
+
+              <div className="flex items-center gap-2 self-end sm:self-auto">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  disabled={pagination.page <= 1 || isLoading}
+                  className="h-8 px-2.5 gap-1 text-xs"
+                  aria-label="Halaman sebelumnya"
+                >
+                  <ChevronLeft className="h-3.5 w-3.5" />
+                  <span>Sebelumnya</span>
+                </Button>
+                <span className="px-2 font-medium text-foreground tabular-nums">
+                  {pagination.page} / {pagination.totalPages}
+                </span>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setPage((p) => Math.min(pagination.totalPages, p + 1))}
+                  disabled={pagination.page >= pagination.totalPages || isLoading}
+                  className="h-8 px-2.5 gap-1 text-xs"
+                  aria-label="Halaman berikutnya"
+                >
+                  <span>Berikutnya</span>
+                  <ChevronRight className="h-3.5 w-3.5" />
+                </Button>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
@@ -821,7 +1009,7 @@ export default function MaterialsPage(): React.JSX.Element {
         onOpenChange={setIsUploadOpen}
         courses={courses}
         onSuccess={() => {
-          loadData();
+          fetchMaterialsData();
         }}
       />
 
