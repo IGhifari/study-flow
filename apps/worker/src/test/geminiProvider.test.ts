@@ -2,9 +2,13 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import {
   GeminiAiProviderAdapter,
   AiProviderError,
+  AiProviderUnavailableAdapter,
+  getAiProviderAdapter,
+  setAiProviderAdapterForTesting,
   GEMINI_SUMMARY_RESPONSE_SCHEMA,
   GEMINI_CHUNK_RESPONSE_SCHEMA,
 } from '../services/aiProvider.js';
+import { env } from '../config/env.js';
 
 describe('GeminiAiProviderAdapter Structured Output & Error Handling', () => {
   const originalFetch = global.fetch;
@@ -387,5 +391,158 @@ describe('GeminiAiProviderAdapter Structured Output & Error Handling', () => {
     ).rejects.toMatchObject({
       code: 'DOCUMENT_TOO_LARGE',
     });
+  });
+});
+
+describe('GeminiAiProviderAdapter Security & API Key Protection', () => {
+  const originalFetch = global.fetch;
+
+  beforeEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  afterEach(() => {
+    global.fetch = originalFetch;
+    setAiProviderAdapterForTesting(null);
+  });
+
+  it('should send API key in x-goog-api-key header and NOT expose it in the request URL query params', async () => {
+    let capturedUrl = '';
+    let capturedHeaders: Record<string, string> = {};
+
+    global.fetch = vi.fn().mockImplementation(async (url, options) => {
+      capturedUrl = String(url);
+      capturedHeaders = options.headers;
+      return new Response(
+        JSON.stringify({
+          candidates: [
+            {
+              content: {
+                parts: [
+                  {
+                    text: JSON.stringify({
+                      title: 'Ringkasan Aman',
+                      overview: 'Overview ringkasan',
+                      keyConcepts: [{ concept: 'C1', explanation: 'E1', pageReferences: [1] }],
+                      sections: [{ heading: 'H1', content: 'C1', pageReferences: [1] }],
+                      keyTerms: [{ term: 'T1', definition: 'D1', pageReferences: [1] }],
+                    }),
+                  },
+                ],
+              },
+              finishReason: 'STOP',
+            },
+          ],
+        }),
+        { status: 200, headers: { 'Content-Type': 'application/json' } }
+      );
+    });
+
+    const secretKey = 'secret-gemini-key-999-xyz';
+    const adapter = new GeminiAiProviderAdapter(secretKey, 'gemini-2.5-flash');
+
+    await adapter.generateSummary({
+      materialTitle: 'Keamanan API Key',
+      totalPages: 1,
+      pages: [{ pageNumber: 1, text: 'Isi teks uji' }],
+    });
+
+    // 1. Endpoint verification
+    expect(capturedUrl).toBe(
+      'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent'
+    );
+    expect(capturedUrl).not.toContain('key=');
+    expect(capturedUrl).not.toContain(secretKey);
+
+    // 2. Header verification
+    expect(capturedHeaders['x-goog-api-key']).toBe(secretKey);
+    expect(capturedHeaders['Content-Type']).toBe('application/json');
+  });
+
+  it('should redact API key from network error messages (defense-in-depth)', async () => {
+    const secretKey = 'sensitive-token-secret-123';
+    const adapter = new GeminiAiProviderAdapter(secretKey, 'gemini-2.5-flash');
+
+    // Simulate fetch throwing an error that includes the secret key in the error message
+    global.fetch = vi.fn().mockRejectedValue(
+      new Error(`connect ECONNREFUSED https://generativelanguage.googleapis.com?key=${secretKey}`)
+    );
+
+    let caughtError: any = null;
+    try {
+      await adapter.generateSummary({
+        materialTitle: 'Uji Error Jaringan',
+        totalPages: 1,
+        pages: [{ pageNumber: 1, text: 'Konten' }],
+      });
+    } catch (err) {
+      caughtError = err;
+    }
+
+    expect(caughtError).toBeInstanceOf(AiProviderError);
+    expect(caughtError.code).toBe('AI_NETWORK_ERROR');
+    expect(caughtError.message).not.toContain(secretKey);
+    expect(caughtError.message).toContain('[REDACTED]');
+  });
+
+  it('should redact API key if provider error body echoes the key', async () => {
+    const secretKey = 'sensitive-token-secret-456';
+    const adapter = new GeminiAiProviderAdapter(secretKey, 'gemini-2.5-flash');
+
+    global.fetch = vi.fn().mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          error: {
+            message: `API key ${secretKey} is invalid or has expired.`,
+            status: 'INVALID_ARGUMENT',
+          },
+        }),
+        { status: 400, headers: { 'Content-Type': 'application/json' } }
+      )
+    );
+
+    let caughtError: any = null;
+    try {
+      await adapter.generateSummary({
+        materialTitle: 'Uji Error Provider',
+        totalPages: 1,
+        pages: [{ pageNumber: 1, text: 'Konten' }],
+      });
+    } catch (err) {
+      caughtError = err;
+    }
+
+    expect(caughtError).toBeInstanceOf(AiProviderError);
+    expect(caughtError.message).not.toContain(secretKey);
+    expect(caughtError.message).toContain('[REDACTED]');
+  });
+
+  it('should return AiProviderUnavailableAdapter when AI_PROVIDER is gemini but GEMINI_API_KEY is empty', async () => {
+    const originalProvider = env.AI_PROVIDER;
+    const originalApiKey = env.GEMINI_API_KEY;
+
+    try {
+      (env as any).AI_PROVIDER = 'gemini';
+      (env as any).GEMINI_API_KEY = '';
+      setAiProviderAdapterForTesting(null);
+
+      const adapter = getAiProviderAdapter();
+      expect(adapter).toBeInstanceOf(AiProviderUnavailableAdapter);
+
+      await expect(
+        adapter.generateSummary({
+          materialTitle: 'Test',
+          totalPages: 1,
+          pages: [{ pageNumber: 1, text: 'Sample' }],
+        })
+      ).rejects.toMatchObject({
+        code: 'AI_PROVIDER_UNAVAILABLE',
+        statusCode: 503,
+      });
+    } finally {
+      (env as any).AI_PROVIDER = originalProvider;
+      (env as any).GEMINI_API_KEY = originalApiKey;
+      setAiProviderAdapterForTesting(null);
+    }
   });
 });

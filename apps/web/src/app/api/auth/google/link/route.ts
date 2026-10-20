@@ -1,10 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { COOKIE_NAMES } from '@studyflow/shared';
-
-const INTERNAL_API_URL =
-  process.env.INTERNAL_API_URL ||
-  process.env.NEXT_PUBLIC_API_URL ||
-  'http://localhost:4000';
+import { getInternalApiUrl } from '@/lib/api-config';
 
 export async function POST(req: NextRequest) {
   // Validate CSRF / Origin
@@ -56,7 +52,8 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const apiRes = await fetch(`${INTERNAL_API_URL}/api/auth/google/link/init`, {
+    const internalApiUrl = getInternalApiUrl();
+    const apiRes = await fetch(`${internalApiUrl}/api/auth/google/link/init`, {
       method: 'POST',
       headers: requestHeaders,
       body: JSON.stringify(body),

@@ -120,10 +120,25 @@ const EnvSchema = z.object({
 export type Env = z.infer<typeof EnvSchema>;
 
 export function assertProductionSecrets(
-  config: Pick<Env, 'NODE_ENV' | 'JWT_ACCESS_SECRET' | 'JWT_REFRESH_SECRET' | 'COOKIE_SECRET'>
+  config: Pick<Env, 'NODE_ENV' | 'JWT_ACCESS_SECRET' | 'JWT_REFRESH_SECRET' | 'COOKIE_SECRET'> & {
+    TURNSTILE_SECRET_KEY?: string;
+  }
 ): void {
   if (config.NODE_ENV !== 'production') {
     return;
+  }
+
+  const missingKeys: string[] = [];
+  if (!config.TURNSTILE_SECRET_KEY || config.TURNSTILE_SECRET_KEY.trim().length === 0) {
+    missingKeys.push('TURNSTILE_SECRET_KEY');
+  }
+
+  if (missingKeys.length > 0) {
+    throw new Error(
+      `Missing required production environment variables: ${missingKeys.join(
+        ', '
+      )}. Cloudflare Turnstile protection is required in production.`
+    );
   }
 
   const insecureKeys: string[] = [];
@@ -144,6 +159,16 @@ export function assertProductionSecrets(
     config.COOKIE_SECRET.startsWith('studyflow_dev_')
   ) {
     insecureKeys.push('COOKIE_SECRET');
+  }
+
+  const trimmedTurnstile = (config.TURNSTILE_SECRET_KEY || '').trim();
+  if (
+    trimmedTurnstile === '1x0000000000000000000000000000000AA' ||
+    trimmedTurnstile === '2x0000000000000000000000000000000AA' ||
+    trimmedTurnstile === '3x0000000000000000000000000000000AA' ||
+    trimmedTurnstile.startsWith('studyflow_dev_')
+  ) {
+    insecureKeys.push('TURNSTILE_SECRET_KEY');
   }
 
   if (insecureKeys.length > 0) {

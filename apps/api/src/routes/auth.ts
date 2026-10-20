@@ -70,9 +70,12 @@ authRouter.post(
         return next(error);
       }
 
-      // Turnstile is strictly required in production/development, or in test when TEST_ENFORCE_TURNSTILE is active
+      // Turnstile is strictly required in production, in development when TURNSTILE_SECRET_KEY is set,
+      // or in test when TEST_ENFORCE_TURNSTILE is active
       const isTurnstileEnforced =
-        env.NODE_ENV !== 'test'
+        env.NODE_ENV === 'production'
+          ? true
+          : env.NODE_ENV !== 'test'
           ? Boolean(env.TURNSTILE_SECRET_KEY)
           : process.env.TEST_ENFORCE_TURNSTILE === 'true';
 
@@ -118,10 +121,12 @@ authRouter.post(
       }
 
       // Adaptive CAPTCHA: Turnstile is only required after repeated failures
-      // (per account hash OR per IP). Enforced in production/development when
+      // (per account hash OR per IP). Enforced in production, in development when
       // TURNSTILE_SECRET_KEY is set, or in test when TEST_ENFORCE_TURNSTILE is active.
       const isTurnstileEnforced =
-        env.NODE_ENV !== 'test'
+        env.NODE_ENV === 'production'
+          ? true
+          : env.NODE_ENV !== 'test'
           ? Boolean(env.TURNSTILE_SECRET_KEY)
           : process.env.TEST_ENFORCE_TURNSTILE === 'true';
 
@@ -452,9 +457,12 @@ authRouter.post(
         return next(error);
       }
 
-      // Turnstile is strictly required in production/development, or in test when TEST_ENFORCE_TURNSTILE is active
+      // Turnstile is strictly required in production, in development when TURNSTILE_SECRET_KEY is set,
+      // or in test when TEST_ENFORCE_TURNSTILE is active
       const isTurnstileEnforced =
-        env.NODE_ENV !== 'test'
+        env.NODE_ENV === 'production'
+          ? true
+          : env.NODE_ENV !== 'test'
           ? Boolean(env.TURNSTILE_SECRET_KEY)
           : process.env.TEST_ENFORCE_TURNSTILE === 'true';
 

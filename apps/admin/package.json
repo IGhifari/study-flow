@@ -8,7 +8,8 @@
     "build": "next build",
     "start": "next start -p 3002",
     "typecheck": "tsc --noEmit",
-    "lint": "next lint"
+    "lint": "next lint",
+    "test": "vitest run --config=vitest.config.ts"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",

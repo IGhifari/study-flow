@@ -89,4 +89,15 @@ describe('UI-3 Improvements: Admin Portal AI Slop & Dead Code Cleanup Tests', ()
     expect(content).not.toContain('text-[10px]');
     expect(content).not.toContain('text-[11px]');
   });
+
+  it('6. apps/admin defines a valid test script and vitest config for CI automated testing', () => {
+    const adminRoot = path.resolve(adminDir, '..');
+    const pkgPath = path.join(adminRoot, 'package.json');
+    const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf-8'));
+    expect(pkg.scripts?.test).toBeDefined();
+    expect(pkg.scripts?.test).toContain('vitest');
+
+    const configPath = path.join(adminRoot, 'vitest.config.ts');
+    expect(fs.existsSync(configPath)).toBe(true);
+  });
 });

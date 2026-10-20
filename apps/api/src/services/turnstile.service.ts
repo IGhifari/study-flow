@@ -90,6 +90,23 @@ export async function verifyTurnstileToken(options: VerifyTurnstileOptions): Pro
     return;
   }
 
+  // In production, missing or insecure secret key must fail closed with a configuration error (defense-in-depth)
+  const trimmedSecret = env.TURNSTILE_SECRET_KEY?.trim() || '';
+  const isInsecureSecret =
+    !trimmedSecret ||
+    trimmedSecret === '1x0000000000000000000000000000000AA' ||
+    trimmedSecret === '2x0000000000000000000000000000000AA' ||
+    trimmedSecret === '3x0000000000000000000000000000000AA' ||
+    trimmedSecret.startsWith('studyflow_dev_');
+
+  if (isInsecureSecret && env.NODE_ENV === 'production') {
+    console.error('[TURNSTILE] TURNSTILE_SECRET_KEY tidak valid atau belum dikonfigurasi di environment production.');
+    const error: AppError = new Error('Layanan verifikasi keamanan server belum dikonfigurasi dengan benar.');
+    error.statusCode = 500;
+    error.code = 'CONFIGURATION_ERROR';
+    throw error;
+  }
+
   // If secret key is not configured in local development, log warning and bypass safely
   // (Prevents developer lockout when testing unrelated flows without Turnstile credentials)
   if (!env.TURNSTILE_SECRET_KEY) {

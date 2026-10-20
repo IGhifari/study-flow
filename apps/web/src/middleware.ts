@@ -1,10 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { COOKIE_NAMES } from '@studyflow/shared';
-
-const INTERNAL_API_URL =
-  process.env.INTERNAL_API_URL ||
-  process.env.NEXT_PUBLIC_API_URL ||
-  'http://localhost:4000';
+import { getInternalApiUrl } from './lib/api-config';
 
 const PROTECTED_PREFIXES = [
   '/dashboard',
@@ -95,8 +91,28 @@ export async function middleware(req: NextRequest) {
     // If access token is expired or missing, but refresh token exists:
     // Seamlessly refresh session before serving the protected page
     if (refreshToken) {
+      let internalApiUrl: string;
       try {
-        const refreshRes = await fetch(`${INTERNAL_API_URL}/api/auth/refresh`, {
+        internalApiUrl = getInternalApiUrl();
+      } catch (configErr) {
+        console.error(
+          '[Middleware API Configuration Error]',
+          configErr instanceof Error ? configErr.message : 'Invalid API configuration'
+        );
+        const loginUrl = new URL(
+          `/login?returnUrl=${encodeURIComponent(pathname + search)}&error=${encodeURIComponent(
+            'Layanan autentikasi belum terkonfigurasi dengan benar.'
+          )}`,
+          req.url
+        );
+        const redirectRes = NextResponse.redirect(loginUrl);
+        redirectRes.cookies.delete(COOKIE_NAMES.accessToken);
+        redirectRes.cookies.delete(COOKIE_NAMES.refreshToken);
+        return redirectRes;
+      }
+
+      try {
+        const refreshRes = await fetch(`${internalApiUrl}/api/auth/refresh`, {
           method: 'POST',
           headers: {
             cookie: `${COOKIE_NAMES.refreshToken}=${refreshToken}`,

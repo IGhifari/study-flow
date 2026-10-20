@@ -1,10 +1,6 @@
 import { cookies } from 'next/headers';
 import { COOKIE_NAMES, UserProfile } from '@studyflow/shared';
-
-const INTERNAL_API_URL =
-  process.env.INTERNAL_API_URL ||
-  process.env.NEXT_PUBLIC_API_URL ||
-  'http://localhost:4000';
+import { getInternalApiUrl, ApiConfigurationError } from './api-config';
 
 export async function getServerSessionUser(): Promise<UserProfile | null> {
   const cookieStore = await cookies();
@@ -18,7 +14,8 @@ export async function getServerSessionUser(): Promise<UserProfile | null> {
   const cookieHeader = cookieStore.toString();
 
   try {
-    const res = await fetch(`${INTERNAL_API_URL}/api/auth/me`, {
+    const internalApiUrl = getInternalApiUrl();
+    const res = await fetch(`${internalApiUrl}/api/auth/me`, {
       headers: {
         cookie: cookieHeader,
       },
@@ -31,7 +28,10 @@ export async function getServerSessionUser(): Promise<UserProfile | null> {
     }
 
     return null;
-  } catch {
+  } catch (err) {
+    if (err instanceof ApiConfigurationError) {
+      console.error('[ServerSession API Configuration Error]', err.message);
+    }
     return null;
   }
 }

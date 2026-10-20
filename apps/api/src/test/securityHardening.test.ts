@@ -9,6 +9,8 @@ import { requestIdMiddleware } from '../middleware/requestId.js';
 
 describe('Security Hardening Defense-in-Depth Tests', () => {
   describe('1. Production Secrets Enforcement (assertProductionSecrets)', () => {
+    const validTurnstileKey = 'valid_custom_prod_turnstile_secret_key_9999';
+
     it('throws error when NODE_ENV is production and default development JWT_ACCESS_SECRET is used', () => {
       expect(() => {
         assertProductionSecrets({
@@ -16,6 +18,7 @@ describe('Security Hardening Defense-in-Depth Tests', () => {
           JWT_ACCESS_SECRET: 'studyflow_dev_jwt_access_secret_key_123456',
           JWT_REFRESH_SECRET: 'custom_strong_prod_refresh_secret_1234567890',
           COOKIE_SECRET: 'custom_strong_prod_cookie_secret_1234567890',
+          TURNSTILE_SECRET_KEY: validTurnstileKey,
         });
       }).toThrow(/Insecure default development secrets detected in production for: JWT_ACCESS_SECRET/);
     });
@@ -27,6 +30,7 @@ describe('Security Hardening Defense-in-Depth Tests', () => {
           JWT_ACCESS_SECRET: 'custom_strong_prod_access_secret_1234567890',
           JWT_REFRESH_SECRET: 'studyflow_dev_custom_suffix_123456',
           COOKIE_SECRET: 'custom_strong_prod_cookie_secret_1234567890',
+          TURNSTILE_SECRET_KEY: validTurnstileKey,
         });
       }).toThrow(/Insecure default development secrets detected in production for: JWT_REFRESH_SECRET/);
 
@@ -36,11 +40,56 @@ describe('Security Hardening Defense-in-Depth Tests', () => {
           JWT_ACCESS_SECRET: 'custom_strong_prod_access_secret_1234567890',
           JWT_REFRESH_SECRET: 'custom_strong_prod_refresh_secret_1234567890',
           COOKIE_SECRET: 'studyflow_dev_cookie_signing_secret_123456',
+          TURNSTILE_SECRET_KEY: validTurnstileKey,
         });
       }).toThrow(/Insecure default development secrets detected in production for: COOKIE_SECRET/);
     });
 
-    it('allows default development secrets when NODE_ENV is development or test', () => {
+    it('throws error when NODE_ENV is production and TURNSTILE_SECRET_KEY is missing or empty', () => {
+      expect(() => {
+        assertProductionSecrets({
+          NODE_ENV: 'production',
+          JWT_ACCESS_SECRET: 'custom_strong_prod_access_secret_1234567890',
+          JWT_REFRESH_SECRET: 'custom_strong_prod_refresh_secret_1234567890',
+          COOKIE_SECRET: 'custom_strong_prod_cookie_secret_1234567890',
+          // TURNSTILE_SECRET_KEY omitted
+        });
+      }).toThrow(/Missing required production environment variables: TURNSTILE_SECRET_KEY/);
+
+      expect(() => {
+        assertProductionSecrets({
+          NODE_ENV: 'production',
+          JWT_ACCESS_SECRET: 'custom_strong_prod_access_secret_1234567890',
+          JWT_REFRESH_SECRET: 'custom_strong_prod_refresh_secret_1234567890',
+          COOKIE_SECRET: 'custom_strong_prod_cookie_secret_1234567890',
+          TURNSTILE_SECRET_KEY: '   ',
+        });
+      }).toThrow(/Missing required production environment variables: TURNSTILE_SECRET_KEY/);
+    });
+
+    it('throws error when NODE_ENV is production and dummy Cloudflare test key or dev prefix is used for TURNSTILE_SECRET_KEY', () => {
+      expect(() => {
+        assertProductionSecrets({
+          NODE_ENV: 'production',
+          JWT_ACCESS_SECRET: 'custom_strong_prod_access_secret_1234567890',
+          JWT_REFRESH_SECRET: 'custom_strong_prod_refresh_secret_1234567890',
+          COOKIE_SECRET: 'custom_strong_prod_cookie_secret_1234567890',
+          TURNSTILE_SECRET_KEY: '1x0000000000000000000000000000000AA',
+        });
+      }).toThrow(/Insecure default development secrets detected in production for: TURNSTILE_SECRET_KEY/);
+
+      expect(() => {
+        assertProductionSecrets({
+          NODE_ENV: 'production',
+          JWT_ACCESS_SECRET: 'custom_strong_prod_access_secret_1234567890',
+          JWT_REFRESH_SECRET: 'custom_strong_prod_refresh_secret_1234567890',
+          COOKIE_SECRET: 'custom_strong_prod_cookie_secret_1234567890',
+          TURNSTILE_SECRET_KEY: 'studyflow_dev_turnstile_dummy',
+        });
+      }).toThrow(/Insecure default development secrets detected in production for: TURNSTILE_SECRET_KEY/);
+    });
+
+    it('allows default development secrets and missing/dummy TURNSTILE_SECRET_KEY when NODE_ENV is development or test', () => {
       expect(() => {
         assertProductionSecrets({
           NODE_ENV: 'development',
@@ -56,6 +105,7 @@ describe('Security Hardening Defense-in-Depth Tests', () => {
           JWT_ACCESS_SECRET: 'studyflow_dev_jwt_access_secret_key_123456',
           JWT_REFRESH_SECRET: 'studyflow_dev_jwt_refresh_secret_key_123456',
           COOKIE_SECRET: 'studyflow_dev_cookie_signing_secret_123456',
+          TURNSTILE_SECRET_KEY: '1x0000000000000000000000000000000AA',
         });
       }).not.toThrow();
     });
@@ -67,6 +117,7 @@ describe('Security Hardening Defense-in-Depth Tests', () => {
           JWT_ACCESS_SECRET: 'super_secret_custom_production_jwt_access_key_9999',
           JWT_REFRESH_SECRET: 'super_secret_custom_production_jwt_refresh_key_9999',
           COOKIE_SECRET: 'super_secret_custom_production_cookie_secret_9999',
+          TURNSTILE_SECRET_KEY: 'super_secret_custom_production_turnstile_key_9999',
         });
       }).not.toThrow();
     });

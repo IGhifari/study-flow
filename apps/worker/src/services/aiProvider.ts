@@ -872,6 +872,15 @@ export class GeminiAiProviderAdapter implements AiProviderAdapter {
     this.options.fetchFn = fetchFn;
   }
 
+  /**
+   * Hapus API key dari teks yang berasal dari lapisan jaringan atau provider
+   * sebelum dimasukkan ke pesan error/log (defense-in-depth).
+   */
+  private redactApiKey(message: string): string {
+    if (!this.apiKey) return message;
+    return message.split(this.apiKey).join('[REDACTED]');
+  }
+
   private async callGeminiApi(
     systemInstruction: string,
     prompt: string,
@@ -912,9 +921,11 @@ export class GeminiAiProviderAdapter implements AiProviderAdapter {
       generationConfig,
     };
 
+    // API key dikirim melalui header `x-goog-api-key` (kontrak resmi Gemini API),
+    // bukan query string, agar tidak tercatat di URL, access log, atau proxy log.
     const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(
       this.model
-    )}:generateContent?key=${encodeURIComponent(this.apiKey)}`;
+    )}:generateContent`;
 
     const fetchImpl = this.options?.fetchFn || fetch;
     let response: Response;
@@ -923,6 +934,7 @@ export class GeminiAiProviderAdapter implements AiProviderAdapter {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'x-goog-api-key': this.apiKey,
         },
         body: JSON.stringify(requestBody),
         signal: AbortSignal.timeout(timeoutMs),
@@ -937,7 +949,7 @@ export class GeminiAiProviderAdapter implements AiProviderAdapter {
       }
       throw new AiProviderError(
         'AI_NETWORK_ERROR',
-        `Koneksi ke provider AI gagal: ${err.message}`,
+        `Koneksi ke provider AI gagal: ${this.redactApiKey(String(err?.message ?? ''))}`,
         true
       );
     }
@@ -949,8 +961,9 @@ export class GeminiAiProviderAdapter implements AiProviderAdapter {
       } catch {}
 
       const statusCode = response.status;
-      const errorMsg =
-        errorBody?.error?.message || `HTTP ${statusCode} dari Gemini API`;
+      const errorMsg = this.redactApiKey(
+        errorBody?.error?.message || `HTTP ${statusCode} dari Gemini API`
+      );
 
       if (statusCode === 429) {
         const isQuotaExhausted =

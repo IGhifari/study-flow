@@ -1,11 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { COOKIE_NAMES } from '@studyflow/shared';
 import { getSafeReturnUrl } from '@/lib/auth-client';
-
-const INTERNAL_API_URL =
-  process.env.INTERNAL_API_URL ||
-  process.env.NEXT_PUBLIC_API_URL ||
-  'http://localhost:4000';
+import { getInternalApiUrl } from '@/lib/api-config';
 
 export async function GET(req: NextRequest) {
   const searchParams = req.nextUrl.searchParams;
@@ -15,8 +11,9 @@ export async function GET(req: NextRequest) {
   try {
     const callbackRedirectUri = `${req.nextUrl.origin}/api/auth/google/callback`;
 
+    const internalApiUrl = getInternalApiUrl();
     // Request fresh OAuth URL & PKCE challenge from Express API
-    const targetUrl = new URL(`${INTERNAL_API_URL}/api/auth/google/url`);
+    const targetUrl = new URL(`${internalApiUrl}/api/auth/google/url`);
     targetUrl.searchParams.set('redirectUri', callbackRedirectUri);
 
     const apiRes = await fetch(targetUrl.toString(), {

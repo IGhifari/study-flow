@@ -1,10 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { resolveForwardedClientIp } from './clientIp';
-
-const INTERNAL_API_URL =
-  process.env.INTERNAL_API_URL ||
-  process.env.NEXT_PUBLIC_API_URL ||
-  'http://localhost:4000';
+import { getInternalApiUrl } from './api-config';
 
 const STATE_CHANGING_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
 
@@ -104,7 +100,27 @@ export function createBffProxyHandler(apiBasePath: string) {
     const { path } = await params;
     const subPath = path && path.length > 0 ? path.join('/') : '';
     const search = req.nextUrl.search;
-    const targetUrl = `${INTERNAL_API_URL}${apiBasePath}${subPath ? `/${subPath}` : ''}${search}`;
+
+    let internalApiUrl: string;
+    try {
+      internalApiUrl = getInternalApiUrl();
+    } catch (configErr) {
+      console.error(
+        `[BFF Configuration Error] ${configErr instanceof Error ? configErr.message : 'Invalid API configuration'}`
+      );
+      return NextResponse.json(
+        {
+          error: {
+            code: 'API_CONFIGURATION_ERROR',
+            message:
+              'Konfigurasi server API tidak valid atau belum disetel pada lingkungan ini.',
+          },
+        },
+        { status: 500 }
+      );
+    }
+
+    const targetUrl = `${internalApiUrl}${apiBasePath}${subPath ? `/${subPath}` : ''}${search}`;
 
     const requestHeaders = new Headers();
     requestHeaders.set('Content-Type', 'application/json');

@@ -2,7 +2,8 @@ import { describe, it, expect, beforeEach, afterAll } from 'vitest';
 import request from 'supertest';
 import { createApp } from '../app.js';
 import { prisma } from '@studyflow/database';
-import { __setMockTurnstileVerifier } from '../services/turnstile.service.js';
+import { __setMockTurnstileVerifier, verifyTurnstileToken } from '../services/turnstile.service.js';
+import { env, assertProductionSecrets } from '../config/env.js';
 import { __getSentTestEmails, __clearSentTestEmails } from '../services/email.service.js';
 import { hashPassword } from '../services/password.service.js';
 import { __resetLoginProtectionMemory } from '../services/loginProtection.service.js';
@@ -377,6 +378,106 @@ describe('Cloudflare Turnstile Protection Tests', () => {
       expect(a.body.error.code).toBe(b.body.error.code);
       expect(a.body.error.message).toBe(b.body.error.message);
       expect(a.body.error.details).toEqual(b.body.error.details);
+    });
+  });
+
+  describe('5. Production Fail-Closed & Configuration Hardening', () => {
+    it('menolak verifikasi di runtime production jika secret tidak ada / tidak valid (500 CONFIGURATION_ERROR)', async () => {
+      const origEnv = env.NODE_ENV;
+      const origSecret = env.TURNSTILE_SECRET_KEY;
+      try {
+        (env as any).NODE_ENV = 'production';
+        (env as any).TURNSTILE_SECRET_KEY = '';
+
+        await expect(
+          verifyTurnstileToken({
+            token: 'mock-valid-token-12345',
+            remoteIp: '1.2.3.4',
+          })
+        ).rejects.toMatchObject({
+          statusCode: 500,
+          code: 'CONFIGURATION_ERROR',
+        });
+      } finally {
+        (env as any).NODE_ENV = origEnv;
+        (env as any).TURNSTILE_SECRET_KEY = origSecret;
+      }
+    });
+
+    it('menolak verifikasi di runtime production jika secret bernilai test dummy Cloudflare (500 CONFIGURATION_ERROR)', async () => {
+      const origEnv = env.NODE_ENV;
+      const origSecret = env.TURNSTILE_SECRET_KEY;
+      try {
+        (env as any).NODE_ENV = 'production';
+        (env as any).TURNSTILE_SECRET_KEY = '1x0000000000000000000000000000000AA';
+
+        await expect(
+          verifyTurnstileToken({
+            token: 'mock-valid-token-12345',
+            remoteIp: '1.2.3.4',
+          })
+        ).rejects.toMatchObject({
+          statusCode: 500,
+          code: 'CONFIGURATION_ERROR',
+        });
+      } finally {
+        (env as any).NODE_ENV = origEnv;
+        (env as any).TURNSTILE_SECRET_KEY = origSecret;
+      }
+    });
+
+    it('mengizinkan bypass yang disengaja di development ketika secret belum dikonfigurasi', async () => {
+      const origEnv = env.NODE_ENV;
+      const origSecret = env.TURNSTILE_SECRET_KEY;
+      try {
+        (env as any).NODE_ENV = 'development';
+        (env as any).TURNSTILE_SECRET_KEY = '';
+
+        // Tidak boleh melempar error saat di development tanpa secret
+        await expect(
+          verifyTurnstileToken({
+            token: 'any-token',
+            remoteIp: '127.0.0.1',
+          })
+        ).resolves.toBeUndefined();
+      } finally {
+        (env as any).NODE_ENV = origEnv;
+        (env as any).TURNSTILE_SECRET_KEY = origSecret;
+      }
+    });
+
+    it('startup validation menolak production jika TURNSTILE_SECRET_KEY hilang atau placeholder dummy', () => {
+      expect(() => {
+        assertProductionSecrets({
+          NODE_ENV: 'production',
+          JWT_ACCESS_SECRET: 'super_secret_jwt_access_custom_value_999',
+          JWT_REFRESH_SECRET: 'super_secret_jwt_refresh_custom_value_999',
+          COOKIE_SECRET: 'super_secret_cookie_signing_custom_value_99',
+          TURNSTILE_SECRET_KEY: '',
+        });
+      }).toThrow(/Missing required production environment variables: TURNSTILE_SECRET_KEY/);
+
+      expect(() => {
+        assertProductionSecrets({
+          NODE_ENV: 'production',
+          JWT_ACCESS_SECRET: 'super_secret_jwt_access_custom_value_999',
+          JWT_REFRESH_SECRET: 'super_secret_jwt_refresh_custom_value_999',
+          COOKIE_SECRET: 'super_secret_cookie_signing_custom_value_99',
+          TURNSTILE_SECRET_KEY: '1x0000000000000000000000000000000AA',
+        });
+      }).toThrow(/Insecure default development secrets detected in production for: TURNSTILE_SECRET_KEY/);
+    });
+
+    it('startup validation berhasil di production saat TURNSTILE_SECRET_KEY kuat dan sah', () => {
+      expect(() => {
+        assertProductionSecrets({
+          NODE_ENV: 'production',
+          JWT_ACCESS_SECRET: 'super_secret_jwt_access_custom_value_999',
+          JWT_REFRESH_SECRET: 'super_secret_jwt_refresh_custom_value_999',
+          COOKIE_SECRET: 'super_secret_cookie_signing_custom_value_99',
+          TURNSTILE_SECRET_KEY: '0x4AAAAAAABBBBBBBBCCCCCCCCDDDDDDDDEE',
+        });
+      }).not.toThrow();
     });
   });
 });

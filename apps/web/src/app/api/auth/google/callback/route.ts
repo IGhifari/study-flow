@@ -1,11 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { COOKIE_NAMES, OAuthTransactionCookieSchema, OAuthTransactionCookie } from '@studyflow/shared';
 import { getSafeReturnUrl } from '@/lib/auth-client';
-
-const INTERNAL_API_URL =
-  process.env.INTERNAL_API_URL ||
-  process.env.NEXT_PUBLIC_API_URL ||
-  'http://localhost:4000';
+import { getInternalApiUrl } from '@/lib/api-config';
 
 export async function GET(req: NextRequest) {
   const searchParams = req.nextUrl.searchParams;
@@ -100,7 +96,8 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    const expressRes = await fetch(`${INTERNAL_API_URL}/api/auth/google/exchange`, {
+    const internalApiUrl = getInternalApiUrl();
+    const expressRes = await fetch(`${internalApiUrl}/api/auth/google/exchange`, {
       method: 'POST',
       headers: requestHeaders,
       body: JSON.stringify({
