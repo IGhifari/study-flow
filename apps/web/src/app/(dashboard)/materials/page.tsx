@@ -27,6 +27,8 @@ import {
   Semester,
   formatUserDateTime,
   UserProfile,
+  MaterialStatus,
+  MaterialStatusEnum,
 } from '@studyflow/shared';
 import {
   listMaterials,
@@ -90,6 +92,11 @@ export interface MaterialPaginationInfo {
   totalPages: number;
 }
 
+function parseMaterialStatus(val: string): MaterialStatus | undefined {
+  const parsed = MaterialStatusEnum.safeParse(val);
+  return parsed.success ? parsed.data : undefined;
+}
+
 export default function MaterialsPage(): React.JSX.Element {
   const [materials, setMaterials] = React.useState<MaterialListItem[]>([]);
   const [pagination, setPagination] = React.useState<MaterialPaginationInfo | null>(null);
@@ -120,6 +127,8 @@ export default function MaterialsPage(): React.JSX.Element {
   // Race condition & lifecycle guards
   const fetchRequestIdRef = React.useRef(0);
   const abortControllerRef = React.useRef<AbortController | null>(null);
+  const pollAbortControllerRef = React.useRef<AbortController | null>(null);
+  const pollIntervalRef = React.useRef(5000);
   const isMountedRef = React.useRef(true);
 
   React.useEffect(() => {
@@ -128,6 +137,9 @@ export default function MaterialsPage(): React.JSX.Element {
       isMountedRef.current = false;
       if (abortControllerRef.current) {
         abortControllerRef.current.abort();
+      }
+      if (pollAbortControllerRef.current) {
+        pollAbortControllerRef.current.abort();
       }
     };
   }, []);
@@ -176,6 +188,11 @@ export default function MaterialsPage(): React.JSX.Element {
     const controller = new AbortController();
     abortControllerRef.current = controller;
 
+    // Also abort any in-flight background polling so it cannot collide with active user query
+    if (pollAbortControllerRef.current) {
+      pollAbortControllerRef.current.abort();
+    }
+
     const requestId = ++fetchRequestIdRef.current;
     setIsLoading(true);
     setErrorMsg(null);
@@ -185,7 +202,7 @@ export default function MaterialsPage(): React.JSX.Element {
         {
           search: debouncedSearch.trim() || undefined,
           courseId: courseFilter || undefined,
-          status: (statusFilter as any) || undefined,
+          status: parseMaterialStatus(statusFilter),
           page,
           limit: 20,
         },
@@ -245,45 +262,93 @@ export default function MaterialsPage(): React.JSX.Element {
       (m) => m.status === 'QUEUED' || m.status === 'PROCESSING' || m.status === 'UPLOADING'
     );
 
-    if (!hasActiveJobs) return;
+    if (!hasActiveJobs) {
+      pollIntervalRef.current = 5000;
+      return;
+    }
 
-    let pollInterval = 5000;
-    let timer: NodeJS.Timeout;
+    let timeoutId: NodeJS.Timeout | null = null;
+    let isCancelled = false;
 
     const poll = async () => {
-      if (document.hidden || !isMountedRef.current) return;
+      if (document.hidden || !isMountedRef.current || isCancelled) {
+        scheduleNext(pollIntervalRef.current);
+        return;
+      }
+
+      // Skip poll tick if a user-initiated request is actively in-flight
+      if (isLoading) {
+        scheduleNext(pollIntervalRef.current);
+        return;
+      }
+
+      if (pollAbortControllerRef.current) {
+        pollAbortControllerRef.current.abort();
+      }
+      const controller = new AbortController();
+      pollAbortControllerRef.current = controller;
+      const pollingRequestId = fetchRequestIdRef.current;
 
       try {
-        const res = await listMaterials({
-          search: debouncedSearch.trim() || undefined,
-          courseId: courseFilter || undefined,
-          status: (statusFilter as any) || undefined,
-          page,
-          limit: 20,
-        });
-        if (isMountedRef.current) {
+        const res = await listMaterials(
+          {
+            search: debouncedSearch.trim() || undefined,
+            courseId: courseFilter || undefined,
+            status: parseMaterialStatus(statusFilter),
+            page,
+            limit: 20,
+          },
+          { signal: controller.signal }
+        );
+
+        if (
+          !isCancelled &&
+          isMountedRef.current &&
+          pollingRequestId === fetchRequestIdRef.current
+        ) {
           setMaterials(res.materials);
           setPagination(res.pagination);
+          pollIntervalRef.current = 5000;
         }
-      } catch {
-        pollInterval = Math.min(pollInterval * 1.5, 30000);
+      } catch (err: unknown) {
+        if (err instanceof Error && err.name === 'AbortError') {
+          return;
+        }
+        // Exponential backoff on polling error
+        pollIntervalRef.current = Math.min(pollIntervalRef.current * 1.5, 30000);
+      } finally {
+        if (!isCancelled && isMountedRef.current) {
+          scheduleNext(pollIntervalRef.current);
+        }
       }
     };
 
-    timer = setInterval(poll, pollInterval);
+    const scheduleNext = (delay: number) => {
+      if (isCancelled || !isMountedRef.current) return;
+      if (timeoutId) clearTimeout(timeoutId);
+      timeoutId = setTimeout(poll, delay);
+    };
+
+    scheduleNext(pollIntervalRef.current);
 
     const handleVisibility = () => {
-      if (!document.hidden) {
+      if (!document.hidden && !isCancelled && isMountedRef.current) {
         poll();
       }
     };
     document.addEventListener('visibilitychange', handleVisibility);
 
     return () => {
-      clearInterval(timer);
+      isCancelled = true;
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
+      if (pollAbortControllerRef.current) {
+        pollAbortControllerRef.current.abort();
+      }
       document.removeEventListener('visibilitychange', handleVisibility);
     };
-  }, [materials, debouncedSearch, courseFilter, statusFilter, page]);
+  }, [materials, debouncedSearch, courseFilter, statusFilter, page, isLoading]);
 
   const handleRetry = async (id: string, e?: React.MouseEvent) => {
     if (e) {

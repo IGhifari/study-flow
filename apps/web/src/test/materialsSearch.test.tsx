@@ -439,8 +439,15 @@ describe('MaterialsPage - Search Optimization, Debounce & Race Condition Behavio
       await new Promise((r) => setTimeout(r, 350));
     });
 
+    const activeSignal = vi.mocked(listMaterials).mock.calls[1]?.[1]?.signal;
+    expect(activeSignal).toBeDefined();
+    expect(activeSignal?.aborted).toBe(false);
+
     // Unmount komponen saat request masih berjalan
     unmount();
+
+    // Sinyal request aktif harus dibatalkan saat unmount (aborted === true)
+    expect(activeSignal?.aborted).toBe(true);
 
     // Selesaikan promise dengan rejection setelah unmount
     await act(async () => {
@@ -513,5 +520,145 @@ describe('MaterialsPage - Search Optimization, Debounce & Race Condition Behavio
     expect(screen.queryByRole('alert')).toBeNull();
     const itemsTetap = await screen.findAllByText('Hasil Pencarian Sukses Request 2');
     expect(itemsTetap.length).toBeGreaterThan(0);
+  });
+
+  it('9. AbortSignal dibatalkan (aborted === true) ketika request digantikan oleh request pencarian baru', async () => {
+    let resolveQuery1!: (res: MaterialListResponse) => void;
+    let resolveQuery2!: (res: MaterialListResponse) => void;
+
+    const promise1 = new Promise<MaterialListResponse>((resolve) => {
+      resolveQuery1 = resolve;
+    });
+    const promise2 = new Promise<MaterialListResponse>((resolve) => {
+      resolveQuery2 = resolve;
+    });
+
+    vi.mocked(listMaterials)
+      .mockResolvedValueOnce(emptyResponse) // Mount call 0
+      .mockImplementationOnce(() => promise1) // Query 1 call 1
+      .mockImplementationOnce(() => promise2); // Query 2 call 2
+
+    render(<MaterialsPage />);
+
+    const searchInput = screen.getByPlaceholderText('Cari judul materi...');
+
+    // Trigger Query 1
+    await act(async () => {
+      fireEvent.change(searchInput, { target: { value: 'query-1' } });
+      await new Promise((r) => setTimeout(r, 350));
+    });
+
+    const signalQuery1 = vi.mocked(listMaterials).mock.calls[1]?.[1]?.signal;
+    expect(signalQuery1).toBeDefined();
+    expect(signalQuery1?.aborted).toBe(false);
+
+    // Trigger Query 2 yang menggantikan Query 1 sebelum Query 1 selesai
+    await act(async () => {
+      fireEvent.change(searchInput, { target: { value: 'query-2' } });
+      await new Promise((r) => setTimeout(r, 350));
+    });
+
+    // Sinyal Query 1 HARUS dibatalkan (aborted === true) karena digantikan oleh Query 2
+    expect(signalQuery1?.aborted).toBe(true);
+
+    const signalQuery2 = vi.mocked(listMaterials).mock.calls[2]?.[1]?.signal;
+    expect(signalQuery2).toBeDefined();
+    expect(signalQuery2?.aborted).toBe(false);
+
+    // Selesaikan Query 2
+    await act(async () => {
+      resolveQuery2(emptyResponse);
+      resolveQuery1(emptyResponse);
+      await Promise.resolve();
+    });
+  });
+
+  it('10. Polling aktif untuk berkas PROCESSING tidak menimpa hasil pencarian baru ketika response polling datang terlambat', async () => {
+    vi.useFakeTimers();
+
+    const processingMaterial: MaterialListItem = {
+      ...createMaterial('mat-proc-1', 'Berkas PDF Sedang Diekstraksi'),
+      status: 'PROCESSING',
+    };
+
+    const searchResultMaterial: MaterialListItem = {
+      ...createMaterial('mat-search-1', 'Hasil Pencarian Terkini Algoritma'),
+      status: 'READY',
+    };
+
+    let resolvePollingDeferred!: (res: MaterialListResponse) => void;
+    const pollingPromise = new Promise<MaterialListResponse>((resolve) => {
+      resolvePollingDeferred = resolve;
+    });
+
+    // 1. Initial mount: mengembalikan materi dengan status PROCESSING sehingga polling terjadwal
+    vi.mocked(listMaterials)
+      .mockResolvedValueOnce({
+        materials: [processingMaterial],
+        pagination: { total: 1, page: 1, limit: 20, totalPages: 1 },
+      })
+      // 2. Pemanggilan polling (setelah 5000ms): tertunda via deferred promise
+      .mockImplementationOnce(() => pollingPromise)
+      // 3. Pemanggilan pencarian baru: langsung sukses
+      .mockResolvedValueOnce({
+        materials: [searchResultMaterial],
+        pagination: { total: 1, page: 1, limit: 20, totalPages: 1 },
+      });
+
+    render(<MaterialsPage />);
+
+    // Flush mount
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    // UI awal menampilkan materi processing (tampil di view desktop dan mobile)
+    expect(screen.getAllByText('Berkas PDF Sedang Diekstraksi').length).toBeGreaterThan(0);
+
+    // Majukan timer 5000ms untuk memicu tick polling
+    act(() => {
+      vi.advanceTimersByTime(5000);
+    });
+
+    // Pastikan request polling terpanggil (call index 1)
+    expect(listMaterials).toHaveBeenCalledTimes(2);
+    const pollingSignal = vi.mocked(listMaterials).mock.calls[1]?.[1]?.signal;
+    expect(pollingSignal?.aborted).toBe(false);
+
+    // Saat polling masih pending, pengguna mengetik pencarian baru "algoritma"
+    const searchInput = screen.getByPlaceholderText('Cari judul materi...');
+    act(() => {
+      fireEvent.change(searchInput, { target: { value: 'algoritma' } });
+      vi.advanceTimersByTime(300); // Selesaikan debounce 300ms
+    });
+
+    // Pencarian baru memicu listMaterials (call index 2) dan membatalkan polling yang sedang in-flight
+    expect(listMaterials).toHaveBeenCalledTimes(3);
+    expect(pollingSignal?.aborted).toBe(true);
+
+    // Flush resolusi pencarian baru
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    // UI menampilkan hasil pencarian baru
+    const searchItems = screen.getAllByText('Hasil Pencarian Terkini Algoritma');
+    expect(searchItems.length).toBeGreaterThan(0);
+
+    // Sekarang selesaikan polling lama yang terlambat (out-of-order)
+    await act(async () => {
+      resolvePollingDeferred({
+        materials: [processingMaterial],
+        pagination: { total: 1, page: 1, limit: 20, totalPages: 1 },
+      });
+      await Promise.resolve();
+    });
+
+    // SANGAT KRITIS: Hasil polling lama TIDAK BOLEH menimpa hasil pencarian baru!
+    expect(screen.queryByText('Berkas PDF Sedang Diekstraksi')).toBeNull();
+    const searchItemsTetap = screen.getAllByText('Hasil Pencarian Terkini Algoritma');
+    expect(searchItemsTetap.length).toBeGreaterThan(0);
+
+    vi.useRealTimers();
   });
 });
