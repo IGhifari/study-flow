@@ -52,16 +52,24 @@ export function createApp(): Express {
       // Allow requests with no origin (like mobile apps, curl, or server-to-server)
       if (!origin) return callback(null, true);
       const configuredOrigins = env.CORS_ORIGIN
-        ? env.CORS_ORIGIN.split(',').map((o) => o.trim()).filter(Boolean)
+        ? env.CORS_ORIGIN.split(',').map((o) => o.trim().replace(/\/+$/, '')).filter(Boolean)
         : [];
-      const allowedOrigins = new Set<string>(configuredOrigins);
-      if (env.NODE_ENV !== 'production') {
-        allowedOrigins.add('http://localhost:3000');
-        allowedOrigins.add('http://127.0.0.1:3000');
-        allowedOrigins.add('http://localhost:3002');
-        allowedOrigins.add('http://127.0.0.1:3002');
+      const allowedOrigins = new Set<string>();
+      for (const org of configuredOrigins) {
+        allowedOrigins.add(org);
+        allowedOrigins.add(`${org}/`);
       }
-      if (allowedOrigins.has(origin)) {
+      if (env.NODE_ENV !== 'production') {
+        const devPorts = ['3000', '3002', '3005'];
+        for (const port of devPorts) {
+          allowedOrigins.add(`http://localhost:${port}`);
+          allowedOrigins.add(`http://localhost:${port}/`);
+          allowedOrigins.add(`http://127.0.0.1:${port}`);
+          allowedOrigins.add(`http://127.0.0.1:${port}/`);
+        }
+      }
+      const normalizedOrigin = origin.replace(/\/+$/, '');
+      if (allowedOrigins.has(origin) || allowedOrigins.has(normalizedOrigin)) {
         return callback(null, true);
       }
       return callback(null, false);

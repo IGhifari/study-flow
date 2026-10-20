@@ -9,7 +9,26 @@ const INTERNAL_API_URL =
 export async function POST(req: NextRequest) {
   // Validate CSRF / Origin
   const origin = req.headers.get('origin');
-  if (origin !== req.nextUrl.origin) {
+  const normalizedOrigin = origin ? origin.replace(/\/+$/, '') : null;
+  const normalizedTrustedOrigin = req.nextUrl.origin.replace(/\/+$/, '');
+
+  const allowedOrigins = new Set<string>([
+    req.nextUrl.origin,
+    normalizedTrustedOrigin,
+    `${normalizedTrustedOrigin}/`,
+  ]);
+
+  if (process.env.NODE_ENV !== 'production') {
+    const devPorts = ['3000', '3002', '3005'];
+    for (const port of devPorts) {
+      allowedOrigins.add(`http://localhost:${port}`);
+      allowedOrigins.add(`http://localhost:${port}/`);
+      allowedOrigins.add(`http://127.0.0.1:${port}`);
+      allowedOrigins.add(`http://127.0.0.1:${port}/`);
+    }
+  }
+
+  if (!origin || (!allowedOrigins.has(origin) && !allowedOrigins.has(normalizedOrigin!))) {
     return NextResponse.json(
       { error: { message: 'Origin tidak diizinkan atau CSRF terdeteksi' } },
       { status: 403 }

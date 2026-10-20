@@ -42,7 +42,26 @@ function validateCsrfOrigin(req: NextRequest): { valid: boolean; reason?: string
   }
 
   // 3. Reject foreign/attacker origins
-  if (requestOrigin !== trustedOrigin) {
+  const normalizedRequestOrigin = requestOrigin.replace(/\/+$/, '');
+  const normalizedTrustedOrigin = trustedOrigin.replace(/\/+$/, '');
+
+  const allowedOrigins = new Set<string>([
+    trustedOrigin,
+    normalizedTrustedOrigin,
+    `${normalizedTrustedOrigin}/`,
+  ]);
+
+  if (process.env.NODE_ENV !== 'production') {
+    const devPorts = ['3000', '3002', '3005'];
+    for (const port of devPorts) {
+      allowedOrigins.add(`http://localhost:${port}`);
+      allowedOrigins.add(`http://localhost:${port}/`);
+      allowedOrigins.add(`http://127.0.0.1:${port}`);
+      allowedOrigins.add(`http://127.0.0.1:${port}/`);
+    }
+  }
+
+  if (!allowedOrigins.has(requestOrigin) && !allowedOrigins.has(normalizedRequestOrigin)) {
     return { valid: false, reason: 'Origin tidak diizinkan atau CSRF terdeteksi' };
   }
 

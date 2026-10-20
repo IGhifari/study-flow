@@ -423,4 +423,76 @@ describe('Express Authentication Endpoints', () => {
     expect(res.status).toBe(403);
     expect(res.body.error.code).toBe('CSRF_ORIGIN_INVALID');
   });
+
+  it('State-changing requests with allowed Origin http://localhost:3005 should be accepted', async () => {
+    const regRes = await request(app)
+      .post('/api/auth/register')
+      .set('Origin', 'http://localhost:3005')
+      .send({
+        name: 'Origin 3005 User',
+        email: testEmail,
+        password: testPassword,
+      });
+
+    expect(regRes.status).toBe(201);
+
+    const res = await request(app)
+      .post('/api/auth/login')
+      .set('Origin', 'http://localhost:3005')
+      .send({
+        email: testEmail,
+        password: testPassword,
+      });
+
+    expect(res.status).toBe(200);
+    expect(res.body.user).toBeDefined();
+  });
+
+  it('State-changing requests with allowed Origin http://localhost:3005/ (trailing slash) should be accepted', async () => {
+    const regRes = await request(app)
+      .post('/api/auth/register')
+      .set('Origin', 'http://localhost:3005/')
+      .send({
+        name: 'Origin 3005 Slash User',
+        email: testEmail,
+        password: testPassword,
+      });
+
+    expect(regRes.status).toBe(201);
+
+    const res = await request(app)
+      .post('/api/auth/login')
+      .set('Origin', 'http://localhost:3005/')
+      .send({
+        email: testEmail,
+        password: testPassword,
+      });
+
+    expect(res.status).toBe(200);
+    expect(res.body.user).toBeDefined();
+  });
+
+  it('State-changing requests with allowed Referer http://localhost:3005/ without Origin should be accepted', async () => {
+    const regRes = await request(app)
+      .post('/api/auth/register')
+      .set('Referer', 'http://localhost:3005/register')
+      .send({
+        name: 'Referer 3005 User',
+        email: testEmail,
+        password: testPassword,
+      });
+
+    expect(regRes.status).toBe(201);
+
+    const res = await request(app)
+      .post('/api/auth/login')
+      .set('Referer', 'http://localhost:3005/login')
+      .send({
+        email: testEmail,
+        password: testPassword,
+      });
+
+    expect(res.status).toBe(200);
+    expect(res.body.user).toBeDefined();
+  });
 });

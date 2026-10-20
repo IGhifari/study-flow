@@ -26,17 +26,24 @@ export function originCheckMiddleware(
 
   // Parse allowed origins from CORS_ORIGIN config
   const configuredOrigins = env.CORS_ORIGIN
-    ? env.CORS_ORIGIN.split(',').map((o) => o.trim()).filter(Boolean)
+    ? env.CORS_ORIGIN.split(',').map((o) => o.trim().replace(/\/+$/, '')).filter(Boolean)
     : [];
 
-  const allowedOrigins = new Set<string>(configuredOrigins);
+  const allowedOrigins = new Set<string>();
+  for (const org of configuredOrigins) {
+    allowedOrigins.add(org);
+    allowedOrigins.add(`${org}/`);
+  }
 
   // In non-production environments, allow local development frontend ports
   if (env.NODE_ENV !== 'production') {
-    allowedOrigins.add('http://localhost:3000');
-    allowedOrigins.add('http://127.0.0.1:3000');
-    allowedOrigins.add('http://localhost:3002');
-    allowedOrigins.add('http://127.0.0.1:3002');
+    const devPorts = ['3000', '3002', '3005'];
+    for (const port of devPorts) {
+      allowedOrigins.add(`http://localhost:${port}`);
+      allowedOrigins.add(`http://localhost:${port}/`);
+      allowedOrigins.add(`http://127.0.0.1:${port}`);
+      allowedOrigins.add(`http://127.0.0.1:${port}/`);
+    }
   }
 
   let requestOrigin: string | null = null;
@@ -62,7 +69,8 @@ export function originCheckMiddleware(
   }
 
   // Verify that request origin is explicitly allowed
-  if (!allowedOrigins.has(requestOrigin)) {
+  const normalizedRequestOrigin = requestOrigin.replace(/\/+$/, '');
+  if (!allowedOrigins.has(requestOrigin) && !allowedOrigins.has(normalizedRequestOrigin)) {
     const error: AppError = new Error('Permintaan ditolak: Origin tidak diizinkan atau CSRF terdeteksi');
     error.statusCode = 403;
     error.code = 'CSRF_ORIGIN_INVALID';
