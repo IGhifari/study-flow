@@ -197,5 +197,37 @@ startxref
         expect.objectContaining({ code: 'PARSING_TIMEOUT' })
       );
     });
+
+    it('should isolate buffer memory when given a sliced buffer with nonzero byteOffset', async () => {
+      // Allocate a larger buffer to simulate Node.js shared buffer pool
+      const prefix = Buffer.from('PADDING_PREFIX_12345_');
+      const suffix = Buffer.from('_PADDING_SUFFIX_67890');
+      const largeBuffer = Buffer.concat([prefix, minimalValidTextPdf, suffix]);
+
+      // Create a subarray (slice) with nonzero byteOffset
+      const slicedBuffer = largeBuffer.subarray(
+        prefix.length,
+        prefix.length + minimalValidTextPdf.length
+      );
+      expect(slicedBuffer.byteOffset).toBeGreaterThan(0);
+
+      const result = await extractPdfText(slicedBuffer);
+      expect(result.pageCount).toBe(1);
+      expect(result.pages[0].text).toContain('StudyFlow adalah platform belajar pribadi');
+      expect(result.actualBytes).toBe(minimalValidTextPdf.length);
+    });
+
+    it('should gracefully handle corrupt PDF with premature EOF and invalid xref table', async () => {
+      const truncatedPdf = minimalValidTextPdf.subarray(0, Math.floor(minimalValidTextPdf.length / 2));
+      await expect(extractPdfText(truncatedPdf)).rejects.toThrow(
+        expect.objectContaining({ code: 'FILE_CORRUPTED' })
+      );
+    });
+
+    it('should extract text without regression preserving Indonesian sentences and punctuation', async () => {
+      const result = await extractPdfText(minimalValidTextPdf);
+      expect(result.pages[0].text).toBe(textContent);
+      expect(result.totalCharacters).toBe(textContent.length);
+    });
   });
 });

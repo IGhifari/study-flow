@@ -1,7 +1,7 @@
 # Monorepo build for StudyFlow Admin Frontend
 # Build command: docker build -f apps/admin/Dockerfile -t studyflow-admin:latest .
 
-FROM node:22-alpine AS base
+FROM node:22.23.4-alpine AS base
 WORKDIR /app
 
 # Stage 1: Install dependencies and build

@@ -95,7 +95,26 @@ localStorageRouter.get(
       const adapter = getStorageAdapter();
       const downloadRes = await adapter.download(storageKey);
 
-      if (downloadRes.error || !downloadRes.data) {
+      if (downloadRes.error) {
+        if (downloadRes.error.message.includes('20 MiB')) {
+          res.status(413).json({
+            error: {
+              code: 'FILE_TOO_LARGE',
+              message: 'Ukuran berkas melebihi batas maksimal 20 MiB.',
+            },
+          });
+          return;
+        }
+        res.status(404).json({
+          error: {
+            code: 'FILE_NOT_FOUND',
+            message: 'File tidak ditemukan di storage lokal.',
+          },
+        });
+        return;
+      }
+
+      if (!downloadRes.data) {
         res.status(404).json({
           error: {
             code: 'FILE_NOT_FOUND',

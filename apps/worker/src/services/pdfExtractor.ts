@@ -70,10 +70,11 @@ export async function extractPdfText(
   }
 
   // 2. Parse PDF with pdfjs-dist
-  const uint8Array = new Uint8Array(
-    pdfBuffer.buffer,
-    pdfBuffer.byteOffset,
-    pdfBuffer.byteLength
+  // Create an isolated Uint8Array copy with its own dedicated backing ArrayBuffer
+  // to prevent sharing memory with Node.js Buffer pool allocations.
+  const uint8Array = new Uint8Array(pdfBuffer.byteLength);
+  uint8Array.set(
+    new Uint8Array(pdfBuffer.buffer, pdfBuffer.byteOffset, pdfBuffer.byteLength)
   );
 
   let loadingTask: any;

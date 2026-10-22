@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { ADMIN_COOKIE_NAMES } from '@studyflow/shared';
 import { resolveForwardedClientIp } from '@/lib/clientIp';
+import { readRequestBodyWithLimit } from '@/lib/bff-body';
 
 const INTERNAL_API_URL =
   process.env.INTERNAL_API_URL ||
@@ -149,14 +150,11 @@ async function handleProxy(
   const trustedClientIp = resolveForwardedClientIp(req.headers);
   requestHeaders.set('x-forwarded-for', trustedClientIp);
 
-  let body: string | undefined;
-  if (req.method !== 'GET' && req.method !== 'HEAD') {
-    try {
-      body = await req.text();
-    } catch {
-      body = undefined;
-    }
+  const bodyResult = await readRequestBodyWithLimit(req);
+  if (!bodyResult.ok && bodyResult.errorResponse) {
+    return bodyResult.errorResponse;
   }
+  const body = bodyResult.body;
 
   try {
     const expressRes = await fetch(targetUrl, {

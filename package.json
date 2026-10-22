@@ -7,6 +7,9 @@
     "apps/*",
     "packages/*"
   ],
+  "engines": {
+    "node": ">=22.23.4"
+  },
   "scripts": {
     "dev": "concurrently -c \"blue,green,magenta\" -n \"web,api,worker\" \"npm run dev:web\" \"npm run dev:api\" \"npm run dev:worker\"",
     "dev:all": "concurrently -c \"blue,cyan,green,magenta\" -n \"web,admin,api,worker\" \"npm run dev:web\" \"npm run dev:admin\" \"npm run dev:api\" \"npm run dev:worker\"",

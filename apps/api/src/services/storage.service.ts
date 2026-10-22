@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
 import { StorageClient } from '@supabase/storage-js';
+import { FILE_UPLOAD_LIMITS } from '@studyflow/shared';
 import { env } from '../config/env.js';
 
 export interface StorageAdapter {
@@ -137,12 +138,12 @@ export class LocalStorageAdapter implements StorageAdapter {
   }
 
   private resolvePath(storageKey: string): string {
-    if (!storageKey || typeof storageKey !== 'string' || storageKey.includes('\0')) {
+    if (!storageKey || typeof storageKey !== 'string' || storageKey.includes('\0') || !storageKey.trim()) {
       throw new Error('Invalid storage key: path traversal detected');
     }
     const normalizedKey = storageKey.replace(/\\/g, '/');
     const sanitizedKey = normalizedKey.replace(/^\/+/, '');
-    if (!sanitizedKey) {
+    if (!sanitizedKey || !sanitizedKey.trim()) {
       throw new Error('Invalid storage key: path traversal detected');
     }
     const base = path.resolve(this.baseDir);
@@ -198,7 +199,31 @@ export class LocalStorageAdapter implements StorageAdapter {
       if (!fs.existsSync(fullPath)) {
         return { data: null, error: new Error('File not found in local storage') };
       }
+
+      // 1. Audit file size via stat before reading entire file into RAM
+      const stat = await fs.promises.stat(fullPath);
+      if (stat.size > FILE_UPLOAD_LIMITS.maxSizeBytes) {
+        return {
+          data: null,
+          error: new Error(
+            `Ukuran file (${stat.size} bytes) melebihi batas maksimal 20 MiB (${FILE_UPLOAD_LIMITS.maxSizeBytes} bytes)`
+          ),
+        };
+      }
+
+      // 2. Read file contents
       const data = await fs.promises.readFile(fullPath);
+
+      // 3. Mitigate race conditions if file size changed between stat and readFile
+      if (data.length > FILE_UPLOAD_LIMITS.maxSizeBytes) {
+        return {
+          data: null,
+          error: new Error(
+            `Ukuran file (${data.length} bytes) melebihi batas maksimal 20 MiB (${FILE_UPLOAD_LIMITS.maxSizeBytes} bytes)`
+          ),
+        };
+      }
+
       return { data, error: null };
     } catch (err: any) {
       return { data: null, error: err instanceof Error ? err : new Error(String(err)) };
