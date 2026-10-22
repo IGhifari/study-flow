@@ -12,6 +12,48 @@ const RATE_LIMIT_HEADERS = [
   'ratelimit-policy',
 ] as const;
 
+/**
+ * Sanitizes a URL for logging by removing query strings and hash fragments,
+ * preventing sensitive parameters (such as tokens, keys, passwords, codes) from leaking into logs.
+ */
+export function sanitizeLogUrl(rawUrl: string | undefined): string {
+  if (!rawUrl || typeof rawUrl !== 'string') {
+    return '';
+  }
+
+  // Strip CRLF control characters to prevent log injection
+  const cleanRaw = rawUrl.replace(/[\r\n]/g, '').trim();
+  if (!cleanRaw) {
+    return '';
+  }
+
+  try {
+    const parsed = new URL(cleanRaw);
+    return `${parsed.origin}${parsed.pathname}`;
+  } catch {
+    // Fallback for relative paths: strip query string and hash directly
+    return cleanRaw.split('?')[0]?.split('#')[0] || '';
+  }
+}
+
+/**
+ * Sanitizes error message text by redacting JWTs, Bearer credentials,
+ * and sensitive query parameters.
+ */
+export function sanitizeLogText(text: string | undefined): string {
+  if (!text || typeof text !== 'string') {
+    return '';
+  }
+
+  return text
+    // 1. Redact JWT tokens
+    .replace(/\beyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\b/g, '[REDACTED_JWT]')
+    // 2. Redact query parameter secrets: ?token=..., &token=..., &secret=..., &key=..., etc.
+    .replace(/([?&](?:token|key|secret|password|apiKey|api_key|access_token|refresh_token|code)=)[^&\s"'`]+/gi, '$1[REDACTED]')
+    // 3. Redact Bearer / Basic auth tokens
+    .replace(/((?:Bearer|Basic)\s+)[A-Za-z0-9._~+/-]+=*/gi, '$1[REDACTED]');
+}
+
 export interface CsrfValidationResult {
   valid: boolean;
   reason?: string;
@@ -194,9 +236,13 @@ export function createBffProxyHandler(apiBasePath: string) {
 
       return response;
     } catch (err) {
+      const safeTargetUrl = sanitizeLogUrl(targetUrl);
+      const rawErrorMsg = err instanceof Error ? err.message : String(err);
+      const safeErrorMsg = sanitizeLogText(rawErrorMsg);
+
       console.error(
-        `[BFF Proxy Error] ${req.method} ${targetUrl} failed:`,
-        err instanceof Error ? err.message : err
+        `[BFF Proxy Error] ${req.method} ${safeTargetUrl} failed:`,
+        safeErrorMsg
       );
       return NextResponse.json(
         {

@@ -4,7 +4,7 @@ import helmet from 'helmet';
 import cookieParser from 'cookie-parser';
 import { env } from './config/env.js';
 import { requestIdMiddleware } from './middleware/requestId.js';
-import { requestLogger } from './middleware/logger.js';
+import { requestLogger, sanitizeRequestPath } from './middleware/logger.js';
 import { errorHandler } from './middleware/errorHandler.js';
 import { healthRouter } from './routes/health.js';
 import { readyRouter } from './routes/ready.js';
@@ -112,7 +112,7 @@ export function createApp(): Express {
     res.status(404).json({
       error: {
         code: 'NOT_FOUND',
-        message: `Route ${req.method} ${req.originalUrl} tidak ditemukan`,
+        message: `Route ${req.method} ${sanitizeRequestPath(req.originalUrl || req.url)} tidak ditemukan`,
         requestId: req.id,
       },
     });

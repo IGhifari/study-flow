@@ -206,8 +206,9 @@ async function handleProxy(
 
     return response;
   } catch (err) {
+    const safeTargetUrl = targetUrl.split('?')[0]?.split('#')[0] || `${INTERNAL_API_URL}/api/${targetPath}`;
     console.error(
-      `[Admin BFF Error] ${req.method} ${targetUrl} failed:`,
+      `[Admin BFF Error] ${req.method} ${safeTargetUrl} failed:`,
       err instanceof Error ? err.message : err
     );
     return NextResponse.json(
