@@ -109,13 +109,13 @@ export function ActivityTrendsCard() {
             <div className="rounded-lg border border-border bg-muted/20 p-2.5 flex items-center justify-between">
               <div>
                 <p className="text-xs text-muted-foreground">Materi Baru ({range})</p>
-                <p className="text-lg font-bold text-foreground tabular-nums">
+                <div className="text-lg font-bold text-foreground tabular-nums">
                   {isLoading ? (
                     <Skeleton className="h-5 w-12" />
                   ) : (
                     trends?.totals.materi.toLocaleString('id-ID') ?? '0'
                   )}
-                </p>
+                </div>
               </div>
               <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20 text-xs gap-1">
                 <FileText className="h-3 w-3" />
@@ -126,13 +126,13 @@ export function ActivityTrendsCard() {
             <div className="rounded-lg border border-border bg-muted/20 p-2.5 flex items-center justify-between">
               <div>
                 <p className="text-xs text-muted-foreground">Tugas Baru ({range})</p>
-                <p className="text-lg font-bold text-foreground tabular-nums">
+                <div className="text-lg font-bold text-foreground tabular-nums">
                   {isLoading ? (
                     <Skeleton className="h-5 w-12" />
                   ) : (
                     trends?.totals.tugas.toLocaleString('id-ID') ?? '0'
                   )}
-                </p>
+                </div>
               </div>
               <Badge variant="outline" className="bg-warning text-warning-foreground border-transparent text-xs gap-1">
                 <CheckSquare className="h-3 w-3" />
