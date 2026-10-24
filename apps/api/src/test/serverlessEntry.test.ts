@@ -1,8 +1,11 @@
+import fs from 'node:fs';
+import path from 'node:path';
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import request from 'supertest';
 import { prisma } from '@studyflow/database';
 import serverlessApp, { app as namedApp, createApp } from '../index.js';
 import vercelHandler, { app as vercelNamedApp } from '../../api/index.js';
+import * as appModule from '../app.js';
 import { dispatchOutboxEvents, flushOutboxForRequest } from '../services/outbox.service.js';
 import { setStorageAdapterForTesting, type StorageAdapter } from '../services/storage.service.js';
 
@@ -24,6 +27,18 @@ describe('Serverless Express Entry Point & Outbox Flush Verification', () => {
     expect(res.body.status).toBe('ok');
     expect(res.body.service).toBe('studyflow-api');
     expect(res.headers['x-request-id']).toBeDefined();
+
+    // Ensure src/app.ts remains strictly the factory module without a default export
+    expect(typeof appModule.createApp).toBe('function');
+    expect('default' in appModule).toBe(false);
+
+    // Ensure vercel.json disables the automatic Express framework preset (which would scan src/app.ts)
+    // and routes all requests to /api (api/index.ts)
+    const vercelConfigPath = path.resolve(process.cwd(), 'vercel.json');
+    const vercelConfig = JSON.parse(fs.readFileSync(vercelConfigPath, 'utf-8'));
+    expect(vercelConfig.framework).toBeNull();
+    expect(vercelConfig.functions?.['api/index.ts']).toBeDefined();
+    expect(vercelConfig.rewrites).toEqual([{ source: '/(.*)', destination: '/api' }]);
   });
 
   it('preserves CORS, security headers, and rate-limit headers on serverless entry point', async () => {
