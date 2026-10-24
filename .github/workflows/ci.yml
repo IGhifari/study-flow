@@ -40,6 +40,7 @@ jobs:
     env:
       NODE_ENV: test
       DATABASE_URL: "postgresql://studyflow_user:studyflow_dev_password@localhost:5432/studyflow_test?schema=public"
+      DIRECT_URL: "postgresql://studyflow_user:studyflow_dev_password@localhost:5432/studyflow_test?schema=public"
       DATABASE_URL_TEST: "postgresql://studyflow_user:studyflow_dev_password@localhost:5432/studyflow_test?schema=public"
       REDIS_URL: "redis://localhost:6379"
       JWT_ACCESS_SECRET: "ci_test_jwt_access_secret_super_secure_32_chars"
@@ -87,7 +88,7 @@ jobs:
   e2e:
     name: End-to-End Tests (Chromium)
     needs: validate
-    # Hanya dijalankan saat ada PR ke main, push ke main, atau dipicu manual lewat Actions UI
+    # Hanya dijalankan untuk main, PR ke main, atau workflow_dispatch.
     if: github.ref == 'refs/heads/main' || github.base_ref == 'main' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
 
@@ -119,6 +120,7 @@ jobs:
     env:
       NODE_ENV: test
       DATABASE_URL: "postgresql://studyflow_user:studyflow_dev_password@localhost:5432/studyflow_test?schema=public"
+      DIRECT_URL: "postgresql://studyflow_user:studyflow_dev_password@localhost:5432/studyflow_test?schema=public"
       DATABASE_URL_TEST: "postgresql://studyflow_user:studyflow_dev_password@localhost:5432/studyflow_test?schema=public"
       REDIS_URL_TEST: "redis://localhost:6379/15"
       JWT_ACCESS_SECRET: "ci_test_jwt_access_secret_super_secure_32_chars"
@@ -160,9 +162,6 @@ jobs:
 
       - name: Run Prisma migrations
         run: npx prisma migrate deploy --schema=packages/database/prisma/schema.prisma
-        env:
-          DATABASE_URL: ${{ env.DATABASE_URL }}
-          DIRECT_URL: ${{ env.DATABASE_URL }}
 
       - name: Build Next.js for E2E
         run: npm run build:e2e
