@@ -13,12 +13,12 @@
     }
   },
   "scripts": {
-    "generate": "prisma generate",
+    "generate": "prisma generate --schema=./prisma/schema.prisma",
     "build": "tsc",
-    "migrate:dev": "prisma migrate dev",
-    "migrate:deploy": "prisma migrate deploy",
-    "migrate:status": "prisma migrate status",
-    "studio": "prisma studio",
+    "migrate:dev": "prisma migrate dev --schema=./prisma/schema.prisma",
+    "migrate:deploy": "prisma migrate deploy --schema=./prisma/schema.prisma",
+    "migrate:status": "prisma migrate status --schema=./prisma/schema.prisma",
+    "studio": "prisma studio --schema=./prisma/schema.prisma",
     "typecheck": "tsc --noEmit",
     "lint": "echo \"Database package linting passed\""
   },

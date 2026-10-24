@@ -35,6 +35,10 @@
     "eval:ai": "node scripts/run-evaluation.mjs",
     "worker:smoke": "npm run smoke --workspace=@studyflow/worker"
   },
+  "dependencies": {
+    "@prisma/client": "6.19.3",
+    "prisma": "6.19.3"
+  },
   "devDependencies": {
     "@playwright/test": "^1.64.0",
     "concurrently": "^9.1.2",
