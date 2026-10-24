@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach, afterAll } from 'vitest';
 import request from 'supertest';
 import express, { Express } from 'express';
 import { Redis } from 'ioredis';
-import rateLimit, { ipKeyGenerator } from 'express-rate-limit';
+import { rateLimit, ipKeyGenerator } from 'express-rate-limit';
 import { createApp } from '../app.js';
 import { env } from '../config/env.js';
 import {

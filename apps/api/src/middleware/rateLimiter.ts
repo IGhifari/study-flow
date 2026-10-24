@@ -1,5 +1,11 @@
 import { Request, Response, NextFunction } from 'express';
-import rateLimit, { Store, ClientRateLimitInfo, ipKeyGenerator } from 'express-rate-limit';
+import {
+  rateLimit,
+  type Store,
+  type ClientRateLimitInfo,
+  type Options,
+  ipKeyGenerator,
+} from 'express-rate-limit';
 import crypto from 'node:crypto';
 import { Redis } from 'ioredis';
 import { env } from '../config/env.js';
@@ -177,12 +183,12 @@ export const authRateLimiter = rateLimit({
   legacyHeaders: false,
   passOnStoreError: false,
   store: createRateLimitStore(),
-  keyGenerator: (req) => {
+  keyGenerator: (req: Request): string => {
     // req.ip is extracted by Express based on 'trust proxy' configuration
     const rawIp = req.ip || req.socket.remoteAddress || '127.0.0.1';
     return ipKeyGenerator(rawIp);
   },
-  handler: (_req, res, _next, options) => {
+  handler: (_req: Request, res: Response, _next: NextFunction, options: Options): void => {
     res.status(429).json(options.message);
   },
   message: {
@@ -204,12 +210,12 @@ export const loginAccountRateLimiter = rateLimit({
   legacyHeaders: false,
   passOnStoreError: false,
   store: createRateLimitStore({ prefix: 'studyflow:rl:login:' }),
-  keyGenerator: (req) => {
+  keyGenerator: (req: Request): string => {
     const rawIp = req.ip || req.socket.remoteAddress || '127.0.0.1';
     const accountHash = hashAccountIdentifier(req.body?.email);
     return accountHash ? `acct:${accountHash}` : `ip:${ipKeyGenerator(rawIp)}`;
   },
-  handler: (_req, res, _next, options) => {
+  handler: (_req: Request, res: Response, _next: NextFunction, options: Options): void => {
     res.status(429).json(options.message);
   },
   message: {
@@ -231,11 +237,11 @@ export const forgotPasswordIpRateLimiter = rateLimit({
   legacyHeaders: false,
   passOnStoreError: false,
   store: createRateLimitStore({ prefix: 'studyflow:rl:forgot:ip:' }),
-  keyGenerator: (req) => {
+  keyGenerator: (req: Request): string => {
     const rawIp = req.ip || req.socket.remoteAddress || '127.0.0.1';
     return ipKeyGenerator(rawIp);
   },
-  handler: (_req, res, _next, options) => {
+  handler: (_req: Request, res: Response, _next: NextFunction, options: Options): void => {
     res.status(429).json(options.message);
   },
   message: {
@@ -258,12 +264,12 @@ export const forgotPasswordAccountRateLimiter = rateLimit({
   legacyHeaders: false,
   passOnStoreError: false,
   store: createRateLimitStore({ prefix: 'studyflow:rl:forgot:acct:' }),
-  keyGenerator: (req) => {
+  keyGenerator: (req: Request): string => {
     const rawIp = req.ip || req.socket.remoteAddress || '127.0.0.1';
     const accountHash = hashAccountIdentifier(req.body?.email);
     return accountHash ? `acct:${accountHash}` : `ip:${ipKeyGenerator(rawIp)}`;
   },
-  handler: (_req, res, _next, options) => {
+  handler: (_req: Request, res: Response, _next: NextFunction, options: Options): void => {
     res.status(429).json(options.message);
   },
   message: {
@@ -286,12 +292,12 @@ export const verificationEmailRateLimiter = rateLimit({
   legacyHeaders: false,
   passOnStoreError: false,
   store: createRateLimitStore({ prefix: 'studyflow:rl:verify_email:' }),
-  keyGenerator: (req) => {
+  keyGenerator: (req: Request): string => {
     const rawIp = req.ip || req.socket.remoteAddress || '127.0.0.1';
     const userId = req.user?.id;
     return userId ? `user:${userId}` : `ip:${ipKeyGenerator(rawIp)}`;
   },
-  handler: (_req, res, _next, options) => {
+  handler: (_req: Request, res: Response, _next: NextFunction, options: Options): void => {
     res.status(429).json(options.message);
   },
   message: {
@@ -313,12 +319,12 @@ export const adminLoginRateLimiter = rateLimit({
   legacyHeaders: false,
   passOnStoreError: false,
   store: createRateLimitStore({ prefix: 'studyflow:rl:admin:login:' }),
-  keyGenerator: (req) => {
+  keyGenerator: (req: Request): string => {
     const rawIp = req.ip || req.socket.remoteAddress || '127.0.0.1';
     const accountHash = hashAccountIdentifier(req.body?.email);
     return accountHash ? `admin:acct:${accountHash}` : `admin:ip:${ipKeyGenerator(rawIp)}`;
   },
-  handler: (_req, res, _next, options) => {
+  handler: (_req: Request, res: Response, _next: NextFunction, options: Options): void => {
     res.status(429).json(options.message);
   },
   message: {

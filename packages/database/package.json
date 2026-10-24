@@ -23,9 +23,9 @@
     "lint": "echo \"Database package linting passed\""
   },
   "dependencies": {
-    "@prisma/client": "6.19.3",
+    "@prisma/client": "^6.4.1",
     "dotenv": "^16.4.7",
-    "prisma": "6.19.3"
+    "prisma": "^6.4.1"
   },
   "devDependencies": {
     "@studyflow/config": "*",
