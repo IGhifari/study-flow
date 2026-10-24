@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, afterAll } from 'vitest';
 import request from 'supertest';
-import express, { Express } from 'express';
+import express, { Express, Request } from 'express';
 import { Redis } from 'ioredis';
 import { rateLimit, ipKeyGenerator } from 'express-rate-limit';
 import { createApp } from '../app.js';
@@ -51,7 +51,7 @@ describe('Auth Client Identification & Rate Limiting (Browser -> BFF -> API)', (
       standardHeaders: true,
       legacyHeaders: false,
       store: testStore,
-      keyGenerator: (req) => ipKeyGenerator(req.ip || '127.0.0.1'),
+      keyGenerator: (req: Request): string => ipKeyGenerator(req.ip || '127.0.0.1'),
     });
 
     app.post('/api/auth/register', limiter, (req, res) => res.json({ ok: true }));
@@ -92,7 +92,7 @@ describe('Auth Client Identification & Rate Limiting (Browser -> BFF -> API)', (
       windowMs: 5000,
       max: 2,
       store: testStore1,
-      keyGenerator: (req) => ipKeyGenerator(req.ip || '127.0.0.1'),
+      keyGenerator: (req: Request): string => ipKeyGenerator(req.ip || '127.0.0.1'),
     }));
     app1.get('/test', (req, res) => res.json({ instance: 1 }));
 
@@ -103,7 +103,7 @@ describe('Auth Client Identification & Rate Limiting (Browser -> BFF -> API)', (
       windowMs: 5000,
       max: 2,
       store: testStore2,
-      keyGenerator: (req) => ipKeyGenerator(req.ip || '127.0.0.1'),
+      keyGenerator: (req: Request): string => ipKeyGenerator(req.ip || '127.0.0.1'),
     }));
     app2.get('/test', (req, res) => res.json({ instance: 2 }));
 
@@ -136,7 +136,7 @@ describe('Auth Client Identification & Rate Limiting (Browser -> BFF -> API)', (
       windowMs: 5000,
       max: 2,
       store: testStore,
-      keyGenerator: (req) => ipKeyGenerator(req.ip || '127.0.0.1'),
+      keyGenerator: (req: Request): string => ipKeyGenerator(req.ip || '127.0.0.1'),
     }));
     directApp.get('/test', (req, res) => res.json({ ip: req.ip }));
 
@@ -183,7 +183,7 @@ describe('Auth Client Identification & Rate Limiting (Browser -> BFF -> API)', (
       windowMs: 5000,
       max: 2,
       store: testStore,
-      keyGenerator: (req) => {
+      keyGenerator: (req: Request): string => {
         const hash = hashAccountIdentifier(req.body?.email);
         return hash ? `acct:${hash}` : 'ip:unknown';
       },
@@ -220,7 +220,7 @@ describe('Auth Client Identification & Rate Limiting (Browser -> BFF -> API)', (
       standardHeaders: true,
       legacyHeaders: false,
       store: testStore,
-      keyGenerator: (req) => ipKeyGenerator(req.ip || '127.0.0.1'),
+      keyGenerator: (req: Request): string => ipKeyGenerator(req.ip || '127.0.0.1'),
     }), (req, res) => res.send('OK'));
 
     await request(app).get('/test');
@@ -356,7 +356,7 @@ describe('Auth Client Identification & Rate Limiting (Browser -> BFF -> API)', (
       windowMs: 5000,
       max: 2, // limit 2 requests per IP
       store: testStore,
-      keyGenerator: (req) => ipKeyGenerator(req.ip || '127.0.0.1'),
+      keyGenerator: (req: Request): string => ipKeyGenerator(req.ip || '127.0.0.1'),
     }));
     app.post('/api/auth/register', (req, res) => res.json({ ok: true, ip: req.ip }));
 
