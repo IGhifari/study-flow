@@ -34,6 +34,8 @@ describe('Serverless Express Entry Point & Outbox Flush Verification', () => {
     expect(res.status).toBe(200);
     expect(res.headers['access-control-allow-origin']).toBe('http://localhost:3000');
     expect(res.headers['access-control-allow-credentials']).toBe('true');
+    expect(res.headers['cross-origin-resource-policy']).toBe('cross-origin');
+    expect(res.headers['x-content-type-options']).toBe('nosniff');
   });
 
   it('flushOutboxForRequest prioritizes targeted aggregateId and marks event PUBLISHED', async () => {

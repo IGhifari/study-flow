@@ -1,6 +1,7 @@
+import type { IncomingMessage, ServerResponse } from 'node:http';
 import express, { Express, Request, Response } from 'express';
 import cors from 'cors';
-import helmet from 'helmet';
+import helmet, { type HelmetOptions } from 'helmet';
 import cookieParser from 'cookie-parser';
 import { env } from './config/env.js';
 import { requestIdMiddleware } from './middleware/requestId.js';
@@ -23,6 +24,18 @@ import { searchRouter } from './routes/search.js';
 import { adminAuthRouter } from './routes/adminAuth.js';
 import { adminRouter } from './routes/admin.js';
 
+type HelmetMiddlewareFactory = (
+  options?: Readonly<HelmetOptions>
+) => (req: IncomingMessage, res: ServerResponse, next: (err?: unknown) => void) => void;
+
+function resolveHelmetMiddleware(
+  mod: HelmetMiddlewareFactory | { readonly default: HelmetMiddlewareFactory }
+): HelmetMiddlewareFactory {
+  return typeof mod === 'function' ? mod : mod.default;
+}
+
+const helmetMiddleware = resolveHelmetMiddleware(helmet);
+
 export function createApp(): Express {
   const app = express();
 
@@ -41,7 +54,7 @@ export function createApp(): Express {
 
   // Security headers with cross-origin resource policy for local file previews
   app.use(
-    helmet({
+    helmetMiddleware({
       crossOriginResourcePolicy: { policy: 'cross-origin' },
     })
   );
