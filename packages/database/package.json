@@ -24,11 +24,11 @@
   },
   "dependencies": {
     "@prisma/client": "6.19.3",
-    "dotenv": "^16.4.7"
+    "dotenv": "^16.4.7",
+    "prisma": "6.19.3"
   },
   "devDependencies": {
     "@studyflow/config": "*",
-    "prisma": "6.19.3",
     "typescript": "^5.8.2"
   }
 }
