@@ -20,11 +20,11 @@
     "lint": "echo \"Shared package linting passed\""
   },
   "dependencies": {
+    "tsup": "^8.4.0",
     "zod": "^3.24.2"
   },
   "devDependencies": {
     "@studyflow/config": "*",
-    "tsup": "^8.4.0",
     "typescript": "^5.8.2"
   }
 }
