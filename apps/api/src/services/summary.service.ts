@@ -12,7 +12,7 @@ import {
   getUserAiQuotaStatus,
   AiQuotaError,
 } from './aiQuota.service.js';
-import { dispatchOutboxEvents } from './outbox.service.js';
+import { flushOutboxForRequest } from './outbox.service.js';
 
 function createError(statusCode: number, code: string, message: string): AppError {
   const err: AppError = new Error(message);
@@ -316,10 +316,8 @@ export async function requestSummaryGeneration(
       };
     });
 
-    // Trigger immediate outbox dispatch (non-blocking)
-    dispatchOutboxEvents().catch((err) => {
-      console.error('[SummaryService] Failed immediate outbox dispatch:', err);
-    });
+    // Flush targeted outbox event with bounded timeout so serverless functions do not freeze before enqueue
+    await flushOutboxForRequest({ aggregateId: result.jobId });
 
     return result;
   } catch (err: any) {

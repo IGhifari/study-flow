@@ -14,9 +14,8 @@ export const prisma = globalThis.prismaGlobal ?? new PrismaClient({
   log: process.env.NODE_ENV === 'development' ? ['warn', 'error'] : ['error'],
 });
 
-if (process.env.NODE_ENV !== 'production') {
-  globalThis.prismaGlobal = prisma;
-}
+// Cache singleton across warm invocations (both local dev HMR and serverless functions)
+globalThis.prismaGlobal = prisma;
 
 export { PrismaClient, Prisma };
 export * from '@prisma/client';

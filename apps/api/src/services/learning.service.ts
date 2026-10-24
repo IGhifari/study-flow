@@ -8,7 +8,7 @@ import {
   StartQuizAttemptResponse,
 } from '@studyflow/shared';
 import { checkAndReserveAiQuota, AiQuotaError } from './aiQuota.service.js';
-import { dispatchOutboxEvents } from './outbox.service.js';
+import { flushOutboxForRequest } from './outbox.service.js';
 import crypto from 'node:crypto';
 
 function createError(
@@ -283,8 +283,8 @@ export async function requestFlashcardGeneration(
       };
     });
 
-    // Non-blocking immediate outbox dispatch after transaction commit
-    dispatchOutboxEvents().catch(() => {});
+    // Flush targeted outbox event with bounded timeout before returning serverless response
+    await flushOutboxForRequest({ aggregateId: result.jobId });
 
     return result;
   } catch (err: unknown) {
@@ -454,8 +454,8 @@ export async function requestQuizGeneration(
       };
     });
 
-    // Non-blocking immediate outbox dispatch after transaction commit
-    dispatchOutboxEvents().catch(() => {});
+    // Flush targeted outbox event with bounded timeout before returning serverless response
+    await flushOutboxForRequest({ aggregateId: result.jobId });
 
     return result;
   } catch (err: unknown) {

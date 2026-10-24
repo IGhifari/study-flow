@@ -11,6 +11,10 @@ function getQueueConnection(): Redis {
     redisConnection = new Redis(env.REDIS_URL, {
       maxRetriesPerRequest: null,
       lazyConnect: true,
+      connectTimeout: 2000,
+    });
+    redisConnection.on('error', () => {
+      // Handled gracefully per operation
     });
   }
   return redisConnection;
@@ -64,10 +68,12 @@ export async function scheduleAssignmentReminder(assignment: {
 
   const delay = targetSendMs - nowMs;
   const jobId = `reminder-${assignment.id}-D_MINUS_1-${deadlineMs}`;
+  const timeoutMs = env.NODE_ENV === 'test' ? 300 : 1200;
+  let timer: NodeJS.Timeout | null = null;
 
   try {
     const queue = getAssignmentReminderQueue();
-    await queue.add(
+    const enqueuePromise = queue.add(
       'send-assignment-reminder',
       {
         assignmentId: assignment.id,
@@ -79,10 +85,18 @@ export async function scheduleAssignmentReminder(assignment: {
         delay,
       }
     );
+    const timeoutPromise = new Promise<void>((resolve) => {
+      timer = setTimeout(() => resolve(), timeoutMs);
+    });
+    await Promise.race([enqueuePromise, timeoutPromise]);
   } catch (err: any) {
     // Graceful logging if queue connection is not available in isolated test environments
     if (env.NODE_ENV !== 'test') {
       console.warn(`[AssignmentReminder] Failed to schedule reminder for ${assignment.id}: ${err?.message}`);
+    }
+  } finally {
+    if (timer) {
+      clearTimeout(timer);
     }
   }
 }

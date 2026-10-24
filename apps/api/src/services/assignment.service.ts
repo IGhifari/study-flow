@@ -330,8 +330,8 @@ export async function createAssignment(
     },
   });
 
-  // Schedule H-1 deadline reminder in BullMQ
-  scheduleAssignmentReminder(created).catch(() => {});
+  // Schedule H-1 deadline reminder in BullMQ with bounded timeout for serverless safety
+  await scheduleAssignmentReminder(created);
 
   return toAssignmentResponse(created);
 }
@@ -446,8 +446,8 @@ export async function updateAssignment(
     },
   });
 
-  // Re-schedule H-1 deadline reminder in BullMQ if updated
-  scheduleAssignmentReminder(updated).catch(() => {});
+  // Re-schedule H-1 deadline reminder in BullMQ if updated (bounded timeout)
+  await scheduleAssignmentReminder(updated);
 
   const grouped = await prisma.assignmentSubtask.groupBy({
     by: ['assignmentId', 'isCompleted'],

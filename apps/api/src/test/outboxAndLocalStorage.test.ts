@@ -1,8 +1,9 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import request from 'supertest';
 import { createApp } from '../app.js';
+import serverlessApp, { createApp as createServerlessApp } from '../index.js';
 import { prisma } from '@studyflow/database';
-import { dispatchOutboxEvents } from '../services/outbox.service.js';
+import { dispatchOutboxEvents, flushOutboxForRequest } from '../services/outbox.service.js';
 import {
   setStorageAdapterForTesting,
   generateLocalStorageToken,
@@ -86,6 +87,54 @@ describe('Outbox Failure Transition & Local Storage Security Tests', () => {
         where: { id: event.id, status: 'PENDING', attempts: { lt: 5 } },
       });
       expect(checkEvents).toHaveLength(0);
+    });
+
+    it('flushes targeted event via flushOutboxForRequest and verifies serverless entry point', async () => {
+      const okAdapter: StorageAdapter = {
+        async createSignedUploadUrl() {
+          return { data: null, error: null };
+        },
+        async createSignedUrl() {
+          return { data: null, error: null };
+        },
+        async download() {
+          return { data: null, error: null };
+        },
+        async remove() {
+          return { data: [], error: null };
+        },
+        async info() {
+          return { data: null, error: null };
+        },
+        async upload() {
+          return { data: null, error: null };
+        },
+      };
+      setStorageAdapterForTesting(okAdapter);
+
+      const targetAggregateId = `mat_serverless_${Date.now()}`;
+      const event = await prisma.outboxEvent.create({
+        data: {
+          aggregateId: targetAggregateId,
+          eventType: 'DOCUMENT_CLEANUP_REQUESTED',
+          payload: { storageKey: 'test/cleanup.pdf', userId: testUserId },
+          status: 'PENDING',
+        },
+      });
+
+      const flushRes = await flushOutboxForRequest({ aggregateId: targetAggregateId });
+      expect(flushRes.dispatched).toBe(1);
+
+      const afterFlush = await prisma.outboxEvent.findUnique({ where: { id: event.id } });
+      expect(afterFlush?.status).toBe('PUBLISHED');
+      expect(afterFlush?.publishedAt).not.toBeNull();
+
+      // Verify serverless entry point exports Express handler without active server listener
+      expect(typeof serverlessApp).toBe('function');
+      expect(typeof createServerlessApp).toBe('function');
+      const healthRes = await request(serverlessApp).get('/health');
+      expect(healthRes.status).toBe(200);
+      expect(healthRes.body.status).toBe('ok');
     });
   });
 

@@ -17,7 +17,7 @@ import {
   checkAndReserveUploadQuota,
   releaseReservation,
 } from './quota.service.js';
-import { dispatchOutboxEvents } from './outbox.service.js';
+import { flushOutboxForRequest } from './outbox.service.js';
 import { toCourseResponse } from './course.service.js';
 import { env } from '../config/env.js';
 
@@ -271,10 +271,8 @@ export async function finalizeUpload(
     return updated;
   });
 
-  // 3. Dispatch outbox event to BullMQ asynchronously without blocking response
-  dispatchOutboxEvents().catch((err) => {
-    console.error('[OutboxDispatchError]', err);
-  });
+  // 3. Flush targeted outbox event with bounded timeout so serverless functions do not freeze before enqueue
+  await flushOutboxForRequest({ aggregateId: material.id });
 
   return {
     material: toMaterialListItem(updatedMaterial),
@@ -608,7 +606,7 @@ export async function retryMaterialProcessing(
     });
   });
 
-  dispatchOutboxEvents().catch(console.error);
+  await flushOutboxForRequest({ aggregateId: material.id });
 
   return {
     message: 'Pemrosesan ulang PDF berhasil dijadwalkan',
@@ -744,16 +742,8 @@ export async function deleteMaterial(userId: string, id: string): Promise<void> 
     });
   });
 
-  // 3. Immediately attempt storage object removal via storage adapter
-  const storageAdapter = getStorageAdapter();
-  try {
-    await storageAdapter.remove([material.storageKey]);
-  } catch (err) {
-    console.warn(
-      `[StorageCleanup] Immediate removal of ${material.storageKey} failed, will be retried by cleanup worker:`,
-      err
-    );
-  }
+  // 3. Flush cleanup outbox event (removes storage object and marks outbox event PUBLISHED, or retains PENDING on error)
+  await flushOutboxForRequest({ aggregateId: material.id });
 }
 
 export async function getMaterialDownloadUrl(

@@ -46,7 +46,7 @@ import { getStorageAdapter, StorageUnavailableAdapter } from './storage.service.
 import {
   getDocumentProcessingQueue,
   getAiGenerationQueue,
-  dispatchOutboxEvents,
+  flushOutboxForRequest,
 } from './outbox.service.js';
 import { verifyPassword, hashPassword } from './password.service.js';
 import {
@@ -1374,15 +1374,16 @@ export async function retryAdminJob(jobId: string): Promise<{ message: string; j
 
     const eventTypeMap: Record<string, string> = {
       AI_SUMMARY_GENERATION: 'AI_SUMMARY_REQUESTED',
-      AI_FLASHCARD_GENERATION: 'AI_FLASHCARDS_REQUESTED',
+      AI_FLASHCARD_GENERATION: 'AI_FLASHCARD_REQUESTED',
       AI_QUIZ_GENERATION: 'AI_QUIZ_REQUESTED',
     };
     const eventType = eventTypeMap[job.type];
     if (eventType) {
-      await prisma.outboxEvent.create({
+      const aggregateId = job.materialId || job.id;
+      const outboxEvent = await prisma.outboxEvent.create({
         data: {
           eventType,
-          aggregateId: job.materialId || job.id,
+          aggregateId,
           payload: {
             jobId: job.id,
             userId: job.userId,
@@ -1391,7 +1392,7 @@ export async function retryAdminJob(jobId: string): Promise<{ message: string; j
           },
         },
       });
-      dispatchOutboxEvents().catch(() => {});
+      await flushOutboxForRequest({ eventId: outboxEvent.id, aggregateId });
     }
 
     return {

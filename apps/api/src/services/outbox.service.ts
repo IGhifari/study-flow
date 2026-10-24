@@ -17,6 +17,12 @@ function getQueueConnection(): Redis {
     redisConnection = new Redis(env.REDIS_URL, {
       maxRetriesPerRequest: null,
       lazyConnect: true,
+      connectTimeout: 2500,
+    });
+    redisConnection.on('error', (err) => {
+      if (env.NODE_ENV !== 'test') {
+        console.warn('[OutboxDispatcher] Redis connection warning:', err.message);
+      }
     });
   }
   return redisConnection;
@@ -66,22 +72,77 @@ export function getAiGenerationQueue(): Queue {
   return aiQueue;
 }
 
+export interface DispatchOutboxOptions {
+  /** Target a specific outbox event ID first */
+  eventId?: string;
+  /** Target pending outbox events for a specific aggregate ID first */
+  aggregateId?: string;
+  /** Maximum number of events to process in this invocation (default: 50) */
+  limit?: number;
+  /** Whether to include opportunistic backlog events after targeted events (default: true outside test) */
+  includeBacklog?: boolean;
+}
+
 /**
  * Dispatches pending outbox events to BullMQ or executes direct cleanup.
- * Handles DOCUMENT_PROCESSING_REQUESTED, AI_SUMMARY_REQUESTED, and DOCUMENT_CLEANUP_REQUESTED.
+ * Handles DOCUMENT_PROCESSING_REQUESTED, AI_SUMMARY_REQUESTED, AI_FLASHCARD_REQUESTED,
+ * AI_QUIZ_REQUESTED, and DOCUMENT_CLEANUP_REQUESTED.
  */
-export async function dispatchOutboxEvents(): Promise<{ dispatched: number; failed: number }> {
+export async function dispatchOutboxEvents(
+  options?: DispatchOutboxOptions
+): Promise<{ dispatched: number; failed: number }> {
   let dispatched = 0;
   let failed = 0;
 
-  const pendingEvents = await prisma.outboxEvent.findMany({
-    where: {
-      status: 'PENDING',
-      attempts: { lt: 5 }, // Cap at 5 attempts before requiring manual intervention
-    },
-    orderBy: { createdAt: 'asc' },
-    take: 50,
-  });
+  const limit = options?.limit ?? 50;
+  const hasTarget = Boolean(options?.eventId || options?.aggregateId);
+
+  let pendingEvents: Array<{
+    id: string;
+    aggregateId: string;
+    eventType: string;
+    payload: unknown;
+    attempts: number;
+  }> = [];
+
+  if (hasTarget) {
+    const targeted = await prisma.outboxEvent.findMany({
+      where: {
+        status: 'PENDING',
+        attempts: { lt: 5 },
+        ...(options?.eventId ? { id: options.eventId } : {}),
+        ...(options?.aggregateId ? { aggregateId: options.aggregateId } : {}),
+      },
+      orderBy: { createdAt: 'asc' },
+      take: limit,
+    });
+    pendingEvents.push(...targeted);
+
+    const remainingSlots = limit - pendingEvents.length;
+    const shouldIncludeBacklog = options?.includeBacklog ?? env.NODE_ENV !== 'test';
+    if (shouldIncludeBacklog && remainingSlots > 0) {
+      const targetedIds = pendingEvents.map((e) => e.id);
+      const backlog = await prisma.outboxEvent.findMany({
+        where: {
+          status: 'PENDING',
+          attempts: { lt: 5 },
+          ...(targetedIds.length > 0 ? { id: { notIn: targetedIds } } : {}),
+        },
+        orderBy: { createdAt: 'asc' },
+        take: remainingSlots,
+      });
+      pendingEvents.push(...backlog);
+    }
+  } else {
+    pendingEvents = await prisma.outboxEvent.findMany({
+      where: {
+        status: 'PENDING',
+        attempts: { lt: 5 }, // Cap at 5 attempts before requiring manual intervention
+      },
+      orderBy: { createdAt: 'asc' },
+      take: limit,
+    });
+  }
 
   if (pendingEvents.length === 0) {
     return { dispatched: 0, failed: 0 };
@@ -123,7 +184,10 @@ export async function dispatchOutboxEvents(): Promise<{ dispatched: number; fail
             jobId, // Stable idempotency key in BullMQ
           }
         );
-      } else if (event.eventType === 'AI_FLASHCARD_REQUESTED') {
+      } else if (
+        event.eventType === 'AI_FLASHCARD_REQUESTED' ||
+        event.eventType === 'AI_FLASHCARDS_REQUESTED'
+      ) {
         const queue = getAiGenerationQueue();
         const jobId = payload.jobId || event.aggregateId;
         await queue.add(
@@ -164,8 +228,8 @@ export async function dispatchOutboxEvents(): Promise<{ dispatched: number; fail
         }
       }
 
-      await prisma.outboxEvent.update({
-        where: { id: event.id },
+      await prisma.outboxEvent.updateMany({
+        where: { id: event.id, status: 'PENDING' },
         data: {
           status: 'PUBLISHED',
           publishedAt: new Date(),
@@ -183,8 +247,8 @@ export async function dispatchOutboxEvents(): Promise<{ dispatched: number; fail
       const nextAttempts = event.attempts + 1;
       const nextStatus = nextAttempts >= 5 ? 'FAILED' : 'PENDING';
 
-      await prisma.outboxEvent.update({
-        where: { id: event.id },
+      await prisma.outboxEvent.updateMany({
+        where: { id: event.id, status: 'PENDING', attempts: event.attempts },
         data: {
           attempts: { increment: 1 },
           status: nextStatus,
@@ -195,6 +259,52 @@ export async function dispatchOutboxEvents(): Promise<{ dispatched: number; fail
   }
 
   return { dispatched, failed };
+}
+
+/**
+ * Serverless-safe outbox flush helper to be awaited before sending the HTTP response.
+ * Prioritizes the newly created event (`eventId` or `aggregateId`) with a small opportunistic
+ * batch size and strict wall-clock timeout so Vercel Functions do not freeze before BullMQ
+ * enqueue completes, while preventing slow/unreachable Redis from blocking user responses.
+ */
+export async function flushOutboxForRequest(options: {
+  eventId?: string;
+  aggregateId?: string;
+  timeoutMs?: number;
+}): Promise<{ dispatched: number; failed: number; timedOut?: boolean }> {
+  const timeoutMs = options.timeoutMs ?? (env.NODE_ENV === 'test' ? 400 : 1500);
+  let timer: NodeJS.Timeout | null = null;
+
+  try {
+    const dispatchPromise = dispatchOutboxEvents({
+      eventId: options.eventId,
+      aggregateId: options.aggregateId,
+      limit: env.NODE_ENV === 'test' ? 1 : 3,
+      includeBacklog: env.NODE_ENV !== 'test',
+    });
+
+    const timeoutPromise = new Promise<{ dispatched: number; failed: number; timedOut: boolean }>(
+      (resolve) => {
+        timer = setTimeout(() => {
+          resolve({ dispatched: 0, failed: 0, timedOut: true });
+        }, timeoutMs);
+      }
+    );
+
+    return await Promise.race([dispatchPromise, timeoutPromise]);
+  } catch (err) {
+    if (env.NODE_ENV !== 'test') {
+      console.warn(
+        '[OutboxDispatcher] Request-scoped flush failed (will retry on next sweep):',
+        err instanceof Error ? err.message : err
+      );
+    }
+    return { dispatched: 0, failed: 1 };
+  } finally {
+    if (timer) {
+      clearTimeout(timer);
+    }
+  }
 }
 
 /**
