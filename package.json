@@ -38,8 +38,8 @@
     "seed:demo": "node scripts/seed-demo.mjs",
     "eval:ai": "node scripts/run-evaluation.mjs",
     "worker:smoke": "npm run smoke --workspace=@studyflow/worker",
-    "build:cf-web": "npm run build:shared && npx --workspace=@studyflow/web opennextjs-cloudflare build",
-    "deploy:cf-web": "npm run build:cf-web && npx --workspace=@studyflow/web opennextjs-cloudflare deploy"
+    "build:cf-web": "npm run build:shared && npm run build:cf --workspace=@studyflow/web",
+    "deploy:cf-web": "npm run build:cf-web && npm run deploy:cf --workspace=@studyflow/web"
   },
   "devDependencies": {
     "@playwright/test": "^1.64.0",
