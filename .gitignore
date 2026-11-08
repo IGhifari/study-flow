@@ -8,6 +8,10 @@ dist/
 build/
 .next/
 out/
+.open-next/
+.worker-next/
+**/.open-next/
+**/.worker-next/
 
 # Environment files
 .env

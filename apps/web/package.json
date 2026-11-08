@@ -39,6 +39,7 @@
     "tailwind-merge": "^3.0.2"
   },
   "devDependencies": {
+    "@opennextjs/cloudflare": "^1.20.16",
     "@playwright/test": "^1.64.0",
     "@studyflow/config": "*",
     "@tailwindcss/postcss": "^4.0.9",

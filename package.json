@@ -37,13 +37,16 @@
     "test:e2e": "npx playwright test --config=apps/web/playwright.config.ts",
     "seed:demo": "node scripts/seed-demo.mjs",
     "eval:ai": "node scripts/run-evaluation.mjs",
-    "worker:smoke": "npm run smoke --workspace=@studyflow/worker"
+    "worker:smoke": "npm run smoke --workspace=@studyflow/worker",
+    "build:cf-web": "npm run build:shared && npx --workspace=@studyflow/web opennextjs-cloudflare build",
+    "deploy:cf-web": "npm run build:cf-web && npx --workspace=@studyflow/web opennextjs-cloudflare deploy"
   },
   "devDependencies": {
     "@playwright/test": "^1.64.0",
     "concurrently": "^9.1.2",
     "pdf-lib": "^1.17.1",
     "typescript": "^5.8.2",
-    "vitest": "^3.0.7"
+    "vitest": "^3.0.7",
+    "wrangler": "^4.158.0"
   }
 }
