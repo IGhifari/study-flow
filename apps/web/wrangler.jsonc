@@ -7,5 +7,9 @@
   "assets": {
     "directory": ".open-next/assets",
     "binding": "ASSETS"
+  },
+  "vars": {
+    "INTERNAL_API_URL": "https://big-toward-handy-producers.trycloudflare.com",
+    "NEXT_PUBLIC_API_URL": "https://big-toward-handy-producers.trycloudflare.com"
   }
 }
