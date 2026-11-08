@@ -15,6 +15,7 @@
   },
   "dependencies": {
     "@hookform/resolvers": "^5.9.1",
+    "@opennextjs/cloudflare": "^1.20.16",
     "@radix-ui/react-avatar": "^1.2.7",
     "@radix-ui/react-checkbox": "^1.3.12",
     "@radix-ui/react-dialog": "^1.1.23",
@@ -41,7 +42,6 @@
     "tailwind-merge": "^3.0.2"
   },
   "devDependencies": {
-    "@opennextjs/cloudflare": "^1.20.16",
     "@playwright/test": "^1.64.0",
     "@studyflow/config": "*",
     "@tailwindcss/postcss": "^4.0.9",

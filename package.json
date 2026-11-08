@@ -41,6 +41,9 @@
     "build:cf-web": "npm run build:shared && npm run build:cf --workspace=@studyflow/web",
     "deploy:cf-web": "npm run build:cf-web && npm run deploy:cf --workspace=@studyflow/web"
   },
+  "dependencies": {
+    "@opennextjs/cloudflare": "^1.20.16"
+  },
   "devDependencies": {
     "@playwright/test": "^1.64.0",
     "concurrently": "^9.1.2",
