@@ -12,6 +12,7 @@
   "vars": {
     "INTERNAL_API_URL": "https://studyflow-api-ase8.onrender.com",
     "NEXT_PUBLIC_API_URL": "https://studyflow-api-ase8.onrender.com",
-    "NEXT_PUBLIC_TURNSTILE_SITE_KEY": "0x4AAAAAAF7bcWY_zVxAcJWr"
+    "NEXT_PUBLIC_TURNSTILE_SITE_KEY": "0x4AAAAAAF7bcWY_zVxAcJWr",
+    "TRUSTED_CLIENT_IP_HEADER": "cf-connecting-ip"
   }
 }

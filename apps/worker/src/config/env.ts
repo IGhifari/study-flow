@@ -118,7 +118,7 @@ function assertTestDatabaseUrl(url: string | undefined, variableName: string): v
 function loadWorkerEnv(): WorkerEnv {
   const result = WorkerEnvSchema.safeParse(process.env);
   if (!result.success) {
-    const missingKeys = result.error.errors.map((err) => err.path.join('.')).join(', ');
+    const missingKeys = result.error.issues.map((err) => err.path.join('.')).join(', ');
     console.error(`[FATAL] Worker environment validation failed. Invalid or missing variables: ${missingKeys}`);
     process.exit(1);
   }

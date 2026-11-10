@@ -56,7 +56,7 @@ export function CourseQuickNoteDialog({
     });
 
     if (!validationResult.success) {
-      setError(validationResult.error.errors[0]?.message || 'Input catatan tidak valid');
+      setError(validationResult.error.issues[0]?.message || 'Input catatan tidak valid');
       return;
     }
 

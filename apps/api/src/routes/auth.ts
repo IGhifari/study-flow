@@ -64,7 +64,7 @@ authRouter.post(
     try {
       const parsed = RegisterInputSchema.safeParse(req.body);
       if (!parsed.success) {
-        const error: AppError = new Error(parsed.error.errors[0]?.message || 'Input registrasi tidak valid');
+        const error: AppError = new Error(parsed.error.issues[0]?.message || 'Input registrasi tidak valid');
         error.statusCode = 400;
         error.code = 'VALIDATION_ERROR';
         return next(error);
@@ -255,7 +255,7 @@ authRouter.patch(
     try {
       const parsed = UpdateProfileInputSchema.safeParse(req.body);
       if (!parsed.success) {
-        const error: AppError = new Error(parsed.error.errors[0]?.message || 'Input update profil tidak valid');
+        const error: AppError = new Error(parsed.error.issues[0]?.message || 'Input update profil tidak valid');
         error.statusCode = 400;
         error.code = 'VALIDATION_ERROR';
         return next(error);
@@ -282,7 +282,7 @@ authRouter.post(
     try {
       const parsed = ChangePasswordInputSchema.safeParse(req.body);
       if (!parsed.success) {
-        const error: AppError = new Error(parsed.error.errors[0]?.message || 'Input ganti password tidak valid');
+        const error: AppError = new Error(parsed.error.issues[0]?.message || 'Input ganti password tidak valid');
         error.statusCode = 400;
         error.code = 'VALIDATION_ERROR';
         return next(error);
@@ -335,7 +335,7 @@ authRouter.post(
       const parsed = GoogleLinkInitInputSchema.safeParse(req.body);
       if (!parsed.success) {
         const error: AppError = new Error(
-          parsed.error.errors[0]?.message || 'Input re-autentikasi tidak valid'
+          parsed.error.issues[0]?.message || 'Input re-autentikasi tidak valid'
         );
         error.statusCode = 400;
         error.code = 'VALIDATION_ERROR';
@@ -387,7 +387,7 @@ authRouter.post(
       const parsed = GoogleExchangeInputSchema.safeParse(req.body);
       if (!parsed.success) {
         const error: AppError = new Error(
-          parsed.error.errors[0]?.message || 'Input pertukaran kode Google tidak valid'
+          parsed.error.issues[0]?.message || 'Input pertukaran kode Google tidak valid'
         );
         error.statusCode = 400;
         error.code = 'VALIDATION_ERROR';
@@ -450,7 +450,7 @@ authRouter.post(
       const parsed = ForgotPasswordInputSchema.safeParse(req.body);
       if (!parsed.success) {
         const error: AppError = new Error(
-          parsed.error.errors[0]?.message || 'Alamat email wajib diisi dengan format yang benar'
+          parsed.error.issues[0]?.message || 'Alamat email wajib diisi dengan format yang benar'
         );
         error.statusCode = 400;
         error.code = 'VALIDATION_ERROR';
@@ -497,7 +497,7 @@ authRouter.post(
       const parsed = ResetPasswordInputSchema.safeParse(req.body);
       if (!parsed.success) {
         const error: AppError = new Error(
-          parsed.error.errors[0]?.message || 'Input reset password tidak valid'
+          parsed.error.issues[0]?.message || 'Input reset password tidak valid'
         );
         error.statusCode = 400;
         error.code = 'VALIDATION_ERROR';
@@ -537,7 +537,7 @@ authRouter.post(
       const parsed = VerifyEmailInputSchema.safeParse(req.body);
       if (!parsed.success) {
         const error: AppError = new Error(
-          parsed.error.errors[0]?.message || 'Input verifikasi email tidak valid'
+          parsed.error.issues[0]?.message || 'Input verifikasi email tidak valid'
         );
         error.statusCode = 400;
         error.code = 'VALIDATION_ERROR';

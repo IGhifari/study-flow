@@ -39,7 +39,7 @@ export function LoginForm({
 
     const validationResult = AdminLoginInputSchema.safeParse({ email, password });
     if (!validationResult.success) {
-      setErrorMsg(validationResult.error.errors[0]?.message || 'Input login admin tidak valid.');
+      setErrorMsg(validationResult.error.issues[0]?.message || 'Input login admin tidak valid.');
       return;
     }
 

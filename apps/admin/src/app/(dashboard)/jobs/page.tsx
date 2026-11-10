@@ -181,7 +181,7 @@ function AdminJobsContent() {
     });
 
     if (!validationResult.success) {
-      setCleanupError(validationResult.error.errors[0]?.message || 'Input pembersihan tidak valid');
+      setCleanupError(validationResult.error.issues[0]?.message || 'Input pembersihan tidak valid');
       return;
     }
 

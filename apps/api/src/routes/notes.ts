@@ -27,7 +27,7 @@ noteRouter.get('/', async (req: Request, res: Response, next: NextFunction) => {
   try {
     const parsedQuery = NoteListQuerySchema.safeParse(req.query);
     if (!parsedQuery.success) {
-      const error: AppError = new Error(parsedQuery.error.errors[0]?.message || 'Query parameter tidak valid');
+      const error: AppError = new Error(parsedQuery.error.issues[0]?.message || 'Query parameter tidak valid');
       error.statusCode = 400;
       error.code = 'VALIDATION_ERROR';
       return next(error);
@@ -56,7 +56,7 @@ noteRouter.post('/', async (req: Request, res: Response, next: NextFunction) => 
   try {
     const parsedBody = CreateNoteInputSchema.safeParse(req.body);
     if (!parsedBody.success) {
-      const error: AppError = new Error(parsedBody.error.errors[0]?.message || 'Input catatan tidak valid');
+      const error: AppError = new Error(parsedBody.error.issues[0]?.message || 'Input catatan tidak valid');
       error.statusCode = 400;
       error.code = 'VALIDATION_ERROR';
       return next(error);
@@ -85,7 +85,7 @@ noteRouter.patch('/:id', async (req: Request, res: Response, next: NextFunction)
 
     const parsedBody = UpdateNoteInputSchema.safeParse(req.body);
     if (!parsedBody.success) {
-      const error: AppError = new Error(parsedBody.error.errors[0]?.message || 'Input pembaruan catatan tidak valid');
+      const error: AppError = new Error(parsedBody.error.issues[0]?.message || 'Input pembaruan catatan tidak valid');
       error.statusCode = 400;
       error.code = 'VALIDATION_ERROR';
       return next(error);

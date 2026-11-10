@@ -158,7 +158,7 @@ export const SubmitQuizAnswerItemSchema = z.object({
 export type SubmitQuizAnswerItem = z.infer<typeof SubmitQuizAnswerItemSchema>;
 
 export const SubmitQuizAttemptInputSchema = z.object({
-  answers: z.array(SubmitQuizAnswerItemSchema),
+  answers: z.array(SubmitQuizAnswerItemSchema).max(50, 'Jumlah jawaban melebihi batas maksimal kuis'),
 });
 export type SubmitQuizAttemptInput = z.infer<typeof SubmitQuizAttemptInputSchema>;
 
@@ -175,7 +175,7 @@ export const QuizAttemptResponseSchema = z.object({
 export type QuizAttemptResponse = z.infer<typeof QuizAttemptResponseSchema>;
 
 export const SaveQuizDraftAnswersInputSchema = z.object({
-  answers: z.array(SubmitQuizAnswerItemSchema),
+  answers: z.array(SubmitQuizAnswerItemSchema).max(50, 'Jumlah jawaban draft melebihi batas maksimal'),
 });
 export type SaveQuizDraftAnswersInput = z.infer<typeof SaveQuizDraftAnswersInputSchema>;
 

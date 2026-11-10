@@ -10,7 +10,7 @@ export type SearchResultType = z.infer<typeof SearchResultTypeSchema>;
 
 export const SearchQuerySchema = z.object({
   q: z
-    .string({ required_error: 'Kata kunci pencarian wajib diisi' })
+    .string({ message: 'Kata kunci pencarian wajib diisi' })
     .trim()
     .min(2, 'Kata kunci pencarian minimal 2 karakter')
     .max(100, 'Kata kunci pencarian maksimal 100 karakter'),

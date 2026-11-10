@@ -151,7 +151,7 @@ export function MaterialUploadDialog({
     });
 
     if (!validationResult.success) {
-      setErrorMessage(validationResult.error.errors[0]?.message || 'Input unggah materi tidak valid.');
+      setErrorMessage(validationResult.error.issues[0]?.message || 'Input unggah materi tidak valid.');
       return;
     }
 

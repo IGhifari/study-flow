@@ -93,7 +93,7 @@ export function CreateScheduleDialog({
     });
 
     if (!validationResult.success) {
-      setErrorMsg(validationResult.error.errors[0]?.message || 'Input jadwal kuliah tidak valid');
+      setErrorMsg(validationResult.error.issues[0]?.message || 'Input jadwal kuliah tidak valid');
       return;
     }
 

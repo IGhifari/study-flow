@@ -128,7 +128,7 @@ export default function AdminProfilePage() {
     });
 
     if (!validationResult.success) {
-      setProfileError(validationResult.error.errors[0]?.message || 'Input profil administrator tidak valid');
+      setProfileError(validationResult.error.issues[0]?.message || 'Input profil administrator tidak valid');
       return;
     }
 
@@ -156,7 +156,7 @@ export default function AdminProfilePage() {
     });
 
     if (!validationResult.success) {
-      setPasswordError(validationResult.error.errors[0]?.message || 'Input kata sandi tidak valid');
+      setPasswordError(validationResult.error.issues[0]?.message || 'Input kata sandi tidak valid');
       return;
     }
 

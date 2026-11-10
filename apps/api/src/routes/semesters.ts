@@ -29,7 +29,7 @@ semesterRouter.get('/', async (req: Request, res: Response, next: NextFunction) 
   try {
     const parsedQuery = SemesterListQuerySchema.safeParse(req.query);
     if (!parsedQuery.success) {
-      const error: AppError = new Error(parsedQuery.error.errors[0]?.message || 'Query parameter tidak valid');
+      const error: AppError = new Error(parsedQuery.error.issues[0]?.message || 'Query parameter tidak valid');
       error.statusCode = 400;
       error.code = 'VALIDATION_ERROR';
       return next(error);
@@ -58,7 +58,7 @@ semesterRouter.post('/', async (req: Request, res: Response, next: NextFunction)
   try {
     const parsedBody = CreateSemesterInputSchema.safeParse(req.body);
     if (!parsedBody.success) {
-      const error: AppError = new Error(parsedBody.error.errors[0]?.message || 'Input semester tidak valid');
+      const error: AppError = new Error(parsedBody.error.issues[0]?.message || 'Input semester tidak valid');
       error.statusCode = 400;
       error.code = 'VALIDATION_ERROR';
       return next(error);
@@ -79,7 +79,7 @@ semesterRouter.patch('/:id', async (req: Request, res: Response, next: NextFunct
   try {
     const parsedBody = UpdateSemesterInputSchema.safeParse(req.body);
     if (!parsedBody.success) {
-      const error: AppError = new Error(parsedBody.error.errors[0]?.message || 'Input pembaruan semester tidak valid');
+      const error: AppError = new Error(parsedBody.error.issues[0]?.message || 'Input pembaruan semester tidak valid');
       error.statusCode = 400;
       error.code = 'VALIDATION_ERROR';
       return next(error);

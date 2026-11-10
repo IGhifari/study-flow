@@ -45,7 +45,7 @@ export const ProcessingJobSchema = z.object({
   idempotencyKey: z.string().nullable().optional(),
   errorMessage: z.string().nullable().optional(),
   errorCode: z.string().nullable().optional(),
-  payload: z.record(z.any()).nullable().optional(),
+  payload: z.record(z.string(), z.any()).nullable().optional(),
   startedAt: z.string().datetime().nullable().optional(),
   completedAt: z.string().datetime().nullable().optional(),
   failedAt: z.string().datetime().nullable().optional(),
@@ -153,7 +153,7 @@ export const MaterialListQuerySchema = z.object({
     .default(20)
     .optional(),
 });
-export type MaterialListQuery = z.input<typeof MaterialListQuerySchema>;
+export type MaterialListQuery = z.infer<typeof MaterialListQuerySchema>;
 
 export const MaterialListResponseSchema = z.object({
   materials: z.array(MaterialListItemSchema),

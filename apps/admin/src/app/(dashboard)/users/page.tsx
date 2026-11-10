@@ -341,7 +341,7 @@ function AdminUsersContent() {
 
     const validationResult = AdminCreateUserInputSchema.safeParse(createForm);
     if (!validationResult.success) {
-      setCreateError(validationResult.error.errors[0]?.message || 'Input pengguna baru tidak valid');
+      setCreateError(validationResult.error.issues[0]?.message || 'Input pengguna baru tidak valid');
       return;
     }
 
@@ -387,7 +387,7 @@ function AdminUsersContent() {
 
     const validationResult = AdminUpdateUserInputSchema.safeParse(editForm);
     if (!validationResult.success) {
-      setEditError(validationResult.error.errors[0]?.message || 'Input pembaruan pengguna tidak valid');
+      setEditError(validationResult.error.issues[0]?.message || 'Input pembaruan pengguna tidak valid');
       return;
     }
 

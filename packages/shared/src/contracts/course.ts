@@ -86,7 +86,7 @@ export const CourseListQuerySchema = z.object({
   page: z.coerce.number().int().min(1).default(1),
   limit: z.coerce.number().int().min(1).max(100).default(20),
 });
-export type CourseListQuery = z.input<typeof CourseListQuerySchema>;
+export type CourseListQuery = z.infer<typeof CourseListQuerySchema>;
 
 export const CourseResponseSchema = z.object({
   course: CourseSchema,

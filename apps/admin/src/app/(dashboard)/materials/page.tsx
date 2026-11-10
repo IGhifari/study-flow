@@ -289,7 +289,7 @@ function AdminMaterialsContent() {
 
     const validationResult = AdminUpdateMaterialInputSchema.safeParse({ title: editTitle });
     if (!validationResult.success) {
-      setEditError(validationResult.error.errors[0]?.message || 'Judul materi tidak valid');
+      setEditError(validationResult.error.issues[0]?.message || 'Judul materi tidak valid');
       return;
     }
 

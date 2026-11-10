@@ -144,7 +144,7 @@ export function GlobalSearchDialog({
         if (trimmed.length < 2) {
           setErrorMessage(null); // Silent when typing less than min length
         } else {
-          setErrorMessage(validationResult.error.errors[0]?.message || 'Input pencarian tidak valid');
+          setErrorMessage(validationResult.error.issues[0]?.message || 'Input pencarian tidak valid');
         }
         return;
       }

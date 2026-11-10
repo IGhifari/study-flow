@@ -27,7 +27,7 @@ scheduleRouter.get('/', async (req: Request, res: Response, next: NextFunction) 
     const parsedQuery = CourseScheduleQuerySchema.safeParse(req.query);
     if (!parsedQuery.success) {
       const error: AppError = new Error(
-        parsedQuery.error.errors[0]?.message || 'Query parameter jadwal tidak valid'
+        parsedQuery.error.issues[0]?.message || 'Query parameter jadwal tidak valid'
       );
       error.statusCode = 400;
       error.code = 'VALIDATION_ERROR';
@@ -58,7 +58,7 @@ scheduleRouter.post('/', async (req: Request, res: Response, next: NextFunction)
     const parsedBody = CreateCourseScheduleInputSchema.safeParse(req.body);
     if (!parsedBody.success) {
       const error: AppError = new Error(
-        parsedBody.error.errors[0]?.message || 'Input sesi jadwal tidak valid'
+        parsedBody.error.issues[0]?.message || 'Input sesi jadwal tidak valid'
       );
       error.statusCode = 400;
       error.code = 'VALIDATION_ERROR';
@@ -79,7 +79,7 @@ scheduleRouter.patch('/:id', async (req: Request, res: Response, next: NextFunct
     const parsedBody = UpdateCourseScheduleInputSchema.safeParse(req.body);
     if (!parsedBody.success) {
       const error: AppError = new Error(
-        parsedBody.error.errors[0]?.message || 'Input pembaruan jadwal tidak valid'
+        parsedBody.error.issues[0]?.message || 'Input pembaruan jadwal tidak valid'
       );
       error.statusCode = 400;
       error.code = 'VALIDATION_ERROR';

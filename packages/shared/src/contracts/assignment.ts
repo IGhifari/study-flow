@@ -96,4 +96,4 @@ export const AssignmentListQuerySchema = z.object({
     .default(20)
     .optional(),
 });
-export type AssignmentListQuery = z.input<typeof AssignmentListQuerySchema>;
+export type AssignmentListQuery = z.infer<typeof AssignmentListQuerySchema>;
