@@ -26,9 +26,9 @@ console.log(JSON.stringify({
 
 const redisConnection = createRedisConnection();
 globalAiRateLimiter.setRedisClient(redisConnection);
-const smokeWorker = createSmokeWorker(redisConnection);
-const reminderQueue = createAssignmentReminderQueue(redisConnection);
-const reminderWorker = createAssignmentReminderWorker(redisConnection);
+const smokeWorker = createSmokeWorker(createRedisConnection());
+const reminderQueue = createAssignmentReminderQueue(createRedisConnection());
+const reminderWorker = createAssignmentReminderWorker(createRedisConnection());
 
 // Initial non-blocking reconciliation on startup
 reconcileAssignmentReminders({ queue: reminderQueue }).catch((err) => {
@@ -56,7 +56,7 @@ const documentWorker = new Worker(
   QUEUE_NAMES.documentProcessing,
   processDocumentJob,
   {
-    connection: redisConnection,
+    connection: createRedisConnection(),
     concurrency: 2, // Concurrency limit for document processing per PRD
   }
 );
@@ -75,7 +75,7 @@ const aiWorker = new Worker(
   QUEUE_NAMES.aiGeneration,
   handleAiJob,
   {
-    connection: redisConnection,
+    connection: createRedisConnection(),
     concurrency: 1, // Safe concurrency limit for free tier AI generation
     limiter: {
       max: 10, // Global limiter: maximum 10 AI generation jobs per minute across all users
