@@ -9,7 +9,7 @@
     "binding": "ASSETS"
   },
   "vars": {
-    "INTERNAL_API_URL": "https://big-toward-handy-producers.trycloudflare.com",
-    "NEXT_PUBLIC_API_URL": "https://big-toward-handy-producers.trycloudflare.com"
+    "INTERNAL_API_URL": "https://studyflow-api-ase8.onrender.com",
+    "NEXT_PUBLIC_API_URL": "https://studyflow-api-ase8.onrender.com"
   }
 }

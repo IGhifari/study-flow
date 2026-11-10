@@ -71,3 +71,5 @@ test-results-e2e/
 
 # Catatan lokal agent
 /.omo/
+.wrangler/
+**/.wrangler/
