@@ -2,6 +2,7 @@
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "studyflow-web",
   "main": ".open-next/worker.js",
+  "keep_names": false,
   "compatibility_date": "2024-12-30",
   "compatibility_flags": ["nodejs_compat"],
   "assets": {
@@ -10,6 +11,7 @@
   },
   "vars": {
     "INTERNAL_API_URL": "https://studyflow-api-ase8.onrender.com",
-    "NEXT_PUBLIC_API_URL": "https://studyflow-api-ase8.onrender.com"
+    "NEXT_PUBLIC_API_URL": "https://studyflow-api-ase8.onrender.com",
+    "NEXT_PUBLIC_TURNSTILE_SITE_KEY": "0x4AAAAAAF7bcWY_zVxAcJWr"
   }
 }
