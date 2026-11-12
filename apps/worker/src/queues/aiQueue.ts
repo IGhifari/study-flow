@@ -495,6 +495,7 @@ export async function processAiSummaryJob(
     await finishAiJobAtomically({
       jobId,
       userId,
+      materialId,
       status: 'FAILED',
       errorCode,
       errorMessage,
@@ -758,6 +759,7 @@ export async function processAiFlashcardJob(
     await finishAiJobAtomically({
       jobId,
       userId,
+      materialId,
       status: 'FAILED',
       errorCode,
       errorMessage,
@@ -1006,6 +1008,7 @@ export async function processAiQuizJob(
     await finishAiJobAtomically({
       jobId,
       userId,
+      materialId,
       status: 'FAILED',
       errorCode,
       errorMessage,

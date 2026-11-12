@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { COOKIE_NAMES, OAuthTransactionCookieSchema, OAuthTransactionCookie } from '@studyflow/shared';
 import { getSafeReturnUrl } from '@/lib/auth-client';
 import { getInternalApiUrl } from '@/lib/api-config';
+import { resolveForwardedClientIp } from '@/lib/bff-proxy';
 
 export async function GET(req: NextRequest) {
   const searchParams = req.nextUrl.searchParams;
@@ -88,6 +89,7 @@ export async function GET(req: NextRequest) {
   const requestHeaders = new Headers();
   requestHeaders.set('Content-Type', 'application/json');
   requestHeaders.set('Origin', req.nextUrl.origin);
+  requestHeaders.set('x-forwarded-for', resolveForwardedClientIp(req.headers));
 
   // Forward existing auth cookies from browser to Express (necessary for linking intent)
   const cookieHeader = req.headers.get('cookie');

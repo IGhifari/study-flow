@@ -203,6 +203,19 @@ export class SupabaseWorkerStorageAdapter implements StorageAdapter {
 
   async download(storageKey: string): Promise<{ data: Blob | Buffer | null; error: Error | null }> {
     try {
+      const infoRes = await this.info(storageKey);
+      if (
+        !infoRes.error &&
+        typeof infoRes.data?.size === 'number' &&
+        infoRes.data.size > FILE_UPLOAD_LIMITS.maxSizeBytes
+      ) {
+        return {
+          data: null,
+          error: new Error(
+            `Ukuran file (${infoRes.data.size} bytes) melebihi batas maksimal 20 MiB (${FILE_UPLOAD_LIMITS.maxSizeBytes} bytes)`
+          ),
+        };
+      }
       const res = await this.client.from(this.bucket).download(storageKey);
       if (res.error) {
         return { data: null, error: new Error(res.error.message) };

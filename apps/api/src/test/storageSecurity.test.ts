@@ -161,5 +161,23 @@ describe('Storage Security Hardening & Path Traversal Regression Tests (API)', (
       expect(res.body.error).toBeDefined();
       expect(res.body.error.code).toBe('FILE_TOO_LARGE');
     });
+
+    it('rejects download token on PUT /upload/:key and upload token on GET /download/:key (SEC-04)', async () => {
+      const key = 'test/purpose-bound.pdf';
+      const downloadToken = generateLocalStorageToken(key, 300, 'download');
+      const uploadToken = generateLocalStorageToken(key, 300, 'upload');
+
+      const uploadWithDownloadToken = await request(app)
+        .put(`/api/storage/local/upload/${encodeURIComponent(key)}?token=${downloadToken}`)
+        .set('Content-Type', 'application/pdf')
+        .send(Buffer.from('%PDF-1.4 overwrite attempt'));
+      expect(uploadWithDownloadToken.status).toBe(403);
+      expect(uploadWithDownloadToken.body.error.code).toBe('INVALID_STORAGE_TOKEN');
+
+      const downloadWithUploadToken = await request(app)
+        .get(`/api/storage/local/download/${encodeURIComponent(key)}?token=${uploadToken}`);
+      expect(downloadWithUploadToken.status).toBe(403);
+      expect(downloadWithUploadToken.body.error.code).toBe('INVALID_STORAGE_TOKEN');
+    });
   });
 });

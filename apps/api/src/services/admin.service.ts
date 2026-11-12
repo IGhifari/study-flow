@@ -456,6 +456,21 @@ export async function updateAdminUser(
   }
 
   await prisma.$transaction(async (tx) => {
+    const roleChanged = input.role !== undefined && input.role !== targetUser.role;
+    if (roleChanged && targetUser.role === 'ADMIN' && input.role === 'USER') {
+      const adminRows = await tx.$queryRaw<Array<{ id: string }>>`
+        SELECT id FROM users WHERE role = 'ADMIN' FOR UPDATE
+      `;
+      if (adminRows.length <= 1) {
+        const error: AppError = new Error(
+          'Tidak dapat menurunkan peran administrator terakhir pada sistem.'
+        );
+        error.statusCode = 400;
+        error.code = 'LAST_ADMIN_PROTECTED';
+        throw error;
+      }
+    }
+
     const updateData: any = {};
     if (input.name !== undefined) updateData.name = input.name.trim();
     if (normalizedEmail) updateData.email = normalizedEmail;
@@ -470,10 +485,14 @@ export async function updateAdminUser(
       }
     }
 
+    const shouldRevokeSessions = Boolean(
+      input.newPassword || input.revokeSessions || roleChanged
+    );
+
     if (input.newPassword) {
       updateData.passwordHash = await hashPassword(input.newPassword);
       updateData.tokenVersion = { increment: 1 };
-    } else if (input.revokeSessions) {
+    } else if (shouldRevokeSessions) {
       updateData.tokenVersion = { increment: 1 };
     }
 
@@ -482,7 +501,7 @@ export async function updateAdminUser(
       data: updateData,
     });
 
-    if (input.newPassword || input.revokeSessions) {
+    if (shouldRevokeSessions) {
       await tx.refreshSession.updateMany({
         where: {
           userId: targetUserId,
@@ -544,7 +563,50 @@ export async function deleteAdminUser(actorAdminId: string, targetUserId: string
     throw error;
   }
 
+  let materialIdsToCleanup: string[] = [];
+
   await prisma.$transaction(async (tx) => {
+    if (user.role === 'ADMIN') {
+      const adminRows = await tx.$queryRaw<Array<{ id: string }>>`
+        SELECT id FROM users WHERE role = 'ADMIN' FOR UPDATE
+      `;
+      if (adminRows.length <= 1) {
+        const error: AppError = new Error(
+          'Tidak dapat menghapus akun administrator terakhir pada sistem.'
+        );
+        error.statusCode = 400;
+        error.code = 'LAST_ADMIN_PROTECTED';
+        throw error;
+      }
+    }
+
+    const userMaterials = await tx.material.findMany({
+      where: { userId: targetUserId },
+      select: {
+        id: true,
+        storageKey: true,
+        bytes: true,
+        status: true,
+      },
+    });
+    materialIdsToCleanup = userMaterials.map((m) => m.id);
+
+    for (const mat of userMaterials) {
+      await tx.outboxEvent.create({
+        data: {
+          eventType: 'DOCUMENT_CLEANUP_REQUESTED',
+          aggregateId: mat.id,
+          payload: {
+            materialId: mat.id,
+            userId: targetUserId,
+            storageKey: mat.storageKey,
+            bytesToFree: mat.bytes,
+            isReady: mat.status === 'READY',
+          },
+        },
+      });
+    }
+
     // Delete all child and referenced entities in dependency order
     await tx.quizAttempt.deleteMany({ where: { userId: targetUserId } });
     await tx.quiz.deleteMany({ where: { userId: targetUserId } });
@@ -570,6 +632,10 @@ export async function deleteAdminUser(actorAdminId: string, targetUserId: string
     await tx.federatedIdentity.deleteMany({ where: { userId: targetUserId } });
     await tx.user.delete({ where: { id: targetUserId } });
   });
+
+  for (const matId of materialIdsToCleanup) {
+    await flushOutboxForRequest({ aggregateId: matId }).catch(() => {});
+  }
 }
 
 export function formatSafeErrorMessage(errorCode: string | null): string | null {

@@ -66,7 +66,7 @@ export function errorHandler(
       message,
       requestId,
       ...(err.currentVersion !== undefined ? { currentVersion: err.currentVersion } : {}),
-      ...(err.details !== undefined ? { details: err.details } : {}),
+      ...(statusCode < 500 && err.details !== undefined ? { details: err.details } : {}),
     },
   });
 }
