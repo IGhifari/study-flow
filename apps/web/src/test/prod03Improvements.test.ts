@@ -5,7 +5,6 @@ import * as path from 'path';
 describe('PROD-03 Production Overhaul & Sub-Components Standardization', () => {
   const rootDir = path.resolve(__dirname, '../../../../');
   const webSrcDir = path.resolve(__dirname, '..');
-  const adminSrcDir = path.resolve(rootDir, 'apps/admin/src');
 
   it('verifies dashboard-charts.tsx uses shadcn Table, CardFooter, motion Stagger, and clean typography', () => {
     const filePath = path.join(webSrcDir, 'components/dashboard/dashboard-charts.tsx');
@@ -77,40 +76,22 @@ describe('PROD-03 Production Overhaul & Sub-Components Standardization', () => {
     expect(content).toContain('href="/"');
   });
 
-  it('verifies apps/admin/src/app/error.tsx exists with resilient structure and dashboard recovery', () => {
-    const errorFilePath = path.join(adminSrcDir, 'app/error.tsx');
-    expect(fs.existsSync(errorFilePath)).toBe(true);
-
-    const content = fs.readFileSync(errorFilePath, 'utf-8');
-    expect(content).toContain("'use client'");
-    expect(content).toContain('FadeIn');
-    expect(content).toContain('Card');
-    expect(content).toContain('CardHeader');
-    expect(content).toContain('CardTitle');
-    expect(content).toContain('CardFooter');
-    expect(content).toContain('Terjadi Kendala Teknis');
-    expect(content).toContain('error.digest');
-    expect(content).toContain('reset()');
-    expect(content).toContain('href="/dashboard"');
-  });
-
   it('verifies root package.json contains dev:all script', () => {
     const pkgPath = path.join(rootDir, 'package.json');
     const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf-8'));
     expect(pkg.scripts['dev:all']).toBeDefined();
     expect(pkg.scripts['dev:all']).toContain('npm run dev:web');
-    expect(pkg.scripts['dev:all']).toContain('npm run dev:admin');
     expect(pkg.scripts['dev:all']).toContain('npm run dev:api');
     expect(pkg.scripts['dev:all']).toContain('npm run dev:worker');
   });
 
-  it('verifies .github/workflows/ci.yml includes required secrets and admin docker build', () => {
+  it('verifies .github/workflows/ci.yml includes required secrets and docker builds', () => {
     const ciPath = path.join(rootDir, '.github/workflows/ci.yml');
     const ciContent = fs.readFileSync(ciPath, 'utf-8');
     expect(ciContent).toContain('JWT_REFRESH_SECRET');
     expect(ciContent).toContain('COOKIE_SECRET');
-    expect(ciContent).toContain('studyflow-admin:ci');
-    expect(ciContent).toContain('docker build -f apps/admin/Dockerfile');
+    expect(ciContent).toContain('studyflow-web:ci');
+    expect(ciContent).toContain('docker build -f apps/web/Dockerfile');
   });
 
   it('verifies docs/release_checklist.md includes items 13 through 17 with PASS', () => {

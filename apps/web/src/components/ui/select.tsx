@@ -5,6 +5,7 @@ import * as SelectPrimitive from '@radix-ui/react-select';
 import { Check, ChevronDown, ChevronUp } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
+const Select = SelectPrimitive.Root;
 const RadixSelect = SelectPrimitive.Root;
 const SelectGroup = SelectPrimitive.Group;
 const SelectValue = SelectPrimitive.Value;
@@ -151,7 +152,7 @@ export interface SelectProps extends React.SelectHTMLAttributes<HTMLSelectElemen
   error?: boolean;
 }
 
-const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
+const NativeSelect = React.forwardRef<HTMLSelectElement, SelectProps>(
   ({ className, error, children, ...props }, ref) => {
     return (
       <div className="relative w-full">
@@ -176,11 +177,11 @@ const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
     );
   }
 );
-Select.displayName = 'Select';
+NativeSelect.displayName = 'NativeSelect';
 
 export {
   Select,
-  Select as NativeSelect,
+  NativeSelect,
   RadixSelect,
   SelectGroup,
   SelectValue,

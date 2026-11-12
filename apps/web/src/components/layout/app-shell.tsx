@@ -23,6 +23,16 @@ import {
   SidebarInset,
 } from '@/components/ui/sidebar';
 import { AppSidebar } from './app-sidebar';
+import { AdminAuthProvider } from '@/components/admin/admin-auth-context';
+import { AppSidebar as AdminSidebar } from '@/components/admin/admin-sidebar';
+import { AdminHeader } from '@/components/admin/admin-header';
+import AdminDashboardView from '@/components/admin/views/admin-dashboard-view';
+import AdminCoursesView from '@/components/admin/views/admin-courses-view';
+import AdminMaterialsView from '@/components/admin/views/admin-materials-view';
+import AdminAssignmentsView from '@/components/admin/views/admin-assignments-view';
+import AdminNotesView from '@/components/admin/views/admin-notes-view';
+import AdminSchedulesPage from '@/app/(dashboard)/schedules/page';
+import AdminProfilePage from '@/app/(dashboard)/profile/page';
 
 interface AppShellProps {
   user: UserProfile;
@@ -99,14 +109,27 @@ function HeaderBreadcrumbs(): React.JSX.Element {
   );
 }
 
+function renderAdminContent(pathname: string, children: React.ReactNode): React.ReactNode {
+  if (pathname === '/dashboard') return <AdminDashboardView />;
+  if (pathname === '/courses') return <AdminCoursesView />;
+  if (pathname === '/materials') return <AdminMaterialsView />;
+  if (pathname === '/assignments') return <AdminAssignmentsView />;
+  if (pathname === '/notes') return <AdminNotesView />;
+  if (pathname === '/schedule') return <AdminSchedulesPage />;
+  if (pathname === '/settings') return <AdminProfilePage />;
+  return children;
+}
+
 export function AppShell({ user, children }: AppShellProps): React.JSX.Element {
   const pathname = usePathname();
   const isWidePage = Boolean(pathname?.startsWith('/materials/') && pathname !== '/materials');
   const [currentUser, setCurrentUser] = React.useState<UserProfile>(user);
   const [isSearchOpen, setIsSearchOpen] = React.useState(false);
   const searchTriggerRef = React.useRef<HTMLButtonElement | null>(null);
+  const isAdmin = currentUser.role === 'ADMIN';
 
   React.useEffect(() => {
+    if (isAdmin) return;
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
         e.preventDefault();
@@ -117,7 +140,7 @@ export function AppShell({ user, children }: AppShellProps): React.JSX.Element {
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, []);
+  }, [isAdmin]);
 
   React.useEffect(() => {
     setCurrentUser(user);
@@ -136,6 +159,30 @@ export function AppShell({ user, children }: AppShellProps): React.JSX.Element {
       window.removeEventListener('studyflow:profile-updated', handleProfileUpdated);
     };
   }, []);
+
+  if (isAdmin) {
+    return (
+      <AdminAuthProvider initialUser={currentUser}>
+        <SidebarProvider defaultOpen={true}>
+          <AdminSidebar />
+          <SidebarInset className="flex flex-col min-w-0">
+            <a
+              href="#main-content"
+              className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-50 focus:rounded-md focus:bg-primary focus:px-3.5 focus:py-2 focus:text-xs focus:font-semibold focus:text-primary-foreground focus:shadow-md focus:outline-hidden focus:ring-2 focus:ring-ring"
+            >
+              Lewati ke konten utama
+            </a>
+            <AdminHeader />
+            <main id="main-content" className="@container/main flex flex-1 flex-col" tabIndex={-1}>
+              <div className="flex flex-1 flex-col">
+                {renderAdminContent(pathname, children)}
+              </div>
+            </main>
+          </SidebarInset>
+        </SidebarProvider>
+      </AdminAuthProvider>
+    );
+  }
 
   return (
     <SidebarProvider defaultOpen={true}>

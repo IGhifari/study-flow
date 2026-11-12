@@ -134,16 +134,6 @@ export async function loginUser(input: LoginInput): Promise<{
     throw error;
   }
 
-  // Strict separation: Reject ADMIN users from logging into the student web portal
-  if (user.role === 'ADMIN') {
-    const error: AppError = new Error(
-      'Akun administrator tidak diizinkan masuk ke portal mahasiswa. Silakan masuk melalui portal administrator.'
-    );
-    error.statusCode = 403;
-    error.code = 'ADMIN_PORTAL_ONLY';
-    throw error;
-  }
-
   // Transparently upgrade legacy bcrypt hash to modern Argon2id hash on successful login
   if (needsRehash(user.passwordHash)) {
     try {
@@ -187,7 +177,7 @@ export async function loginUser(input: LoginInput): Promise<{
 
 export async function rotateRefreshToken(
   rawRefreshToken: string,
-  options?: { allowAdmin?: boolean }
+  _options?: { allowAdmin?: boolean }
 ): Promise<{
   user: UserProfile;
   accessToken: string;
@@ -243,16 +233,6 @@ export async function rotateRefreshToken(
       const error: AppError = new Error('Pengguna tidak ditemukan');
       error.statusCode = 404;
       error.code = 'USER_NOT_FOUND';
-      throw error;
-    }
-
-    // Strict separation: Reject ADMIN users from rotating student web sessions
-    if (user.role === 'ADMIN' && !options?.allowAdmin) {
-      const error: AppError = new Error(
-        'Akun administrator tidak diizinkan masuk ke portal mahasiswa. Sesi mahasiswa telah dicabut.'
-      );
-      error.statusCode = 403;
-      error.code = 'ADMIN_PORTAL_ONLY';
       throw error;
     }
 
