@@ -332,9 +332,9 @@ export function DataTable({
     try {
       const res = await fetchAdminSystemStatus({ signal })
       setInternalModules(res.modules)
-    } catch (err: any) {
-      if (err.name === 'AbortError') return
-      setInternalError(err.message || 'Gagal memuat status modul sistem')
+    } catch (err: unknown) {
+      if (err instanceof Error && err.name === 'AbortError') return
+      setInternalError(err instanceof Error ? err.message : 'Gagal memuat status modul sistem')
     } finally {
       setInternalLoading(false)
     }

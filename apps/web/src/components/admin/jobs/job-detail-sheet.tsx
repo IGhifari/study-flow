@@ -54,8 +54,8 @@ export function JobDetailSheet({
       toast.success(`Pekerjaan ${jobDetail.id.slice(0, 8)} berhasil dijadwalkan ulang`);
       onJobActionCompleted?.();
       onClose();
-    } catch (err: any) {
-      toast.error('Gagal mencoba ulang pekerjaan: ' + err.message);
+    } catch (err: unknown) {
+      toast.error('Gagal mencoba ulang pekerjaan: ' + (err instanceof Error ? err.message : 'Kesalahan tidak diketahui'));
     } finally {
       setIsRetrying(false);
     }
@@ -69,8 +69,8 @@ export function JobDetailSheet({
       toast.success(`Riwayat pekerjaan ${jobDetail.id.slice(0, 8)} berhasil dihapus`);
       onJobActionCompleted?.();
       onClose();
-    } catch (err: any) {
-      toast.error('Gagal menghapus riwayat pekerjaan: ' + err.message);
+    } catch (err: unknown) {
+      toast.error('Gagal menghapus riwayat pekerjaan: ' + (err instanceof Error ? err.message : 'Kesalahan tidak diketahui'));
     } finally {
       setIsDeleting(false);
     }

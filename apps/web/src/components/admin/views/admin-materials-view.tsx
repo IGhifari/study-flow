@@ -66,6 +66,7 @@ import {
   updateAdminMaterialApi,
   deleteAdminMaterialApi,
 } from '@/lib/admin-api';
+import { useDebouncedValue } from '@/hooks/use-debounced-value';
 import type { AdminMaterialListItem, AdminMaterialListResponse, AdminMaterialStatus } from '@studyflow/shared';
 import { AdminUpdateMaterialInputSchema } from '@studyflow/shared';
 import { downloadCsvFile, formatBytes } from '@/lib/admin-formatters';
@@ -153,12 +154,12 @@ function AdminMaterialsContent() {
   const [error, setError] = React.useState<string | null>(null);
 
   const [search, setSearch] = React.useState(initialSearch);
-  const [debouncedSearch, setDebouncedSearch] = React.useState(initialSearch);
   const [status, setStatus] = React.useState(initialStatus);
   const [page, setPage] = React.useState(initialPage);
   const [limit, setLimit] = React.useState(initialLimit);
   const [sortBy, setSortBy] = React.useState<'createdAt' | 'title' | 'bytes'>('createdAt');
   const [sortOrder, setSortOrder] = React.useState<'asc' | 'desc'>('desc');
+  const debouncedSearch = useDebouncedValue(search, 300, () => setPage(1));
 
   // Dialog states for Edit Title & Delete
   const [editingMaterial, setEditingMaterial] = React.useState<AdminMaterialListItem | null>(null);
@@ -169,15 +170,6 @@ function AdminMaterialsContent() {
   const [deletingMaterial, setDeletingMaterial] = React.useState<AdminMaterialListItem | null>(null);
   const [isDeleteSubmitting, setIsDeleteSubmitting] = React.useState(false);
   const [deleteError, setDeleteError] = React.useState<string | null>(null);
-
-  // Debounce search
-  React.useEffect(() => {
-    const timer = setTimeout(() => {
-      setDebouncedSearch(search);
-      setPage(1);
-    }, 300);
-    return () => clearTimeout(timer);
-  }, [search]);
 
   // Sync state to URL
   React.useEffect(() => {
@@ -210,9 +202,9 @@ function AdminMaterialsContent() {
         { signal }
       );
       setData(res);
-    } catch (err: any) {
-      if (err.name === 'AbortError') return;
-      setError(err.message || 'Gagal memuat daftar berkas materi');
+    } catch (err: unknown) {
+      if (err instanceof Error && err.name === 'AbortError') return;
+      setError(err instanceof Error ? err.message : 'Gagal memuat daftar berkas materi');
     } finally {
       setIsLoading(false);
     }
@@ -299,8 +291,8 @@ function AdminMaterialsContent() {
       toast.success('Judul materi berhasil diperbarui');
       setEditingMaterial(null);
       loadData();
-    } catch (err: any) {
-      setEditError(err.message || 'Gagal memperbarui judul materi');
+    } catch (err: unknown) {
+      setEditError(err instanceof Error ? err.message : 'Gagal memperbarui judul materi');
     } finally {
       setIsEditSubmitting(false);
     }
@@ -312,8 +304,8 @@ function AdminMaterialsContent() {
       await updateAdminMaterialApi(item.id, { action: 'retry' });
       toast.success(`Ekstraksi untuk "${item.title}" dijadwalkan ulang`);
       loadData();
-    } catch (err: any) {
-      toast.error('Gagal menjadwalkan ulang ekstraksi: ' + err.message);
+    } catch (err: unknown) {
+      toast.error('Gagal menjadwalkan ulang ekstraksi: ' + (err instanceof Error ? err.message : 'Kesalahan tidak diketahui'));
     }
   };
 
@@ -327,8 +319,8 @@ function AdminMaterialsContent() {
       toast.success(`Materi "${deletingMaterial.title}" berhasil dihapus dan kuota dikembalikan`);
       setDeletingMaterial(null);
       loadData();
-    } catch (err: any) {
-      setDeleteError(err.message || 'Gagal menghapus materi');
+    } catch (err: unknown) {
+      setDeleteError(err instanceof Error ? err.message : 'Gagal menghapus materi');
     } finally {
       setIsDeleteSubmitting(false);
     }

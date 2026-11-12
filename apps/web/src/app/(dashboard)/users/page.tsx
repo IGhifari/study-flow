@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import Link from 'next/link';
-import { useSearchParams, useRouter } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import {
   Search,
   Users,
@@ -21,7 +21,6 @@ import {
   RotateCcw,
   LogOut,
   Shield,
-  Clock,
   Loader2,
 } from 'lucide-react';
 import {
@@ -70,6 +69,12 @@ import {
   deleteAdminUserApi,
 } from '@/lib/admin-api';
 import { useAdminAuth } from '@/components/admin/admin-auth-context';
+import {
+  EditUserDialog,
+  DeleteUserDialog,
+  type EditUserFormState,
+} from '@/components/admin/user-management-dialogs';
+import { useDebouncedValue } from '@/hooks/use-debounced-value';
 import type { AdminUserListItem, AdminUserListResponse, Role } from '@studyflow/shared';
 import {
   AdminCreateUserInputSchema,
@@ -103,7 +108,6 @@ function UsersTableSkeleton() {
 }
 
 function AdminUsersContent() {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const { user: currentAdmin } = useAdminAuth();
 
@@ -128,13 +132,13 @@ function AdminUsersContent() {
 
   // Filter & Pagination state
   const [search, setSearch] = React.useState(initialSearch);
-  const [debouncedSearch, setDebouncedSearch] = React.useState(initialSearch);
   const [roleFilter, setRoleFilter] = React.useState<string>(initialRole);
   const [verifiedFilter, setVerifiedFilter] = React.useState<string>(initialVerified);
   const [page, setPage] = React.useState(initialPage);
   const [limit, setLimit] = React.useState(initialLimit);
   const [sortBy, setSortBy] = React.useState<'createdAt' | 'name' | 'email'>(initialSortBy);
   const [sortOrder, setSortOrder] = React.useState<'asc' | 'desc'>(initialSortOrder);
+  const debouncedSearch = useDebouncedValue(search.trim(), 300, () => setPage(1));
 
   // Copy feedback state
   const [copiedKey, setCopiedKey] = React.useState<string | null>(null);
@@ -155,10 +159,10 @@ function AdminUsersContent() {
 
   const [editingUser, setEditingUser] = React.useState<AdminUserListItem | null>(null);
   const [isEditSubmitting, setIsEditSubmitting] = React.useState(false);
-  const [editForm, setEditForm] = React.useState({
+  const [editForm, setEditForm] = React.useState<EditUserFormState>({
     name: '',
     email: '',
-    role: 'USER' as Role,
+    role: 'USER',
     timezone: 'Asia/Jakarta',
     emailVerified: true,
   });
@@ -174,20 +178,6 @@ function AdminUsersContent() {
       setIsCreateOpen(true);
     }
   }, [searchParams]);
-
-  // Debounce search input by 300ms
-  React.useEffect(() => {
-    const handler = setTimeout(() => {
-      const trimmed = search.trim();
-      setDebouncedSearch((prev) => {
-        if (prev !== trimmed) {
-          setPage(1);
-        }
-        return trimmed;
-      });
-    }, 300);
-    return () => clearTimeout(handler);
-  }, [search]);
 
   // Sync URL search params
   React.useEffect(() => {
@@ -239,9 +229,9 @@ function AdminUsersContent() {
         { signal }
       );
       setData(res);
-    } catch (err: any) {
-      if (err.name === 'AbortError') return;
-      setError(err.message || 'Gagal memuat daftar pengguna');
+    } catch (err: unknown) {
+      if (err instanceof Error && err.name === 'AbortError') return;
+      setError(err instanceof Error ? err.message : 'Gagal memuat daftar pengguna');
     } finally {
       setIsLoading(false);
     }
@@ -309,8 +299,8 @@ function AdminUsersContent() {
         [headers, ...rows]
       );
       toast.success('Daftar pengguna berhasil diekspor ke CSV');
-    } catch (err: any) {
-      toast.error('Gagal mengekspor data pengguna: ' + err.message);
+    } catch (err: unknown) {
+      toast.error('Gagal mengekspor data pengguna: ' + (err instanceof Error ? err.message : 'Kesalahan tidak diketahui'));
     } finally {
       setIsExporting(false);
     }
@@ -359,8 +349,8 @@ function AdminUsersContent() {
         emailVerified: true,
       });
       loadUsers();
-    } catch (err: any) {
-      setCreateError(err.message || 'Gagal membuat pengguna baru');
+    } catch (err: unknown) {
+      setCreateError(err instanceof Error ? err.message : 'Gagal membuat pengguna baru');
     } finally {
       setIsCreateSubmitting(false);
     }
@@ -397,8 +387,8 @@ function AdminUsersContent() {
       toast.success(`Data pengguna ${editForm.name} berhasil diperbarui`);
       setEditingUser(null);
       loadUsers();
-    } catch (err: any) {
-      setEditError(err.message || 'Gagal memperbarui pengguna');
+    } catch (err: unknown) {
+      setEditError(err instanceof Error ? err.message : 'Gagal memperbarui pengguna');
     } finally {
       setIsEditSubmitting(false);
     }
@@ -410,8 +400,8 @@ function AdminUsersContent() {
       await updateAdminUserApi(user.id, { resetQuota: true });
       toast.success(`Kuota AI dan unggahan untuk ${user.name} berhasil direset ke batas harian penuh`);
       loadUsers();
-    } catch (err: any) {
-      toast.error('Gagal mereset kuota: ' + err.message);
+    } catch (err: unknown) {
+      toast.error('Gagal mereset kuota: ' + (err instanceof Error ? err.message : 'Kesalahan tidak diketahui'));
     }
   };
 
@@ -421,8 +411,8 @@ function AdminUsersContent() {
       await updateAdminUserApi(user.id, { revokeSessions: true });
       toast.success(`Seluruh sesi login aktif untuk ${user.name} berhasil dicabut`);
       loadUsers();
-    } catch (err: any) {
-      toast.error('Gagal mencabut sesi login: ' + err.message);
+    } catch (err: unknown) {
+      toast.error('Gagal mencabut sesi login: ' + (err instanceof Error ? err.message : 'Kesalahan tidak diketahui'));
     }
   };
 
@@ -436,8 +426,8 @@ function AdminUsersContent() {
       toast.success(`Akun ${deletingUser.name} dan seluruh datanya berhasil dihapus`);
       setDeletingUser(null);
       loadUsers();
-    } catch (err: any) {
-      setDeleteError(err.message || 'Gagal menghapus akun pengguna');
+    } catch (err: unknown) {
+      setDeleteError(err instanceof Error ? err.message : 'Gagal menghapus akun pengguna');
     } finally {
       setIsDeleteSubmitting(false);
     }
@@ -728,6 +718,19 @@ function AdminUsersContent() {
                                 {copiedKey === `email-${user.id}` ? 'Email disalin' : 'Salin Email'}
                               </span>
                             </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() => handleCopy(user.id, `id-${user.id}`)}
+                              className="cursor-pointer text-xs"
+                            >
+                              {copiedKey === `id-${user.id}` ? (
+                                <Check className="mr-2 h-4 w-4 text-emerald-500" />
+                              ) : (
+                                <Copy className="mr-2 h-4 w-4" />
+                              )}
+                              <span>
+                                {copiedKey === `id-${user.id}` ? 'User ID disalin' : 'Salin User ID'}
+                              </span>
+                            </DropdownMenuItem>
 
                             <DropdownMenuSeparator />
 
@@ -911,6 +914,19 @@ function AdminUsersContent() {
                           {copiedKey === `email-${user.id}` ? 'Email disalin' : 'Salin Email'}
                         </span>
                       </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() => handleCopy(user.id, `id-${user.id}`)}
+                        className="cursor-pointer text-xs"
+                      >
+                        {copiedKey === `id-${user.id}` ? (
+                          <Check className="mr-2 h-4 w-4 text-emerald-500" />
+                        ) : (
+                          <Copy className="mr-2 h-4 w-4" />
+                        )}
+                        <span>
+                          {copiedKey === `id-${user.id}` ? 'User ID disalin' : 'Salin User ID'}
+                        </span>
+                      </DropdownMenuItem>
 
                       <DropdownMenuSeparator />
 
@@ -1050,8 +1066,8 @@ function AdminUsersContent() {
                 id="create-password"
                 type="password"
                 required
-                minLength={8}
-                placeholder="Minimal 8 karakter"
+                minLength={12}
+                placeholder="Minimal 12 karakter"
                 value={createForm.password}
                 onChange={(e) => setCreateForm({ ...createForm, password: e.target.value })}
                 className="h-9 text-xs"
@@ -1079,7 +1095,7 @@ function AdminUsersContent() {
                 <Label className="text-xs font-semibold">Zona Waktu</Label>
                 <Select
                   value={createForm.timezone}
-                  onValueChange={(val) => setCreateForm({ ...createForm, timezone: val })}
+                  onValueChange={(val: string) => setCreateForm({ ...createForm, timezone: val })}
                 >
                   <SelectTrigger className="h-9 text-xs">
                     <SelectValue />
@@ -1132,183 +1148,26 @@ function AdminUsersContent() {
         </DialogContent>
       </Dialog>
 
-      {/* Modal 2: Edit Akun & Peran */}
-      <Dialog open={Boolean(editingUser)} onOpenChange={(open) => !open && setEditingUser(null)}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Edit2 className="h-5 w-5 text-primary" />
-              Edit Akun Pengguna
-            </DialogTitle>
-            <DialogDescription>
-              Ubah data profil, peran akses, dan status verifikasi akun.
-            </DialogDescription>
-          </DialogHeader>
+      <EditUserDialog
+        open={Boolean(editingUser)}
+        onOpenChange={(open) => !open && setEditingUser(null)}
+        form={editForm}
+        onFormChange={setEditForm}
+        onSubmit={handleEditSubmit}
+        isSubmitting={isEditSubmitting}
+        error={editError}
+        isCurrentAdmin={editingUser?.id === currentAdmin?.id}
+      />
 
-          <form onSubmit={handleEditSubmit} className="space-y-4 py-2">
-            {editError && (
-              <Alert variant="destructive" className="py-2">
-                <AlertCircle className="h-4 w-4" />
-                <AlertDescription className="text-xs">{editError}</AlertDescription>
-              </Alert>
-            )}
-
-            <div className="space-y-1.5">
-              <Label htmlFor="edit-name" className="text-xs font-semibold">Nama Lengkap</Label>
-              <Input
-                id="edit-name"
-                required
-                value={editForm.name}
-                onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
-                className="h-9 text-xs"
-              />
-            </div>
-
-            <div className="space-y-1.5">
-              <Label htmlFor="edit-email" className="text-xs font-semibold">Alamat Email</Label>
-              <Input
-                id="edit-email"
-                type="email"
-                required
-                value={editForm.email}
-                onChange={(e) => setEditForm({ ...editForm, email: e.target.value })}
-                className="h-9 text-xs"
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label className="text-xs font-semibold">Peran Akses</Label>
-                <Select
-                  value={editForm.role}
-                  onValueChange={(val: Role) => setEditForm({ ...editForm, role: val })}
-                  disabled={editingUser?.id === currentAdmin?.id}
-                >
-                  <SelectTrigger className="h-9 text-xs">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="USER" className="text-xs">Mahasiswa (USER)</SelectItem>
-                    <SelectItem value="ADMIN" className="text-xs">Administrator</SelectItem>
-                  </SelectContent>
-                </Select>
-                {editingUser?.id === currentAdmin?.id && (
-                  <p className="text-xs text-muted-foreground mt-0.5">
-                    Peran akun sendiri tidak dapat diturunkan.
-                  </p>
-                )}
-              </div>
-
-              <div className="space-y-1.5">
-                <Label className="text-xs font-semibold">Zona Waktu</Label>
-                <Select
-                  value={editForm.timezone}
-                  onValueChange={(val) => setEditForm({ ...editForm, timezone: val })}
-                >
-                  <SelectTrigger className="h-9 text-xs">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Asia/Jakarta" className="text-xs">WIB (Asia/Jakarta)</SelectItem>
-                    <SelectItem value="Asia/Makassar" className="text-xs">WITA (Asia/Makassar)</SelectItem>
-                    <SelectItem value="Asia/Jayapura" className="text-xs">WIT (Asia/Jayapura)</SelectItem>
-                    <SelectItem value="UTC" className="text-xs">UTC</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            <div className="flex items-center space-x-2 pt-2">
-              <Checkbox
-                id="edit-verified"
-                checked={editForm.emailVerified}
-                onCheckedChange={(checked) =>
-                  setEditForm({ ...editForm, emailVerified: Boolean(checked) })
-                }
-              />
-              <Label htmlFor="edit-verified" className="text-xs cursor-pointer">
-                Email terverifikasi
-              </Label>
-            </div>
-
-            <DialogFooter className="pt-3">
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => setEditingUser(null)}
-                disabled={isEditSubmitting}
-                className="h-9 text-xs"
-              >
-                Batal
-              </Button>
-              <Button
-                type="submit"
-                size="sm"
-                disabled={isEditSubmitting}
-                className="h-9 text-xs gap-1.5"
-              >
-                {isEditSubmitting && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
-                <span>Perbarui Data</span>
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
-
-      {/* Modal 3: Konfirmasi Hapus Pengguna */}
-      <Dialog open={Boolean(deletingUser)} onOpenChange={(open) => !open && setDeletingUser(null)}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-destructive">
-              <Trash2 className="h-5 w-5" />
-              Hapus Akun Pengguna
-            </DialogTitle>
-            <DialogDescription>
-              Tindakan ini bersifat permanen. Seluruh data akademik, materi, tugas, dan catatan milik pengguna akan dibersihkan secara kaskade.
-            </DialogDescription>
-          </DialogHeader>
-
-          {deleteError && (
-            <Alert variant="destructive" className="py-2 my-2">
-              <AlertCircle className="h-4 w-4" />
-              <AlertDescription className="text-xs">{deleteError}</AlertDescription>
-            </Alert>
-          )}
-
-          {deletingUser && (
-            <div className="rounded-lg border border-border bg-muted/20 p-3 my-2 text-xs space-y-1">
-              <p><strong className="text-foreground">Nama:</strong> {deletingUser.name}</p>
-              <p><strong className="text-foreground">Email:</strong> {deletingUser.email}</p>
-              <p><strong className="text-foreground">Peran:</strong> {deletingUser.role}</p>
-            </div>
-          )}
-
-          <DialogFooter className="pt-3">
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => setDeletingUser(null)}
-              disabled={isDeleteSubmitting}
-              className="h-9 text-xs"
-            >
-              Batal
-            </Button>
-            <Button
-              type="button"
-              variant="destructive"
-              size="sm"
-              onClick={handleDeleteSubmit}
-              disabled={isDeleteSubmitting || deletingUser?.id === currentAdmin?.id}
-              className="h-9 text-xs gap-1.5"
-            >
-              {isDeleteSubmitting && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
-              <span>Konfirmasi Hapus Akun</span>
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <DeleteUserDialog
+        open={Boolean(deletingUser)}
+        onOpenChange={(open) => !open && setDeletingUser(null)}
+        user={deletingUser}
+        onConfirm={handleDeleteSubmit}
+        isSubmitting={isDeleteSubmitting}
+        error={deleteError}
+        isCurrentAdmin={deletingUser?.id === currentAdmin?.id}
+      />
     </FadeIn>
   );
 }

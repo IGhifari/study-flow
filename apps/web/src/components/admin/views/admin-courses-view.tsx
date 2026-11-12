@@ -37,6 +37,7 @@ import {
 import { Card } from '@/components/ui/card';
 import { FadeIn } from '@/components/ui/motion';
 import { fetchAdminCourses } from '@/lib/admin-api';
+import { useDebouncedValue } from '@/hooks/use-debounced-value';
 import { AdminCourseListItem, AdminCourseListResponse } from '@studyflow/shared';
 import { downloadCsvFile } from '@/lib/admin-formatters';
 import { AdminPagination } from '@/components/admin/admin-pagination';
@@ -74,20 +75,11 @@ function AdminCoursesContent() {
   const [error, setError] = React.useState<string | null>(null);
 
   const [search, setSearch] = React.useState(initialSearch);
-  const [debouncedSearch, setDebouncedSearch] = React.useState(initialSearch);
   const [page, setPage] = React.useState(initialPage);
   const [limit, setLimit] = React.useState(initialLimit);
   const [sortBy, setSortBy] = React.useState<'createdAt' | 'name' | 'code'>('createdAt');
   const [sortOrder, setSortOrder] = React.useState<'asc' | 'desc'>('desc');
-
-  // Debounce search input
-  React.useEffect(() => {
-    const timer = setTimeout(() => {
-      setDebouncedSearch(search);
-      setPage(1);
-    }, 300);
-    return () => clearTimeout(timer);
-  }, [search]);
+  const debouncedSearch = useDebouncedValue(search, 300, () => setPage(1));
 
   // Sync state to URL query params
   React.useEffect(() => {
@@ -118,9 +110,9 @@ function AdminCoursesContent() {
         { signal }
       );
       setData(res);
-    } catch (err: any) {
-      if (err.name === 'AbortError') return;
-      setError(err.message || 'Gagal memuat daftar mata kuliah');
+    } catch (err: unknown) {
+      if (err instanceof Error && err.name === 'AbortError') return;
+      setError(err instanceof Error ? err.message : 'Gagal memuat daftar mata kuliah');
     } finally {
       setIsLoading(false);
     }

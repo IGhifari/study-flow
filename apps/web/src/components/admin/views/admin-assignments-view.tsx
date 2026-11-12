@@ -39,7 +39,13 @@ import {
 import { Card } from '@/components/ui/card';
 import { FadeIn } from '@/components/ui/motion';
 import { fetchAdminAssignments } from '@/lib/admin-api';
-import { AdminAssignmentListItem, AdminAssignmentListResponse } from '@studyflow/shared';
+import { useDebouncedValue } from '@/hooks/use-debounced-value';
+import type {
+  AdminAssignmentListItem,
+  AdminAssignmentListResponse,
+  AssignmentStatus,
+  AssignmentPriority,
+} from '@studyflow/shared';
 import { downloadCsvFile } from '@/lib/admin-formatters';
 import { AdminPagination } from '@/components/admin/admin-pagination';
 
@@ -129,10 +135,10 @@ function AdminAssignmentsContent() {
   const initialSearch = searchParams.get('search') || '';
   const initialStatus = (['TODO', 'IN_PROGRESS', 'DONE'].includes(searchParams.get('status') || '')
     ? searchParams.get('status')
-    : '') as any;
+    : '') as AssignmentStatus | '';
   const initialPriority = (['LOW', 'MEDIUM', 'HIGH'].includes(searchParams.get('priority') || '')
     ? searchParams.get('priority')
-    : '') as any;
+    : '') as AssignmentPriority | '';
   const initialPage = Math.max(1, parseInt(searchParams.get('page') || '1', 10) || 1);
   const initialLimit = [10, 20, 50].includes(Number(searchParams.get('limit')))
     ? Number(searchParams.get('limit'))
@@ -143,21 +149,13 @@ function AdminAssignmentsContent() {
   const [error, setError] = React.useState<string | null>(null);
 
   const [search, setSearch] = React.useState(initialSearch);
-  const [debouncedSearch, setDebouncedSearch] = React.useState(initialSearch);
-  const [status, setStatus] = React.useState<string>(initialStatus);
-  const [priority, setPriority] = React.useState<string>(initialPriority);
+  const [status, setStatus] = React.useState<AssignmentStatus | ''>(initialStatus);
+  const [priority, setPriority] = React.useState<AssignmentPriority | ''>(initialPriority);
   const [page, setPage] = React.useState(initialPage);
   const [limit, setLimit] = React.useState(initialLimit);
   const [sortBy, setSortBy] = React.useState<'createdAt' | 'dueDate' | 'title'>('createdAt');
   const [sortOrder, setSortOrder] = React.useState<'asc' | 'desc'>('desc');
-
-  React.useEffect(() => {
-    const timer = setTimeout(() => {
-      setDebouncedSearch(search);
-      setPage(1);
-    }, 300);
-    return () => clearTimeout(timer);
-  }, [search]);
+  const debouncedSearch = useDebouncedValue(search, 300, () => setPage(1));
 
   React.useEffect(() => {
     const params = new URLSearchParams();
@@ -181,8 +179,8 @@ function AdminAssignmentsContent() {
       const res = await fetchAdminAssignments(
         {
           search: debouncedSearch || undefined,
-          status: (status as any) || undefined,
-          priority: (priority as any) || undefined,
+          status: status || undefined,
+          priority: priority || undefined,
           page,
           limit,
           sortBy,
@@ -191,9 +189,9 @@ function AdminAssignmentsContent() {
         { signal }
       );
       setData(res);
-    } catch (err: any) {
-      if (err.name === 'AbortError') return;
-      setError(err.message || 'Gagal memuat daftar tugas kuliah');
+    } catch (err: unknown) {
+      if (err instanceof Error && err.name === 'AbortError') return;
+      setError(err instanceof Error ? err.message : 'Gagal memuat daftar tugas kuliah');
     } finally {
       setIsLoading(false);
     }
@@ -314,8 +312,8 @@ function AdminAssignmentsContent() {
           <div className="flex flex-wrap items-center gap-2">
             <Select
               value={status || 'ALL'}
-              onValueChange={(val) => {
-                setStatus(val === 'ALL' ? '' : val);
+              onValueChange={(val: string) => {
+                setStatus(val === 'ALL' ? '' : (val as AssignmentStatus));
                 setPage(1);
               }}
             >
@@ -332,8 +330,8 @@ function AdminAssignmentsContent() {
 
             <Select
               value={priority || 'ALL'}
-              onValueChange={(val) => {
-                setPriority(val === 'ALL' ? '' : val);
+              onValueChange={(val: string) => {
+                setPriority(val === 'ALL' ? '' : (val as AssignmentPriority));
                 setPage(1);
               }}
             >

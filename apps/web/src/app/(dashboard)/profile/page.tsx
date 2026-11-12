@@ -103,9 +103,9 @@ export default function AdminProfilePage() {
     try {
       const res = await fetchAdminSessionsApi({ signal });
       setSessions(res.sessions);
-    } catch (err: any) {
-      if (err.name === 'AbortError') return;
-      setSessionsError(err.message || 'Gagal memuat sesi aktif administrator');
+    } catch (err: unknown) {
+      if (err instanceof Error && err.name === 'AbortError') return;
+      setSessionsError(err instanceof Error ? err.message : 'Gagal memuat sesi aktif administrator');
     } finally {
       setIsSessionsLoading(false);
     }
@@ -137,8 +137,8 @@ export default function AdminProfilePage() {
       await updateAdminProfileApi(validationResult.data);
       await refreshUser();
       toast.success('Profil administrator berhasil diperbarui');
-    } catch (err: any) {
-      setProfileError(err.message || 'Gagal memperbarui profil');
+    } catch (err: unknown) {
+      setProfileError(err instanceof Error ? err.message : 'Gagal memperbarui profil');
     } finally {
       setIsUpdatingProfile(false);
     }
@@ -171,8 +171,8 @@ export default function AdminProfilePage() {
       setNewPassword('');
       setConfirmPassword('');
       loadSessions();
-    } catch (err: any) {
-      setPasswordError(err.message || 'Gagal memperbarui kata sandi');
+    } catch (err: unknown) {
+      setPasswordError(err instanceof Error ? err.message : 'Gagal memperbarui kata sandi');
     } finally {
       setIsChangingPassword(false);
     }
@@ -185,8 +185,8 @@ export default function AdminProfilePage() {
       await revokeAdminSessionApi(sessionId);
       toast.success('Sesi login berhasil dicabut');
       loadSessions();
-    } catch (err: any) {
-      toast.error('Gagal mencabut sesi login: ' + err.message);
+    } catch (err: unknown) {
+      toast.error('Gagal mencabut sesi login: ' + (err instanceof Error ? err.message : 'Kesalahan tidak diketahui'));
     } finally {
       setRevokingSessionId(null);
     }

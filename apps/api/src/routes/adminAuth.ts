@@ -160,7 +160,7 @@ adminAuthRouter.patch('/profile', requireAdmin, async (req: Request, res: Respon
       return;
     }
 
-    const updateData: any = {};
+    const updateData: { name?: string; timezone?: string } = {};
     if (parseResult.data.name !== undefined) {
       updateData.name = parseResult.data.name.trim();
     }
