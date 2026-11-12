@@ -307,17 +307,6 @@ export async function exchangeGoogleCode(
 
   if (existingIdentity) {
     const user = existingIdentity.user;
-
-    // Strict separation: Reject ADMIN users from logging into the student web portal
-    if (user.role === 'ADMIN') {
-      const error: AppError = new Error(
-        'Akun administrator tidak diizinkan masuk ke portal mahasiswa. Silakan masuk melalui portal administrator.'
-      );
-      error.statusCode = 403;
-      error.code = 'ADMIN_PORTAL_ONLY';
-      throw error;
-    }
-
     const providers = user.federatedIdentities.map((f) => f.provider);
 
     // Issue StudyFlow application session

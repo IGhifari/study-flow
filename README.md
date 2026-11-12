@@ -64,7 +64,6 @@ Copy-Item .env.example .env
 Copy-Item apps/api/.env.example apps/api/.env
 Copy-Item apps/worker/.env.example apps/worker/.env
 Copy-Item apps/web/.env.example apps/web/.env.local
-Copy-Item apps/admin/.env.example apps/admin/.env.local
 Copy-Item packages/database/.env.example packages/database/.env
 ```
 
@@ -207,7 +206,6 @@ Jalankan quality gates dan rangkaian test yang tersedia:
   docker build -f apps/api/Dockerfile -t studyflow-api:latest .
   docker build -f apps/worker/Dockerfile -t studyflow-worker:latest .
   docker build -f apps/web/Dockerfile -t studyflow-web:latest .
-  docker build -f apps/admin/Dockerfile -t studyflow-admin:latest .
   ```
 - **Evaluasi Performa Ekstraksi & Kualitas AI**:
   ```bash

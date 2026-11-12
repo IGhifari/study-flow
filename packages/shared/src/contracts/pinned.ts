@@ -4,7 +4,7 @@ export const PinnedItemTypeSchema = z.enum(['MATERIAL', 'NOTE']);
 export type PinnedItemType = z.infer<typeof PinnedItemTypeSchema>;
 
 export const SetPinInputSchema = z.object({
-  pinned: z.boolean({ required_error: 'Status pinned wajib diisi' }),
+  pinned: z.boolean({ message: 'Status pinned wajib diisi' }),
 });
 export type SetPinInput = z.infer<typeof SetPinInputSchema>;
 

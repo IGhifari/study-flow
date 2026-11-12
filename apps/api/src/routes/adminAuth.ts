@@ -5,6 +5,7 @@ import {
   AdminUpdateProfileInputSchema,
   AdminChangePasswordInputSchema,
   ADMIN_COOKIE_NAMES,
+  COOKIE_NAMES,
 } from '@studyflow/shared';
 import {
   loginAdmin,
@@ -14,6 +15,8 @@ import {
 import {
   setAdminAuthCookies,
   clearAdminAuthCookies,
+  setAuthCookies,
+  clearAuthCookies,
 } from '../services/cookie.service.js';
 import { toUserProfile, changeUserPassword } from '../services/auth.service.js';
 import {
@@ -62,7 +65,9 @@ adminAuthRouter.post('/login', adminLoginRateLimiter, async (req: Request, res: 
 // POST /api/admin/auth/refresh
 adminAuthRouter.post('/refresh', async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const refreshToken = req.cookies?.[ADMIN_COOKIE_NAMES.refreshToken];
+    const adminRefresh = req.cookies?.[ADMIN_COOKIE_NAMES.refreshToken];
+    const webRefresh = req.cookies?.[COOKIE_NAMES.refreshToken];
+    const refreshToken = adminRefresh || webRefresh;
 
     if (!refreshToken) {
       res.status(400).json({
@@ -75,7 +80,12 @@ adminAuthRouter.post('/refresh', async (req: Request, res: Response, next: NextF
     }
 
     const result = await rotateAdminRefreshToken(refreshToken);
-    setAdminAuthCookies(res, result.accessToken, result.refreshToken);
+    if (adminRefresh || !webRefresh) {
+      setAdminAuthCookies(res, result.accessToken, result.refreshToken);
+    }
+    if (webRefresh) {
+      setAuthCookies(res, result.accessToken, result.refreshToken);
+    }
 
     res.status(200).json({
       message: 'Token admin berhasil diperbarui',
@@ -89,9 +99,13 @@ adminAuthRouter.post('/refresh', async (req: Request, res: Response, next: NextF
 // POST /api/admin/auth/logout
 adminAuthRouter.post('/logout', async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const refreshToken = req.cookies?.[ADMIN_COOKIE_NAMES.refreshToken];
+    const refreshToken =
+      req.cookies?.[ADMIN_COOKIE_NAMES.refreshToken] || req.cookies?.[COOKIE_NAMES.refreshToken];
     await logoutAdmin(refreshToken);
     clearAdminAuthCookies(res);
+    if (req.cookies?.[COOKIE_NAMES.refreshToken] || req.cookies?.[COOKIE_NAMES.accessToken]) {
+      clearAuthCookies(res);
+    }
 
     res.status(200).json({
       message: 'Logout admin berhasil',
@@ -220,6 +234,9 @@ adminAuthRouter.post('/change-password', requireAdmin, async (req: Request, res:
     });
 
     setAdminAuthCookies(res, accessToken, rawRefreshToken);
+    if (req.cookies?.[COOKIE_NAMES.accessToken] || req.cookies?.[COOKIE_NAMES.refreshToken]) {
+      setAuthCookies(res, accessToken, rawRefreshToken);
+    }
 
     res.status(200).json({
       message: 'Kata sandi berhasil diperbarui. Sesi perangkat lain telah dicabut.',
@@ -232,7 +249,8 @@ adminAuthRouter.post('/change-password', requireAdmin, async (req: Request, res:
 // GET /api/admin/auth/sessions
 adminAuthRouter.get('/sessions', requireAdmin, async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const currentRawRefreshToken = req.cookies?.[ADMIN_COOKIE_NAMES.refreshToken];
+    const currentRawRefreshToken =
+      req.cookies?.[ADMIN_COOKIE_NAMES.refreshToken] || req.cookies?.[COOKIE_NAMES.refreshToken];
     const currentTokenHash = currentRawRefreshToken ? hashToken(currentRawRefreshToken) : null;
 
     const sessions = await prisma.refreshSession.findMany({

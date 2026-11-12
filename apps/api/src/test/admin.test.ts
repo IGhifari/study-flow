@@ -325,7 +325,7 @@ describe('Admin Endpoints & Authorization Invariants', () => {
       expect(newCookies.some((c) => c.includes(ADMIN_COOKIE_NAMES.accessToken))).toBe(true);
     });
 
-    it('rejects ADMIN user from logging into student portal (/api/auth/login) with 403', async () => {
+    it('allows ADMIN user to log in via unified /api/auth/login endpoint', async () => {
       const webLogin = await request(app)
         .post('/api/auth/login')
         .set('Origin', WEB_ORIGIN)
@@ -333,9 +333,8 @@ describe('Admin Endpoints & Authorization Invariants', () => {
           email: adminUserEmail,
           password: 'PasswordAdmin123!',
         });
-      expect(webLogin.status).toBe(403);
-      expect(webLogin.body.error.code).toBe('ADMIN_PORTAL_ONLY');
-      expect(webLogin.body.error.message).toContain('Akun administrator');
+      expect(webLogin.status).toBe(200);
+      expect(webLogin.body.user.role).toBe('ADMIN');
     });
 
     it('clears admin cookies on logout and does not revoke separated normal user web session', async () => {

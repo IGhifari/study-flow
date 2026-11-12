@@ -226,7 +226,7 @@ export default function MaterialDetailPage(): React.JSX.Element {
     e.preventDefault();
     const validationResult = UpdateMaterialInputSchema.safeParse({ title: editTitle.trim() });
     if (!validationResult.success) {
-      setEditError(validationResult.error.errors[0]?.message || 'Judul materi tidak valid');
+      setEditError(validationResult.error.issues[0]?.message || 'Judul materi tidak valid');
       return;
     }
     setIsSubmittingEdit(true);

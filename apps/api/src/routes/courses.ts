@@ -28,7 +28,7 @@ courseRouter.get('/', async (req: Request, res: Response, next: NextFunction) =>
   try {
     const parsedQuery = CourseListQuerySchema.safeParse(req.query);
     if (!parsedQuery.success) {
-      const error: AppError = new Error(parsedQuery.error.errors[0]?.message || 'Query parameter tidak valid');
+      const error: AppError = new Error(parsedQuery.error.issues[0]?.message || 'Query parameter tidak valid');
       error.statusCode = 400;
       error.code = 'VALIDATION_ERROR';
       return next(error);
@@ -57,7 +57,7 @@ courseRouter.post('/', async (req: Request, res: Response, next: NextFunction) =
   try {
     const parsedBody = CreateCourseInputSchema.safeParse(req.body);
     if (!parsedBody.success) {
-      const error: AppError = new Error(parsedBody.error.errors[0]?.message || 'Input mata kuliah tidak valid');
+      const error: AppError = new Error(parsedBody.error.issues[0]?.message || 'Input mata kuliah tidak valid');
       error.statusCode = 400;
       error.code = 'VALIDATION_ERROR';
       return next(error);
@@ -78,7 +78,7 @@ courseRouter.patch('/:id', async (req: Request, res: Response, next: NextFunctio
   try {
     const parsedBody = UpdateCourseInputSchema.safeParse(req.body);
     if (!parsedBody.success) {
-      const error: AppError = new Error(parsedBody.error.errors[0]?.message || 'Input pembaruan mata kuliah tidak valid');
+      const error: AppError = new Error(parsedBody.error.issues[0]?.message || 'Input pembaruan mata kuliah tidak valid');
       error.statusCode = 400;
       error.code = 'VALIDATION_ERROR';
       return next(error);

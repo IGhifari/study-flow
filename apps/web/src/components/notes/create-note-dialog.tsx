@@ -79,7 +79,7 @@ export function CreateNoteDialog({
     });
 
     if (!validationResult.success) {
-      setErrorMsg(validationResult.error.errors[0]?.message || 'Input catatan tidak valid.');
+      setErrorMsg(validationResult.error.issues[0]?.message || 'Input catatan tidak valid.');
       return;
     }
 

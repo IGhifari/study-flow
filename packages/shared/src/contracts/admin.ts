@@ -311,7 +311,7 @@ export const AdminSystemModuleSchema = z.object({
   metricValue: z.string(),
   description: z.string(),
   updatedAt: z.string().datetime(),
-  details: z.record(z.unknown()).optional(),
+  details: z.record(z.string(), z.unknown()).optional(),
 });
 export type AdminSystemModule = z.infer<typeof AdminSystemModuleSchema>;
 

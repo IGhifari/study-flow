@@ -19,13 +19,11 @@ describe('Tahap UI-6 Improvements (Final UI/UX Polish Across Student & Admin Por
   const webResetPasswordPagePath = path.resolve(__dirname, '../app/(auth)/reset-password/page.tsx');
   const webVerifyEmailClientPath = path.resolve(__dirname, '../app/(auth)/verify-email/verify-email-client.tsx');
   const webNotFoundPagePath = path.resolve(__dirname, '../app/not-found.tsx');
+  const webForbiddenPagePath = path.resolve(__dirname, '../app/forbidden/page.tsx');
 
-  const adminLoginPagePath = path.resolve(__dirname, '../../../admin/src/app/login/page.tsx');
-  const adminNotFoundPagePath = path.resolve(__dirname, '../../../admin/src/app/not-found.tsx');
-  const adminForbiddenPagePath = path.resolve(__dirname, '../../../admin/src/app/forbidden/page.tsx');
-  const adminUsersPagePath = path.resolve(__dirname, '../../../admin/src/app/(dashboard)/users/page.tsx');
-  const adminUserDetailPagePath = path.resolve(__dirname, '../../../admin/src/app/(dashboard)/users/[id]/page.tsx');
-  const adminJobsPagePath = path.resolve(__dirname, '../../../admin/src/app/(dashboard)/jobs/page.tsx');
+  const adminUsersPagePath = path.resolve(__dirname, '../app/(dashboard)/users/page.tsx');
+  const adminUserDetailPagePath = path.resolve(__dirname, '../app/(dashboard)/users/[id]/page.tsx');
+  const adminJobsPagePath = path.resolve(__dirname, '../app/(dashboard)/jobs/page.tsx');
 
   it('standardizes Course Detail page with shadcn Card, Table, and Motion without raw HTML table or micro-typography', () => {
     const content = fs.readFileSync(courseDetailPagePath, 'utf-8');
@@ -92,8 +90,8 @@ describe('Tahap UI-6 Improvements (Final UI/UX Polish Across Student & Admin Por
     expect(content).toContain('FadeIn');
   });
 
-  it('standardizes Authentication and 404/403 Error pages across Student and Admin portals with Card and FadeIn', () => {
-    const studentAuthFiles = [
+  it('standardizes Authentication and 404/403 Error pages with Card and FadeIn', () => {
+    const authFiles = [
       webLoginPagePath,
       webRegisterPagePath,
       webForgotPasswordPagePath,
@@ -101,7 +99,7 @@ describe('Tahap UI-6 Improvements (Final UI/UX Polish Across Student & Admin Por
       webVerifyEmailClientPath,
     ];
 
-    for (const filePath of studentAuthFiles) {
+    for (const filePath of authFiles) {
       const content = fs.readFileSync(filePath, 'utf-8');
       expect(content).not.toContain('text-[10px]');
       expect(content).not.toContain('text-[11px]');
@@ -109,13 +107,7 @@ describe('Tahap UI-6 Improvements (Final UI/UX Polish Across Student & Admin Por
       expect(content).toContain('<Card');
     }
 
-    const adminLoginContent = fs.readFileSync(adminLoginPagePath, 'utf-8');
-    expect(adminLoginContent).not.toContain('text-[10px]');
-    expect(adminLoginContent).not.toContain('text-[11px]');
-    expect(adminLoginContent).toContain('FadeIn');
-    expect(adminLoginContent).toContain('<LoginForm');
-
-    const errorFiles = [webNotFoundPagePath, adminNotFoundPagePath, adminForbiddenPagePath];
+    const errorFiles = [webNotFoundPagePath, webForbiddenPagePath];
     for (const filePath of errorFiles) {
       const content = fs.readFileSync(filePath, 'utf-8');
       expect(content).toContain('FadeIn');

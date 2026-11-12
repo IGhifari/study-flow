@@ -56,7 +56,7 @@ export const UpdateNoteInputSchema = z.object({
     .optional(),
   materialId: z.string().nullable().optional(),
   version: z
-    .number({ required_error: 'Versi catatan wajib disertakan untuk mencegah konflik' })
+    .number({ message: 'Versi catatan wajib disertakan untuk mencegah konflik' })
     .int()
     .positive(),
 });
@@ -83,4 +83,4 @@ export const NoteListQuerySchema = z.object({
     .default(20)
     .optional(),
 });
-export type NoteListQuery = z.input<typeof NoteListQuerySchema>;
+export type NoteListQuery = z.infer<typeof NoteListQuerySchema>;

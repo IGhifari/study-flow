@@ -28,11 +28,12 @@ import { FadeIn } from '@/components/ui/motion';
 function LoginForm(): React.JSX.Element {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const returnUrl = searchParams.get('returnUrl');
+  const returnUrl = searchParams.get('returnUrl') || searchParams.get('from');
   const isRegisteredSuccess = searchParams.get('registered') === 'true';
   const urlError = searchParams.get('error');
 
   const [showPassword, setShowPassword] = React.useState(false);
+  const [capsLockOn, setCapsLockOn] = React.useState(false);
   const [serverError, setServerError] = React.useState<string | null>(urlError);
   const [requireCaptcha, setRequireCaptcha] = React.useState(false);
   const [turnstileToken, setTurnstileToken] = React.useState<string>('');
@@ -176,7 +177,13 @@ function LoginForm(): React.JSX.Element {
                   disabled={isSubmitting}
                   className="h-10 pr-11 text-sm"
                   aria-invalid={Boolean(errors.password)}
-                  aria-describedby={errors.password ? 'password-error' : undefined}
+                  aria-describedby={
+                    [errors.password && 'password-error', capsLockOn && 'password-capslock']
+                      .filter(Boolean)
+                      .join(' ') || undefined
+                  }
+                  onKeyUp={(e) => setCapsLockOn(e.getModifierState('CapsLock'))}
+                  onKeyDown={(e) => setCapsLockOn(e.getModifierState('CapsLock'))}
                   {...register('password')}
                 />
                 <button
@@ -184,6 +191,7 @@ function LoginForm(): React.JSX.Element {
                   onClick={() => setShowPassword((prev) => !prev)}
                   className="absolute right-1 top-1/2 -translate-y-1/2 z-10 flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:text-foreground after:absolute after:-inset-2 sm:after:hidden touch-manipulation focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring"
                   aria-label={showPassword ? 'Sembunyikan password' : 'Tampilkan password'}
+                  aria-pressed={showPassword}
                   title={showPassword ? 'Sembunyikan password' : 'Tampilkan password'}
                 >
                   {showPassword ? (
@@ -196,6 +204,11 @@ function LoginForm(): React.JSX.Element {
               {errors.password && (
                 <p id="password-error" className="text-xs font-medium text-destructive">
                   {errors.password.message}
+                </p>
+              )}
+              {capsLockOn && (
+                <p id="password-capslock" className="text-xs font-medium text-amber-700 dark:text-amber-400">
+                  Caps Lock aktif.
                 </p>
               )}
             </div>

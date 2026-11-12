@@ -797,17 +797,16 @@ Ketentuan berikut menjadi arah awal saat milestone PRD terkait dikerjakan, bukan
 6. Verifikasi hasil render dengan data realistis pada kedua tema dan viewport yang relevan. Pemeriksaan visual tidak digantikan hanya oleh build sukses.
 7. Laporkan halaman yang berubah, kondisi yang telah diperiksa, dan keterbatasan nyata. Perbarui dokumen jika keputusan desain berubah secara sengaja.
 
-### 9.13 Dashboard Administrator StudyFlow (apps/admin)
+### 9.13 Dashboard Administrator StudyFlow (Portal Terpadu `apps/web`)
 
-- **Identitas dan App Shell**:
-  - Menggunakan block `sidebar-07` resmi shadcn/ui dengan mode collapsible `icon` dan drawer mobile terpadu.
-  - Header admin menampilkan `SidebarTrigger`, `Separator` vertikal, `Breadcrumb` rute aktif (StudyFlow Admin > Ringkasan / Pengguna), dan `ThemeToggle` (Sistem, Terang, Gelap).
-  - Footer sidebar menyajikan identitas administrator masuk dengan `Avatar`, inisial nama, email, serta `DropdownMenu` aksi akun berisi tombol “Keluar” destruktif.
-- **Login Administrator (`/login`)**:
-  - Halaman terisolasi berbasis `Card` shadcn terpusat (`max-w-md`) dengan ikon perisai (`Shield`) dan tipografi tegas.
-  - Input email dan kata sandi dilengkapi tombol visibilitas kata sandi yang aksesibel (`Eye` / `EyeOff`, aria-label, `tabIndex={-1}`).
-  - Tombol aksi utama dengan `Loader2` saat proses mutasi, pencegahan submit ganda, serta pesan error terpadu (`Alert variant="destructive"`).
-  - Tanpa opsi registrasi publik atau tombol login Google.
+- **Identitas dan App Shell Terpadu**:
+  - Portal mahasiswa dan administrator disatukan dalam `apps/web` tanpa rute berawalan `/admin`. `AppShell` secara otomatis menyesuaikan sidebar, header, dan tampilan halaman berdasarkan peran pengguna yang masuk (`ADMIN` vs `USER`).
+  - Saat masuk sebagai `ADMIN`, `AppShell` merender `AdminSidebar` (`sidebar-07` / `sidebar-08` shadcn/ui dengan mode collapsible `icon` dan drawer mobile terpadu) serta `AdminHeader` (dengan `SidebarTrigger`, `Breadcrumb`, pencarian global `AdminCommandPalette`, dan `ThemeToggle`).
+  - Footer sidebar menyajikan identitas administrator dengan `Avatar`, inisial nama, email, serta `DropdownMenu` aksi akun berisi tautan Profil dan tombol “Keluar”.
+- **Login Terpadu (`/login`)**:
+  - Satu formulir login terpadu untuk seluruh pengguna (`USER` maupun `ADMIN`) di `/login`.
+  - Input email dan kata sandi dengan label permanen, tombol visibilitas kata sandi yang dapat dijangkau keyboard (`Eye` / `EyeOff`, `aria-label`, `aria-pressed`), indikator Caps Lock aktif, serta penanganan redirect aman melalui parameter `returnUrl` atau `from`.
+  - Setelah autentikasi berhasil, pengguna diarahkan ke `/dashboard` (atau rute tujuan internal), dan sistem otomatis merender tampilan sesuai peran (`ADMIN` atau `USER`).
 - **Ringkasan Platform (`/dashboard`)**:
   - Tata letak kisi kartu metrik responsif (`grid gap-4 sm:grid-cols-2 lg:grid-cols-4`).
   - 4 metrik nyata: Total Pengguna (`Users`), Total Materi (`FileText`), Total Tugas (`CheckSquare`), dan Pekerjaan AI Gagal 24 Jam (`AlertTriangle`).

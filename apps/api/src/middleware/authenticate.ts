@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { COOKIE_NAMES } from '@studyflow/shared';
+import { COOKIE_NAMES, ADMIN_COOKIE_NAMES } from '@studyflow/shared';
 import { verifyAccessToken } from '../services/token.service.js';
 import { prisma } from '@studyflow/database';
 import { AppError } from './errorHandler.js';
@@ -32,7 +32,7 @@ export async function authenticate(
 
   // 2. Fallback to cookies
   if (!token && req.cookies) {
-    token = req.cookies[COOKIE_NAMES.accessToken];
+    token = req.cookies[COOKIE_NAMES.accessToken] || req.cookies[ADMIN_COOKIE_NAMES.accessToken];
   }
 
   if (!token) {
@@ -60,14 +60,6 @@ export async function authenticate(
     const error: AppError = new Error('Sesi telah dicabut atau diubah. Silakan login kembali.');
     error.statusCode = 401;
     error.code = 'SESSION_REVOKED';
-    return next(error);
-  }
-
-  // Strict separation: Reject ADMIN users from accessing student endpoints
-  if (user.role === 'ADMIN') {
-    const error: AppError = new Error('Akun administrator tidak diizinkan mengakses portal mahasiswa.');
-    error.statusCode = 403;
-    error.code = 'ADMIN_PORTAL_ONLY';
     return next(error);
   }
 

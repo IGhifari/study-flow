@@ -58,7 +58,7 @@ export function EditSemesterDialog({
     });
 
     if (!validationResult.success) {
-      setError(validationResult.error.errors[0]?.message || 'Input pembaruan semester tidak valid.');
+      setError(validationResult.error.issues[0]?.message || 'Input pembaruan semester tidak valid.');
       return;
     }
 

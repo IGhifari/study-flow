@@ -32,7 +32,7 @@ dashboardRouter.get(
     try {
       const parsedQuery = DashboardPinnedQuerySchema.safeParse(req.query);
       if (!parsedQuery.success) {
-        const error: AppError = new Error(parsedQuery.error.errors[0]?.message || 'Query parameter pinned tidak valid');
+        const error: AppError = new Error(parsedQuery.error.issues[0]?.message || 'Query parameter pinned tidak valid');
         error.statusCode = 400;
         error.code = 'VALIDATION_ERROR';
         return next(error);
@@ -54,7 +54,7 @@ dashboardRouter.get(
     try {
       const parsedQuery = DashboardChartsQuerySchema.safeParse(req.query);
       if (!parsedQuery.success) {
-        const error: AppError = new Error(parsedQuery.error.errors[0]?.message || 'Query parameter chart tidak valid');
+        const error: AppError = new Error(parsedQuery.error.issues[0]?.message || 'Query parameter chart tidak valid');
         error.statusCode = 400;
         error.code = 'VALIDATION_ERROR';
         return next(error);

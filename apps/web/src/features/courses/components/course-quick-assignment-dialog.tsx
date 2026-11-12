@@ -73,7 +73,7 @@ export function CourseQuickAssignmentDialog({
     });
 
     if (!validationResult.success) {
-      setError(validationResult.error.errors[0]?.message || 'Input tugas tidak valid');
+      setError(validationResult.error.issues[0]?.message || 'Input tugas tidak valid');
       return;
     }
 

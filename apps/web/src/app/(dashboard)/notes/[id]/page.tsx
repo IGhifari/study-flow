@@ -217,7 +217,7 @@ export default function NoteDetailPage(): React.JSX.Element {
     });
 
     if (!validationResult.success) {
-      setSaveErrorMessage(validationResult.error.errors[0]?.message || 'Input catatan tidak valid.');
+      setSaveErrorMessage(validationResult.error.issues[0]?.message || 'Input catatan tidak valid.');
       setSaveStatus('ERROR');
       return { success: false, stillDirty: true };
     }

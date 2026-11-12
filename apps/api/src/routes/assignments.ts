@@ -33,7 +33,7 @@ assignmentRouter.get('/', async (req: Request, res: Response, next: NextFunction
   try {
     const parsedQuery = AssignmentListQuerySchema.safeParse(req.query);
     if (!parsedQuery.success) {
-      const error: AppError = new Error(parsedQuery.error.errors[0]?.message || 'Query parameter tidak valid');
+      const error: AppError = new Error(parsedQuery.error.issues[0]?.message || 'Query parameter tidak valid');
       error.statusCode = 400;
       error.code = 'VALIDATION_ERROR';
       return next(error);
@@ -62,7 +62,7 @@ assignmentRouter.post('/', async (req: Request, res: Response, next: NextFunctio
   try {
     const parsedBody = CreateAssignmentInputSchema.safeParse(req.body);
     if (!parsedBody.success) {
-      const error: AppError = new Error(parsedBody.error.errors[0]?.message || 'Input tugas tidak valid');
+      const error: AppError = new Error(parsedBody.error.issues[0]?.message || 'Input tugas tidak valid');
       error.statusCode = 400;
       error.code = 'VALIDATION_ERROR';
       return next(error);
@@ -91,7 +91,7 @@ assignmentRouter.patch('/:id', async (req: Request, res: Response, next: NextFun
 
     const parsedBody = UpdateAssignmentInputSchema.safeParse(req.body);
     if (!parsedBody.success) {
-      const error: AppError = new Error(parsedBody.error.errors[0]?.message || 'Input pembaruan tugas tidak valid');
+      const error: AppError = new Error(parsedBody.error.issues[0]?.message || 'Input pembaruan tugas tidak valid');
       error.statusCode = 400;
       error.code = 'VALIDATION_ERROR';
       return next(error);
@@ -137,7 +137,7 @@ assignmentRouter.post('/:assignmentId/subtasks', async (req: Request, res: Respo
   try {
     const parsed = CreateSubtaskInputSchema.safeParse(req.body);
     if (!parsed.success) {
-      const error: AppError = new Error(parsed.error.errors[0]?.message || 'Input subtugas tidak valid');
+      const error: AppError = new Error(parsed.error.issues[0]?.message || 'Input subtugas tidak valid');
       error.statusCode = 400;
       error.code = 'VALIDATION_ERROR';
       return next(error);
@@ -159,7 +159,7 @@ assignmentRouter.patch('/:assignmentId/subtasks/:subtaskId', async (req: Request
   try {
     const parsed = UpdateSubtaskInputSchema.safeParse(req.body);
     if (!parsed.success) {
-      const error: AppError = new Error(parsed.error.errors[0]?.message || 'Input pembaruan subtugas tidak valid');
+      const error: AppError = new Error(parsed.error.issues[0]?.message || 'Input pembaruan subtugas tidak valid');
       error.statusCode = 400;
       error.code = 'VALIDATION_ERROR';
       return next(error);

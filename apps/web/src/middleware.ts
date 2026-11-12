@@ -12,7 +12,13 @@ const PROTECTED_PREFIXES = [
   '/settings',
   '/calendar',
   '/schedule',
+  '/users',
+  '/jobs',
+  '/schedules',
+  '/quizzes',
+  '/profile',
 ];
+const ADMIN_ONLY_PREFIXES = ['/users', '/jobs', '/schedules', '/quizzes', '/profile'];
 const AUTH_PREFIXES = ['/login', '/register', '/forgot-password', '/reset-password'];
 
 function isValidReturnUrl(url: string | null): boolean {
@@ -54,37 +60,19 @@ export async function middleware(req: NextRequest) {
   const refreshToken = req.cookies.get(COOKIE_NAMES.refreshToken)?.value;
 
   const isProtectedRoute = PROTECTED_PREFIXES.some((prefix) => pathname.startsWith(prefix));
+  const isAdminOnlyRoute = ADMIN_ONLY_PREFIXES.some((prefix) => pathname.startsWith(prefix));
   const isAuthRoute = AUTH_PREFIXES.some((prefix) => pathname.startsWith(prefix));
-
-  // Strict separation: Reject ADMIN users immediately from student web portal
-  const tokenRole = getJwtRole(accessToken);
-  if (tokenRole === 'ADMIN') {
-    if (isProtectedRoute) {
-      const loginUrl = new URL(
-        `/login?error=${encodeURIComponent(
-          'Akun administrator tidak diizinkan masuk ke portal mahasiswa. Silakan gunakan portal administrator.'
-        )}`,
-        req.url
-      );
-      const redirectRes = NextResponse.redirect(loginUrl);
-      redirectRes.cookies.delete(COOKIE_NAMES.accessToken);
-      redirectRes.cookies.delete(COOKIE_NAMES.refreshToken);
-      return redirectRes;
-    }
-    if (isAuthRoute) {
-      const res = NextResponse.next();
-      res.cookies.delete(COOKIE_NAMES.accessToken);
-      res.cookies.delete(COOKIE_NAMES.refreshToken);
-      return res;
-    }
-  }
 
   // 1. Direct access to protected routes
   if (isProtectedRoute) {
     const accessExpired = isJwtExpired(accessToken);
 
-    // If access token is valid, proceed immediately
+    // If access token is valid, proceed (after role check for admin-only routes)
     if (accessToken && !accessExpired) {
+      const tokenRole = getJwtRole(accessToken);
+      if (isAdminOnlyRoute && tokenRole !== 'ADMIN') {
+        return NextResponse.redirect(new URL('/dashboard', req.url));
+      }
       return NextResponse.next();
     }
 
@@ -124,7 +112,6 @@ export async function middleware(req: NextRequest) {
 
         if (refreshRes.ok) {
           const setCookies = refreshRes.headers.getSetCookie();
-          const newCookieStrings: string[] = [];
 
           // Create new request headers with refreshed cookies for Server Components
           const reqCookieMap = new Map<string, string>();
@@ -136,6 +123,15 @@ export async function middleware(req: NextRequest) {
             if (cName && cVal) {
               reqCookieMap.set(cName.trim(), cVal.trim());
             }
+          }
+
+          const newAccessToken = reqCookieMap.get(COOKIE_NAMES.accessToken);
+          if (isAdminOnlyRoute && getJwtRole(newAccessToken) !== 'ADMIN') {
+            const redirectRes = NextResponse.redirect(new URL('/dashboard', req.url));
+            for (const cookieStr of setCookies) {
+              redirectRes.headers.append('set-cookie', cookieStr);
+            }
+            return redirectRes;
           }
 
           const combinedCookieHeader = Array.from(reqCookieMap.entries())
@@ -178,7 +174,8 @@ export async function middleware(req: NextRequest) {
     const hasValidSession = (accessToken && !accessExpired) || !!refreshToken;
 
     if (hasValidSession) {
-      const queryReturnUrl = req.nextUrl.searchParams.get('returnUrl');
+      const queryReturnUrl =
+        req.nextUrl.searchParams.get('returnUrl') || req.nextUrl.searchParams.get('from');
       const targetPath = isValidReturnUrl(queryReturnUrl) ? queryReturnUrl! : '/dashboard';
       return NextResponse.redirect(new URL(targetPath, req.url));
     }
@@ -198,6 +195,11 @@ export const config = {
     '/settings/:path*',
     '/calendar/:path*',
     '/schedule/:path*',
+    '/users/:path*',
+    '/jobs/:path*',
+    '/schedules/:path*',
+    '/quizzes/:path*',
+    '/profile/:path*',
     '/login',
     '/register',
     '/forgot-password',

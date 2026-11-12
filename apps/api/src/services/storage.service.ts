@@ -380,7 +380,8 @@ export class SupabaseStorageAdapter implements StorageAdapter {
   private bucket: string;
 
   constructor(supabaseUrl: string, serviceKey: string, bucket: string) {
-    this.client = new StorageClient(`${supabaseUrl.replace(/\/+$/, '')}/storage/v1`, {
+    const cleanUrl = supabaseUrl.replace(/\/rest\/v1\/?$/, '').replace(/\/+$/, '');
+    this.client = new StorageClient(`${cleanUrl}/storage/v1`, {
       apikey: serviceKey,
       Authorization: `Bearer ${serviceKey}`,
     });

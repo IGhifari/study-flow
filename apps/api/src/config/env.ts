@@ -183,7 +183,7 @@ export function assertProductionSecrets(
 function loadEnv(): Env {
   const result = EnvSchema.safeParse(process.env);
   if (!result.success) {
-    const missingKeys = result.error.errors.map((err) => err.path.join('.')).join(', ');
+    const missingKeys = result.error.issues.map((err) => err.path.join('.')).join(', ');
     console.error(`[FATAL] Environment validation failed. Invalid or missing variables: ${missingKeys}`);
     process.exit(1);
   }

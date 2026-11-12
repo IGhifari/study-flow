@@ -66,7 +66,7 @@ export function EditCourseDialog({
     });
 
     if (!validationResult.success) {
-      setErrorMsg(validationResult.error.errors[0]?.message || 'Input pembaruan mata kuliah tidak valid');
+      setErrorMsg(validationResult.error.issues[0]?.message || 'Input pembaruan mata kuliah tidak valid');
       return;
     }
 

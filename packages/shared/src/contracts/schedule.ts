@@ -65,15 +65,15 @@ export const CreateCourseScheduleInputSchema = z
   .object({
     courseId: z.string().min(1, 'Mata kuliah wajib dipilih'),
     dayOfWeek: z
-      .number({ required_error: 'Hari wajib dipilih' })
+      .number({ message: 'Hari wajib dipilih' })
       .int('Hari harus berupa bilangan bulat')
       .min(1, 'Hari harus antara 1 (Senin) hingga 7 (Minggu)')
       .max(7, 'Hari harus antara 1 (Senin) hingga 7 (Minggu)'),
     startTime: z
-      .string({ required_error: 'Waktu mulai wajib diisi' })
+      .string({ message: 'Waktu mulai wajib diisi' })
       .regex(TIME_REGEX, 'Format waktu mulai harus berupa HH:mm (contoh: 08:00)'),
     endTime: z
-      .string({ required_error: 'Waktu selesai wajib diisi' })
+      .string({ message: 'Waktu selesai wajib diisi' })
       .regex(TIME_REGEX, 'Format waktu selesai harus berupa HH:mm (contoh: 09:40)'),
     room: z
       .string()
@@ -152,7 +152,7 @@ export const CourseScheduleQuerySchema = z.object({
   courseId: z.string().optional(),
   dayOfWeek: z.coerce.number().int().min(1).max(7).optional(),
 });
-export type CourseScheduleQuery = z.input<typeof CourseScheduleQuerySchema>;
+export type CourseScheduleQuery = z.infer<typeof CourseScheduleQuerySchema>;
 
 export const CourseScheduleResponseSchema = z.object({
   schedule: CourseScheduleSchema,

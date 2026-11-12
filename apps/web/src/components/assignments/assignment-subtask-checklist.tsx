@@ -152,7 +152,7 @@ export function AssignmentSubtaskChecklist({
 
     const validationResult = CreateSubtaskInputSchema.safeParse({ title: trimmed });
     if (!validationResult.success) {
-      setErrorMsg(validationResult.error.errors[0]?.message || 'Judul subtugas tidak valid');
+      setErrorMsg(validationResult.error.issues[0]?.message || 'Judul subtugas tidak valid');
       return;
     }
 
@@ -204,7 +204,7 @@ export function AssignmentSubtaskChecklist({
 
     const validationResult = UpdateSubtaskInputSchema.safeParse({ title: trimmed });
     if (!validationResult.success) {
-      setErrorMsg(validationResult.error.errors[0]?.message || 'Judul subtugas tidak valid');
+      setErrorMsg(validationResult.error.issues[0]?.message || 'Judul subtugas tidak valid');
       return;
     }
 

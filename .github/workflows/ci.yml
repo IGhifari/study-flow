@@ -199,6 +199,3 @@ jobs:
 
       - name: Build Web Docker image
         run: docker build -f apps/web/Dockerfile -t studyflow-web:ci .
-
-      - name: Build Admin Docker image
-        run: docker build -f apps/admin/Dockerfile -t studyflow-admin:ci .

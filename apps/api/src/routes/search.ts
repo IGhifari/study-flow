@@ -17,7 +17,7 @@ searchRouter.get('/', async (req: Request, res: Response, next: NextFunction) =>
     const parsedQuery = SearchQuerySchema.safeParse(req.query);
     if (!parsedQuery.success) {
       const error: AppError = new Error(
-        parsedQuery.error.errors[0]?.message || 'Parameter pencarian tidak valid'
+        parsedQuery.error.issues[0]?.message || 'Parameter pencarian tidak valid'
       );
       error.statusCode = 400;
       error.code = 'VALIDATION_ERROR';
