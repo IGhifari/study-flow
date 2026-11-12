@@ -40,7 +40,7 @@ StudyFlow dibangun menggunakan arsitektur modular terpisah untuk memisahkan logi
 
 | Lokasi | Komponen | Tanggung Jawab Utama | Batasan Ketat |
 | --- | --- | --- | --- |
-| `apps/web` | Next.js App Router | Rendering halaman, routing, manajemen tema, UI interaktif, validasi form sisi klien | **TIDAK BOLEH** mengimpor Prisma atau modul database; tidak menyimpan secret server; tidak menduplikasi aturan bisnis API |
+| `apps/web` | Next.js App Router | Portal terpadu (`USER` & `ADMIN`), rendering halaman, routing, manajemen tema, UI interaktif, validasi form sisi klien | **TIDAK BOLEH** mengimpor Prisma atau modul database; tidak menyimpan secret server; tidak menduplikasi aturan bisnis API |
 | `apps/api` | Express REST API | Autentikasi sesi, otorisasi kepemilikan resource, validasi skema input (Zod), koordinasi job ke antrean, logging terstruktur, pelaporan health/readiness | Menjaga semua akses database di belakang otorisasi; tidak membocorkan connection string, kredensial, atau stack trace ke klien |
 | `apps/worker` | BullMQ Worker | Pemrosesan dokumen berat (PDF text extraction), koordinasi generasi AI, retry handling | Hanya berjalan sebagai proses latar belakang; tidak mengekspos port HTTP publik; idempotent terhadap job berulang |
 | `packages/shared` | Shared Contracts | Kontrak publik Zod, tipe TypeScript bersama, konstanta sistem (kuota, limit file, queue names) | Aman diimpor oleh browser dan server; **TIDAK BOLEH** memuat modul Node/server privat |

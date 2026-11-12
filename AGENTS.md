@@ -17,8 +17,8 @@ Repository mungkin masih pada tahap foundation. Struktur dan kapabilitas di bawa
 
 StudyFlow adalah platform belajar pribadi untuk mahasiswa: semester, mata kuliah, tugas, catatan, materi PDF, ringkasan AI, flashcard, dan kuis.
 
-- Frontend menggunakan Next.js App Router dan TypeScript; backend Express terpisah.
-- MVP hanya memiliki peran `USER` dan data pribadi per pengguna.
+- Frontend menggunakan Next.js App Router dan TypeScript (`apps/web`) yang melayani portal terpadu untuk peran `USER` (mahasiswa) dan `ADMIN` (administrator); backend Express terpisah (`apps/api`).
+- Data akademik bersifat pribadi per pengguna (`USER`), sedangkan peran `ADMIN` mengelola operasional sistem dan direktori pengguna melalui rute terproteksi di `apps/web`.
 - Chat berbasis materi, Socket.io, reminder, dan kolaborasi mengikuti tahap lanjutan dalam PRD. Jangan membangunnya hanya untuk melengkapi tampilan.
 - Kerjakan milestone yang diminta sampai acceptance criteria terpenuhi. Jangan otomatis melanjutkan milestone berikutnya.
 - Jangan menambah statistik palsu, menu mati, fitur dummy, atau dependensi besar tanpa kebutuhan tugas.

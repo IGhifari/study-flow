@@ -29,9 +29,9 @@ export function ActivityTrendsCard() {
     try {
       const res = await fetchAdminTrends(selectedRange, { signal });
       setTrends(res);
-    } catch (err: any) {
-      if (err.name === 'AbortError') return;
-      setError(err.message || 'Gagal memuat tren aktivitas platform');
+    } catch (err: unknown) {
+      if (err instanceof Error && err.name === 'AbortError') return;
+      setError(err instanceof Error ? err.message : 'Gagal memuat tren aktivitas platform');
     } finally {
       setIsLoading(false);
     }

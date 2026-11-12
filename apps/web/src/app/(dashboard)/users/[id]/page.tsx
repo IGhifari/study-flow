@@ -30,7 +30,6 @@ import {
   Sparkles,
   Activity,
   Layers,
-  Loader2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -41,24 +40,6 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { Checkbox } from '@/components/ui/checkbox';
 import { Progress } from '@/components/ui/progress';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -70,7 +51,13 @@ import {
   AdminApiError,
 } from '@/lib/admin-api';
 import { useAdminAuth } from '@/components/admin/admin-auth-context';
-import type { AdminUserDetail, Role } from '@studyflow/shared';
+import {
+  EditUserDialog,
+  ResetUserPasswordDialog,
+  DeleteUserDialog,
+  type EditUserFormState,
+} from '@/components/admin/user-management-dialogs';
+import type { AdminUserDetail } from '@studyflow/shared';
 import { formatBytes } from '@/lib/admin-formatters';
 import { toast } from 'sonner';
 
@@ -162,10 +149,10 @@ function UserDetailContent() {
   // CRUD Dialog states
   const [isEditOpen, setIsEditOpen] = React.useState(false);
   const [isEditSubmitting, setIsEditSubmitting] = React.useState(false);
-  const [editForm, setEditForm] = React.useState({
+  const [editForm, setEditForm] = React.useState<EditUserFormState>({
     name: '',
     email: '',
-    role: 'USER' as Role,
+    role: 'USER',
     timezone: 'Asia/Jakarta',
     emailVerified: true,
   });
@@ -207,12 +194,12 @@ function UserDetailContent() {
             emailVerified: Boolean(res.emailVerifiedAt),
           });
         })
-        .catch((err: any) => {
+        .catch((err: unknown) => {
           if (signal?.aborted) return;
           if (err instanceof AdminApiError && err.statusCode === 404) {
             setIsNotFound(true);
           } else {
-            setError(err.message || 'Gagal memuat rincian pengguna');
+            setError(err instanceof Error ? err.message : 'Gagal memuat rincian pengguna');
           }
         })
         .finally(() => {
@@ -244,8 +231,8 @@ function UserDetailContent() {
       setUserDetail(updated.user);
       toast.success('Profil & peran pengguna berhasil diperbarui');
       setIsEditOpen(false);
-    } catch (err: any) {
-      setEditError(err.message || 'Gagal memperbarui pengguna');
+    } catch (err: unknown) {
+      setEditError(err instanceof Error ? err.message : 'Gagal memperbarui pengguna');
     } finally {
       setIsEditSubmitting(false);
     }
@@ -263,8 +250,8 @@ function UserDetailContent() {
       toast.success('Kata sandi berhasil direset dan sesi lama telah dicabut');
       setIsPasswordOpen(false);
       setNewPassword('');
-    } catch (err: any) {
-      setPasswordError(err.message || 'Gagal mereset kata sandi');
+    } catch (err: unknown) {
+      setPasswordError(err instanceof Error ? err.message : 'Gagal mereset kata sandi');
     } finally {
       setIsPasswordSubmitting(false);
     }
@@ -277,8 +264,8 @@ function UserDetailContent() {
       const updated = await updateAdminUserApi(userDetail.id, { resetQuota: true });
       setUserDetail(updated.user);
       toast.success(`Kuota AI dan unggahan untuk ${userDetail.name} berhasil direset penuh`);
-    } catch (err: any) {
-      toast.error('Gagal mereset kuota: ' + err.message);
+    } catch (err: unknown) {
+      toast.error('Gagal mereset kuota: ' + (err instanceof Error ? err.message : 'Kesalahan tidak diketahui'));
     }
   };
 
@@ -289,8 +276,8 @@ function UserDetailContent() {
       const updated = await updateAdminUserApi(userDetail.id, { revokeSessions: true });
       setUserDetail(updated.user);
       toast.success(`Seluruh sesi login aktif untuk ${userDetail.name} berhasil dicabut`);
-    } catch (err: any) {
-      toast.error('Gagal mencabut sesi login: ' + err.message);
+    } catch (err: unknown) {
+      toast.error('Gagal mencabut sesi login: ' + (err instanceof Error ? err.message : 'Kesalahan tidak diketahui'));
     }
   };
 
@@ -304,8 +291,8 @@ function UserDetailContent() {
       toast.success(`Akun ${userDetail.name} berhasil dihapus permanen`);
       setIsDeleteOpen(false);
       router.push(backHref);
-    } catch (err: any) {
-      setDeleteError(err.message || 'Gagal menghapus pengguna');
+    } catch (err: unknown) {
+      setDeleteError(err instanceof Error ? err.message : 'Gagal menghapus pengguna');
       setIsDeleteSubmitting(false);
     }
   };
@@ -862,238 +849,36 @@ function UserDetailContent() {
         </CardContent>
       </Card>
 
-      {/* Modal 1: Edit Akun & Peran */}
-      <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Edit2 className="h-5 w-5 text-primary" />
-              Edit Profil &amp; Peran
-            </DialogTitle>
-            <DialogDescription>
-              Ubah rincian akun, hak akses peran, serta zona waktu pengguna.
-            </DialogDescription>
-          </DialogHeader>
+      <EditUserDialog
+        open={isEditOpen}
+        onOpenChange={setIsEditOpen}
+        form={editForm}
+        onFormChange={setEditForm}
+        onSubmit={handleEditSubmit}
+        isSubmitting={isEditSubmitting}
+        error={editError}
+        isCurrentAdmin={isCurrentAdmin}
+      />
 
-          <form onSubmit={handleEditSubmit} className="space-y-4 py-2">
-            {editError && (
-              <Alert variant="destructive" className="py-2">
-                <AlertCircle className="h-4 w-4" />
-                <AlertDescription className="text-xs">{editError}</AlertDescription>
-              </Alert>
-            )}
+      <ResetUserPasswordDialog
+        open={isPasswordOpen}
+        onOpenChange={setIsPasswordOpen}
+        newPassword={newPassword}
+        onNewPasswordChange={setNewPassword}
+        onSubmit={handlePasswordSubmit}
+        isSubmitting={isPasswordSubmitting}
+        error={passwordError}
+      />
 
-            <div className="space-y-1.5">
-              <Label htmlFor="edit-name" className="text-xs font-semibold">Nama Lengkap</Label>
-              <Input
-                id="edit-name"
-                required
-                value={editForm.name}
-                onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
-                className="h-9 text-xs"
-              />
-            </div>
-
-            <div className="space-y-1.5">
-              <Label htmlFor="edit-email" className="text-xs font-semibold">Alamat Email</Label>
-              <Input
-                id="edit-email"
-                type="email"
-                required
-                value={editForm.email}
-                onChange={(e) => setEditForm({ ...editForm, email: e.target.value })}
-                className="h-9 text-xs"
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <Label className="text-xs font-semibold">Peran Akses</Label>
-                <Select
-                  value={editForm.role}
-                  onValueChange={(val: Role) => setEditForm({ ...editForm, role: val })}
-                  disabled={isCurrentAdmin}
-                >
-                  <SelectTrigger className="h-9 text-xs">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="USER" className="text-xs">Mahasiswa (USER)</SelectItem>
-                    <SelectItem value="ADMIN" className="text-xs">Administrator</SelectItem>
-                  </SelectContent>
-                </Select>
-                {isCurrentAdmin && (
-                  <p className="text-xs text-muted-foreground mt-0.5">
-                    Peran akun sendiri tidak dapat diturunkan.
-                  </p>
-                )}
-              </div>
-
-              <div className="space-y-1.5">
-                <Label className="text-xs font-semibold">Zona Waktu</Label>
-                <Select
-                  value={editForm.timezone}
-                  onValueChange={(val) => setEditForm({ ...editForm, timezone: val })}
-                >
-                  <SelectTrigger className="h-9 text-xs">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Asia/Jakarta" className="text-xs">WIB (Asia/Jakarta)</SelectItem>
-                    <SelectItem value="Asia/Makassar" className="text-xs">WITA (Asia/Makassar)</SelectItem>
-                    <SelectItem value="Asia/Jayapura" className="text-xs">WIT (Asia/Jayapura)</SelectItem>
-                    <SelectItem value="UTC" className="text-xs">UTC</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            <div className="flex items-center space-x-2 pt-2">
-              <Checkbox
-                id="edit-verified-checkbox"
-                checked={editForm.emailVerified}
-                onCheckedChange={(checked) =>
-                  setEditForm({ ...editForm, emailVerified: Boolean(checked) })
-                }
-              />
-              <Label htmlFor="edit-verified-checkbox" className="text-xs cursor-pointer">
-                Email terverifikasi
-              </Label>
-            </div>
-
-            <DialogFooter className="pt-3">
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => setIsEditOpen(false)}
-                disabled={isEditSubmitting}
-                className="h-9 text-xs"
-              >
-                Batal
-              </Button>
-              <Button
-                type="submit"
-                size="sm"
-                disabled={isEditSubmitting}
-                className="h-9 text-xs gap-1.5"
-              >
-                {isEditSubmitting && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
-                <span>Simpan Perubahan</span>
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
-
-      {/* Modal 2: Reset Kata Sandi */}
-      <Dialog open={isPasswordOpen} onOpenChange={setIsPasswordOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <KeyRound className="h-5 w-5 text-primary" />
-              Reset Kata Sandi Pengguna
-            </DialogTitle>
-            <DialogDescription>
-              Masukkan kata sandi baru untuk pengguna ini. Seluruh sesi aktif pengguna akan otomatis dicabut.
-            </DialogDescription>
-          </DialogHeader>
-
-          <form onSubmit={handlePasswordSubmit} className="space-y-4 py-2">
-            {passwordError && (
-              <Alert variant="destructive" className="py-2">
-                <AlertCircle className="h-4 w-4" />
-                <AlertDescription className="text-xs">{passwordError}</AlertDescription>
-              </Alert>
-            )}
-
-            <div className="space-y-1.5">
-              <Label htmlFor="new-password" className="text-xs font-semibold">Kata Sandi Baru</Label>
-              <Input
-                id="new-password"
-                type="password"
-                required
-                minLength={8}
-                placeholder="Minimal 8 karakter..."
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-                className="h-9 text-xs"
-              />
-            </div>
-
-            <DialogFooter className="pt-3">
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  setIsPasswordOpen(false);
-                  setNewPassword('');
-                }}
-                disabled={isPasswordSubmitting}
-                className="h-9 text-xs"
-              >
-                Batal
-              </Button>
-              <Button
-                type="submit"
-                size="sm"
-                disabled={isPasswordSubmitting}
-                className="h-9 text-xs gap-1.5"
-              >
-                {isPasswordSubmitting && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
-                <span>Reset Kata Sandi</span>
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
-
-      {/* Modal 3: Konfirmasi Hapus Akun */}
-      <Dialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-destructive">
-              <Trash2 className="h-5 w-5" />
-              Hapus Akun Pengguna
-            </DialogTitle>
-            <DialogDescription>
-              Apakah Anda yakin ingin menghapus akun <strong>{userDetail.name}</strong>? Tindakan ini permanen dan akan menghapus seluruh data akademik terkait.
-            </DialogDescription>
-          </DialogHeader>
-
-          {deleteError && (
-            <Alert variant="destructive" className="py-2 my-2">
-              <AlertCircle className="h-4 w-4" />
-              <AlertDescription className="text-xs">{deleteError}</AlertDescription>
-            </Alert>
-          )}
-
-          <DialogFooter className="pt-3">
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => setIsDeleteOpen(false)}
-              disabled={isDeleteSubmitting}
-              className="h-9 text-xs"
-            >
-              Batal
-            </Button>
-            <Button
-              type="button"
-              variant="destructive"
-              size="sm"
-              onClick={handleDeleteSubmit}
-              disabled={isDeleteSubmitting || isCurrentAdmin}
-              className="h-9 text-xs gap-1.5"
-            >
-              {isDeleteSubmitting && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
-              <span>Konfirmasi Hapus Akun</span>
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <DeleteUserDialog
+        open={isDeleteOpen}
+        onOpenChange={setIsDeleteOpen}
+        user={userDetail}
+        onConfirm={handleDeleteSubmit}
+        isSubmitting={isDeleteSubmitting}
+        error={deleteError}
+        isCurrentAdmin={isCurrentAdmin}
+      />
     </FadeIn>
   );
 }

@@ -14,7 +14,7 @@ export function getSafeReturnUrl(url: string | null | undefined, defaultUrl = '/
   return defaultUrl;
 }
 
-// Queue to handle multiple concurrent refresh requests
+// Queue to handle multiple concurrent refresh requests across student and admin clients
 let isRefreshing = false;
 let refreshSubscribers: ((ok: boolean) => void)[] = [];
 
@@ -25,6 +25,30 @@ function onTokenRefreshed(ok: boolean) {
 
 function addRefreshSubscriber(cb: (ok: boolean) => void) {
   refreshSubscribers.push(cb);
+}
+
+export async function refreshAccessToken(): Promise<boolean> {
+  if (!isRefreshing) {
+    isRefreshing = true;
+    try {
+      const refreshRes = await fetch('/api/auth/refresh', {
+        method: 'POST',
+        credentials: 'include',
+      });
+      const ok = refreshRes.ok;
+      isRefreshing = false;
+      onTokenRefreshed(ok);
+      return ok;
+    } catch {
+      isRefreshing = false;
+      onTokenRefreshed(false);
+      return false;
+    }
+  }
+
+  return new Promise<boolean>((resolve) => {
+    addRefreshSubscriber(resolve);
+  });
 }
 
 export async function authFetch(
@@ -44,56 +68,19 @@ export async function authFetch(
     credentials: 'include',
   });
 
-  // If unauthorized and not already refreshing or calling refresh/login
+  // If unauthorized and not already calling refresh/login/register
   if (
     response.status === 401 &&
     !url.includes('/api/auth/refresh') &&
     !url.includes('/api/auth/login') &&
     !url.includes('/api/auth/register')
   ) {
-    if (!isRefreshing) {
-      isRefreshing = true;
-
-      try {
-        const refreshRes = await fetch('/api/auth/refresh', {
-          method: 'POST',
-          credentials: 'include',
-        });
-
-        if (refreshRes.ok) {
-          isRefreshing = false;
-          onTokenRefreshed(true);
-          // Retry original request
-          return fetch(url, {
-            ...options,
-            headers,
-            credentials: 'include',
-          });
-        } else {
-          isRefreshing = false;
-          onTokenRefreshed(false);
-          return response;
-        }
-      } catch {
-        isRefreshing = false;
-        onTokenRefreshed(false);
-        return response;
-      }
-    } else {
-      // Wait for ongoing refresh
-      return new Promise<Response>((resolve) => {
-        addRefreshSubscriber(async (ok) => {
-          if (ok) {
-            const retryRes = await fetch(url, {
-              ...options,
-              headers,
-              credentials: 'include',
-            });
-            resolve(retryRes);
-          } else {
-            resolve(response);
-          }
-        });
+    const refreshed = await refreshAccessToken();
+    if (refreshed) {
+      return fetch(url, {
+        ...options,
+        headers,
+        credentials: 'include',
       });
     }
   }

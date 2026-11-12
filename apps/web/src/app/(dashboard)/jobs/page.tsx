@@ -98,6 +98,7 @@ import {
 import { JobStatusBadge } from '@/components/admin/jobs/job-status-badge';
 import { JobDetailSheet } from '@/components/admin/jobs/job-detail-sheet';
 import { AdminPagination } from '@/components/admin/admin-pagination';
+import { useDebouncedValue } from '@/hooks/use-debounced-value';
 import { toast } from 'sonner';
 
 function JobsSkeleton() {
@@ -145,7 +146,7 @@ function AdminJobsContent() {
   const [status, setStatus] = React.useState<string>(initialStatus);
   const [type, setType] = React.useState<string>(initialType);
   const [searchInput, setSearchInput] = React.useState<string>(initialSearch);
-  const [debouncedSearch, setDebouncedSearch] = React.useState<string>(initialSearch);
+  const debouncedSearch = useDebouncedValue(searchInput.trim(), 300, () => setPage(1));
 
   // Data states
   const [jobsData, setJobsData] = React.useState<AdminJobListResponse | null>(null);
@@ -191,8 +192,8 @@ function AdminJobsContent() {
       toast.success(`${res.deletedCount} riwayat pekerjaan berhasil dibersihkan`);
       setIsCleanupOpen(false);
       handleRefreshAll();
-    } catch (err: any) {
-      setCleanupError(err.message || 'Gagal membersihkan riwayat pekerjaan');
+    } catch (err: unknown) {
+      setCleanupError(err instanceof Error ? err.message : 'Gagal membersihkan riwayat pekerjaan');
     } finally {
       setIsCleaningUp(false);
     }
@@ -203,8 +204,8 @@ function AdminJobsContent() {
       await retryAdminJobApi(jobId);
       toast.success(`Pekerjaan ${jobId.slice(0, 8)} berhasil dijadwalkan ulang`);
       handleRefreshAll();
-    } catch (err: any) {
-      toast.error('Gagal mencoba ulang pekerjaan: ' + err.message);
+    } catch (err: unknown) {
+      toast.error('Gagal mencoba ulang pekerjaan: ' + (err instanceof Error ? err.message : 'Kesalahan tidak diketahui'));
     }
   };
 
@@ -213,8 +214,8 @@ function AdminJobsContent() {
       await deleteAdminJobApi(jobId);
       toast.success(`Riwayat pekerjaan ${jobId.slice(0, 8)} berhasil dihapus`);
       handleRefreshAll();
-    } catch (err: any) {
-      toast.error('Gagal menghapus riwayat pekerjaan: ' + err.message);
+    } catch (err: unknown) {
+      toast.error('Gagal menghapus riwayat pekerjaan: ' + (err instanceof Error ? err.message : 'Kesalahan tidak diketahui'));
     }
   };
 
@@ -284,26 +285,12 @@ function AdminJobsContent() {
         `studyflow-jobs-${new Date().toISOString().split('T')[0]}.csv`,
         [headers, ...rows]
       );
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Failed to export jobs CSV:', err);
     } finally {
       setIsExporting(false);
     }
   };
-
-  // Debounce search input
-  React.useEffect(() => {
-    const handler = setTimeout(() => {
-      const trimmed = searchInput.trim();
-      setDebouncedSearch((prev) => {
-        if (prev !== trimmed) {
-          setPage(1);
-        }
-        return trimmed;
-      });
-    }, 300);
-    return () => clearTimeout(handler);
-  }, [searchInput]);
 
   // Synchronize state to URL query parameters
   React.useEffect(() => {
@@ -329,8 +316,8 @@ function AdminJobsContent() {
       .then((res) => {
         if (!signal?.aborted) setQueuesData(res);
       })
-      .catch((err: any) => {
-        if (!signal?.aborted) setQueuesError(err.message || 'Gagal memuat status antrean');
+      .catch((err: unknown) => {
+        if (!signal?.aborted) setQueuesError(err instanceof Error ? err.message : 'Gagal memuat status antrean');
       })
       .finally(() => {
         if (!signal?.aborted) setIsQueuesLoading(false);
@@ -355,8 +342,8 @@ function AdminJobsContent() {
       .then((res) => {
         if (!signal?.aborted) setJobsData(res);
       })
-      .catch((err: any) => {
-        if (!signal?.aborted) setJobsError(err.message || 'Gagal memuat daftar pekerjaan');
+      .catch((err: unknown) => {
+        if (!signal?.aborted) setJobsError(err instanceof Error ? err.message : 'Gagal memuat daftar pekerjaan');
       })
       .finally(() => {
         if (!signal?.aborted) setIsJobsLoading(false);
@@ -389,9 +376,9 @@ function AdminJobsContent() {
       .then((res) => {
         if (!controller.signal.aborted) setJobDetail(res);
       })
-      .catch((err: any) => {
+      .catch((err: unknown) => {
         if (!controller.signal.aborted) {
-          setDetailError(err.message || 'Gagal memuat rincian pekerjaan');
+          setDetailError(err instanceof Error ? err.message : 'Gagal memuat rincian pekerjaan');
         }
       })
       .finally(() => {
@@ -410,7 +397,7 @@ function AdminJobsContent() {
       setIsDetailLoading(true);
       fetchAdminJobDetail(selectedJobId)
         .then((res) => setJobDetail(res))
-        .catch((err: any) => setDetailError(err.message || 'Gagal memuat rincian'))
+        .catch((err: unknown) => setDetailError(err instanceof Error ? err.message : 'Gagal memuat rincian'))
         .finally(() => setIsDetailLoading(false));
     }
   };
@@ -612,7 +599,6 @@ function AdminJobsContent() {
                 setStatus('');
                 setType('');
                 setSearchInput('');
-                setDebouncedSearch('');
                 setPage(1);
               }}
               className="h-9 px-2.5 text-xs text-muted-foreground hover:text-foreground"
@@ -953,7 +939,6 @@ function AdminJobsContent() {
                   setStatus('');
                   setType('');
                   setSearchInput('');
-                  setDebouncedSearch('');
                   setPage(1);
                 }}
                 className="mt-3 text-xs"

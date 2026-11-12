@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { COOKIE_NAMES, ADMIN_COOKIE_NAMES } from '@studyflow/shared';
+import { COOKIE_NAMES, ADMIN_COOKIE_NAMES, Role } from '@studyflow/shared';
 import { verifyAccessToken } from '../services/token.service.js';
 import { prisma } from '@studyflow/database';
 import { AppError } from './errorHandler.js';
@@ -7,6 +7,7 @@ import { AppError } from './errorHandler.js';
 export interface AuthenticatedUser {
   id: string;
   email: string;
+  role?: Role;
 }
 
 declare global {
@@ -17,11 +18,10 @@ declare global {
   }
 }
 
-export async function authenticate(
+export async function resolveAuthenticatedUser(
   req: Request,
-  _res: Response,
-  next: NextFunction
-): Promise<void> {
+  options?: { preferAdminCookie?: boolean }
+): Promise<{ id: string; email: string; role: Role }> {
   let token: string | undefined;
 
   // 1. Check Authorization header
@@ -32,14 +32,16 @@ export async function authenticate(
 
   // 2. Fallback to cookies
   if (!token && req.cookies) {
-    token = req.cookies[COOKIE_NAMES.accessToken] || req.cookies[ADMIN_COOKIE_NAMES.accessToken];
+    token = options?.preferAdminCookie
+      ? req.cookies[ADMIN_COOKIE_NAMES.accessToken] || req.cookies[COOKIE_NAMES.accessToken]
+      : req.cookies[COOKIE_NAMES.accessToken] || req.cookies[ADMIN_COOKIE_NAMES.accessToken];
   }
 
   if (!token) {
     const error: AppError = new Error('Autentikasi diperlukan. Token tidak ditemukan.');
     error.statusCode = 401;
     error.code = 'UNAUTHORIZED';
-    return next(error);
+    throw error;
   }
 
   const payload = verifyAccessToken(token);
@@ -47,7 +49,7 @@ export async function authenticate(
     const error: AppError = new Error('Token akses tidak valid atau telah kedaluwarsa.');
     error.statusCode = 401;
     error.code = 'INVALID_OR_EXPIRED_TOKEN';
-    return next(error);
+    throw error;
   }
 
   // Verify user still exists and tokenVersion matches (handles immediate token revocation on password change)
@@ -60,13 +62,26 @@ export async function authenticate(
     const error: AppError = new Error('Sesi telah dicabut atau diubah. Silakan login kembali.');
     error.statusCode = 401;
     error.code = 'SESSION_REVOKED';
-    return next(error);
+    throw error;
   }
 
-  req.user = {
+  return {
     id: user.id,
     email: user.email,
+    role: user.role as Role,
   };
+}
 
-  next();
+export async function authenticate(
+  req: Request,
+  _res: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    const user = await resolveAuthenticatedUser(req);
+    req.user = user;
+    next();
+  } catch (err) {
+    next(err);
+  }
 }

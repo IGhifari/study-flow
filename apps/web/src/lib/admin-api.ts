@@ -33,6 +33,7 @@ import {
   AdminQuizListResponse,
   UserProfile,
 } from '@studyflow/shared';
+import { refreshAccessToken } from '@/lib/auth-client';
 
 export class AdminApiError extends Error {
   statusCode: number;
@@ -48,11 +49,21 @@ export class AdminApiError extends Error {
   }
 }
 
+interface AdminErrorPayload {
+  message?: string;
+  code?: string;
+  error?: {
+    message?: string;
+    code?: string;
+    details?: Record<string, string[]>;
+  };
+}
+
 async function handleResponse<T>(res: Response): Promise<T> {
   if (!res.ok) {
-    let errorJson: any = null;
+    let errorJson: AdminErrorPayload | null = null;
     try {
-      errorJson = await res.json();
+      errorJson = (await res.json()) as AdminErrorPayload;
     } catch {
       // response wasn't JSON
     }
@@ -68,19 +79,6 @@ async function handleResponse<T>(res: Response): Promise<T> {
   }
 
   return res.json();
-}
-
-// Queue to handle multiple concurrent refresh requests
-let isRefreshing = false;
-let refreshSubscribers: ((ok: boolean) => void)[] = [];
-
-function onTokenRefreshed(ok: boolean) {
-  refreshSubscribers.forEach((cb) => cb(ok));
-  refreshSubscribers = [];
-}
-
-function addRefreshSubscriber(cb: (ok: boolean) => void) {
-  refreshSubscribers.push(cb);
 }
 
 export async function adminFetch(
@@ -100,56 +98,19 @@ export async function adminFetch(
     credentials: 'include',
   });
 
-  // If unauthorized and not already refreshing or calling auth endpoints
+  // If unauthorized and not calling auth endpoints, share the unified refresh queue
   if (
     response.status === 401 &&
     !url.includes('/api/admin/auth/refresh') &&
     !url.includes('/api/admin/auth/login') &&
     !url.includes('/api/admin/auth/logout')
   ) {
-    if (!isRefreshing) {
-      isRefreshing = true;
-
-      try {
-        const refreshRes = await fetch('/api/auth/refresh', {
-          method: 'POST',
-          credentials: 'include',
-        });
-
-        if (refreshRes.ok) {
-          isRefreshing = false;
-          onTokenRefreshed(true);
-          // Retry original request
-          return fetch(url, {
-            ...options,
-            headers,
-            credentials: 'include',
-          });
-        } else {
-          isRefreshing = false;
-          onTokenRefreshed(false);
-          return response;
-        }
-      } catch {
-        isRefreshing = false;
-        onTokenRefreshed(false);
-        return response;
-      }
-    } else {
-      // Wait for ongoing refresh
-      return new Promise<Response>((resolve) => {
-        addRefreshSubscriber(async (ok) => {
-          if (ok) {
-            const retryRes = await fetch(url, {
-              ...options,
-              headers,
-              credentials: 'include',
-            });
-            resolve(retryRes);
-          } else {
-            resolve(response);
-          }
-        });
+    const refreshed = await refreshAccessToken();
+    if (refreshed) {
+      return fetch(url, {
+        ...options,
+        headers,
+        credentials: 'include',
       });
     }
   }

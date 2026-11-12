@@ -2,6 +2,7 @@
 
 import * as React from 'react';
 import Link from 'next/link';
+import dynamic from 'next/dynamic';
 import { usePathname } from 'next/navigation';
 import { Search } from 'lucide-react';
 import { UserProfile } from '@studyflow/shared';
@@ -26,13 +27,14 @@ import { AppSidebar } from './app-sidebar';
 import { AdminAuthProvider } from '@/components/admin/admin-auth-context';
 import { AppSidebar as AdminSidebar } from '@/components/admin/admin-sidebar';
 import { AdminHeader } from '@/components/admin/admin-header';
-import AdminDashboardView from '@/components/admin/views/admin-dashboard-view';
-import AdminCoursesView from '@/components/admin/views/admin-courses-view';
-import AdminMaterialsView from '@/components/admin/views/admin-materials-view';
-import AdminAssignmentsView from '@/components/admin/views/admin-assignments-view';
-import AdminNotesView from '@/components/admin/views/admin-notes-view';
-import AdminSchedulesPage from '@/app/(dashboard)/schedules/page';
-import AdminProfilePage from '@/app/(dashboard)/profile/page';
+
+const AdminDashboardView = dynamic(() => import('@/components/admin/views/admin-dashboard-view'));
+const AdminCoursesView = dynamic(() => import('@/components/admin/views/admin-courses-view'));
+const AdminMaterialsView = dynamic(() => import('@/components/admin/views/admin-materials-view'));
+const AdminAssignmentsView = dynamic(() => import('@/components/admin/views/admin-assignments-view'));
+const AdminNotesView = dynamic(() => import('@/components/admin/views/admin-notes-view'));
+const AdminSchedulesPage = dynamic(() => import('@/app/(dashboard)/schedules/page'));
+const AdminProfilePage = dynamic(() => import('@/app/(dashboard)/profile/page'));
 
 interface AppShellProps {
   user: UserProfile;

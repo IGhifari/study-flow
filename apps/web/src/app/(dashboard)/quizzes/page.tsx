@@ -39,6 +39,7 @@ import {
 import { Card } from '@/components/ui/card';
 import { FadeIn } from '@/components/ui/motion';
 import { fetchAdminQuizzes } from '@/lib/admin-api';
+import { useDebouncedValue } from '@/hooks/use-debounced-value';
 import { AdminQuizListItem, AdminQuizListResponse } from '@studyflow/shared';
 import { downloadCsvFile } from '@/lib/admin-formatters';
 import { AdminPagination } from '@/components/admin/admin-pagination';
@@ -112,20 +113,12 @@ function AdminQuizzesContent() {
   const [error, setError] = React.useState<string | null>(null);
 
   const [search, setSearch] = React.useState(initialSearch);
-  const [debouncedSearch, setDebouncedSearch] = React.useState(initialSearch);
   const [status, setStatus] = React.useState(initialStatus);
   const [page, setPage] = React.useState(initialPage);
   const [limit, setLimit] = React.useState(initialLimit);
   const [sortBy, setSortBy] = React.useState<'createdAt' | 'title' | 'questionCount'>('createdAt');
   const [sortOrder, setSortOrder] = React.useState<'asc' | 'desc'>('desc');
-
-  React.useEffect(() => {
-    const timer = setTimeout(() => {
-      setDebouncedSearch(search);
-      setPage(1);
-    }, 300);
-    return () => clearTimeout(timer);
-  }, [search]);
+  const debouncedSearch = useDebouncedValue(search, 300, () => setPage(1));
 
   React.useEffect(() => {
     const params = new URLSearchParams();
@@ -157,9 +150,9 @@ function AdminQuizzesContent() {
         { signal }
       );
       setData(res);
-    } catch (err: any) {
-      if (err.name === 'AbortError') return;
-      setError(err.message || 'Gagal memuat kuis latihan');
+    } catch (err: unknown) {
+      if (err instanceof Error && err.name === 'AbortError') return;
+      setError(err instanceof Error ? err.message : 'Gagal memuat kuis latihan');
     } finally {
       setIsLoading(false);
     }
