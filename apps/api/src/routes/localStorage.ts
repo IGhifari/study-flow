@@ -1,5 +1,6 @@
 import express, { Router, Request, Response, NextFunction } from 'express';
 import path from 'node:path';
+import { FILE_UPLOAD_LIMITS } from '@studyflow/shared';
 import {
   getStorageAdapter,
   verifyLocalStorageToken,
@@ -7,10 +8,10 @@ import {
 
 export const localStorageRouter = Router();
 
-// Middleware to parse raw binary payloads up to 25MB for upload
+// Middleware to parse raw binary payloads up to 20 MiB for upload
 const rawBodyParser = express.raw({
   type: '*/*',
-  limit: '25mb',
+  limit: FILE_UPLOAD_LIMITS.maxSizeBytes,
 });
 
 /**
@@ -26,7 +27,7 @@ localStorageRouter.put(
       const storageKey = decodeURIComponent(keyParam || '');
       const token = (req.query.token as string) || '';
 
-      if (!token || !verifyLocalStorageToken(storageKey, token)) {
+      if (!token || !verifyLocalStorageToken(storageKey, token, 'upload')) {
         res.status(403).json({
           error: {
             code: 'INVALID_STORAGE_TOKEN',
@@ -82,7 +83,7 @@ localStorageRouter.get(
       const storageKey = decodeURIComponent(keyParam || '');
       const token = (req.query.token as string) || '';
 
-      if (!token || !verifyLocalStorageToken(storageKey, token)) {
+      if (!token || !verifyLocalStorageToken(storageKey, token, 'download')) {
         res.status(403).json({
           error: {
             code: 'INVALID_STORAGE_TOKEN',

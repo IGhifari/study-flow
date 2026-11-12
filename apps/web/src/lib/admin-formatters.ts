@@ -66,7 +66,9 @@ export function getJobTypeLabel(type: AdminJobType): string {
 
 export function escapeCsvCell(value: string | number | null | undefined): string {
   if (value === null || value === undefined) return '""';
-  const escaped = String(value).replace(/"/g, '""');
+  const raw = String(value);
+  const formulaSafe = /^[=+\-@\t\r]/.test(raw) ? `'${raw}` : raw;
+  const escaped = formulaSafe.replace(/"/g, '""');
   return `"${escaped}"`;
 }
 

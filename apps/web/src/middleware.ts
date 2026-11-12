@@ -1,5 +1,5 @@
 import { NextResponse, type NextRequest } from 'next/server';
-import { COOKIE_NAMES } from '@studyflow/shared';
+import { COOKIE_NAMES, ADMIN_COOKIE_NAMES } from '@studyflow/shared';
 import { getInternalApiUrl } from './lib/api-config';
 
 const PROTECTED_PREFIXES = [
@@ -96,6 +96,8 @@ export async function middleware(req: NextRequest) {
         const redirectRes = NextResponse.redirect(loginUrl);
         redirectRes.cookies.delete(COOKIE_NAMES.accessToken);
         redirectRes.cookies.delete(COOKIE_NAMES.refreshToken);
+        redirectRes.cookies.delete(ADMIN_COOKIE_NAMES.accessToken);
+        redirectRes.cookies.delete(ADMIN_COOKIE_NAMES.refreshToken);
         return redirectRes;
       }
 
@@ -165,6 +167,8 @@ export async function middleware(req: NextRequest) {
     const redirectRes = NextResponse.redirect(loginUrl);
     redirectRes.cookies.delete(COOKIE_NAMES.accessToken);
     redirectRes.cookies.delete(COOKIE_NAMES.refreshToken);
+    redirectRes.cookies.delete(ADMIN_COOKIE_NAMES.accessToken);
+    redirectRes.cookies.delete(ADMIN_COOKIE_NAMES.refreshToken);
     return redirectRes;
   }
 

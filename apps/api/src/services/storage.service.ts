@@ -77,25 +77,53 @@ function getStorageSecret(): string {
   return env.COOKIE_SECRET || env.JWT_ACCESS_SECRET || 'studyflow_local_storage_secret_key_123456';
 }
 
-export function generateLocalStorageToken(filePath: string, expiresInSeconds = 7200): string {
+export type LocalStorageTokenPurpose = 'upload' | 'download';
+
+export function generateLocalStorageToken(
+  filePath: string,
+  expiresInSeconds = 7200,
+  purpose?: LocalStorageTokenPurpose
+): string {
   const expiresAt = Math.floor(Date.now() / 1000) + expiresInSeconds;
+  if (purpose) {
+    const payload = `${purpose}:${filePath}:${expiresAt}`;
+    const hmac = crypto
+      .createHmac('sha256', getStorageSecret())
+      .update(payload)
+      .digest('hex');
+    return `${expiresAt}.${purpose}.${hmac}`;
+  }
   const payload = `${filePath}:${expiresAt}`;
   const hmac = crypto.createHmac('sha256', getStorageSecret()).update(payload).digest('hex');
   return `${expiresAt}.${hmac}`;
 }
 
-export function verifyLocalStorageToken(filePath: string, token: string): boolean {
+export function verifyLocalStorageToken(
+  filePath: string,
+  token: string,
+  requiredPurpose?: LocalStorageTokenPurpose
+): boolean {
   if (!token || !token.includes('.')) return false;
   const parts = token.split('.');
-  if (parts.length !== 2) return false;
+  if (parts.length !== 2 && parts.length !== 3) return false;
   const expiresAtStr = parts[0]!;
-  const hmac = parts[1]!;
+  const tokenPurpose = parts.length === 3 ? parts[1]! : undefined;
+  const hmac = parts.length === 3 ? parts[2]! : parts[1]!;
   const expiresAt = parseInt(expiresAtStr, 10);
   if (isNaN(expiresAt) || expiresAt < Math.floor(Date.now() / 1000)) {
     return false;
   }
-  const expectedPayload = `${filePath}:${expiresAt}`;
-  const expectedHmac = crypto.createHmac('sha256', getStorageSecret()).update(expectedPayload).digest('hex');
+  if (tokenPurpose !== undefined) {
+    if (tokenPurpose !== 'upload' && tokenPurpose !== 'download') return false;
+    if (requiredPurpose && tokenPurpose !== requiredPurpose) return false;
+  }
+  const expectedPayload = tokenPurpose
+    ? `${tokenPurpose}:${filePath}:${expiresAt}`
+    : `${filePath}:${expiresAt}`;
+  const expectedHmac = crypto
+    .createHmac('sha256', getStorageSecret())
+    .update(expectedPayload)
+    .digest('hex');
   if (Buffer.byteLength(hmac) !== Buffer.byteLength(expectedHmac)) {
     return false;
   }
@@ -159,7 +187,7 @@ export class LocalStorageAdapter implements StorageAdapter {
   ): Promise<{ data: { url: string; signedUrl: string; token: string } | null; error: Error | null }> {
     try {
       this.resolvePath(storageKey);
-      const token = generateLocalStorageToken(storageKey, 7200); // 2 hours
+      const token = generateLocalStorageToken(storageKey, 7200, 'upload'); // 2 hours
       const encodedKey = encodeURIComponent(storageKey);
       const url = `${env.API_BASE_URL}/api/storage/local/upload/${encodedKey}?token=${token}`;
       return {
@@ -181,7 +209,7 @@ export class LocalStorageAdapter implements StorageAdapter {
   ): Promise<{ data: { signedUrl: string } | null; error: Error | null }> {
     try {
       this.resolvePath(storageKey);
-      const token = generateLocalStorageToken(storageKey, expiresIn);
+      const token = generateLocalStorageToken(storageKey, expiresIn, 'download');
       const encodedKey = encodeURIComponent(storageKey);
       const signedUrl = `${env.API_BASE_URL}/api/storage/local/download/${encodedKey}?token=${token}`;
       return {
@@ -277,6 +305,14 @@ export class LocalStorageAdapter implements StorageAdapter {
         await fs.promises.mkdir(dir, { recursive: true });
       }
       const buffer = Buffer.isBuffer(fileBody) ? fileBody : Buffer.from(fileBody);
+      if (buffer.length > FILE_UPLOAD_LIMITS.maxSizeBytes) {
+        return {
+          data: null,
+          error: new Error(
+            `Ukuran file (${buffer.length} bytes) melebihi batas maksimal 20 MiB (${FILE_UPLOAD_LIMITS.maxSizeBytes} bytes)`
+          ),
+        };
+      }
       await fs.promises.writeFile(fullPath, buffer);
       return { data: { key: storageKey }, error: null };
     } catch (err: any) {

@@ -102,6 +102,12 @@ export function createApp(): Express {
   app.use('/health', healthRouter);
   app.use('/ready', readyRouter);
 
+  // Prevent intermediate caching of authenticated/API responses by default
+  app.use('/api', (_req: Request, res: Response, next) => {
+    res.setHeader('Cache-Control', 'no-store, private');
+    next();
+  });
+
   // Milestone 2, 3, 4, 5, 6 & 7 API endpoints
   app.use('/api/auth', authRouter);
   app.use('/api/admin/auth', adminAuthRouter);

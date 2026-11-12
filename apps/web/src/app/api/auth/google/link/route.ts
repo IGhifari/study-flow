@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { COOKIE_NAMES } from '@studyflow/shared';
 import { getInternalApiUrl } from '@/lib/api-config';
+import {
+  readRequestBodyWithLimit,
+  resolveForwardedClientIp,
+} from '@/lib/bff-proxy';
 
 export async function POST(req: NextRequest) {
   // Validate CSRF / Origin
@@ -31,9 +35,14 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  const bodyResult = await readRequestBodyWithLimit(req);
+  if (!bodyResult.ok && bodyResult.errorResponse) {
+    return bodyResult.errorResponse;
+  }
+
   let body: { currentPassword?: string };
   try {
-    body = await req.json();
+    body = bodyResult.body ? JSON.parse(bodyResult.body) : {};
   } catch {
     return NextResponse.json(
       { error: { message: 'Body request tidak valid' } },
@@ -44,6 +53,7 @@ export async function POST(req: NextRequest) {
   const requestHeaders = new Headers();
   requestHeaders.set('Content-Type', 'application/json');
   requestHeaders.set('Origin', req.nextUrl.origin);
+  requestHeaders.set('x-forwarded-for', resolveForwardedClientIp(req.headers));
 
   // Forward cookies from browser to Express (authentication session)
   const cookieHeader = req.headers.get('cookie');

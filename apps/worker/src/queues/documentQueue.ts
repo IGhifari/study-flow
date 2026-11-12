@@ -178,6 +178,8 @@ export async function processDocumentJob(
     }
 
     if (isPermanent) {
+      const storageAdapter = getWorkerStorageAdapter();
+      await storageAdapter.remove([storageKey]).catch(() => {});
       // Do not throw; return FAILED result so BullMQ does not retry non-retryable validation error
       return {
         jobId,

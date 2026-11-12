@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { TimezoneSchema } from './auth.js';
 
 export const RoleEnum = z.enum(['USER', 'ADMIN']);
 export type Role = z.infer<typeof RoleEnum>;
@@ -10,6 +11,7 @@ export const AdminLoginInputSchema = z.object({
     .toLowerCase()
     .email('Format email tidak valid'),
   password: z.string().min(1, 'Password wajib diisi'),
+  turnstileToken: z.string().optional(),
 });
 export type AdminLoginInput = z.infer<typeof AdminLoginInputSchema>;
 
@@ -105,9 +107,9 @@ export type AdminUserDetail = z.infer<typeof AdminUserDetailSchema>;
 export const AdminCreateUserInputSchema = z.object({
   name: z.string().trim().min(2, 'Nama minimal 2 karakter').max(100),
   email: z.string().trim().toLowerCase().email('Format email tidak valid'),
-  password: z.string().min(8, 'Password minimal 8 karakter').max(128),
+  password: z.string().min(12, 'Password minimal 12 karakter').max(128),
   role: RoleEnum.default('USER'),
-  timezone: z.string().trim().default('Asia/Jakarta'),
+  timezone: TimezoneSchema.default('Asia/Jakarta'),
   emailVerified: z.boolean().default(true),
 });
 export type AdminCreateUserInput = z.infer<typeof AdminCreateUserInputSchema>;
@@ -116,9 +118,9 @@ export const AdminUpdateUserInputSchema = z.object({
   name: z.string().trim().min(2).max(100).optional(),
   email: z.string().trim().toLowerCase().email().optional(),
   role: RoleEnum.optional(),
-  timezone: z.string().trim().optional(),
+  timezone: TimezoneSchema.optional(),
   emailVerified: z.boolean().optional(),
-  newPassword: z.string().min(8).max(128).optional(),
+  newPassword: z.string().min(12, 'Password minimal 12 karakter').max(128).optional(),
   resetQuota: z.boolean().optional(),
   revokeSessions: z.boolean().optional(),
 });
@@ -594,18 +596,31 @@ export const AdminUpdateProfileInputSchema = z.object({
 });
 export type AdminUpdateProfileInput = z.infer<typeof AdminUpdateProfileInputSchema>;
 
-export const AdminChangePasswordInputSchema = z.object({
+const AdminChangePasswordBaseSchema = z.object({
   currentPassword: z.string().min(1, 'Password saat ini wajib diisi'),
-  newPassword: z.string().min(8, 'Password baru minimal 8 karakter').max(128),
+  newPassword: z.string().min(12, 'Password baru minimal 12 karakter').max(128),
 });
+
+export const AdminChangePasswordInputSchema = AdminChangePasswordBaseSchema.refine(
+  (data) => data.currentPassword !== data.newPassword,
+  {
+    message: 'Password baru harus berbeda dari password saat ini',
+    path: ['newPassword'],
+  }
+);
 export type AdminChangePasswordInput = z.infer<typeof AdminChangePasswordInputSchema>;
 
-export const AdminChangePasswordFormSchema = AdminChangePasswordInputSchema.extend({
+export const AdminChangePasswordFormSchema = AdminChangePasswordBaseSchema.extend({
   confirmPassword: z.string().min(1, 'Konfirmasi kata sandi wajib diisi'),
-}).refine(data => data.newPassword === data.confirmPassword, {
-  message: 'Konfirmasi kata sandi tidak cocok dengan kata sandi baru',
-  path: ['confirmPassword'],
-});
+})
+  .refine((data) => data.currentPassword !== data.newPassword, {
+    message: 'Password baru harus berbeda dari password saat ini',
+    path: ['newPassword'],
+  })
+  .refine((data) => data.newPassword === data.confirmPassword, {
+    message: 'Konfirmasi kata sandi tidak cocok dengan kata sandi baru',
+    path: ['confirmPassword'],
+  });
 export type AdminChangePasswordFormInput = z.infer<typeof AdminChangePasswordFormSchema>;
 
 export const AdminSessionItemSchema = z.object({

@@ -165,12 +165,12 @@ export async function finishAiJobAtomically(
     // Check material soft-delete status if materialId is provided
     if (materialId) {
       const materialRows = await tx.$queryRaw<Array<{ deleted_at: Date | null }>>`
-        SELECT deleted_at FROM materials WHERE id = ${materialId} AND user_id = ${userId}
+        SELECT deleted_at FROM materials WHERE id = ${materialId} AND user_id = ${userId} FOR UPDATE
       `;
       const isMaterialDeleted =
         materialRows.length === 0 || materialRows[0]?.deleted_at !== null;
 
-      if (isMaterialDeleted && targetStatus === 'COMPLETED') {
+      if (isMaterialDeleted) {
         // Material was deleted during processing: do NOT complete or persist!
         targetStatus = 'FAILED';
         targetErrorCode = 'MATERIAL_DELETED';

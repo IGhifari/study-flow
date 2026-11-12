@@ -10,6 +10,7 @@ import {
   ResetPasswordInputSchema,
   VerifyEmailInputSchema,
   COOKIE_NAMES,
+  ADMIN_COOKIE_NAMES,
 } from '@studyflow/shared';
 import { prisma } from '@studyflow/database';
 import {
@@ -38,7 +39,11 @@ import {
 } from '../services/loginProtection.service.js';
 import { verifyPassword } from '../services/password.service.js';
 import { verifyAccessToken } from '../services/token.service.js';
-import { setAuthCookies, clearAuthCookies } from '../services/cookie.service.js';
+import {
+  setAuthCookies,
+  clearAuthCookies,
+  clearAdminAuthCookies,
+} from '../services/cookie.service.js';
 import { authenticate } from '../middleware/authenticate.js';
 import {
   authRateLimiter,
@@ -209,6 +214,12 @@ authRouter.post(
       });
     } catch (err) {
       clearAuthCookies(res);
+      if (
+        req.cookies?.[ADMIN_COOKIE_NAMES.accessToken] ||
+        req.cookies?.[ADMIN_COOKIE_NAMES.refreshToken]
+      ) {
+        clearAdminAuthCookies(res);
+      }
       next(err);
     }
   }
@@ -219,15 +230,24 @@ authRouter.post(
   '/logout',
   async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const rawRefreshToken = req.cookies?.[COOKIE_NAMES.refreshToken] || req.body?.refreshToken;
-      await logoutUser(rawRefreshToken);
+      const webRefreshToken =
+        req.cookies?.[COOKIE_NAMES.refreshToken] || req.body?.refreshToken;
+      const adminRefreshToken = req.cookies?.[ADMIN_COOKIE_NAMES.refreshToken];
+
+      await logoutUser(webRefreshToken);
+      if (adminRefreshToken && adminRefreshToken !== webRefreshToken) {
+        await logoutUser(adminRefreshToken);
+      }
+
       clearAuthCookies(res);
+      clearAdminAuthCookies(res);
 
       res.status(200).json({
         message: 'Logout berhasil',
       });
     } catch (err) {
       clearAuthCookies(res);
+      clearAdminAuthCookies(res);
       next(err);
     }
   }
@@ -290,6 +310,7 @@ authRouter.post(
 
       await changeUserPassword(req.user!.id, parsed.data);
       clearAuthCookies(res);
+      clearAdminAuthCookies(res);
 
       res.status(200).json({
         message: 'Password berhasil diubah. Silakan masuk kembali dengan password baru.',

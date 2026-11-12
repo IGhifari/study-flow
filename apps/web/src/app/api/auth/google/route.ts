@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { COOKIE_NAMES } from '@studyflow/shared';
 import { getSafeReturnUrl } from '@/lib/auth-client';
 import { getInternalApiUrl } from '@/lib/api-config';
+import { resolveForwardedClientIp } from '@/lib/bff-proxy';
 
 export async function GET(req: NextRequest) {
   const searchParams = req.nextUrl.searchParams;
@@ -20,6 +21,7 @@ export async function GET(req: NextRequest) {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
+        'x-forwarded-for': resolveForwardedClientIp(req.headers),
       },
       cache: 'no-store',
     });

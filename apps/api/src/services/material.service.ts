@@ -216,6 +216,32 @@ export async function finalizeUpload(
     throw error;
   }
 
+  const actualUploadedSize =
+    typeof info.data.size === 'number' ? info.data.size : null;
+  if (
+    actualUploadedSize !== null &&
+    (actualUploadedSize > FILE_UPLOAD_LIMITS.maxSizeBytes ||
+      actualUploadedSize > material.bytes)
+  ) {
+    await storageAdapter.remove([material.storageKey]).catch(() => {});
+    await prisma.material.update({
+      where: { id: material.id },
+      data: {
+        status: 'FAILED',
+        errorCode: 'FILE_TOO_LARGE',
+        errorMessage:
+          'Ukuran berkas aktual melebihi ukuran yang dideklarasikan atau batas maksimal 20 MiB.',
+      },
+    });
+    await releaseReservation(userId, material.bytes, false);
+    const error: AppError = new Error(
+      'Ukuran berkas aktual melebihi ukuran yang dideklarasikan atau batas maksimal 20 MiB.'
+    );
+    error.statusCode = 400;
+    error.code = 'FILE_SIZE_MISMATCH';
+    throw error;
+  }
+
   // 2. Transaction to update Material -> QUEUED, create ProcessingJob & OutboxEvent
   const jobId = crypto.randomUUID();
   const idempotencyKey = `extract-${material.id}-attempt-1`;
@@ -484,6 +510,7 @@ export async function retryMaterialProcessing(
 
   // Check permanent failure codes that cannot be retried
   const permanentErrorCodes = [
+    'INVALID_FILE_SIGNATURE',
     'FILE_CORRUPTED',
     'FILE_ENCRYPTED',
     'EXCEEDS_PAGE_LIMIT',
@@ -717,7 +744,11 @@ export async function deleteMaterial(userId: string, id: string): Promise<void> 
             updated_at = NOW()
         WHERE user_id = ${userId}
       `;
-    } else {
+    } else if (
+      currentMaterial.status === 'UPLOADING' ||
+      currentMaterial.status === 'QUEUED' ||
+      currentMaterial.status === 'PROCESSING'
+    ) {
       await tx.$executeRaw`
         UPDATE storage_usages
         SET reserved_bytes = GREATEST(0, reserved_bytes - ${bytesToFree}),
@@ -758,6 +789,15 @@ export async function getMaterialDownloadUrl(
     const error: AppError = new Error('Materi tidak ditemukan');
     error.statusCode = 404;
     error.code = 'NOT_FOUND';
+    throw error;
+  }
+
+  if (material.status !== 'READY') {
+    const error: AppError = new Error(
+      'Materi belum siap untuk diunduh atau dipratinjau.'
+    );
+    error.statusCode = 409;
+    error.code = 'MATERIAL_NOT_READY';
     throw error;
   }
 

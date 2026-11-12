@@ -16,6 +16,56 @@ export function isGoogleConfigured(): boolean {
   return Boolean(env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET);
 }
 
+function resolveSafeGoogleRedirectUri(candidate?: string): string {
+  if (!candidate) {
+    return env.GOOGLE_REDIRECT_URI;
+  }
+  if (candidate === env.GOOGLE_REDIRECT_URI) {
+    return candidate;
+  }
+
+  let parsed: URL;
+  try {
+    parsed = new URL(candidate);
+  } catch {
+    const error: AppError = new Error('Redirect URI Google OAuth tidak valid');
+    error.statusCode = 400;
+    error.code = 'INVALID_REDIRECT_URI';
+    throw error;
+  }
+
+  const allowedOrigins = new Set<string>();
+  try {
+    allowedOrigins.add(new URL(env.GOOGLE_REDIRECT_URI).origin);
+  } catch {
+    // ignore malformed default
+  }
+  if (env.CORS_ORIGIN) {
+    for (const org of env.CORS_ORIGIN.split(',')) {
+      const trimmed = org.trim().replace(/\/+$/, '');
+      if (trimmed) allowedOrigins.add(trimmed);
+    }
+  }
+  if (env.NODE_ENV !== 'production') {
+    for (const port of ['3000', '3002', '3005']) {
+      allowedOrigins.add(`http://localhost:${port}`);
+      allowedOrigins.add(`http://127.0.0.1:${port}`);
+    }
+  }
+
+  if (
+    !allowedOrigins.has(parsed.origin) ||
+    parsed.pathname !== '/api/auth/google/callback'
+  ) {
+    const error: AppError = new Error('Redirect URI Google OAuth tidak diizinkan');
+    error.statusCode = 400;
+    error.code = 'INVALID_REDIRECT_URI';
+    throw error;
+  }
+
+  return parsed.toString();
+}
+
 export interface GoogleAuthUrlResult {
   url: string;
   state: string;
@@ -43,7 +93,7 @@ export function generateGoogleAuthUrl(options?: {
     .update(codeVerifier)
     .digest('base64url');
 
-  const redirectUri = options?.redirectUri || env.GOOGLE_REDIRECT_URI;
+  const redirectUri = resolveSafeGoogleRedirectUri(options?.redirectUri);
 
   const url = new URL('https://accounts.google.com/o/oauth2/v2/auth');
   url.searchParams.set('client_id', env.GOOGLE_CLIENT_ID || 'mock-google-client-id');
@@ -90,6 +140,7 @@ export async function exchangeGoogleCode(
   input: GoogleExchangeInput,
   currentUserId?: string
 ): Promise<GoogleAuthExchangeResult> {
+  const safeRedirectUri = resolveSafeGoogleRedirectUri(input.redirectUri);
   let verifiedPayload: TokenPayload;
 
   if (process.env.NODE_ENV === 'test' && testMockPayload) {
@@ -121,7 +172,7 @@ export async function exchangeGoogleCode(
           code: input.code,
           client_id: env.GOOGLE_CLIENT_ID,
           client_secret: env.GOOGLE_CLIENT_SECRET,
-          redirect_uri: input.redirectUri,
+          redirect_uri: safeRedirectUri,
           grant_type: 'authorization_code',
           code_verifier: input.codeVerifier,
         }),

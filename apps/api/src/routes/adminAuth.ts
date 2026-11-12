@@ -26,8 +26,16 @@ import {
   getRefreshTokenExpiryDate,
 } from '../services/token.service.js';
 import { requireAdmin } from '../middleware/requireAdmin.js';
-import { adminLoginRateLimiter } from '../middleware/rateLimiter.js';
+import { authRateLimiter, adminLoginRateLimiter } from '../middleware/rateLimiter.js';
 import { originCheckMiddleware } from '../middleware/originCheck.js';
+import { AppError } from '../middleware/errorHandler.js';
+import { verifyTurnstileToken } from '../services/turnstile.service.js';
+import {
+  isCaptchaRequiredForLogin,
+  recordLoginFailure,
+  resetAccountLoginFailures,
+} from '../services/loginProtection.service.js';
+import { env } from '../config/env.js';
 import { prisma } from '@studyflow/database';
 
 export const adminAuthRouter = Router();
@@ -36,31 +44,92 @@ export const adminAuthRouter = Router();
 adminAuthRouter.use(originCheckMiddleware);
 
 // POST /api/admin/auth/login
-adminAuthRouter.post('/login', adminLoginRateLimiter, async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const parseResult = AdminLoginInputSchema.safeParse(req.body);
-    if (!parseResult.success) {
-      res.status(400).json({
-        error: {
-          code: 'VALIDATION_ERROR',
-          message: 'Data login tidak valid',
-          details: parseResult.error.flatten().fieldErrors,
-        },
+adminAuthRouter.post(
+  '/login',
+  authRateLimiter,
+  adminLoginRateLimiter,
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const parseResult = AdminLoginInputSchema.safeParse(req.body);
+      if (!parseResult.success) {
+        res.status(400).json({
+          error: {
+            code: 'VALIDATION_ERROR',
+            message: 'Data login tidak valid',
+            details: parseResult.error.flatten().fieldErrors,
+          },
+        });
+        return;
+      }
+
+      const isTurnstileEnforced =
+        env.NODE_ENV === 'production'
+          ? true
+          : env.NODE_ENV !== 'test'
+            ? Boolean(env.TURNSTILE_SECRET_KEY)
+            : process.env.TEST_ENFORCE_TURNSTILE === 'true';
+
+      const captchaRequired =
+        isTurnstileEnforced &&
+        (await isCaptchaRequiredForLogin(parseResult.data.email, req.ip));
+
+      if (captchaRequired) {
+        if (
+          !parseResult.data.turnstileToken ||
+          parseResult.data.turnstileToken.trim().length === 0
+        ) {
+          const error: AppError = new Error(
+            'Verifikasi keamanan diperlukan. Selesaikan verifikasi lalu coba lagi.'
+          );
+          error.statusCode = 400;
+          error.code = 'TURNSTILE_TOKEN_REQUIRED';
+          error.details = { requireCaptcha: true };
+          return next(error);
+        }
+
+        try {
+          await verifyTurnstileToken({
+            token: parseResult.data.turnstileToken,
+            remoteIp: req.ip,
+          });
+        } catch (turnstileErr) {
+          if (turnstileErr instanceof Error) {
+            (turnstileErr as AppError).details = { requireCaptcha: true };
+          }
+          throw turnstileErr;
+        }
+      }
+
+      let loginResult: Awaited<ReturnType<typeof loginAdmin>>;
+      try {
+        loginResult = await loginAdmin(parseResult.data);
+      } catch (loginErr) {
+        const appErr = loginErr as AppError;
+        if (
+          isTurnstileEnforced &&
+          appErr instanceof Error &&
+          (appErr.statusCode === 401 || appErr.statusCode === 403)
+        ) {
+          const nowRequired = await recordLoginFailure(parseResult.data.email, req.ip);
+          appErr.details = { requireCaptcha: nowRequired };
+        }
+        throw loginErr;
+      }
+
+      await resetAccountLoginFailures(parseResult.data.email);
+
+      const { user, accessToken, refreshToken } = loginResult;
+      setAdminAuthCookies(res, accessToken, refreshToken);
+
+      res.status(200).json({
+        message: 'Login administrator berhasil',
+        user,
       });
-      return;
+    } catch (err) {
+      next(err);
     }
-
-    const { user, accessToken, refreshToken } = await loginAdmin(parseResult.data);
-    setAdminAuthCookies(res, accessToken, refreshToken);
-
-    res.status(200).json({
-      message: 'Login administrator berhasil',
-      user,
-    });
-  } catch (err) {
-    next(err);
   }
-});
+);
 
 // POST /api/admin/auth/refresh
 adminAuthRouter.post('/refresh', async (req: Request, res: Response, next: NextFunction) => {
@@ -92,6 +161,10 @@ adminAuthRouter.post('/refresh', async (req: Request, res: Response, next: NextF
       user: result.user,
     });
   } catch (err) {
+    clearAdminAuthCookies(res);
+    if (req.cookies?.[COOKIE_NAMES.refreshToken] || req.cookies?.[COOKIE_NAMES.accessToken]) {
+      clearAuthCookies(res);
+    }
     next(err);
   }
 });
@@ -99,11 +172,18 @@ adminAuthRouter.post('/refresh', async (req: Request, res: Response, next: NextF
 // POST /api/admin/auth/logout
 adminAuthRouter.post('/logout', async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const refreshToken =
-      req.cookies?.[ADMIN_COOKIE_NAMES.refreshToken] || req.cookies?.[COOKIE_NAMES.refreshToken];
-    await logoutAdmin(refreshToken);
+    const adminRefresh = req.cookies?.[ADMIN_COOKIE_NAMES.refreshToken];
+    const webRefresh = req.cookies?.[COOKIE_NAMES.refreshToken];
+
+    if (adminRefresh) {
+      await logoutAdmin(adminRefresh);
+    }
+    if (webRefresh && webRefresh !== adminRefresh) {
+      await logoutAdmin(webRefresh);
+    }
+
     clearAdminAuthCookies(res);
-    if (req.cookies?.[COOKIE_NAMES.refreshToken] || req.cookies?.[COOKIE_NAMES.accessToken]) {
+    if (webRefresh || req.cookies?.[COOKIE_NAMES.accessToken]) {
       clearAuthCookies(res);
     }
 
@@ -111,6 +191,10 @@ adminAuthRouter.post('/logout', async (req: Request, res: Response, next: NextFu
       message: 'Logout admin berhasil',
     });
   } catch (err) {
+    clearAdminAuthCookies(res);
+    if (req.cookies?.[COOKIE_NAMES.refreshToken] || req.cookies?.[COOKIE_NAMES.accessToken]) {
+      clearAuthCookies(res);
+    }
     next(err);
   }
 });

@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { resolveForwardedClientIp } from './clientIp';
 import { getInternalApiUrl } from './api-config';
 
+export { resolveForwardedClientIp };
+
 const STATE_CHANGING_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
 
 const RATE_LIMIT_HEADERS = [
@@ -292,7 +294,31 @@ export function createBffProxyHandler(apiBasePath: string) {
     }
 
     const { path } = await params;
-    const subPath = path && path.length > 0 ? path.join('/') : '';
+    if (
+      path &&
+      path.some(
+        (seg) =>
+          !seg ||
+          seg === '.' ||
+          seg === '..' ||
+          seg.includes('/') ||
+          seg.includes('\\')
+      )
+    ) {
+      return NextResponse.json(
+        {
+          error: {
+            code: 'INVALID_PATH',
+            message: 'Path permintaan tidak valid',
+          },
+        },
+        { status: 400 }
+      );
+    }
+    const subPath =
+      path && path.length > 0
+        ? path.map((seg) => encodeURIComponent(seg)).join('/')
+        : '';
     const search = req.nextUrl.search;
 
     let internalApiUrl: string;

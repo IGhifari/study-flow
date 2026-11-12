@@ -3,7 +3,7 @@
 import * as React from 'react';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { Search } from 'lucide-react';
 import { UserProfile } from '@studyflow/shared';
 import { cn } from '@/lib/utils';
@@ -122,13 +122,25 @@ function renderAdminContent(pathname: string, children: React.ReactNode): React.
   return children;
 }
 
+const ADMIN_ONLY_PREFIXES = ['/users', '/jobs', '/schedules', '/quizzes', '/profile'];
+
 export function AppShell({ user, children }: AppShellProps): React.JSX.Element {
   const pathname = usePathname();
+  const router = useRouter();
   const isWidePage = Boolean(pathname?.startsWith('/materials/') && pathname !== '/materials');
   const [currentUser, setCurrentUser] = React.useState<UserProfile>(user);
   const [isSearchOpen, setIsSearchOpen] = React.useState(false);
   const searchTriggerRef = React.useRef<HTMLButtonElement | null>(null);
   const isAdmin = currentUser.role === 'ADMIN';
+  const isAdminOnlyRoute = Boolean(
+    pathname && ADMIN_ONLY_PREFIXES.some((prefix) => pathname.startsWith(prefix))
+  );
+
+  React.useEffect(() => {
+    if (!isAdmin && isAdminOnlyRoute) {
+      router.replace('/dashboard');
+    }
+  }, [isAdmin, isAdminOnlyRoute, router]);
 
   React.useEffect(() => {
     if (isAdmin) return;
@@ -232,7 +244,7 @@ export function AppShell({ user, children }: AppShellProps): React.JSX.Element {
         {/* Main Dashboard Canvas - Max 1200px (or 1440px for wide materials split-view) centered per DESIGN.md section 7.1 */}
         <main id="main-content" className="flex-1 p-3.5 sm:p-6 lg:p-8" tabIndex={-1}>
           <div className={cn("mx-auto", isWidePage ? "max-w-[1440px]" : "max-w-[1200px]")}>
-            {children}
+            {isAdminOnlyRoute ? null : children}
           </div>
         </main>
       </SidebarInset>
