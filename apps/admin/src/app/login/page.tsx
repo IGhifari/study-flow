@@ -1,47 +1,35 @@
 import * as React from 'react';
-import Link from 'next/link';
-import { ShieldCheck } from 'lucide-react';
 import { LoginForm } from '@/components/login-form';
 import { FadeIn } from '@/components/ui/motion';
 import { StudyFlowLogo } from '@/components/brand/studyflow-logo';
+import { ThemeToggle } from '@/components/theme-toggle';
 
 export default function LoginPage() {
   return (
-    <div className="grid min-h-svh lg:grid-cols-2">
-      <div className="flex flex-col gap-4 p-6 md:p-10">
-        <div className="flex justify-center gap-2 md:justify-start">
-          <Link href="/login" className="flex items-center gap-2">
-            <StudyFlowLogo badge="Admin" size="lg" />
-          </Link>
-        </div>
-        <div className="flex flex-1 items-center justify-center">
-          <FadeIn className="w-full max-w-sm">
-            <React.Suspense fallback={<div className="h-80 w-full animate-pulse rounded-lg bg-muted" />}>
-              <LoginForm />
-            </React.Suspense>
-          </FadeIn>
-        </div>
-      </div>
-      <div className="relative hidden lg:flex flex-col justify-between bg-muted p-10 dark:bg-card border-l border-border">
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <ShieldCheck className="h-4 w-4 text-primary" />
-          <span>StudyFlow Control Center</span>
-        </div>
-        <div className="space-y-4 max-w-md">
-          <div className="inline-block rounded-md bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
-            Sistem Manajemen Platform
-          </div>
-          <h2 className="text-2xl font-bold tracking-tight text-foreground">
-            Pemantauan & Tata Kelola Platform Belajar Mahasiswa
-          </h2>
-          <p className="text-sm text-muted-foreground leading-relaxed">
-            Akses analitik real-time, statistik materi dokumen, antrean pemrosesan AI, dan direktori pengguna StudyFlow dalam satu dashboard terpadu.
-          </p>
-        </div>
-        <div className="text-xs text-muted-foreground">
-          &copy; {new Date().getFullYear()} StudyFlow. Hak cipta dilindungi.
-        </div>
-      </div>
+    <div className="flex min-h-svh flex-col bg-muted/40 dark:bg-background">
+      <header className="flex items-center justify-between gap-4 px-4 py-4 sm:px-6">
+        <StudyFlowLogo badge="Admin" size="md" />
+        <ThemeToggle />
+      </header>
+
+      <main className="flex flex-1 items-center justify-center px-4 py-8 sm:px-6">
+        <FadeIn className="w-full max-w-md">
+          <React.Suspense
+            fallback={
+              <div
+                className="h-[430px] w-full animate-pulse rounded-xl border border-border bg-card"
+                aria-hidden="true"
+              />
+            }
+          >
+            <LoginForm />
+          </React.Suspense>
+        </FadeIn>
+      </main>
+
+      <footer className="px-4 pb-6 text-center text-xs text-muted-foreground sm:px-6">
+        &copy; {new Date().getFullYear()} StudyFlow · Portal internal administrator
+      </footer>
     </div>
   );
 }

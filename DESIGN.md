@@ -804,9 +804,11 @@ Ketentuan berikut menjadi arah awal saat milestone PRD terkait dikerjakan, bukan
   - Header admin menampilkan `SidebarTrigger`, `Separator` vertikal, `Breadcrumb` rute aktif (StudyFlow Admin > Ringkasan / Pengguna), dan `ThemeToggle` (Sistem, Terang, Gelap).
   - Footer sidebar menyajikan identitas administrator masuk dengan `Avatar`, inisial nama, email, serta `DropdownMenu` aksi akun berisi tombol “Keluar” destruktif.
 - **Login Administrator (`/login`)**:
-  - Halaman terisolasi berbasis `Card` shadcn terpusat (`max-w-md`) dengan ikon perisai (`Shield`) dan tipografi tegas.
-  - Input email dan kata sandi dilengkapi tombol visibilitas kata sandi yang aksesibel (`Eye` / `EyeOff`, aria-label, `tabIndex={-1}`).
-  - Tombol aksi utama dengan `Loader2` saat proses mutasi, pencegahan submit ganda, serta pesan error terpadu (`Alert variant="destructive"`).
+  - Halaman terisolasi berbasis kartu terpusat (`max-w-md`) dengan ikon perisai (`ShieldCheck`), header berisi logo StudyFlow Admin dan `ThemeToggle`, tanpa panel dekoratif.
+  - Input email dan kata sandi dengan label permanen, error per field (`aria-invalid`, `aria-describedby`), fokus otomatis ke field pertama yang salah, serta indikator Caps Lock.
+  - Tombol visibilitas kata sandi dapat dijangkau keyboard (`Eye` / `EyeOff`, `aria-label`, `aria-pressed`, ring fokus terlihat, target sentuh diperluas di mobile).
+  - Tombol aksi utama dengan `Loader2` saat proses mutasi, pencegahan submit ganda, serta pesan error server `role="alert"`; email dipertahankan saat gagal.
+  - Parameter redirect `from` hanya menerima path internal relatif.
   - Tanpa opsi registrasi publik atau tombol login Google.
 - **Ringkasan Platform (`/dashboard`)**:
   - Tata letak kisi kartu metrik responsif (`grid gap-4 sm:grid-cols-2 lg:grid-cols-4`).
