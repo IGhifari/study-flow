@@ -2,14 +2,21 @@ import * as React from 'react';
 import Link from 'next/link';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { StudyFlowLogo } from '@/components/brand/studyflow-logo';
+import { TurnstileConfigProvider } from '@/components/auth/turnstile-context';
+import { resolveTurnstileSiteKey } from '@/lib/turnstile-config';
+
+export const dynamic = 'force-dynamic';
 
 export default function AuthLayout({
   children,
 }: {
   children: React.ReactNode;
 }): React.JSX.Element {
+  const turnstileSiteKey = resolveTurnstileSiteKey();
+
   return (
-    <div className="flex min-h-screen flex-col bg-background">
+    <TurnstileConfigProvider siteKey={turnstileSiteKey}>
+      <div className="flex min-h-screen flex-col bg-background">
       {/* Top Header */}
       <header className="border-b border-border bg-card/80 backdrop-blur-xs">
         <div className="mx-auto flex h-16 max-w-5xl items-center justify-between px-4 sm:px-6">
@@ -39,5 +46,6 @@ export default function AuthLayout({
         StudyFlow &copy; 2026. Platform Belajar Pribadi Mahasiswa.
       </footer>
     </div>
+    </TurnstileConfigProvider>
   );
 }

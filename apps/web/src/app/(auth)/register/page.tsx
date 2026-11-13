@@ -115,6 +115,12 @@ function RegisterForm(): React.JSX.Element {
 
         <form onSubmit={handleSubmit(onSubmit)} noValidate>
           <CardContent className="space-y-4 pt-0">
+            {serverError && (
+              <div role="alert" className="sr-only">
+                {serverError}
+              </div>
+            )}
+
             {/* Google Sign-In Button */}
             <div className="space-y-3">
               <GoogleSignInButton returnUrl={returnUrl} disabled={isSubmitting} />
@@ -253,7 +259,11 @@ function RegisterForm(): React.JSX.Element {
                 action="register"
                 onVerify={handleTurnstileVerify}
                 onExpire={handleTurnstileExpire}
-                onError={(err) => setServerError(err || 'Verifikasi keamanan gagal. Silakan coba lagi.')}
+                onError={(err) => {
+                  const msg = err || 'Verifikasi keamanan gagal. Silakan coba lagi.';
+                  setServerError(msg);
+                  toast.error(msg);
+                }}
               />
               {errors.turnstileToken && (
                 <p className="text-center text-xs font-medium text-destructive">

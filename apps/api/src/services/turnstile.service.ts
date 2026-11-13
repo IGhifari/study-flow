@@ -1,3 +1,4 @@
+import { isIP } from 'node:net';
 import { env } from '../config/env.js';
 import { AppError } from '../middleware/errorHandler.js';
 
@@ -13,6 +14,69 @@ export interface VerifyTurnstileOptions {
 }
 
 const CLOUDFLARE_SITEVERIFY_URL = 'https://challenges.cloudflare.com/turnstile/v0/siteverify';
+
+function isPrivateOrLoopbackIp(ip: string): boolean {
+  const lower = ip.toLowerCase();
+
+  // IPv4 checks
+  const v4Parts = lower.split('.');
+  if (v4Parts.length === 4) {
+    const octets = v4Parts.map((part) => Number(part));
+    if (octets.some((n) => !Number.isInteger(n) || n < 0 || n > 255)) {
+      return true;
+    }
+    const [a, b] = octets;
+    if (a === undefined || b === undefined) {
+      return true;
+    }
+    return (
+      a === 0 ||
+      a === 10 ||
+      a === 127 ||
+      (a === 169 && b === 254) ||
+      (a === 172 && b >= 16 && b <= 31) ||
+      (a === 192 && b === 168)
+    );
+  }
+
+  // IPv6 loopback, unspecified, link-local (fe80::/10), unique local (fc00::/7)
+  if (lower === '::1' || lower === '::' || lower === '0:0:0:0:0:0:0:1') {
+    return true;
+  }
+  const firstSegment = lower.split(':')[0] || '';
+  if (/^(fc|fd)[0-9a-f]{2}$/.test(firstSegment)) {
+    return true;
+  }
+  if (/^fe[89ab][0-9a-f]$/.test(firstSegment)) {
+    return true;
+  }
+  return false;
+}
+
+/**
+ * Normalizes Express req.ip for Cloudflare Turnstile siteverify.
+ * Unwraps IPv4-mapped IPv6 addresses (e.g. ::ffff:1.2.3.4) and omits loopback
+ * or internal proxy addresses that should not be sent as client remoteip.
+ */
+export function normalizeTurnstileRemoteIp(rawIp: string | undefined | null): string | undefined {
+  if (!rawIp || typeof rawIp !== 'string') {
+    return undefined;
+  }
+  let candidate = rawIp.trim();
+  if (!candidate) {
+    return undefined;
+  }
+  if (candidate.toLowerCase().startsWith('::ffff:')) {
+    candidate = candidate.slice(7);
+  }
+  if (isIP(candidate) === 0) {
+    return undefined;
+  }
+  if (isPrivateOrLoopbackIp(candidate)) {
+    return undefined;
+  }
+  return candidate;
+}
 
 /**
  * Verifies Cloudflare Turnstile CAPTCHA token with Cloudflare Siteverify endpoint.
@@ -118,8 +182,9 @@ export async function verifyTurnstileToken(options: VerifyTurnstileOptions): Pro
     const formData = new URLSearchParams();
     formData.append('secret', env.TURNSTILE_SECRET_KEY);
     formData.append('response', trimmedToken);
-    if (remoteIp && remoteIp !== '127.0.0.1' && remoteIp !== '::1') {
-      formData.append('remoteip', remoteIp);
+    const normalizedIp = normalizeTurnstileRemoteIp(remoteIp);
+    if (normalizedIp) {
+      formData.append('remoteip', normalizedIp);
     }
 
     const response = await fetch(CLOUDFLARE_SITEVERIFY_URL, {
