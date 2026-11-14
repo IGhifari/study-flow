@@ -85,6 +85,8 @@ export default defineConfig({
         NEXT_DIST_DIR: '.next-e2e',
         NEXT_PUBLIC_API_URL: `http://localhost:${TEST_API_PORT}`,
         INTERNAL_API_URL: `http://localhost:${TEST_API_PORT}`,
+        TURNSTILE_SITE_KEY: '1x00000000000000000000AA',
+        NEXT_PUBLIC_TURNSTILE_SITE_KEY: '1x00000000000000000000AA',
         JWT_ACCESS_SECRET: 'test_jwt_access_secret_super_secure_32_chars',
         JWT_REFRESH_SECRET: 'test_jwt_refresh_secret_super_secure_32_chars',
         COOKIE_SECRET: 'test_cookie_secret_super_secure_32_chars',

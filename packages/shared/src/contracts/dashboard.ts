@@ -63,7 +63,7 @@ export const DashboardPinnedQuerySchema = z.object({
 export type DashboardPinnedQuery = z.infer<typeof DashboardPinnedQuerySchema>;
 
 export const DashboardChartsQuerySchema = z.object({
-  period: DashboardChartPeriodSchema.default('7d').optional(),
+  period: DashboardChartPeriodSchema.default('30d'),
   semesterId: z.string().optional(),
 });
 export type DashboardChartsQuery = z.infer<typeof DashboardChartsQuerySchema>;

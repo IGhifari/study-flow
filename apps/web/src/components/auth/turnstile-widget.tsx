@@ -2,6 +2,8 @@
 
 import * as React from 'react';
 import { useTheme } from 'next-themes';
+import { useTurnstileSiteKey } from './turnstile-context';
+import { CLOUDFLARE_TURNSTILE_TEST_SITE_KEY } from '@/lib/turnstile-config';
 
 declare global {
   interface Window {
@@ -29,6 +31,7 @@ export interface TurnstileWidgetProps {
   onVerify: (token: string) => void;
   onExpire?: () => void;
   onError?: (error?: string) => void;
+  siteKey?: string;
   action?: string;
   className?: string;
 }
@@ -38,15 +41,18 @@ export interface TurnstileWidgetHandle {
 }
 
 export const TurnstileWidget = React.forwardRef<TurnstileWidgetHandle, TurnstileWidgetProps>(
-  ({ onVerify, onExpire, onError, action, className }, ref) => {
+  ({ onVerify, onExpire, onError, siteKey: propSiteKey, action, className }, ref) => {
     const containerRef = React.useRef<HTMLDivElement>(null);
     const widgetIdRef = React.useRef<string | null>(null);
     const { resolvedTheme } = useTheme();
+    const contextSiteKey = useTurnstileSiteKey();
 
     const siteKey =
-      process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY ||
+      propSiteKey?.trim() ||
+      contextSiteKey?.trim() ||
+      process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY?.trim() ||
       // Cloudflare official always-pass testing key fallback
-      '1x00000000000000000000AA';
+      CLOUDFLARE_TURNSTILE_TEST_SITE_KEY;
 
     // Store callbacks in ref to prevent stale closures and avoid re-rendering turnstile
     const onVerifyRef = React.useRef(onVerify);
@@ -108,7 +114,8 @@ export const TurnstileWidget = React.forwardRef<TurnstileWidgetHandle, Turnstile
                 onExpireRef.current?.();
               }
             },
-            'error-callback': () => {
+            'error-callback': (errorCode: string) => {
+              console.warn('[Turnstile Widget Error]', { errorCode });
               if (isMounted) {
                 onErrorRef.current?.('Verifikasi keamanan gagal. Silakan coba lagi.');
               }
