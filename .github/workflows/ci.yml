@@ -94,14 +94,33 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Free runner disk space
+        run: |
+          df -h
+          sudo rm -rf /usr/local/lib/android /usr/share/dotnet /opt/ghc /opt/hostedtoolcache/CodeQL || true
+          docker system prune -af || true
+          df -h
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
       - name: Build API Docker image
-        run: docker build -f apps/api/Dockerfile -t studyflow-api:ci .
+        run: |
+          docker build -f apps/api/Dockerfile -t studyflow-api:ci .
+          docker image rm -f studyflow-api:ci
+          docker builder prune -af
+          df -h
 
       - name: Build Worker Docker image
-        run: docker build -f apps/worker/Dockerfile -t studyflow-worker:ci .
+        run: |
+          docker build -f apps/worker/Dockerfile -t studyflow-worker:ci .
+          docker image rm -f studyflow-worker:ci
+          docker builder prune -af
+          df -h
 
       - name: Build Web Docker image
-        run: docker build -f apps/web/Dockerfile -t studyflow-web:ci .
+        run: |
+          docker build -f apps/web/Dockerfile -t studyflow-web:ci .
+          docker image rm -f studyflow-web:ci
+          docker builder prune -af
+          df -h
