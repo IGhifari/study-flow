@@ -95,6 +95,7 @@ authRouter.post(
         await verifyTurnstileToken({
           token: parsed.data.turnstileToken,
           remoteIp: req.ip,
+          expectedAction: 'register',
         });
       }
 
@@ -151,6 +152,7 @@ authRouter.post(
           await verifyTurnstileToken({
             token: parsed.data.turnstileToken,
             remoteIp: req.ip,
+            expectedAction: 'login',
           });
         } catch (turnstileErr) {
           if (turnstileErr instanceof Error) {
@@ -498,6 +500,7 @@ authRouter.post(
         await verifyTurnstileToken({
           token: parsed.data.turnstileToken,
           remoteIp: req.ip,
+          expectedAction: 'forgot_password',
         });
       }
 
