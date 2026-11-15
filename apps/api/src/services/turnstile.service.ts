@@ -6,11 +6,137 @@ export interface TurnstileVerificationResult {
   success: boolean;
   errorCodes?: string[];
   hostname?: string;
+  action?: string;
 }
 
 export interface VerifyTurnstileOptions {
   token: string | undefined | null;
   remoteIp?: string | undefined;
+  expectedAction?: string;
+  allowedHostnames?: string[];
+}
+
+interface SiteverifyApiPayload {
+  success?: unknown;
+  'error-codes'?: unknown;
+  hostname?: unknown;
+  action?: unknown;
+}
+
+interface ParsedSiteverifyMetadata {
+  success: boolean;
+  errorCodes: string[];
+  hostname?: string;
+  action?: string;
+}
+
+const MAX_TURNSTILE_TOKEN_LENGTH = 4096;
+
+function createTurnstileError(message: string, statusCode: number, code: string): AppError {
+  const error: AppError = new Error(message);
+  error.statusCode = statusCode;
+  error.code = code;
+  return error;
+}
+
+function extractSiteverifyMetadata(payload: SiteverifyApiPayload | null): ParsedSiteverifyMetadata {
+  if (!payload || typeof payload !== 'object') {
+    return {
+      success: false,
+      errorCodes: [],
+    };
+  }
+
+  const errorCodes = Array.isArray(payload['error-codes'])
+    ? payload['error-codes'].filter((code): code is string => typeof code === 'string')
+    : [];
+
+  const hostname =
+    typeof payload.hostname === 'string' && payload.hostname.trim().length > 0
+      ? payload.hostname.trim()
+      : undefined;
+
+  const action =
+    typeof payload.action === 'string' && payload.action.trim().length > 0
+      ? payload.action.trim()
+      : undefined;
+
+  return {
+    success: payload.success === true,
+    errorCodes,
+    hostname,
+    action,
+  };
+}
+
+async function parseSiteverifyPayload(response: Response): Promise<SiteverifyApiPayload | null> {
+  try {
+    const rawText = await response.text();
+    if (!rawText || rawText.trim().length === 0) {
+      return null;
+    }
+    const parsed: unknown = JSON.parse(rawText);
+    return parsed && typeof parsed === 'object' ? (parsed as SiteverifyApiPayload) : null;
+  } catch {
+    return null;
+  }
+}
+
+function classifySiteverifyFailure(
+  status: number,
+  metadata: ParsedSiteverifyMetadata
+): AppError {
+  const { errorCodes, hostname, action } = metadata;
+  const safeContext = {
+    status,
+    errorCodes,
+    ...(hostname ? { hostname } : {}),
+    ...(action ? { action } : {}),
+  };
+
+  if (
+    errorCodes.includes('invalid-input-secret') ||
+    errorCodes.includes('missing-input-secret')
+  ) {
+    console.error('[TURNSTILE] Cloudflare siteverify rejected server secret configuration', safeContext);
+    return createTurnstileError(
+      'Layanan verifikasi keamanan server belum dikonfigurasi dengan benar.',
+      500,
+      'CONFIGURATION_ERROR'
+    );
+  }
+
+  if (
+    status >= 500 ||
+    status === 429 ||
+    status === 401 ||
+    status === 403 ||
+    errorCodes.includes('internal-error')
+  ) {
+    console.error('[TURNSTILE] Cloudflare siteverify upstream unavailable', safeContext);
+    return createTurnstileError(
+      'Verifikasi keamanan gagal menghubungi server. Silakan coba lagi.',
+      503,
+      'TURNSTILE_SERVICE_UNAVAILABLE'
+    );
+  }
+
+  if (errorCodes.includes('missing-input-response')) {
+    console.warn('[TURNSTILE] Cloudflare siteverify reported missing input response', safeContext);
+    return createTurnstileError(
+      'Verifikasi keamanan Turnstile wajib diisi',
+      400,
+      'TURNSTILE_TOKEN_REQUIRED'
+    );
+  }
+
+  console.warn('[TURNSTILE] Cloudflare siteverify rejected token or request', safeContext);
+
+  const clientMessage = errorCodes.includes('timeout-or-duplicate')
+    ? 'Sesi verifikasi keamanan telah kedaluwarsa atau sudah digunakan. Silakan coba lagi.'
+    : 'Verifikasi keamanan gagal. Silakan coba lagi.';
+
+  return createTurnstileError(clientMessage, 400, 'TURNSTILE_VERIFICATION_FAILED');
 }
 
 const CLOUDFLARE_SITEVERIFY_URL = 'https://challenges.cloudflare.com/turnstile/v0/siteverify';
@@ -119,6 +245,14 @@ export async function verifyTurnstileToken(options: VerifyTurnstileOptions): Pro
 
   const trimmedToken = token.trim();
 
+  if (trimmedToken.length > MAX_TURNSTILE_TOKEN_LENGTH) {
+    throw createTurnstileError(
+      'Verifikasi keamanan gagal. Silakan coba lagi.',
+      400,
+      'TURNSTILE_VERIFICATION_FAILED'
+    );
+  }
+
   // 1. Mock verifier injection (used by automated integration tests)
   if (mockVerifier) {
     try {
@@ -173,14 +307,14 @@ export async function verifyTurnstileToken(options: VerifyTurnstileOptions): Pro
 
   // If secret key is not configured in local development, log warning and bypass safely
   // (Prevents developer lockout when testing unrelated flows without Turnstile credentials)
-  if (!env.TURNSTILE_SECRET_KEY) {
+  if (!trimmedSecret) {
     console.warn('[TURNSTILE] TURNSTILE_SECRET_KEY belum dikonfigurasi. Verifikasi dilewati untuk local development.');
     return;
   }
 
   try {
     const formData = new URLSearchParams();
-    formData.append('secret', env.TURNSTILE_SECRET_KEY);
+    formData.append('secret', trimmedSecret);
     formData.append('response', trimmedToken);
     const normalizedIp = normalizeTurnstileRemoteIp(remoteIp);
     if (normalizedIp) {
@@ -191,41 +325,62 @@ export async function verifyTurnstileToken(options: VerifyTurnstileOptions): Pro
       method: 'POST',
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
+        Accept: 'application/json',
       },
       body: formData.toString(),
       // 5 seconds timeout
       signal: AbortSignal.timeout(5000),
     });
 
-    if (!response.ok) {
-      console.error(`[TURNSTILE] Cloudflare siteverify HTTP error: ${response.status}`);
-      const error: AppError = new Error('Verifikasi keamanan gagal menghubungi server. Silakan coba lagi.');
-      error.statusCode = 503;
-      error.code = 'TURNSTILE_SERVICE_UNAVAILABLE';
-      throw error;
+    const payload = await parseSiteverifyPayload(response);
+    const metadata = extractSiteverifyMetadata(payload);
+
+    if (!response.ok || !metadata.success) {
+      throw classifySiteverifyFailure(response.status, metadata);
     }
 
-    const data = (await response.json()) as {
-      success?: boolean;
-      'error-codes'?: string[];
-      hostname?: string;
-    };
+    if (options.expectedAction && metadata.action && metadata.action !== options.expectedAction) {
+      console.warn('[TURNSTILE] Action mismatch during token verification', {
+        status: response.status,
+        expectedAction: options.expectedAction,
+        actualAction: metadata.action,
+        ...(metadata.hostname ? { hostname: metadata.hostname } : {}),
+      });
+      throw createTurnstileError(
+        'Verifikasi keamanan gagal. Silakan coba lagi.',
+        400,
+        'TURNSTILE_VERIFICATION_FAILED'
+      );
+    }
 
-    if (!data.success) {
-      console.warn(`[TURNSTILE] Verifikasi token gagal. Error codes: ${JSON.stringify(data['error-codes'] || [])}`);
-      const error: AppError = new Error('Verifikasi keamanan gagal. Silakan coba lagi.');
-      error.statusCode = 400;
-      error.code = 'TURNSTILE_VERIFICATION_FAILED';
-      throw error;
+    if (options.allowedHostnames && options.allowedHostnames.length > 0 && metadata.hostname) {
+      const normalizedAllowed = new Set(
+        options.allowedHostnames.map((host) => host.trim().toLowerCase()).filter(Boolean)
+      );
+      if (!normalizedAllowed.has(metadata.hostname.toLowerCase())) {
+        console.warn('[TURNSTILE] Hostname mismatch during token verification', {
+          status: response.status,
+          hostname: metadata.hostname,
+          ...(metadata.action ? { action: metadata.action } : {}),
+        });
+        throw createTurnstileError(
+          'Verifikasi keamanan gagal. Silakan coba lagi.',
+          400,
+          'TURNSTILE_VERIFICATION_FAILED'
+        );
+      }
     }
   } catch (err: unknown) {
     if (err instanceof Error && 'statusCode' in err) {
       throw err;
     }
-    console.error('[TURNSTILE] Network error or timeout contacting Cloudflare siteverify');
-    const error: AppError = new Error('Verifikasi keamanan gagal karena masalah jaringan. Silakan coba lagi.');
-    error.statusCode = 503;
-    error.code = 'TURNSTILE_NETWORK_ERROR';
-    throw error;
+    console.error('[TURNSTILE] Network error or timeout contacting Cloudflare siteverify', {
+      reason: err instanceof Error ? err.name : 'unknown',
+    });
+    throw createTurnstileError(
+      'Verifikasi keamanan gagal karena masalah jaringan. Silakan coba lagi.',
+      503,
+      'TURNSTILE_NETWORK_ERROR'
+    );
   }
 }

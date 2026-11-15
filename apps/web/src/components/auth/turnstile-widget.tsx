@@ -44,7 +44,7 @@ export const TurnstileWidget = React.forwardRef<TurnstileWidgetHandle, Turnstile
   ({ onVerify, onExpire, onError, siteKey: propSiteKey, action, className }, ref) => {
     const containerRef = React.useRef<HTMLDivElement>(null);
     const widgetIdRef = React.useRef<string | null>(null);
-    const { resolvedTheme } = useTheme();
+    const { resolvedTheme, themes } = useTheme();
     const contextSiteKey = useTurnstileSiteKey();
 
     const siteKey =
@@ -82,8 +82,25 @@ export const TurnstileWidget = React.forwardRef<TurnstileWidgetHandle, Turnstile
       [resetWidget]
     );
 
+    const hasNoThemeProvider = Array.isArray(themes) && themes.length === 0;
+    const widgetTheme: 'light' | 'dark' | null =
+      resolvedTheme === 'dark'
+        ? 'dark'
+        : resolvedTheme === 'light'
+          ? 'light'
+          : hasNoThemeProvider
+            ? typeof document !== 'undefined' && document.documentElement.classList.contains('dark')
+              ? 'dark'
+              : 'light'
+            : null;
+
     React.useEffect(() => {
+      if (!widgetTheme) {
+        return;
+      }
+
       let isMounted = true;
+      let attachedScript: HTMLScriptElement | null = null;
 
       const renderWidget = () => {
         if (!containerRef.current || !window.turnstile || !isMounted) return;
@@ -101,7 +118,7 @@ export const TurnstileWidget = React.forwardRef<TurnstileWidgetHandle, Turnstile
         try {
           const id = window.turnstile.render(containerRef.current, {
             sitekey: siteKey,
-            theme: resolvedTheme === 'dark' ? 'dark' : 'light',
+            theme: widgetTheme,
             action,
             size: 'normal',
             callback: (token: string) => {
@@ -117,6 +134,7 @@ export const TurnstileWidget = React.forwardRef<TurnstileWidgetHandle, Turnstile
             'error-callback': (errorCode: string) => {
               console.warn('[Turnstile Widget Error]', { errorCode });
               if (isMounted) {
+                onExpireRef.current?.();
                 onErrorRef.current?.('Verifikasi keamanan gagal. Silakan coba lagi.');
               }
             },
@@ -137,20 +155,21 @@ export const TurnstileWidget = React.forwardRef<TurnstileWidgetHandle, Turnstile
         script.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
         script.async = true;
         script.defer = true;
-        script.onload = () => {
-          if (isMounted) {
-            renderWidget();
-          }
-        };
+        attachedScript = script;
+        script.addEventListener('load', renderWidget);
         document.head.appendChild(script);
       } else if (window.turnstile) {
         renderWidget();
       } else {
+        attachedScript = script;
         script.addEventListener('load', renderWidget);
       }
 
       return () => {
         isMounted = false;
+        if (attachedScript) {
+          attachedScript.removeEventListener('load', renderWidget);
+        }
         if (typeof window !== 'undefined' && window.turnstile && widgetIdRef.current) {
           try {
             window.turnstile.remove(widgetIdRef.current);
@@ -160,7 +179,7 @@ export const TurnstileWidget = React.forwardRef<TurnstileWidgetHandle, Turnstile
           widgetIdRef.current = null;
         }
       };
-    }, [siteKey, resolvedTheme, action]);
+    }, [siteKey, widgetTheme, action]);
 
     return (
       <div className={`flex justify-center items-center my-2 min-h-[65px] ${className || ''}`}>
