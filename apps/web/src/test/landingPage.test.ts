@@ -21,10 +21,11 @@ describe('Public Landing Page Production Overhaul', () => {
     expect(pageContent).toContain('href="#cara-kerja"');
     expect(pageContent).toContain('href="#faq"');
 
-    // 3 Academic Value Pillars
-    expect(pageContent).toContain('Verifiable AI (Bukan Chatbot Halusinasi)');
-    expect(pageContent).toContain('Privasi Penuh & Data Terisolasi');
-    expect(pageContent).toContain('Sinkronisasi Zona Waktu Nyata');
+    // 3 Academic Value Pillars (general student-facing copy, free of tech jargon)
+    expect(pageContent).toContain('AI Merujuk Sumber Materi Asli');
+    expect(pageContent).toContain('Privasi Penuh &amp; Milik Pribadi');
+    expect(pageContent).toContain('Sinkronisasi Zona Waktu Lokal');
+    expect(pageContent).not.toMatch(/PostgreSQL|Supabase|Redis|BullMQ|BENTO/i);
   });
 
   it('implements responsive mobile drawer navigation in public-mobile-nav.tsx', () => {
@@ -68,25 +69,25 @@ describe('Public Landing Page Production Overhaul', () => {
     expect(showcaseContent).toContain('Ringkasan Konsep AI');
 
     // Tab 2: Task with checklist
-    expect(showcaseContent).toContain('Laporan Praktikum Basis Data');
+    expect(showcaseContent).toContain('Makalah Proposal &amp; Kajian Pustaka');
     expect(showcaseContent).toContain('Hari ini, 23.59');
-    expect(showcaseContent).toContain('Normalisasi relasi tabel hingga bentuk 3NF');
+    expect(showcaseContent).toContain('Kumpulkan minimal 5 jurnal rujukan utama');
     expect(showcaseContent).toContain('toggleSubtask');
 
     // Tab 3: Lecture schedule
-    expect(showcaseContent).toContain('Struktur Data & Algoritma');
+    expect(showcaseContent).toContain('Metodologi Penelitian Ilmiah');
     expect(showcaseContent).toContain('08:00 - 09:40 WIB');
     expect(showcaseContent).toContain('Sedang Berlangsung');
 
     // Tab 4: Flashcard & Multiple choice quiz
     expect(showcaseContent).toContain('isFlipped');
-    expect(showcaseContent).toContain('Balanced Binary Search Tree');
-    expect(showcaseContent).toContain('Dijkstra');
-    expect(showcaseContent).toContain('Min-Heap / Binary Heap');
-    expect(showcaseContent).toContain('Rujukan: Slide Kuliah Hal. 12');
+    expect(showcaseContent).toContain('data primer dan data sekunder');
+    expect(showcaseContent).toContain('triangulasi dengan dokumen');
+    expect(showcaseContent).toContain('Rujukan: Modul Kuliah Hal. 12');
+    expect(showcaseContent).not.toMatch(/PostgreSQL|Supabase|Redis|BullMQ|3NF|Dijkstra|Min-Heap/i);
   });
 
-  it('implements accessible FaqSection with 5 required questions and answers', () => {
+  it('implements accessible FaqSection with 5 required questions and answers without infra jargon', () => {
     const faqContent = fs.readFileSync(faqPath, 'utf-8');
 
     // Section anchor
@@ -105,10 +106,11 @@ describe('Public Landing Page Production Overhaul', () => {
     expect(faqContent).toContain('Bagaimana cara kerja rujukan halaman AI di StudyFlow?');
     expect(faqContent).toContain('Apakah jadwal kuliah dan tenggat tugas mendukung zona waktu lokal saya?');
 
-    // Answers verbatim verification
-    expect(faqContent).toContain('tersimpan terisolasi per akun pengguna di database PostgreSQL dan storage privat');
+    // Answers general copy & absence of infra names
+    expect(faqContent).toContain('tersimpan aman serta hanya dapat diakses melalui akun pribadi Anda');
+    expect(faqContent).not.toMatch(/PostgreSQL|Supabase|Redis|BullMQ|storage privat/i);
     expect(faqContent).toContain('maksimal 20 MB dan 100 halaman per berkas');
-    expect(faqContent).toContain('20 generasi AI per hari');
+    expect(faqContent).toContain('20 pembuatan ringkasan, flashcard, atau kuis AI per hari');
     expect(faqContent).toContain('menyertakan nomor halaman dokumen sumber asli');
     expect(faqContent).toContain('WIB, WITA, WIT');
   });

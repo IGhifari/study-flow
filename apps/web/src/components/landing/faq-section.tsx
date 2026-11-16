@@ -22,7 +22,7 @@ const FAQ_ITEMS: FaqItem[] = [
     id: 'faq-1',
     question: 'Apakah data dokumen materi kuliah dan catatan saya aman dan privat?',
     answer:
-      'Ya, seluruh dokumen PDF dan catatan perkuliahan tersimpan terisolasi per akun pengguna di database PostgreSQL dan storage privat. Data akademik Anda tidak pernah dijual, dibagikan, atau digunakan untuk melatih model AI publik.',
+      'Ya, seluruh dokumen PDF materi kuliah dan catatan Anda tersimpan aman serta hanya dapat diakses melalui akun pribadi Anda. Data akademik Anda tidak pernah dijual, dibagikan ke pihak lain, atau digunakan untuk melatih model AI publik.',
   },
   {
     id: 'faq-2',
@@ -34,19 +34,19 @@ const FAQ_ITEMS: FaqItem[] = [
     id: 'faq-3',
     question: 'Apakah fitur ringkasan, flashcard, dan kuis AI memerlukan biaya atau kartu kredit?',
     answer:
-      'Tidak. StudyFlow memanfaatkan kuota harian terukur (20 generasi AI per hari) yang dapat digunakan tanpa memasukkan kartu kredit atau biaya langganan.',
+      'Tidak. StudyFlow menyediakan kuota penggunaan harian (20 pembuatan ringkasan, flashcard, atau kuis AI per hari) yang dapat dipakai langsung tanpa kartu kredit atau biaya langganan.',
   },
   {
     id: 'faq-4',
     question: 'Bagaimana cara kerja rujukan halaman AI di StudyFlow?',
     answer:
-      'Berbeda dari chatbot umum yang dapat berhalusinasi, setiap ringkasan konsep, kartu belajar, dan pembahasan kuis di StudyFlow menyertakan nomor halaman dokumen sumber asli, sehingga Anda dapat langsung memverifikasi kebenaran materi pada slide atau modul kuliah.',
+      'Berbeda dari chatbot umum yang bisa menjawab melenceng dari materi, setiap ringkasan konsep, kartu belajar, dan pembahasan kuis di StudyFlow menyertakan nomor halaman dokumen sumber asli. Anda dapat langsung membuka halaman terkait pada materi kuliah untuk memastikannya.',
   },
   {
     id: 'faq-5',
     question: 'Apakah jadwal kuliah dan tenggat tugas mendukung zona waktu lokal saya?',
     answer:
-      'Ya. StudyFlow mendukung seluruh zona waktu Indonesia (WIB, WITA, WIT) serta UTC standar yang dapat Anda atur pada profil akun.',
+      'Ya. StudyFlow mendukung seluruh zona waktu Indonesia (WIB, WITA, WIT) serta zona waktu lainnya yang dapat Anda atur pada profil akun.',
   },
 ];
 
@@ -64,7 +64,7 @@ export function FaqSection(): React.JSX.Element {
           Pertanyaan yang Sering Diajukan
         </h2>
         <p className="mt-2.5 text-sm sm:text-base text-muted-foreground leading-relaxed">
-          Semua yang perlu Anda ketahui tentang privasi data akademik, batas format dokumen, dan fitur AI di StudyFlow.
+          Semua yang perlu Anda ketahui tentang keamanan data akademik, batas dokumen, dan fitur belajar di StudyFlow.
         </p>
       </FadeIn>
 

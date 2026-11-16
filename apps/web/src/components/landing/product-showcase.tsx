@@ -45,9 +45,9 @@ export function ProductShowcase(): React.JSX.Element {
   const [subtasks, setSubtasks] = React.useState<
     Array<{ id: number; text: string; done: boolean }>
   >([
-    { id: 1, text: 'Normalisasi relasi tabel hingga bentuk 3NF', done: true },
-    { id: 2, text: 'Implementasi skema DDL & batasan foreign key', done: true },
-    { id: 3, text: 'Penyusunan diagram ERD dan laporan pengujian', done: false },
+    { id: 1, text: 'Kumpulkan minimal 5 jurnal rujukan utama', done: true },
+    { id: 2, text: 'Susun latar belakang dan rumusan masalah penelitian', done: true },
+    { id: 3, text: 'Lengkapi daftar pustaka dan periksa kutipan halaman', done: false },
   ]);
 
   // Interactive states for Tab 4 (Flashcard & Quiz)
@@ -134,7 +134,7 @@ export function ProductShowcase(): React.JSX.Element {
                     <div className="flex items-center gap-2">
                       <FileText className="h-4 w-4 text-primary shrink-0" />
                       <span className="font-semibold text-foreground truncate max-w-[280px] sm:max-w-md">
-                        Slide_Kuliah_Bab4_Algoritma_Graf_Lintasan_Terpendek.pdf
+                        Modul_Kuliah_Bab4_Metodologi_Penelitian_Kualitatif.pdf
                       </span>
                     </div>
                     <div className="flex items-center gap-2 self-start sm:self-auto">
@@ -162,30 +162,30 @@ export function ProductShowcase(): React.JSX.Element {
                     >
                       <CardHeader className="pb-3 border-b border-border/60">
                         <div className="flex items-center justify-between">
-                          <span className="text-xs font-mono uppercase tracking-wider text-muted-foreground">
-                            Slide Perkuliahan — Hal. 4
+                          <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                            Modul Perkuliahan — Hal. 4
                           </span>
-                          <Badge variant="outline" className="text-xs font-mono">
-                            IF2211 Struktur Data
+                          <Badge variant="outline" className="text-xs font-medium">
+                            MKU204 Metodologi Riset
                           </Badge>
                         </div>
                         <CardTitle className="text-base sm:text-lg pt-1">
-                          4.2 Algoritma Dijkstra (Single-Source Shortest Path)
+                          4.2 Teknik Triangulasi &amp; Keabsahan Data
                         </CardTitle>
                       </CardHeader>
                       <CardContent className="pt-4 space-y-3">
                         <p className="text-xs sm:text-sm text-foreground/90 leading-relaxed">
-                          Algoritma Dijkstra menemukan lintasan dengan bobot minimum dari suatu simpul asal <em>s</em> ke semua simpul lain dalam graf berarah dengan bobot sisi bernilai non-negatif:
+                          Triangulasi data adalah metode pemeriksaan keabsahan temuan dengan membandingkan beragam sumber atau teknik pengumpulan data agar hasil penelitian tetap objektif:
                         </p>
-                        <div className="rounded-lg bg-card border border-border p-3 font-mono text-xs text-foreground space-y-1">
+                        <div className="rounded-lg bg-card border border-border p-3 text-xs text-foreground space-y-1.5 leading-relaxed">
                           <div className="text-primary dark:text-indigo-400 font-semibold">
-                            {'// Inisialisasi jarak simpul'}
+                            Prinsip Pemeriksaan Data:
                           </div>
-                          <div>dist[s] = 0; dist[v] = ∞ untuk setiap v ≠ s;</div>
-                          <div>PQ.insert(s, 0);</div>
+                          <div>&bull; Triangulasi Sumber: bandingkan data wawancara, arsip, dan dokumen</div>
+                          <div>&bull; Triangulasi Teknik: padukan observasi lapangan dengan kuesioner</div>
                         </div>
                         <p className="text-xs text-muted-foreground leading-relaxed">
-                          <strong>Invarian Kunci:</strong> Setiap simpul yang diekstrak dari antrean prioritas telah memiliki jarak minimum absolut yang tidak akan berubah lagi.
+                          <strong>Poin Utama:</strong> Kesesuaian temuan dari beberapa sudut pandang membantu mengurangi bias penafsiran pada kesimpulan penelitian.
                         </p>
                       </CardContent>
                     </Card>
@@ -209,7 +209,7 @@ export function ProductShowcase(): React.JSX.Element {
                           <div className="rounded-lg bg-muted/30 p-3 border border-border/60 space-y-2">
                             <div className="flex items-center justify-between">
                               <span className="font-semibold text-foreground">
-                                Karakteristik Dijkstra
+                                Tujuan Triangulasi
                               </span>
                               <button
                                 type="button"
@@ -222,21 +222,21 @@ export function ProductShowcase(): React.JSX.Element {
                               </button>
                             </div>
                             <p className="text-muted-foreground">
-                              Hanya bekerja pada graf dengan bobot non-negatif. Menggunakan struktur min-heap untuk efisiensi pemilihan simpul terdekat berikutnya.
+                              Memastikan konsistensi dan keabsahan temuan riset dengan memadukan lebih dari satu sumber atau metode pengumpulan data.
                             </p>
                           </div>
 
                           <div className="rounded-lg bg-muted/30 p-3 border border-border/60 space-y-2">
                             <div className="flex items-center justify-between">
                               <span className="font-semibold text-foreground">
-                                Kompleksitas Waktu
+                                Waktu Penerapan
                               </span>
                               <Badge variant="secondary" className="text-xs font-mono">
                                 Hal. 5
                               </Badge>
                             </div>
                             <p className="text-muted-foreground">
-                              O((V + E) log V) bila diimplementasikan dengan binary heap dan adjacency list standar.
+                              Dilakukan pada tahap verifikasi data sebelum menarik kesimpulan akhir dalam laporan atau tugas akhir.
                             </p>
                           </div>
                         </CardContent>
@@ -244,7 +244,7 @@ export function ProductShowcase(): React.JSX.Element {
 
                       <CardFooter className="pt-3 border-t border-border/80 flex items-center justify-between text-xs text-muted-foreground">
                         <span>
-                          Klik badge{' '}
+                          Klik tombol{' '}
                           <strong className="text-primary dark:text-indigo-400 font-semibold">Hal. 4</strong>{' '}
                           di atas untuk melihat rujukan
                         </span>
@@ -264,14 +264,14 @@ export function ProductShowcase(): React.JSX.Element {
                         <div className="space-y-1.5">
                           <div className="flex flex-wrap items-center gap-2">
                             <Badge variant="outline" className="text-xs font-semibold">
-                              IF2102 Sistem Basis Data
+                              MKU204 Metodologi Riset
                             </Badge>
                             <Badge variant="danger" className="text-xs">
                               Prioritas Tinggi
                             </Badge>
                           </div>
                           <CardTitle className="text-base sm:text-lg">
-                            Laporan Praktikum Basis Data
+                            Makalah Proposal &amp; Kajian Pustaka
                           </CardTitle>
                         </div>
 
@@ -298,7 +298,7 @@ export function ProductShowcase(): React.JSX.Element {
                       <div
                         className="space-y-2 pt-1"
                         role="group"
-                        aria-label="Daftar subtugas praktikum"
+                        aria-label="Daftar subtugas makalah"
                       >
                         {subtasks.map((task) => (
                           <button
@@ -333,7 +333,7 @@ export function ProductShowcase(): React.JSX.Element {
                     </CardContent>
 
                     <CardFooter className="border-t border-border/60 pt-3 justify-center text-xs text-muted-foreground">
-                      Klik langsung item checklist di atas untuk menguji perhitungan progres subtugas.
+                      Klik langsung daftar langkah di atas untuk mencoba perhitungan progres tugas.
                     </CardFooter>
                   </Card>
                 </div>
@@ -370,23 +370,23 @@ export function ProductShowcase(): React.JSX.Element {
                               08:00 - 09:40 WIB
                             </span>
                           </div>
-                          <span className="text-xs font-mono text-muted-foreground">
-                            IF2211 • 3 SKS
+                          <span className="text-xs font-medium text-muted-foreground">
+                            MKU204 • 3 SKS
                           </span>
                         </div>
 
                         <div>
                           <h4 className="text-base font-bold text-foreground">
-                            Struktur Data & Algoritma
+                            Metodologi Penelitian Ilmiah
                           </h4>
                           <div className="mt-2 flex flex-wrap items-center gap-4 text-xs text-muted-foreground">
                             <div className="flex items-center gap-1.5">
                               <MapPin className="h-3.5 w-3.5 text-primary" />
-                              <span>Lab Komputer 3 (Gedung B Lt. 2)</span>
+                              <span>Ruang Kuliah 301 (Gedung Utama Lt. 3)</span>
                             </div>
                             <div className="flex items-center gap-1.5">
                               <User className="h-3.5 w-3.5 text-primary" />
-                              <span>Dr. Eng. Hendra Wijaya</span>
+                              <span>Dr. Hendra Wijaya, M.Si.</span>
                             </div>
                           </div>
                         </div>
@@ -405,14 +405,14 @@ export function ProductShowcase(): React.JSX.Element {
                               13:00 - 15:30 WIB
                             </span>
                           </div>
-                          <span className="text-xs font-mono text-muted-foreground">
-                            IF3140 • 3 SKS
+                          <span className="text-xs font-medium text-muted-foreground">
+                            EKO112 • 3 SKS
                           </span>
                         </div>
 
                         <div>
                           <h4 className="text-base font-bold text-foreground">
-                            Kecerdasan Buatan & Sistem Pakar
+                            Pengantar Ekonomi &amp; Kebijakan Publik
                           </h4>
                           <div className="mt-2 flex flex-wrap items-center gap-4 text-xs text-muted-foreground">
                             <div className="flex items-center gap-1.5">
@@ -421,7 +421,7 @@ export function ProductShowcase(): React.JSX.Element {
                             </div>
                             <div className="flex items-center gap-1.5">
                               <User className="h-3.5 w-3.5 text-muted-foreground" />
-                              <span>Prof. Dr. Ir. S. R. Nurhaliza</span>
+                              <span>Prof. Dr. S. R. Nurhaliza, M.Ec.</span>
                             </div>
                           </div>
                         </div>
@@ -430,7 +430,7 @@ export function ProductShowcase(): React.JSX.Element {
                   </div>
 
                   <p className="text-xs text-muted-foreground text-center pt-2">
-                    Seluruh jadwal disinkronkan otomatis sesuai zona waktu profil (WIB, WITA, WIT, atau UTC).
+                    Seluruh jadwal disinkronkan otomatis sesuai zona waktu profil Anda (WIB, WITA, WIT, atau zona lainnya).
                   </p>
                 </div>
               </TabsContent>
@@ -460,8 +460,8 @@ export function ProductShowcase(): React.JSX.Element {
                         </Badge>
                         <p className="text-sm sm:text-base font-semibold text-foreground leading-relaxed">
                           {isFlipped
-                            ? 'O(log n). Struktur pohon yang seimbang memastikan tinggi pohon maksimal sebanding dengan logaritma basis 2 dari jumlah simpul, sehingga penelusuran selalu efisien.'
-                            : 'Berapa kompleksitas waktu rata-rata operasi pencarian pada struktur data Balanced Binary Search Tree (AVL / Red-Black Tree)?'}
+                            ? 'Data primer dikumpulkan langsung oleh peneliti dari sumber pertama (wawancara atau survei), sedangkan data sekunder berasal dari catatan atau laporan yang sudah tersedia.'
+                            : 'Apa perbedaan utama antara data primer dan data sekunder dalam penelitian ilmiah?'}
                         </p>
                       </div>
 
@@ -490,7 +490,7 @@ export function ProductShowcase(): React.JSX.Element {
                     <Card className="border-border bg-card shadow-xs">
                       <CardContent className="p-4 sm:p-5 space-y-3.5">
                         <p className="text-xs sm:text-sm font-semibold text-foreground leading-relaxed">
-                          Manakah struktur data yang paling efisien untuk implementasi antrean prioritas pada algoritma Dijkstra?
+                          Manakah langkah yang paling tepat untuk memastikan keakuratan hasil wawancara lapangan sebelum menyusun kesimpulan?
                         </p>
 
                         <div
@@ -499,10 +499,10 @@ export function ProductShowcase(): React.JSX.Element {
                           aria-label="Pilihan jawaban kuis"
                         >
                           {[
-                            { id: 0, text: 'A) Array Terurut (Sorted Array)' },
-                            { id: 1, text: 'B) Min-Heap / Binary Heap' },
-                            { id: 2, text: 'C) Singly Linked List' },
-                            { id: 3, text: 'D) Stack LIFO' },
+                            { id: 0, text: 'A) Mengandalkan satu narasumber saja' },
+                            { id: 1, text: 'B) Melakukan triangulasi dengan dokumen & observasi' },
+                            { id: 2, text: 'C) Mengabaikan data yang berbeda pandangan' },
+                            { id: 3, text: 'D) Menulis kesimpulan sebelum verifikasi sumber' },
                           ].map((option) => {
                             const isSelected = quizSelectedOption === option.id;
                             const isCorrect = option.id === 1;
@@ -542,12 +542,12 @@ export function ProductShowcase(): React.JSX.Element {
                             }`}
                           >
                             <div className="flex items-center gap-1.5 font-semibold mb-1">
-                              <span>Rujukan: Slide Kuliah Hal. 12</span>
+                              <span>Rujukan: Modul Kuliah Hal. 12</span>
                             </div>
                             <span>
                               {quizSelectedOption === 1
-                                ? 'Tepat! Min-Heap memungkinkan operasi extract-min dalam kompleksitas O(log V).'
-                                : 'Pilihan belum tepat. Min-Heap (opsi B) adalah struktur data standar yang paling efisien.'}
+                                ? 'Tepat! Triangulasi membandingkan hasil wawancara dengan bukti dokumen maupun observasi agar temuan lebih objektif.'
+                                : 'Pilihan belum tepat. Melakukan triangulasi (opsi B) memastikan temuan tervalidasi dari beberapa sumber.'}
                             </span>
                           </div>
                         )}
