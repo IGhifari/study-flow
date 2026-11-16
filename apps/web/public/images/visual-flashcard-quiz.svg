@@ -13,22 +13,22 @@
   <rect x="142" y="36" width="36" height="16" rx="4" fill="#4F46E5" />
   <text x="146" y="48" fill="#FAFAF9" font-family="monospace" font-size="8" font-weight="700">Hal. 04</text>
 
-  <text x="30" y="70" fill="#18181B" font-family="sans-serif" font-size="10" font-weight="700">Kompleksitas BFS?</text>
+  <text x="30" y="70" fill="#18181B" font-family="sans-serif" font-size="10" font-weight="700">Apa itu Data Primer?</text>
   <rect x="30" y="78" width="144" height="4" rx="2" fill="#71717A" />
   <rect x="30" y="86" width="128" height="4" rx="2" fill="#A1A1AA" />
 
-  <!-- Status Active Recall Pill -->
+  <!-- Status Latihan Pill -->
   <rect x="30" y="102" width="144" height="26" rx="6" fill="#ECFDF5" stroke="#10B981" stroke-width="1" />
   <circle cx="42" cy="115" r="5" fill="#10B981" />
   <path d="M39.5 115L41.5 117L44.5 113" stroke="#FAFAF9" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" />
   <text x="52" y="119" fill="#065F46" font-family="sans-serif" font-size="9" font-weight="700">Status: Sudah Paham</text>
 
-  <text x="30" y="152" fill="#71717A" font-family="sans-serif" font-size="8">Spaced Repetition: 3 Hari Lagi</text>
+  <text x="30" y="152" fill="#71717A" font-family="sans-serif" font-size="8">Ulangi Latihan: 3 Hari Lagi</text>
 
   <!-- Kartu Kuis Evaluasi Skor (Kanan - Dark Contrast Swiss Card) -->
   <rect x="202" y="20" width="180" height="180" rx="12" fill="#18181B" />
   <text x="216" y="40" fill="#A1A1AA" font-family="monospace" font-size="9" font-weight="700">EVALUASI MANDIRI</text>
-  <text x="216" y="58" fill="#FAFAF9" font-family="sans-serif" font-size="12" font-weight="700">Kuis Bab 3: Graf</text>
+  <text x="216" y="58" fill="#FAFAF9" font-family="sans-serif" font-size="12" font-weight="700">Kuis Bab 3: Riset</text>
 
   <!-- Skor 90 / 100 -->
   <rect x="216" y="70" width="152" height="42" rx="8" fill="#27272A" />
@@ -43,8 +43,8 @@
 
   <!-- Feedback Jawaban & Rujukan Presisi -->
   <circle cx="222" cy="144" r="4" fill="#10B981" />
-  <text x="232" y="147" fill="#E4E4E7" font-family="sans-serif" font-size="9">Penelusuran BFS: Benar</text>
+  <text x="232" y="147" fill="#E4E4E7" font-family="sans-serif" font-size="9">Validitas Data: Benar</text>
   <circle cx="222" cy="160" r="4" fill="#10B981" />
-  <text x="232" y="163" fill="#E4E4E7" font-family="sans-serif" font-size="9">Min-Heap / Dijkstra: Benar</text>
-  <text x="216" y="184" fill="#818CF8" font-family="monospace" font-size="8">Rujukan: Slide Kuliah Hal. 12</text>
+  <text x="232" y="163" fill="#E4E4E7" font-family="sans-serif" font-size="9">Teknik Sampling: Benar</text>
+  <text x="216" y="184" fill="#818CF8" font-family="monospace" font-size="8">Rujukan: Modul Kuliah Hal. 12</text>
 </svg>

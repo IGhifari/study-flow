@@ -26,12 +26,12 @@ export default function ForbiddenPage() {
               403 — Akses Ditolak
             </CardTitle>
             <CardDescription>
-              Akun Anda tidak memiliki hak administrator yang sah untuk melihat halaman ini.
+              Akun Anda tidak memiliki izin akses untuk melihat halaman ini.
             </CardDescription>
           </CardHeader>
           <CardContent className="pb-2">
             <p className="text-sm text-muted-foreground">
-              Jika Anda adalah staf atau pengelola yang berwenang, pastikan Anda masuk menggunakan akun dengan peran ADMIN atau hubungi pengembang sistem.
+              Pastikan Anda masuk menggunakan akun yang berwenang atau hubungi tim pengelola StudyFlow jika membutuhkan bantuan.
             </p>
           </CardContent>
           <CardFooter className="justify-center pt-4">

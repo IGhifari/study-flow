@@ -115,9 +115,9 @@ export default async function HomePage(): Promise<React.JSX.Element> {
               <div className="lg:col-span-6">
                 <Badge
                   variant="secondary"
-                  className="mb-4 font-mono text-xs uppercase tracking-wider"
+                  className="mb-4 text-xs font-medium tracking-wide"
                 >
-                  RUANG BELAJAR AKADEMIK // 2026
+                  Ruang Belajar Pribadi Mahasiswa
                 </Badge>
 
                 <h1 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl lg:text-[44px] leading-tight">
@@ -125,9 +125,7 @@ export default async function HomePage(): Promise<React.JSX.Element> {
                 </h1>
 
                 <p className="mt-5 text-base sm:text-lg text-muted-foreground leading-relaxed max-w-2xl">
-                  StudyFlow adalah ruang belajar pribadi mahasiswa untuk mengelola semester,
-                  memantau tenggat tugas, merapikan catatan, dan memahami materi kuliah PDF
-                  dengan bantuan ringkasan, flashcard, serta kuis yang merujuk langsung ke dokumen sumber.
+                  StudyFlow adalah ruang belajar pribadi untuk mahasiswa dari semua jurusan. Kelola semester, pantau tenggat tugas, rapikan catatan kuliah, dan pelajari materi PDF dengan bantuan ringkasan, flashcard, serta kuis yang merujuk langsung ke dokumen sumber.
                 </p>
 
                 {/* Action CTAs */}
@@ -164,14 +162,14 @@ export default async function HomePage(): Promise<React.JSX.Element> {
                 </div>
 
                 {/* Strip 3 Metrik Spesifikasi Jujur */}
-                <div className="mt-8 pt-6 border-t border-border/60 flex flex-wrap items-center gap-x-6 gap-y-2 text-xs font-mono text-muted-foreground">
+                <div className="mt-8 pt-6 border-t border-border/60 flex flex-wrap items-center gap-x-6 gap-y-2 text-xs font-medium text-muted-foreground tabular-nums">
                   <div className="flex items-center gap-1.5">
                     <span className="size-1.5 rounded-full bg-primary" />
                     <span>Maks. 100 Hal / PDF</span>
                   </div>
                   <div className="flex items-center gap-1.5">
                     <span className="size-1.5 rounded-full bg-primary" />
-                    <span>Rujukan Halaman Presisi</span>
+                    <span>Rujukan Halaman Asli</span>
                   </div>
                   <div className="flex items-center gap-1.5">
                     <span className="size-1.5 rounded-full bg-primary" />
@@ -185,7 +183,7 @@ export default async function HomePage(): Promise<React.JSX.Element> {
                 <div className="relative aspect-[17/12] w-full overflow-hidden rounded-2xl border border-border shadow-sm">
                   <Image
                     src="/images/hero-editorial-workspace.svg"
-                    alt="Pratinjau ruang kerja akademik StudyFlow dengan pembaca PDF dan rujukan halaman"
+                    alt="Pratinjau ruang belajar StudyFlow dengan pembaca materi PDF dan rujukan halaman"
                     width={680}
                     height={480}
                     priority
@@ -203,17 +201,17 @@ export default async function HomePage(): Promise<React.JSX.Element> {
           {/* Interactive Product UI Showcase */}
           <ProductShowcase />
 
-          {/* Section: Fitur Utama (Swiss Bento Visual Grid) */}
+          {/* Section: Fitur Utama */}
           <section id="fitur" className="py-14 sm:py-20 border-b border-border/60 scroll-mt-20">
             <FadeIn className="max-w-2xl">
-              <div className="font-mono text-xs text-primary dark:text-indigo-400 font-bold tracking-wider uppercase mb-2">
-                {'// FITUR UTAMA BENTO'}
+              <div className="text-xs text-primary dark:text-indigo-400 font-bold tracking-wider uppercase mb-2">
+                Fitur Utama
               </div>
               <h2 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
                 Fitur Nyata untuk Kebutuhan Kuliah Sehari-hari
               </h2>
               <p className="mt-3 text-sm sm:text-base text-muted-foreground leading-relaxed">
-                Dirancang khusus untuk mendukung proses belajar mandiri mahasiswa, tanpa kerumitan menu atau dekorasi berlebihan.
+                Dirancang khusus untuk mendukung proses belajar mandiri mahasiswa dari berbagai bidang studi, tanpa menu rumit yang mengganggu fokus.
               </p>
             </FadeIn>
 
@@ -232,13 +230,13 @@ export default async function HomePage(): Promise<React.JSX.Element> {
                   </div>
                   <CardHeader className="pt-5">
                     <div className="flex items-center gap-2 mb-1.5">
-                      <span className="font-mono text-xs font-bold text-primary dark:text-indigo-400">{'// 01 DOKUMEN & RUJUKAN'}</span>
+                      <span className="text-xs font-bold tracking-wide text-primary dark:text-indigo-400 uppercase">01 &bull; Materi &amp; Rujukan</span>
                     </div>
                     <CardTitle className="text-lg sm:text-xl">
                       Materi PDF &amp; Rujukan Halaman Presisi
                     </CardTitle>
                     <CardDescription className="text-sm leading-relaxed mt-2">
-                      Unggah file PDF materi perkuliahan dalam ruang baca yang nyaman. Seluruh hasil belajar AI—mulai dari ringkasan konsep, glosarium, hingga flashcard—terhubung langsung dengan nomor halaman dokumen sumber asli untuk diverifikasi kapan saja.
+                      Unggah file PDF materi kuliah dalam ruang baca yang nyaman. Seluruh ringkasan konsep, daftar istilah penting, hingga flashcard terhubung langsung dengan nomor halaman dokumen asli agar mudah diperiksa kembali.
                     </CardDescription>
                   </CardHeader>
                 </Card>
@@ -249,10 +247,10 @@ export default async function HomePage(): Promise<React.JSX.Element> {
                 <div className="flex flex-col justify-between w-full rounded-xl bg-primary text-primary-foreground p-6 shadow-sm overflow-hidden">
                   <div>
                     <div className="flex items-center justify-between mb-4">
-                      <span className="font-mono text-xs font-bold uppercase tracking-wider text-white">
-                        {'// 02 ACTIVE RECALL'}
+                      <span className="text-xs font-bold uppercase tracking-wider text-white">
+                        02 &bull; Latihan Pemahaman
                       </span>
-                      <span className="rounded-md bg-black/30 border border-white/20 px-2 py-0.5 font-mono text-[11px] font-semibold text-white">
+                      <span className="rounded-md bg-black/30 border border-white/20 px-2 py-0.5 text-xs font-semibold text-white">
                         Kuis &amp; Kartu
                       </span>
                     </div>
@@ -260,13 +258,13 @@ export default async function HomePage(): Promise<React.JSX.Element> {
                       Latihan Flashcard &amp; Kuis Evaluasi
                     </h3>
                     <p className="mt-2 text-sm text-white/95 leading-relaxed">
-                      Latih retensi ingatan jangka panjang melalui kartu Active Recall berspasi. Uji pemahaman secara mandiri melalui kuis pilihan ganda yang menyajikan evaluasi skor instan beserta pembahasan rujukan halaman.
+                      Latih daya ingat Anda lewat kartu belajar interaktif. Uji pemahaman materi secara mandiri dengan kuis pilihan ganda yang menampilkan skor instan beserta pembahasan rujukan halaman.
                     </p>
                   </div>
                   <div className="mt-5 pt-4 border-t border-white/15">
                     <Image
                       src="/images/visual-flashcard-quiz.svg"
-                      alt="Ilustrasi latihan flashcard active recall dan evaluasi kuis"
+                      alt="Ilustrasi latihan flashcard dan evaluasi kuis mandiri"
                       width={400}
                       height={220}
                       className="w-full h-auto rounded-lg border border-white/20 shadow-xs"
@@ -280,19 +278,19 @@ export default async function HomePage(): Promise<React.JSX.Element> {
                 <Card className="flex flex-col justify-between w-full border-border bg-card shadow-xs overflow-hidden">
                   <CardHeader className="pb-4">
                     <div className="flex items-center gap-2 mb-1.5">
-                      <span className="font-mono text-xs font-bold text-primary dark:text-indigo-400">{'// 03 MANAJEMEN AKADEMIK'}</span>
+                      <span className="text-xs font-bold tracking-wide text-primary dark:text-indigo-400 uppercase">03 &bull; Manajemen Akademik</span>
                     </div>
                     <CardTitle className="text-lg sm:text-xl">
                       Semester, Jadwal Kuliah, &amp; Deteksi Benturan
                     </CardTitle>
                     <CardDescription className="text-sm leading-relaxed mt-2">
-                      Pisahkan semester aktif dari arsip. Atur jadwal kuliah mingguan dengan validasi otomatis agar tidak ada jadwal kelas atau praktikum yang bentrok waktu maupun ruangan.
+                      Pisahkan semester aktif dari arsip semester lalu. Atur jadwal kuliah mingguan dengan pengecekan otomatis agar tidak ada jadwal kelas atau praktikum yang bentrok waktu maupun ruangan.
                     </CardDescription>
                   </CardHeader>
                   <div className="p-4 sm:p-5 pt-0">
                     <Image
                       src="/images/visual-semester-schedule.svg"
-                      alt="Ilustrasi jadwal kuliah mingguan dan progres subtugas"
+                      alt="Ilustrasi jadwal kuliah mingguan bebas benturan"
                       width={400}
                       height={220}
                       className="w-full h-auto rounded-lg border border-border/60"
@@ -301,29 +299,29 @@ export default async function HomePage(): Promise<React.JSX.Element> {
                 </Card>
               </StaggerItem>
 
-              {/* Kartu Utama 4 (Lebar 7 Kolom — Kombinasi Tugas, Subtugas, & Catatan Markdown) */}
+              {/* Kartu Utama 4 (Lebar 7 Kolom — Kombinasi Tugas, Subtugas, & Catatan Kuliah) */}
               <StaggerItem className="flex md:col-span-7">
                 <Card className="flex flex-col justify-between w-full border-border bg-card shadow-xs p-6">
                   <div>
                     <div className="flex items-center justify-between mb-2">
-                      <span className="font-mono text-xs font-bold text-primary dark:text-indigo-400">{'// 04 PRODUKTIVITAS BELAJAR'}</span>
-                      <span className="font-mono text-xs text-muted-foreground">SUBTUGAS &bull; MARKDOWN</span>
+                      <span className="text-xs font-bold tracking-wide text-primary dark:text-indigo-400 uppercase">04 &bull; Produktivitas Belajar</span>
+                      <span className="text-xs font-medium text-muted-foreground">Subtugas &bull; Catatan Rapi</span>
                     </div>
                     <CardTitle className="text-lg sm:text-xl">
-                      Pemantauan Tugas dengan Subtugas &amp; Catatan Markdown
+                      Pemantauan Tugas &amp; Catatan Kuliah Terstruktur
                     </CardTitle>
                     <CardDescription className="text-sm leading-relaxed mt-2">
-                      Pecah tugas kuliah besar menjadi langkah-langkah subtugas yang terukur dengan bilah kemajuan real-time. Tulis catatan kuliah yang rapi menggunakan editor Markdown bebas gangguan yang tertaut langsung ke mata kuliah.
+                      Pecah tugas kuliah besar menjadi langkah subtugas yang mudah dipantau progresnya. Tulis catatan kuliah yang rapi dan tertaut langsung dengan mata kuliah terkait.
                     </CardDescription>
                   </div>
 
-                  {/* Pratinjau Mikro Bento: Checklist Subtugas & Editor Markdown */}
+                  {/* Pratinjau Mikro: Checklist Subtugas & Catatan Kuliah */}
                   <div aria-hidden="true" className="mt-5 grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                     {/* Subtugas Preview Mini */}
                     <div className="rounded-lg border border-border/80 bg-muted/40 p-3.5 space-y-2">
                       <div className="flex items-center justify-between text-xs font-semibold text-foreground">
-                        <span>Laporan Praktikum</span>
-                        <span className="font-mono text-primary dark:text-indigo-400">2 / 3</span>
+                        <span>Makalah Kajian Pustaka</span>
+                        <span className="font-mono text-primary dark:text-indigo-400 tabular-nums">2 / 3</span>
                       </div>
                       <div className="h-1.5 w-full bg-border rounded-full overflow-hidden">
                         <div className="h-full bg-primary rounded-full w-2/3" />
@@ -331,30 +329,30 @@ export default async function HomePage(): Promise<React.JSX.Element> {
                       <div className="space-y-1 text-xs text-muted-foreground">
                         <div className="flex items-center gap-2 line-through text-muted-foreground dark:text-zinc-400">
                           <CheckCircle2 className="size-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
-                          <span>Normalisasi relasi tabel 3NF</span>
+                          <span>Kumpulkan referensi jurnal utama</span>
                         </div>
                         <div className="flex items-center gap-2 line-through text-muted-foreground dark:text-zinc-400">
                           <CheckCircle2 className="size-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
-                          <span>Query agregasi &amp; indeks</span>
+                          <span>Susun kerangka dan kajian teori</span>
                         </div>
                         <div className="flex items-center gap-2 text-foreground font-medium">
                           <div className="size-3.5 rounded-sm border border-primary shrink-0" />
-                          <span>Kesimpulan dan analisis performa</span>
+                          <span>Finalisasi kesimpulan &amp; daftar pustaka</span>
                         </div>
                       </div>
                     </div>
 
-                    {/* Catatan Markdown Preview Mini */}
-                    <div className="rounded-lg border border-border/80 bg-card p-3.5 font-mono text-xs space-y-1.5">
-                      <div className="flex items-center justify-between text-muted-foreground pb-1 border-b border-border/50 text-[11px]">
-                        <span>catatan-algoritma.md</span>
-                        <span className="text-emerald-600 font-semibold">Tersimpan</span>
+                    {/* Catatan Kuliah Preview Mini */}
+                    <div className="rounded-lg border border-border/80 bg-card p-3.5 text-xs space-y-1.5">
+                      <div className="flex items-center justify-between text-muted-foreground pb-1 border-b border-border/50 text-xs">
+                        <span className="font-medium">Catatan Metodologi</span>
+                        <span className="text-emerald-600 dark:text-emerald-400 font-semibold">Tersimpan</span>
                       </div>
-                      <p className="text-primary dark:text-indigo-400 font-bold">## Analisis Kompleksitas</p>
-                      <p className="text-foreground/80">- BFS: O(V + E) antrean FIFO</p>
-                      <p className="text-foreground/80">- DFS: O(V + E) tumpukan/rekursi</p>
-                      <div className="rounded bg-muted px-2 py-1 text-muted-foreground text-[11px]">
-                        &gt; Rujukan: Slide Kuliah Hal. 04
+                      <p className="text-primary dark:text-indigo-400 font-bold">Ringkasan Pengambilan Data</p>
+                      <p className="text-foreground/80">&bull; Primer: survei dan wawancara langsung</p>
+                      <p className="text-foreground/80">&bull; Sekunder: jurnal dan laporan resmi</p>
+                      <div className="rounded bg-muted px-2 py-1 text-muted-foreground text-xs">
+                        Rujukan: Modul Kuliah Hal. 04
                       </div>
                     </div>
                   </div>
@@ -366,14 +364,14 @@ export default async function HomePage(): Promise<React.JSX.Element> {
           {/* Section: 3 Pilar Integritas Akademik & Keamanan */}
           <section className="py-14 sm:py-20 border-b border-border/60">
             <FadeIn className="max-w-2xl">
-              <div className="font-mono text-xs text-primary dark:text-indigo-400 font-bold tracking-wider uppercase mb-2">
-                {'// KEJUJURAN & PRIVASI'}
+              <div className="text-xs text-primary dark:text-indigo-400 font-bold tracking-wider uppercase mb-2">
+                Kepercayaan &amp; Privasi
               </div>
               <h2 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
                 Prinsip Integritas Akademik &amp; Keamanan
               </h2>
               <p className="mt-3 text-sm sm:text-base text-muted-foreground leading-relaxed">
-                Kami membangun StudyFlow dengan komitmen teguh terhadap kejujuran akademik dan keamanan data pribadi mahasiswa.
+                Kami membangun StudyFlow dengan komitmen penuh terhadap kejujuran akademik dan kerahasiaan data pribadi mahasiswa.
               </p>
             </FadeIn>
 
@@ -386,10 +384,10 @@ export default async function HomePage(): Promise<React.JSX.Element> {
                       <CheckCircle2 className="h-5 w-5" aria-hidden="true" />
                     </div>
                     <CardTitle className="text-base">
-                      Verifiable AI (Bukan Chatbot Halusinasi)
+                      AI Merujuk Sumber Materi Asli
                     </CardTitle>
                     <CardDescription className="text-xs sm:text-sm leading-relaxed">
-                      AI tidak menjawab dari imajinasi bebas, melainkan mengekstraksi dan merangkum secara ketat dari dokumen PDF kuliah yang Anda unggah beserta kutipan nomor halamannya.
+                      AI tidak mengarang jawaban secara bebas, melainkan merangkum langsung dari dokumen PDF kuliah yang Anda unggah lengkap beserta kutipan nomor halamannya.
                     </CardDescription>
                   </CardHeader>
                 </Card>
@@ -403,10 +401,10 @@ export default async function HomePage(): Promise<React.JSX.Element> {
                       <ShieldCheck className="h-5 w-5" aria-hidden="true" />
                     </div>
                     <CardTitle className="text-base">
-                      Privasi Penuh & Data Terisolasi
+                      Privasi Penuh &amp; Milik Pribadi
                     </CardTitle>
                     <CardDescription className="text-xs sm:text-sm leading-relaxed">
-                      Dokumen materi, tugas, dan catatan Anda adalah milik Anda sepenuhnya. Data tersimpan dalam ruang privat dan tidak pernah dibagikan atau digunakan untuk melatih model AI publik.
+                      Dokumen materi, tugas, jadwal, dan catatan Anda adalah milik Anda sepenuhnya. Data hanya dapat diakses melalui akun Anda dan tidak pernah dipakai melatih AI publik.
                     </CardDescription>
                   </CardHeader>
                 </Card>
@@ -420,10 +418,10 @@ export default async function HomePage(): Promise<React.JSX.Element> {
                       <Clock className="h-5 w-5" aria-hidden="true" />
                     </div>
                     <CardTitle className="text-base">
-                      Sinkronisasi Zona Waktu Nyata
+                      Sinkronisasi Zona Waktu Lokal
                     </CardTitle>
                     <CardDescription className="text-xs sm:text-sm leading-relaxed">
-                      Pengingat deadline H-1 dan pemantauan tugas disesuaikan dengan zona waktu kampus Anda (WIB, WITA, WIT, atau UTC). Mencegah keterlambatan tugas akibat salah konversi waktu.
+                      Pengingat tenggat tugas dan jadwal kuliah disesuaikan dengan zona waktu tempat Anda belajar (WIB, WITA, WIT, atau zona lainnya) agar terhindar dari salah jadwal.
                     </CardDescription>
                   </CardHeader>
                 </Card>
@@ -434,8 +432,8 @@ export default async function HomePage(): Promise<React.JSX.Element> {
           {/* Section: Alur Kerja Editorial (3 Langkah) */}
           <section id="cara-kerja" className="py-14 sm:py-20 border-b border-border/60 scroll-mt-20">
             <FadeIn className="max-w-2xl">
-              <div className="font-mono text-xs text-primary dark:text-indigo-400 font-bold tracking-wider uppercase mb-2">
-                {'// METODE 3 LANGKAH'}
+              <div className="text-xs text-primary dark:text-indigo-400 font-bold tracking-wider uppercase mb-2">
+                Cara Kerja
               </div>
               <h2 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
                 Alur Belajar Sederhana &amp; Terarah
@@ -460,20 +458,20 @@ export default async function HomePage(): Promise<React.JSX.Element> {
                     </text>
                   </svg>
                   <CardHeader>
-                    <div className="font-mono text-xs font-bold text-primary dark:text-indigo-400 mb-2">
-                      01 // STRUKTUR
+                    <div className="text-xs font-bold tracking-wide uppercase text-primary dark:text-indigo-400 mb-2">
+                      Langkah 01
                     </div>
                     <CardTitle className="text-lg">
                       Atur Semester, Mata Kuliah, &amp; Jadwal Mingguan
                     </CardTitle>
                     <CardDescription className="text-sm leading-relaxed mt-2">
-                      Tentukan semester aktif dan masukkan daftar mata kuliah yang sedang Anda tempuh, lengkap dengan kode kelas, dosen pengampu, dan jadwal kuliah bebas benturan.
+                      Tentukan semester aktif dan masukkan daftar mata kuliah yang sedang Anda tempuh, lengkap dengan kode kelas, nama dosen, dan jadwal kuliah bebas benturan.
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="pt-0">
-                    <div className="rounded-md border border-border/80 bg-muted/40 p-2.5 text-xs font-mono text-muted-foreground flex items-center justify-between">
-                      <span>IF2110 Struktur Data</span>
-                      <Badge variant="outline" className="text-[10px] font-mono">21 SKS</Badge>
+                    <div className="rounded-md border border-border/80 bg-muted/40 p-2.5 text-xs font-medium text-muted-foreground flex items-center justify-between">
+                      <span>MKU204 Metodologi Riset</span>
+                      <Badge variant="outline" className="text-xs font-mono tabular-nums">21 SKS</Badge>
                     </div>
                   </CardContent>
                 </Card>
@@ -493,8 +491,8 @@ export default async function HomePage(): Promise<React.JSX.Element> {
                     </text>
                   </svg>
                   <CardHeader>
-                    <div className="font-mono text-xs font-bold text-primary dark:text-indigo-400 mb-2">
-                      02 // UNGGAH &amp; CATAT
+                    <div className="text-xs font-bold tracking-wide uppercase text-primary dark:text-indigo-400 mb-2">
+                      Langkah 02
                     </div>
                     <CardTitle className="text-lg">
                       Unggah Modul PDF &amp; Catat Tenggat Tugas
@@ -504,7 +502,7 @@ export default async function HomePage(): Promise<React.JSX.Element> {
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="pt-0">
-                    <div className="rounded-md border border-border/80 bg-muted/40 p-2.5 text-xs font-mono text-muted-foreground flex items-center justify-between">
+                    <div className="rounded-md border border-border/80 bg-muted/40 p-2.5 text-xs font-medium text-muted-foreground flex items-center justify-between">
                       <span>modul-kuliah.pdf</span>
                       <span className="text-primary dark:text-indigo-400 font-semibold">Maks 100 Hal</span>
                     </div>
@@ -526,8 +524,8 @@ export default async function HomePage(): Promise<React.JSX.Element> {
                     </text>
                   </svg>
                   <CardHeader>
-                    <div className="font-mono text-xs font-bold text-primary dark:text-indigo-400 mb-2">
-                      03 // EVALUASI MANDIRI
+                    <div className="text-xs font-bold tracking-wide uppercase text-primary dark:text-indigo-400 mb-2">
+                      Langkah 03
                     </div>
                     <CardTitle className="text-lg">
                       Pelajari Ringkasan Ber-rujukan, Flashcard, &amp; Kuis
@@ -537,9 +535,9 @@ export default async function HomePage(): Promise<React.JSX.Element> {
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="pt-0">
-                    <div className="rounded-md border border-border/80 bg-muted/40 p-2.5 text-xs font-mono text-muted-foreground flex items-center justify-between">
-                      <span>Active Recall</span>
-                      <span className="text-emerald-600 font-bold">Rujukan Halaman Presisi</span>
+                    <div className="rounded-md border border-border/80 bg-muted/40 p-2.5 text-xs font-medium text-muted-foreground flex items-center justify-between">
+                      <span>Latihan Mandiri</span>
+                      <span className="text-emerald-600 dark:text-emerald-400 font-bold">Rujukan Halaman Asli</span>
                     </div>
                   </CardContent>
                 </Card>
@@ -556,14 +554,14 @@ export default async function HomePage(): Promise<React.JSX.Element> {
               <div className="rounded-2xl border border-border bg-card p-6 sm:p-10 shadow-xs grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
                 {/* Left side (7 cols): Heading & CTAs */}
                 <div className="lg:col-span-7 space-y-4">
-                  <Badge variant="secondary" className="font-mono text-xs">
-                    STUDYFLOW // 2026
+                  <Badge variant="secondary" className="text-xs font-medium">
+                    StudyFlow untuk Mahasiswa
                   </Badge>
                   <h2 className="text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
                     Mulai Rapikan Perkuliahan Anda
                   </h2>
                   <p className="text-sm sm:text-base text-muted-foreground leading-relaxed max-w-xl">
-                    Ruang belajar pribadi yang terisolasi, aman, dan dirancang khusus untuk kenyamanan membaca dalam jangka panjang tanpa distraksi media sosial atau fitur generik yang berlebihan.
+                    Ruang belajar pribadi yang tenang, rapi, dan dirancang khusus untuk kenyamanan membaca dalam jangka panjang tanpa distraksi media sosial.
                   </p>
                   <div className="pt-2 flex flex-wrap items-center gap-3">
                     {user ? (
@@ -591,27 +589,27 @@ export default async function HomePage(): Promise<React.JSX.Element> {
                   </div>
                 </div>
 
-                {/* Right side (5 cols): Data Sovereignty & Security Spec Block */}
-                <div className="lg:col-span-5 rounded-xl border border-border/80 bg-muted/40 p-5 font-mono text-xs space-y-3">
-                  <div className="text-[11px] font-bold text-primary dark:text-indigo-400 uppercase tracking-wider">
-                    {'// SPESIFIKASI KEAMANAN & PRIVASI'}
+                {/* Right side (5 cols): Privacy & Usage Commitment Block */}
+                <div className="lg:col-span-5 rounded-xl border border-border/80 bg-muted/40 p-5 text-xs space-y-3">
+                  <div className="text-xs font-bold text-primary dark:text-indigo-400 uppercase tracking-wider">
+                    Komitmen Privasi &amp; Penggunaan
                   </div>
-                  <div className="space-y-2 text-muted-foreground">
+                  <div className="space-y-2.5 text-muted-foreground leading-relaxed">
                     <div className="flex items-start gap-2">
                       <ShieldCheck className="size-4 text-primary dark:text-indigo-400 shrink-0 mt-0.5" />
-                      <span className="text-foreground">Data tersimpan terisolasi per akun mahasiswa</span>
+                      <span className="text-foreground">Materi, catatan, dan tugas tersimpan aman khusus di akun pribadi Anda</span>
                     </div>
                     <div className="flex items-start gap-2">
                       <CheckCircle2 className="size-4 text-emerald-600 shrink-0 mt-0.5" />
-                      <span>Dokumen PDF privat tidak digunakan untuk pelatihan model publik</span>
+                      <span>Dokumen materi kuliah Anda tidak digunakan untuk melatih model AI publik</span>
                     </div>
                     <div className="flex items-start gap-2">
                       <Clock className="size-4 text-primary dark:text-indigo-400 shrink-0 mt-0.5" />
-                      <span>Sinkronisasi deadline otomatis sesuai zona waktu lokal kampus</span>
+                      <span>Pengingat jadwal dan tenggat otomatis menyesuaikan zona waktu lokal Anda</span>
                     </div>
                   </div>
-                  <div className="pt-2 border-t border-border/60 text-[11px] text-muted-foreground">
-                    Batas wajar gratis: 20 generasi AI/hari &bull; Maks. 20 MB/dokumen
+                  <div className="pt-2.5 border-t border-border/60 text-xs text-muted-foreground">
+                    Gratis dengan kuota harian wajar: 20 pembuatan AI/hari &bull; Maks. 20 MB/dokumen
                   </div>
                 </div>
               </div>
